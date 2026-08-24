@@ -239,6 +239,10 @@ async function main() {
     ['VendorInvoice.VIEW', 'VendorInvoice', 'VIEW'],
     ['VendorInvoice.CREATE', 'VendorInvoice', 'CREATE'],
     ['VendorInvoice.POST', 'VendorInvoice', 'POST'],
+    ['Payment.VIEW', 'Payment', 'VIEW'],
+    ['Payment.CREATE', 'Payment', 'CREATE'],
+    ['Payment.APPROVE', 'Payment', 'APPROVE'],
+    ['Payment.PAY', 'Payment', 'PAY'],
   ] as const;
   for (const [code, resource, action] of invoicePermissions) {
     const permission = await prisma.permission.upsert({
