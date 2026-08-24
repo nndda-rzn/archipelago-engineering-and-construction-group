@@ -2,7 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } fro
 import { AuthGuard } from '@/auth/auth.guard';
 import { Permissions } from '@/auth/permissions.decorator';
 import { PermissionsGuard } from '@/auth/permissions.guard';
-import { CreateChartOfAccountDto, CreateJournalDto, CreatePaymentDto, CreateVendorInvoiceDto, ListChartOfAccountQueryDto, ListJournalQueryDto, ListPaymentQueryDto, ListVendorInvoiceQueryDto } from './dto/finance.dto';
+import { CreateChartOfAccountDto, CreateJournalDto, CreatePaymentDto, CreateVendorInvoiceDto, ListChartOfAccountQueryDto, ListJournalQueryDto, ListPaymentQueryDto, ListVendorInvoiceQueryDto, TrialBalanceQueryDto } from './dto/finance.dto';
 import { FinanceService } from './finance.service';
 
 @Controller()
@@ -56,6 +56,12 @@ export class FinanceController {
   @Permissions('ChartOfAccount.VIEW')
   listChartOfAccounts(@Query() query: ListChartOfAccountQueryDto) {
     return this.service.listChartOfAccounts(query);
+  }
+
+  @Get('gl/trial-balance')
+  @Permissions('Journal.VIEW')
+  trialBalance(@Query() query: TrialBalanceQueryDto) {
+    return this.service.trialBalance(query.legalEntityId, query.from, query.to);
   }
 
   @Post('chart-of-accounts')
