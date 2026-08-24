@@ -64,6 +64,9 @@ const permissions = [
   ['ClientInvoice.VIEW', 'ClientInvoice', 'VIEW'],
   ['ClientInvoice.CREATE', 'ClientInvoice', 'CREATE'],
   ['ClientInvoice.POST', 'ClientInvoice', 'POST'],
+  ['Collection.VIEW', 'Collection', 'VIEW'],
+  ['Collection.CREATE', 'Collection', 'CREATE'],
+  ['Collection.POST', 'Collection', 'POST'],
 ] as const;
 
 async function main() {
