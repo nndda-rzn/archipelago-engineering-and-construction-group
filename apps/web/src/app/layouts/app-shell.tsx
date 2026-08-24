@@ -28,6 +28,7 @@ const navGroups: NavGroup[] = [
       { label: 'Pengadaan', icon: Package, to: '/procurement/pr' },
       { label: 'Purchase Order', icon: Package, to: '/procurement/po' },
       { label: 'Vendor Invoice', icon: DollarSign, to: '/finance/vendor-invoices' },
+      { label: 'Payment', icon: DollarSign, to: '/finance/payments' },
       { label: 'Goods Receipt', icon: Package, to: '/inventory/goods-receipts' },
       { label: 'Material Issue', icon: Truck, to: '/inventory/material-issues' },
       { label: 'Stock Adjustment', icon: Truck, to: '/inventory/stock-adjustments' },
