@@ -4,6 +4,7 @@ import { LoginPage } from './features/auth/login.page';
 import { LegalEntityListPage } from './features/foundation/legal-entity-list.page';
 import { UserManagementPage } from './features/foundation/user-management.page';
 import { RoleManagementPage } from './features/foundation/role-management.page';
+import { AuditLogPage } from './features/audit/audit-log.page';
 import { requireAuth } from './app/router/require-auth';
 import { HealthBadge } from './widgets/health/health-badge';
 
@@ -81,7 +82,13 @@ const rolesRoute = createRoute({
   component: RoleManagementPage,
 });
 
+const auditRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/foundation/audit-logs',
+  component: AuditLogPage,
+});
+
 export const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute]),
+  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute]),
 ]);

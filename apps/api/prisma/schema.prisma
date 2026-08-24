@@ -127,3 +127,23 @@ model NumberSequence {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
+
+// FR-FND-008: Audit Trail (PRD §28) — immutable audit record
+model AuditLog {
+  id            String   @id @default(cuid())
+  userId        String
+  action        String // mis. "USER.LOGIN", "USER.CREATE", "LEGAL_ENTITY.BLOCK"
+  resource      String
+  resourceId    String?
+  oldValue      Json?
+  newValue      Json?
+  reason        String?
+  source        String   @default("api")
+  correlationId String?
+  createdAt     DateTime @default(now())
+
+  @@index([resource, resourceId])
+  @@index([action])
+  @@index([userId])
+  @@index([createdAt])
+}

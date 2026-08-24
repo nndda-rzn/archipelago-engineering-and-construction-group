@@ -13,6 +13,7 @@ const navGroups: NavGroup[] = [
       { label: 'Legal Entities', icon: Building2, to: '/foundation/legal-entities' },
       { label: 'User Management', icon: Users, to: '/foundation/users' },
       { label: 'Role Management', icon: Shield, to: '/foundation/roles' },
+      { label: 'Audit Trail', icon: ClipboardCheck, to: '/foundation/audit-logs' },
     ],
   },
   {

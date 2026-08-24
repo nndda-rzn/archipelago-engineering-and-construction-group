@@ -2,11 +2,15 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import * as bcrypt from 'bcrypt';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/database/prisma.service';
+import { AuditService } from '@/audit/audit.service';
 import type { CreateUserDto, ListUserQueryDto } from './dto/user.dto';
 
 @Injectable()
 export class UserService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(AuditService) private readonly audit: AuditService,
+  ) {}
 
   async findAll(query: ListUserQueryDto) {
     const page = Number(query.page) || 1;
@@ -52,7 +56,7 @@ export class UserService {
     };
   }
 
-  async create(dto: CreateUserDto) {
+  async create(dto: CreateUserDto, actorId: string) {
     const existing = await this.prisma.user.findFirst({
       where: { OR: [{ username: dto.username }, { email: dto.email }] },
     });
@@ -80,6 +84,15 @@ export class UserService {
       }
     }
 
+    await this.audit.record({
+      userId: actorId,
+      action: 'USER.CREATE',
+      resource: 'User',
+      resourceId: user.id,
+      newValue: { username: user.username, email: user.email, role: dto.roleCode },
+      source: 'api',
+    });
+
     return {
       id: user.id,
       username: user.username,
@@ -90,13 +103,25 @@ export class UserService {
     };
   }
 
-  async block(id: string) {
+  async block(id: string, actorId: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException({ code: 'USER_NOT_FOUND', message: 'User tidak ditemukan' });
-    return this.prisma.user.update({
+    const blocked = await this.prisma.user.update({
       where: { id },
       data: { status: 'BLOCKED' },
       select: { id: true, username: true, status: true },
     });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'USER.BLOCK',
+      resource: 'User',
+      resourceId: id,
+      oldValue: { status: user.status },
+      newValue: { status: 'BLOCKED' },
+      source: 'api',
+    });
+
+    return blocked;
   }
 }
