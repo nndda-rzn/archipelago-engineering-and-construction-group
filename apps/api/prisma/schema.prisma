@@ -401,6 +401,31 @@ model MaterialIssueItem {
   @@index([materialIssueId])
 }
 
+// ─── Approval workflow (FR-FND-007) ──────────────────────────────────────────
+// MVP: data-driven approval task per transaksi. Maker-checker BR-003.
+// (Workflow definition/versioning penuh — menyusul)
+
+// FR-FND-007: Approval step untuk transaksi (DRAFT → SUBMITTED → APPROVED/REJECTED)
+model ApprovalTask {
+  id            String   @id @default(cuid())
+  transactionType String // "PurchaseRequisition" | "PurchaseOrder" | "Budget" | ...
+  transactionId String
+  transactionCode String? // no. dokumen (PR-..., PO-...) untuk display
+  stepName      String   @default("approval")
+  status        String   @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
+  requesterId   String // pembuat transaksi (BR-003: bukan approver)
+  approverId    String? // resolved saat claim/approve
+  approverRoleCode String // role yang boleh approve (mis. "PROCUREMENT_MANAGER")
+  comment       String?
+  decidedAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([transactionType, transactionId])
+  @@index([status])
+  @@index([approverRoleCode])
+}
+
 // FR-FND-009: Number Sequence (configurable)
 model NumberSequence {
   id         String  @id @default(cuid())
