@@ -58,6 +58,12 @@ const permissions = [
   ['Journal.VIEW', 'Journal', 'VIEW'],
   ['Journal.CREATE', 'Journal', 'CREATE'],
   ['Journal.POST', 'Journal', 'POST'],
+  ['ProgressClaim.VIEW', 'ProgressClaim', 'VIEW'],
+  ['ProgressClaim.CREATE', 'ProgressClaim', 'CREATE'],
+  ['ProgressClaim.CERTIFY', 'ProgressClaim', 'CERTIFY'],
+  ['ClientInvoice.VIEW', 'ClientInvoice', 'VIEW'],
+  ['ClientInvoice.CREATE', 'ClientInvoice', 'CREATE'],
+  ['ClientInvoice.POST', 'ClientInvoice', 'POST'],
 ] as const;
 
 async function main() {

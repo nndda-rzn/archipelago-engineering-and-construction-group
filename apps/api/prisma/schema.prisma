@@ -155,6 +155,9 @@ model Project {
   vendorInvoices VendorInvoice[]
   payments      Payment[]
   journalLines  JournalLine[]
+  progressClaims ProgressClaim[]
+  clientInvoices ClientInvoice[]
+  collections    Collection[]
 
   @@index([legalEntityId])
   @@index([status])
@@ -713,6 +716,97 @@ model JournalLine {
   @@index([journalId])
   @@index([accountId])
   @@index([projectId])
+}
+
+// FR-FIN-008/009: Progress Claim + Client Invoice (AR leg)
+// Progress claim → certified → client invoice → collection (next PR)
+
+// FR-FIN-008: Progress Claim — klaim progres pekerjaan ke klien
+model ProgressClaim {
+  id            String   @id @default(cuid())
+  claimNumber   String   @unique // mis. "CLM-2027-EPC-000001"
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id])
+  claimDate     DateTime @default(now())
+  period        String? // mis. "2026-08"
+  description   String?
+  amount        Decimal  @db.Decimal(18, 2) // nilai klaim diajukan
+  status        String   @default("DRAFT") // DRAFT | CERTIFIED | REJECTED | REVISED
+  certifiedAmount Decimal? @db.Decimal(18, 2) // nilai setelah sertifikasi
+  certifiedBy   String?
+  certifiedAt   DateTime?
+  remark        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  clientInvoice ClientInvoice?
+
+  @@index([projectId])
+  @@index([status])
+}
+
+// FR-FIN-009: Client Invoice — faktur AR ke klien (dari claim CERTIFIED)
+model ClientInvoice {
+  id            String   @id @default(cuid())
+  invoiceNumber String   @unique // mis. "CINV-2027-EPC-000001"
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id])
+  claimId       String   @unique
+  claim         ProgressClaim @relation(fields: [claimId], references: [id])
+  client        String
+  invoiceDate   DateTime @default(now())
+  currency      String   @default("IDR")
+  amount        Decimal  @db.Decimal(18, 2) // nilai tanpa pajak (certified amount)
+  taxAmount     Decimal? @db.Decimal(18, 2) // PPN keluaran
+  totalAmount   Decimal  @db.Decimal(18, 2)
+  status        String   @default("DRAFT") // DRAFT | POSTED | PAID | CANCELLED
+  postedAt      DateTime?
+  postedBy      String?
+  remark        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  collections  CollectionItem[]
+
+  @@index([projectId])
+  @@index([claimId])
+  @@index([status])
+}
+
+// FR-FIN-010: Collection — penerimaan pembayaran dari klien (AR settlement)
+model Collection {
+  id            String   @id @default(cuid())
+  collectionNumber String @unique // mis. "COL-2027-EPC-000001"
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id])
+  client        String
+  bankAccount   String? // rekening penerima
+  reference     String? // no. transfer/bilyet
+  currency      String   @default("IDR")
+  totalAmount   Decimal  @db.Decimal(18, 2)
+  status        String   @default("DRAFT") // DRAFT | POSTED | CANCELLED
+  collectedAt   DateTime @default(now())
+  collectedBy   String?
+  remark        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  items        CollectionItem[]
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model CollectionItem {
+  id            String   @id @default(cuid())
+  collectionId  String
+  collection    Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  clientInvoiceId String
+  clientInvoice ClientInvoice @relation(fields: [clientInvoiceId], references: [id])
+  amount        Decimal  @db.Decimal(18, 2) // bagian yang dibayar dari invoice ini
+
+  @@index([collectionId])
+  @@index([clientInvoiceId])
 }
 
 // FR-FND-009: Number Sequence (configurable)
