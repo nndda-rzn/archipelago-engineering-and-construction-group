@@ -7,6 +7,7 @@ import { RoleManagementPage } from './features/foundation/role-management.page';
 import { AuditLogPage } from './features/audit/audit-log.page';
 import { ProjectListPage } from './features/project/project-list.page';
 import { WbsPage } from './features/project/wbs.page';
+import { BudgetPage } from './features/project/budget.page';
 import { requireAuth } from './app/router/require-auth';
 import { HealthBadge } from './widgets/health/health-badge';
 
@@ -102,7 +103,13 @@ const wbsRoute = createRoute({
   component: WbsPage,
 });
 
+const budgetRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/budget',
+  component: BudgetPage,
+});
+
 export const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute]),
+  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute]),
 ]);
