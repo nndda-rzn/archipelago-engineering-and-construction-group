@@ -98,6 +98,74 @@ export class ListGoodsReceiptQueryDto {
   projectId?: string;
 }
 
+export class MaterialIssueItemDto {
+  @IsString()
+  @Length(1, 200)
+  description!: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0.01)
+  quantity!: number;
+
+  @IsOptional()
+  @IsString()
+  unit?: string;
+
+  @IsOptional()
+  @IsString()
+  wbsItemId?: string;
+}
+
+export class CreateMaterialIssueDto {
+  @IsString()
+  projectId!: string;
+
+  @IsString()
+  warehouseId!: string;
+
+  @IsString()
+  @Length(2, 100)
+  issuedTo!: string;
+
+  @IsOptional()
+  @IsString()
+  issueReason?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  remark?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MaterialIssueItemDto)
+  items!: MaterialIssueItemDto[];
+}
+
+export class ListMaterialIssueQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  pageSize?: number;
+
+  @IsOptional()
+  @IsString()
+  projectId?: string;
+
+  @IsOptional()
+  @IsString()
+  warehouseId?: string;
+}
+
 export class ListStockLedgerQueryDto {
   @IsOptional()
   @Type(() => Number)

@@ -146,6 +146,7 @@ model Project {
   warehouses     Warehouse[]
   goodsReceipts  GoodsReceipt[]
   stockLedgerEntries StockLedgerEntry[]
+  materialIssues MaterialIssue[]
 
   @@index([legalEntityId])
   @@index([status])
@@ -171,6 +172,7 @@ model WbsItem {
   poItems      PurchaseOrderItem[]
   goodsReceiptItems GoodsReceiptItem[]
   stockLedgerEntries StockLedgerEntry[]
+  materialIssueItems MaterialIssueItem[]
 
   @@unique([projectId, code])
   @@index([projectId])
@@ -289,6 +291,7 @@ model Warehouse {
 
   goodsReceipts GoodsReceipt[]
   stockLedgerEntries StockLedgerEntry[]
+  materialIssues MaterialIssue[]
 
   @@index([projectId])
 }
@@ -357,6 +360,45 @@ model StockLedgerEntry {
   @@index([projectId, wbsItemId, warehouseId])
   @@index([documentType, documentId])
   @@index([createdAt])
+}
+
+// FR-INV-004: Material Issue — kurangi stock + project consumption
+model MaterialIssue {
+  id         String   @id @default(cuid())
+  issueNumber String  @unique // mis. "MI-2027-EPC-000001"
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id])
+  warehouseId String
+  warehouse  Warehouse @relation(fields: [warehouseId], references: [id])
+  issuedTo   String // mis. "Tim Konstruksi", subcon, departemen
+  issueReason String @default("CONSTRUCTION") // CONSTRUCTION | MAINTENANCE | CONSUMPTION | OTHERS
+  issuedAt   DateTime @default(now())
+  issuedBy   String
+  remark     String?
+  status     String   @default("POSTED") // DRAFT | POSTED | CANCELLED
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  items      MaterialIssueItem[]
+
+  @@index([projectId])
+  @@index([warehouseId])
+  @@index([status])
+}
+
+model MaterialIssueItem {
+  id          String   @id @default(cuid())
+  materialIssueId String
+  materialIssue MaterialIssue @relation(fields: [materialIssueId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Decimal  @db.Decimal(18, 2) // qty keluar (positif di dokumen, ledger OUT negatif)
+  unit        String   @default("EA")
+  unitPrice   Decimal? @db.Decimal(18, 2) // cost saat issue (dari ledger/GR)
+  totalValue  Decimal? @db.Decimal(18, 2)
+  wbsItemId   String?
+  wbsItem     WbsItem? @relation(fields: [wbsItemId], references: [id])
+
+  @@index([materialIssueId])
 }
 
 // FR-FND-009: Number Sequence (configurable)

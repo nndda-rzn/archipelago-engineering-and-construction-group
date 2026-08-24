@@ -41,6 +41,8 @@ const permissions = [
   ['GoodsReceipt.VIEW', 'GoodsReceipt', 'VIEW'],
   ['GoodsReceipt.CREATE', 'GoodsReceipt', 'CREATE'],
   ['StockLedger.VIEW', 'StockLedger', 'VIEW'],
+  ['MaterialIssue.VIEW', 'MaterialIssue', 'VIEW'],
+  ['MaterialIssue.CREATE', 'MaterialIssue', 'CREATE'],
 ] as const;
 
 async function main() {

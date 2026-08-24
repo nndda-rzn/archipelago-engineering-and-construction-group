@@ -448,3 +448,47 @@ export const stockSummarySchema = z.object({
   ),
 });
 export type StockSummary = z.infer<typeof stockSummarySchema>;
+
+/** Material issue — FR-INV-004. */
+export const materialIssueSchema = z.object({
+  id: z.string(),
+  issueNumber: z.string(),
+  projectId: z.string(),
+  warehouseId: z.string(),
+  issuedTo: z.string(),
+  issueReason: z.string(),
+  status: z.string(),
+  remark: z.string().nullable(),
+  createdAt: z.string(),
+  items: z.array(
+    z.object({
+      id: z.string(),
+      description: z.string(),
+      quantity: z.number(),
+      unit: z.string(),
+      unitPrice: z.number().nullable(),
+      totalValue: z.number().nullable(),
+      wbsItemId: z.string().nullable(),
+    }),
+  ),
+  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  warehouse: z.object({ code: z.string(), name: z.string() }).optional(),
+});
+export type MaterialIssue = z.infer<typeof materialIssueSchema>;
+
+export const createMaterialIssueSchema = z.object({
+  projectId: z.string(),
+  warehouseId: z.string(),
+  issuedTo: z.string().min(2).max(100),
+  issueReason: z.string().optional(),
+  remark: z.string().max(500).optional(),
+  items: z.array(
+    z.object({
+      description: z.string().min(1).max(200),
+      quantity: z.number().min(0.01),
+      unit: z.string().optional(),
+      wbsItemId: z.string().optional(),
+    }),
+  ).min(1),
+});
+export type CreateMaterialIssue = z.infer<typeof createMaterialIssueSchema>;
