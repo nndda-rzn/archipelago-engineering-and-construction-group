@@ -258,3 +258,28 @@ export const createWbsItemSchema = z.object({
   parentId: z.string().optional(),
 });
 export type CreateWbsItem = z.infer<typeof createWbsItemSchema>;
+
+/** Budget — FR-PRJ-005/006. */
+export const budgetSummarySchema = z.object({
+  projectId: z.string(),
+  status: z.enum(['DRAFT', 'PUBLISHED']),
+  wbs: z.array(
+    z.object({
+      id: z.string(),
+      code: z.string(),
+      name: z.string(),
+      parentId: z.string().nullable(),
+      budget: z.number(),
+      itemCount: z.number(),
+    }),
+  ),
+  totalBudget: z.number(),
+});
+export type BudgetSummary = z.infer<typeof budgetSummarySchema>;
+
+export const upsertBudgetSchema = z.object({
+  wbsItemId: z.string(),
+  costType: z.string().optional(),
+  amount: z.number().min(0),
+});
+export type UpsertBudget = z.infer<typeof upsertBudgetSchema>;
