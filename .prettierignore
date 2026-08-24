@@ -1,0 +1,8 @@
+# AEC ERP — monorepo root
+apps/
+packages/
+infrastructure/
+docs/
+node_modules/
+dist/
+coverage/

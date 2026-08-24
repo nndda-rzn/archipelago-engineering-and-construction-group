@@ -1,0 +1,12 @@
+{
+  "name": "@aec/config",
+  "version": "0.1.0",
+  "private": true,
+  "files": ["tsconfig", "eslint", "prettier", "tailwind"],
+  "exports": {
+    "./tsconfig/*": "./tsconfig/*",
+    "./eslint/*": "./eslint/*.cjs",
+    "./prettier/*": "./prettier/*.cjs",
+    "./tailwind/*": "./tailwind/*.cjs"
+  }
+}
