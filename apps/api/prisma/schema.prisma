@@ -158,6 +158,7 @@ model Project {
   progressClaims ProgressClaim[]
   clientInvoices ClientInvoice[]
   collections    Collection[]
+  rfqs           Rfq[]
 
   @@index([legalEntityId])
   @@index([status])
@@ -188,6 +189,7 @@ model WbsItem {
   opnameItems   StockOpnameItem[]
   transferItems  StockTransferItem[]
   journalLines   JournalLine[]
+  rfqItems       RfqItem[]
 
   @@unique([projectId, code])
   @@index([projectId])
@@ -230,6 +232,7 @@ model PurchaseRequisition {
 
   items     PurchaseRequisitionItem[]
   purchaseOrders PurchaseOrder[]
+  rfqs      Rfq[]
 
   @@index([projectId])
   @@index([status])
@@ -842,6 +845,82 @@ model CollectionItem {
 
   @@index([collectionId])
   @@index([clientInvoiceId])
+}
+
+// ─── Procurement: RFQ + Vendor Evaluation (FR-PRO-003/004) ───────────────────
+// Request for Quotation → vendor quotes → evaluate → award (best quote)
+
+// FR-PRO-003: RFQ — minta penawaran vendor untuk PO
+model Rfq {
+  id         String   @id @default(cuid())
+  rfqNumber  String   @unique // mis. "RFQ-2027-EPC-000001"
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id])
+  requisitionId String?
+  requisition PurchaseRequisition? @relation(fields: [requisitionId], references: [id])
+  title      String
+  description String?
+  dueDate    DateTime?
+  status     String   @default("DRAFT") // DRAFT | SENT | QUOTED | EVALUATED | AWARDED | CANCELLED
+  awardedVendor String? // vendor pemenang (dari quote terbaik)
+  awardedQuoteId String?
+  createdBy  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  items      RfqItem[]
+  quotes     RfqQuote[]
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model RfqItem {
+  id         String   @id @default(cuid())
+  rfqId      String
+  rfq        Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  description String
+  quantity   Decimal  @db.Decimal(18, 2)
+  unit       String   @default("EA")
+  wbsItemId  String?
+  wbsItem    WbsItem? @relation(fields: [wbsItemId], references: [id])
+
+  quoteItems RfqQuoteItem[]
+
+  @@index([rfqId])
+}
+
+// FR-PRO-004: Quote vendor per RFQ item + total
+model RfqQuote {
+  id         String   @id @default(cuid())
+  rfqId      String
+  rfq        Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  vendor     String
+  quoteDate  DateTime @default(now())
+  totalAmount Decimal @db.Decimal(18, 2) // total penawaran (dihitung dari items)
+  currency   String   @default("IDR")
+  leadTimeDays Int?   // estimasi pengiriman
+  remark     String?
+  isWinner   Boolean  @default(false)
+  status     String   @default("SUBMITTED") // SUBMITTED | WITHDRAWN
+  createdAt  DateTime @default(now())
+
+  items      RfqQuoteItem[]
+
+  @@index([rfqId])
+  @@unique([rfqId, vendor])
+}
+
+model RfqQuoteItem {
+  id         String   @id @default(cuid())
+  quoteId    String
+  quote      RfqQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  rfqItemId  String
+  rfqItem    RfqItem  @relation(fields: [rfqItemId], references: [id])
+  unitPrice  Decimal  @db.Decimal(18, 2)
+  totalPrice Decimal  @db.Decimal(18, 2)
+
+  @@index([quoteId])
 }
 
 // FR-FND-009: Number Sequence (configurable)
