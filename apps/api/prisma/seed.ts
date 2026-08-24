@@ -29,6 +29,13 @@ const permissions = [
   ['Budget.VIEW', 'Budget', 'VIEW'],
   ['Budget.CREATE', 'Budget', 'CREATE'],
   ['Budget.APPROVE', 'Budget', 'APPROVE'],
+  ['PurchaseRequisition.VIEW', 'PurchaseRequisition', 'VIEW'],
+  ['PurchaseRequisition.CREATE', 'PurchaseRequisition', 'CREATE'],
+  ['PurchaseRequisition.APPROVE', 'PurchaseRequisition', 'APPROVE'],
+  ['PurchaseOrder.VIEW', 'PurchaseOrder', 'VIEW'],
+  ['PurchaseOrder.CREATE', 'PurchaseOrder', 'CREATE'],
+  ['PurchaseOrder.APPROVE', 'PurchaseOrder', 'APPROVE'],
+  ['PurchaseOrder.RELEASE', 'PurchaseOrder', 'RELEASE'],
 ] as const;
 
 async function main() {
