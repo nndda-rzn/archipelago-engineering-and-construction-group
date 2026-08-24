@@ -170,4 +170,23 @@ export const assignPermissionsSchema = z.object({
 });
 export type AssignPermissions = z.infer<typeof assignPermissionsSchema>;
 
+/** Audit log — FR-FND-008, PRD §28. */
+export const auditLogSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  action: z.string(),
+  resource: z.string(),
+  resourceId: z.string().nullable(),
+  oldValue: z.unknown().nullable(),
+  newValue: z.unknown().nullable(),
+  reason: z.string().nullable(),
+  source: z.string(),
+  correlationId: z.string().nullable(),
+  createdAt: z.string(),
+});
+export type AuditLog = z.infer<typeof auditLogSchema>;
+
+export const auditLogListResponseSchema = paginatedResponseSchema(auditLogSchema);
+export type AuditLogListResponse = z.infer<typeof auditLogListResponseSchema>;
+
 export type { Id };
