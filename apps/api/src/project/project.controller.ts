@@ -16,6 +16,12 @@ export class ProjectController {
     return this.service.findAll(query);
   }
 
+  @Get('portfolio')
+  @Permissions('Project.VIEW')
+  portfolio() {
+    return this.service.portfolio();
+  }
+
   @Get(':id')
   @Permissions('Project.VIEW')
   findOne(@Param('id') id: string) {
