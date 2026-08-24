@@ -233,6 +233,32 @@ async function main() {
     },
   });
   console.log(`Seeded warehouse ${demoWarehouse.code}`);
+
+  // VendorInvoice permissions
+  const invoicePermissions = [
+    ['VendorInvoice.VIEW', 'VendorInvoice', 'VIEW'],
+    ['VendorInvoice.CREATE', 'VendorInvoice', 'CREATE'],
+    ['VendorInvoice.POST', 'VendorInvoice', 'POST'],
+  ] as const;
+  for (const [code, resource, action] of invoicePermissions) {
+    const permission = await prisma.permission.upsert({
+      where: { code },
+      update: {},
+      create: { code, resource, action },
+    });
+    await prisma.rolePermission.upsert({
+      where: {
+        roleId_permissionId_scopeType_scopeValue: {
+          roleId: role.id,
+          permissionId: permission.id,
+          scopeType: 'GLOBAL',
+          scopeValue: '',
+        },
+      },
+      update: {},
+      create: { roleId: role.id, permissionId: permission.id, scopeType: 'GLOBAL', scopeValue: '' },
+    });
+  }
 }
 
 main()
@@ -241,3 +267,4 @@ main()
     process.exitCode = 1;
   })
   .finally(() => prisma.$disconnect());
+
