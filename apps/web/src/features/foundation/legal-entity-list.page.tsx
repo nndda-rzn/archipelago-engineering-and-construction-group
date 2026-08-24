@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createLegalEntitySchema } from '@aec/api-contracts';
+import { createLegalEntitySchema, type LegalEntity, type LegalEntityListParams } from '@aec/api-contracts';
 import { z } from 'zod';
-import { createColumnHelper } from '@tanstack/react-table';
+import { createColumnHelper, type SortingState } from '@tanstack/react-table';
 import { Button, Input, Label, Badge, DataGrid } from '@aec/ui';
 import { useCreateLegalEntity, useLegalEntities } from './legal-entity.api';
-import type { LegalEntity } from '@aec/api-contracts';
 
 type CreateLegalEntityForm = {
   code: string;
@@ -38,26 +37,32 @@ const columnHelper = createColumnHelper<LegalEntity>();
 const columns = [
   columnHelper.accessor('code', {
     header: 'Kode',
+    enableSorting: true,
     cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span>,
   }),
   columnHelper.accessor('legalName', {
     header: 'Nama Legal',
+    enableSorting: true,
     cell: (info) => <span className="text-neutral-900">{info.getValue()}</span>,
   }),
   columnHelper.accessor('taxIdentifier', {
     header: 'NPWP',
+    enableSorting: true,
     cell: (info) => <span className="font-mono text-neutral-600">{info.getValue()}</span>,
   }),
   columnHelper.accessor('country', {
     header: 'Negara',
+    enableSorting: true,
     cell: (info) => <span className="text-neutral-600">{info.getValue()}</span>,
   }),
   columnHelper.accessor('functionalCurrency', {
     header: 'Mata Uang',
+    enableSorting: true,
     cell: (info) => <span className="font-mono text-neutral-600">{info.getValue()}</span>,
   }),
   columnHelper.accessor('status', {
     header: 'Status',
+    enableSorting: true,
     cell: (info) => {
       const status = info.getValue();
       return <Badge variant={statusVariant[status] ?? 'default'}>{status}</Badge>;
@@ -65,8 +70,20 @@ const columns = [
   }),
 ];
 
+const PAGE_SIZE = 20;
+
 export function LegalEntityListPage() {
-  const { data, isLoading, isError, refetch } = useLegalEntities();
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const params: LegalEntityListParams = {
+    page: pagination.pageIndex + 1,
+    pageSize: pagination.pageSize,
+    sortBy: (sorting[0]?.id as LegalEntityListParams['sortBy']) ?? undefined,
+    sortDir: sorting[0]?.desc ? 'desc' : 'asc',
+  };
+
+  const { data, isLoading, isError, refetch } = useLegalEntities(params);
   const create = useCreateLegalEntity();
   const [showForm, setShowForm] = useState(false);
   const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateLegalEntityForm>({
@@ -132,7 +149,12 @@ export function LegalEntityListPage() {
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
         <DataGrid
           columns={columns}
-          data={data ?? []}
+          data={data?.items ?? []}
+          rowCount={data?.total ?? 0}
+          pagination={pagination}
+          onPaginationChange={setPagination}
+          sorting={sorting}
+          onSortingChange={setSorting}
           isLoading={isLoading}
           isError={isError}
           onRetry={() => refetch()}

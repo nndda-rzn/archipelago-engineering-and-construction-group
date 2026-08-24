@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Inject, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@/auth/auth.guard';
 import { Permissions } from '@/auth/permissions.decorator';
 import { PermissionsGuard } from '@/auth/permissions.guard';
 import { CreateLegalEntityDto } from './dto/create-legal-entity.dto';
+import { ListLegalEntityQueryDto } from './dto/list-legal-entity-query.dto';
 import { UpdateLegalEntityDto } from './dto/update-legal-entity.dto';
 import { LegalEntityService } from './legal-entity.service';
 
@@ -13,8 +14,8 @@ export class LegalEntityController {
 
   @Get()
   @Permissions('LegalEntity.VIEW')
-  findAll() {
-    return this.service.findAll();
+  findAll(@Query() query: ListLegalEntityQueryDto) {
+    return this.service.findAll(query);
   }
 
   @Get(':id')
