@@ -744,3 +744,83 @@ export const createPaymentSchema = z.object({
   ).min(1),
 });
 export type CreatePayment = z.infer<typeof createPaymentSchema>;
+
+/** GL: Chart of Accounts — FR-FIN-002. */
+export const chartOfAccountSchema = z.object({
+  id: z.string(),
+  legalEntityId: z.string(),
+  code: z.string(),
+  name: z.string(),
+  accountType: z.string(),
+  normalBalance: z.string(),
+  parentId: z.string().nullable(),
+  isActive: z.boolean(),
+  description: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  parent: z.object({ code: z.string(), name: z.string() }).optional(),
+});
+export type ChartOfAccount = z.infer<typeof chartOfAccountSchema>;
+
+export const createChartOfAccountSchema = z.object({
+  legalEntityId: z.string(),
+  code: z.string().min(1).max(30),
+  name: z.string().min(1).max(200),
+  accountType: z.string().optional(),
+  normalBalance: z.string().optional(),
+  parentId: z.string().optional(),
+  description: z.string().max(300).optional(),
+});
+export type CreateChartOfAccount = z.infer<typeof createChartOfAccountSchema>;
+
+/** GL: Journal + lines — FR-FIN-003/004. */
+export const journalLineSchema = z.object({
+  id: z.string(),
+  accountId: z.string(),
+  description: z.string().nullable(),
+  debit: z.number(),
+  credit: z.number(),
+  projectId: z.string().nullable(),
+  wbsItemId: z.string().nullable(),
+  account: z.object({ code: z.string(), name: z.string() }).optional(),
+});
+export type JournalLine = z.infer<typeof journalLineSchema>;
+
+export const journalSchema = z.object({
+  id: z.string(),
+  journalNumber: z.string(),
+  legalEntityId: z.string(),
+  date: z.string(),
+  source: z.string(),
+  sourceId: z.string().nullable(),
+  reference: z.string().nullable(),
+  description: z.string(),
+  status: z.string(),
+  postedAt: z.string().nullable(),
+  postedBy: z.string().nullable(),
+  createdAt: z.string(),
+  lines: z.array(journalLineSchema),
+  legalEntity: z.object({ code: z.string() }).optional(),
+});
+export type Journal = z.infer<typeof journalSchema>;
+
+export const journalListResponseSchema = paginatedResponseSchema(journalSchema);
+export type JournalListResponse = z.infer<typeof journalListResponseSchema>;
+
+export const createJournalLineSchema = z.object({
+  accountId: z.string(),
+  description: z.string().max(300).optional(),
+  debit: z.number().min(0),
+  credit: z.number().min(0),
+  projectId: z.string().optional(),
+  wbsItemId: z.string().optional(),
+});
+
+export const createJournalSchema = z.object({
+  legalEntityId: z.string(),
+  date: z.string().optional(),
+  description: z.string().min(1).max(500),
+  reference: z.string().max(100).optional(),
+  lines: z.array(createJournalLineSchema).min(1),
+});
+export type CreateJournal = z.infer<typeof createJournalSchema>;

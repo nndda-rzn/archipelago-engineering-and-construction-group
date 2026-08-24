@@ -29,6 +29,8 @@ model LegalEntity {
   organizations Organization[]
   users         User[]
   projects      Project[]
+  chartOfAccounts ChartOfAccount[]
+  journals      Journal[]
 }
 
 // FR-FND-002: Effective-dated Organization
@@ -152,6 +154,7 @@ model Project {
   stockTransfers StockTransfer[]
   vendorInvoices VendorInvoice[]
   payments      Payment[]
+  journalLines  JournalLine[]
 
   @@index([legalEntityId])
   @@index([status])
@@ -181,6 +184,7 @@ model WbsItem {
   adjustmentItems StockAdjustmentItem[]
   opnameItems   StockOpnameItem[]
   transferItems  StockTransferItem[]
+  journalLines   JournalLine[]
 
   @@unique([projectId, code])
   @@index([projectId])
@@ -639,6 +643,76 @@ model PaymentItem {
 
   @@index([paymentId])
   @@index([invoiceId])
+}
+
+// ─── Finance: GL Posting (FR-FIN-002/003/004) ────────────────────────────────
+// Chart of Accounts + double-entry journal. Posted journal immutable (BR-001).
+
+// FR-FIN-002: Chart of Accounts
+model ChartOfAccount {
+  id            String   @id @default(cuid())
+  legalEntityId String
+  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id])
+  code          String // mis. "1100" (Kas), "2100" (Utang Usaha)
+  name          String
+  accountType   String   @default("ASSET") // ASSET | LIABILITY | EQUITY | REVENUE | EXPENSE
+  normalBalance String   @default("DEBIT") // DEBIT | CREDIT
+  parentId      String?
+  parent        ChartOfAccount? @relation("CoaHierarchy", fields: [parentId], references: [id])
+  children      ChartOfAccount[] @relation("CoaHierarchy")
+  isActive      Boolean  @default(true)
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  journalLines JournalLine[]
+
+  @@unique([legalEntityId, code])
+  @@index([legalEntityId])
+}
+
+// FR-FIN-003/004: Journal — double-entry, balanced (debit = credit)
+model Journal {
+  id            String   @id @default(cuid())
+  journalNumber String   @unique // mis. "JRN-2027-EPC-000001"
+  legalEntityId String
+  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id])
+  date          DateTime @default(now())
+  source        String   @default("MANUAL") // MANUAL | INVOICE | PAYMENT
+  sourceId      String? // id dokumen sumber (VendorInvoice.id / Payment.id)
+  reference     String? // no. dokumen sumber (INV-..., PAY-...)
+  description   String
+  status        String   @default("DRAFT") // DRAFT | POSTED | REVERSED
+  postedAt      DateTime?
+  postedBy      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  lines JournalLine[]
+
+  @@index([legalEntityId])
+  @@index([source, sourceId])
+  @@index([status])
+  @@index([date])
+}
+
+model JournalLine {
+  id        String   @id @default(cuid())
+  journalId String
+  journal   Journal  @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  accountId String
+  account   ChartOfAccount @relation(fields: [accountId], references: [id])
+  description String?
+  debit     Decimal  @db.Decimal(18, 2) @default(0)
+  credit    Decimal  @db.Decimal(18, 2) @default(0)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+  wbsItemId String?
+  wbsItem   WbsItem? @relation(fields: [wbsItemId], references: [id])
+
+  @@index([journalId])
+  @@index([accountId])
+  @@index([projectId])
 }
 
 // FR-FND-009: Number Sequence (configurable)

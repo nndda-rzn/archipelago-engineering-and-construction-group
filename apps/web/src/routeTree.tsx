@@ -19,6 +19,8 @@ import { StockTransferPage } from './features/inventory/stock-transfer.page';
 import { ApprovalPage } from './features/approval/approval.page';
 import { VendorInvoicePage } from './features/finance/vendor-invoice.page';
 import { PaymentPage } from './features/finance/payment.page';
+import { ChartOfAccountPage } from './features/finance/chart-of-account.page';
+import { JournalPage } from './features/finance/journal.page';
 import { requireAuth } from './app/router/require-auth';
 import { HealthBadge } from './widgets/health/health-badge';
 
@@ -186,7 +188,19 @@ const paymentRoute = createRoute({
   component: PaymentPage,
 });
 
+const chartOfAccountRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/finance/chart-of-accounts',
+  component: ChartOfAccountPage,
+});
+
+const journalRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/finance/journals',
+  component: JournalPage,
+});
+
 export const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, prRoute, poRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, vendorInvoiceRoute, paymentRoute]),
+  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, prRoute, poRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute]),
 ]);
