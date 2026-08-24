@@ -8,7 +8,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ─── Foundation domain ────────────────────────────────────────────────────────
@@ -96,7 +95,7 @@ model RolePermission {
   roleId       String
   permissionId String
   scopeType    String @default("GLOBAL") // GLOBAL | LEGAL_ENTITY | BUSINESS_UNIT | PROJECT
-  scopeValue   String? // entity/project id bila scope terbatas
+  scopeValue   String @default("") // entity/project id bila scope terbatas
 
   role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
