@@ -229,6 +229,69 @@ export const createProjectSchema = z.object({
 });
 export type CreateProject = z.infer<typeof createProjectSchema>;
 
+/** Procurement — FR-PRO-001/007. */
+export const prItemSchema = z.object({
+  id: z.string(),
+  description: z.string(),
+  quantity: z.number(),
+  unit: z.string(),
+  estimatedUnitPrice: z.number().nullable(),
+  estimatedTotal: z.number().nullable(),
+});
+
+export const purchaseRequisitionSchema = z.object({
+  id: z.string(),
+  prNumber: z.string(),
+  projectId: z.string(),
+  wbsItemId: z.string().nullable(),
+  requestedBy: z.string(),
+  status: z.string(),
+  description: z.string().nullable(),
+  createdAt: z.string(),
+  items: z.array(prItemSchema),
+  project: z.object({ code: z.string(), name: z.string() }).optional(),
+});
+export type PurchaseRequisition = z.infer<typeof purchaseRequisitionSchema>;
+
+export const createPrSchema = z.object({
+  projectId: z.string(),
+  wbsItemId: z.string().optional(),
+  requestedBy: z.string().min(2).max(100),
+  description: z.string().max(500).optional(),
+  items: z.array(
+    z.object({
+      description: z.string().min(1).max(200),
+      quantity: z.number().min(0.01),
+      unit: z.string().optional(),
+      estimatedUnitPrice: z.number().min(0).optional(),
+    }),
+  ).min(1),
+});
+export type CreatePr = z.infer<typeof createPrSchema>;
+
+export const purchaseOrderSchema = z.object({
+  id: z.string(),
+  poNumber: z.string(),
+  projectId: z.string(),
+  requisitionId: z.string().nullable(),
+  vendor: z.string(),
+  currency: z.string(),
+  totalAmount: z.number(),
+  status: z.string(),
+  createdAt: z.string(),
+  items: z.array(z.object({ id: z.string(), description: z.string(), quantity: z.number(), unit: z.string(), unitPrice: z.number(), totalPrice: z.number() })),
+  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  requisition: z.object({ prNumber: z.string() }).optional(),
+});
+export type PurchaseOrder = z.infer<typeof purchaseOrderSchema>;
+
+export const createPoSchema = z.object({
+  requisitionId: z.string(),
+  vendor: z.string().min(2).max(200),
+  currency: z.string().length(3).optional(),
+});
+export type CreatePo = z.infer<typeof createPoSchema>;
+
 export type { Id };
 
 /** WBS — FR-PRJ-002. */
