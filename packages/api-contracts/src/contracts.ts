@@ -112,4 +112,62 @@ export type LegalEntityListParams = z.infer<typeof legalEntityListParamsSchema>;
 export const legalEntityListResponseSchema = paginatedResponseSchema(legalEntitySchema);
 export type LegalEntityListResponse = z.infer<typeof legalEntityListResponseSchema>;
 
+/** User — FR-FND-003/004. */
+export const userSchema = z.object({
+  id: z.string(),
+  username: z.string(),
+  email: z.string(),
+  displayName: z.string(),
+  status: z.string(),
+  lastLoginAt: z.string().nullable(),
+  createdAt: z.string(),
+  roles: z.array(z.string()),
+});
+export type User = z.infer<typeof userSchema>;
+
+export const createUserSchema = z.object({
+  username: z.string().min(3).max(50),
+  email: z.string().email(),
+  displayName: z.string().min(2).max(100),
+  password: z.string().min(8).max(100),
+  legalEntityId: z.string().optional(),
+  roleCode: z.string().optional(),
+});
+export type CreateUser = z.infer<typeof createUserSchema>;
+
+export const userListResponseSchema = paginatedResponseSchema(userSchema);
+export type UserListResponse = z.infer<typeof userListResponseSchema>;
+
+/** Role — FR-FND-004. */
+export const roleSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  status: z.string(),
+});
+export type Role = z.infer<typeof roleSchema>;
+
+export const roleWithPermissionsSchema = roleSchema.extend({
+  _count: z.object({ userRoles: z.number() }),
+  permissions: z.array(
+    z.object({
+      permission: z.object({ code: z.string(), resource: z.string(), action: z.string() }),
+    }),
+  ),
+});
+export type RoleWithPermissions = z.infer<typeof roleWithPermissionsSchema>;
+
+export const createRoleSchema = z.object({
+  code: z.string().min(2).max(50),
+  name: z.string().min(2).max(100),
+  description: z.string().optional(),
+});
+export type CreateRole = z.infer<typeof createRoleSchema>;
+
+export const assignPermissionsSchema = z.object({
+  permissionCodes: z.array(z.string()),
+});
+export type AssignPermissions = z.infer<typeof assignPermissionsSchema>;
+
 export type { Id };
