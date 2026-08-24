@@ -4,6 +4,7 @@ import {
   createMaterialIssueSchema,
   createStockAdjustmentSchema,
   createStockOpnameSchema,
+  createStockTransferSchema,
   createWarehouseSchema,
   goodsReceiptSchema,
   materialIssueSchema,
@@ -11,11 +12,13 @@ import {
   stockLedgerEntrySchema,
   stockOpnameSchema,
   stockSummarySchema,
+  stockTransferSchema,
   warehouseSchema,
   type CreateGoodsReceipt,
   type CreateMaterialIssue,
   type CreateStockAdjustment,
   type CreateStockOpname,
+  type CreateStockTransfer,
   type CreateWarehouse,
   type GoodsReceipt,
   type MaterialIssue,
@@ -23,6 +26,7 @@ import {
   type StockLedgerEntry,
   type StockOpname,
   type StockSummary,
+  type StockTransfer,
   type Warehouse,
 } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
@@ -33,6 +37,7 @@ export const ledgerKeys = { all: ['stock-ledger'] as const, list: (params: objec
 export const miKeys = { all: ['material-issues'] as const, list: (params: object) => [...miKeys.all, 'list', params] as const };
 export const adjKeys = { all: ['stock-adjustments'] as const, list: (params: object) => [...adjKeys.all, 'list', params] as const };
 export const opnKeys = { all: ['stock-opnames'] as const, list: (params: object) => [...opnKeys.all, 'list', params] as const };
+export const stKeys = { all: ['stock-transfers'] as const, list: (params: object) => [...stKeys.all, 'list', params] as const };
 
 export function useWarehouses(params: { page: number; pageSize: number }) {
   return useQuery({
@@ -130,6 +135,17 @@ export function useStockAdjustments(params: { page: number; pageSize: number }) 
   });
 }
 
+export function useStockTransfers(params: { page: number; pageSize: number }) {
+  return useQuery({
+    queryKey: stKeys.list(params),
+    queryFn: async () => {
+      const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+      const data = await getJson<{ items: unknown; total: number }>(`/stock-transfers?${qs}`);
+      return { items: stockTransferSchema.array().parse(data.items), total: data.total };
+    },
+  });
+}
+
 export function useCreateStockAdjustment() {
   const qc = useQueryClient();
   return useMutation({
@@ -147,6 +163,20 @@ export function useApproveStockAdjustment() {
     mutationFn: (id: string) => postJson<unknown>(`/stock-adjustments/${id}/approve`, {}),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: adjKeys.all });
+      qc.invalidateQueries({ queryKey: ledgerKeys.all });
+    },
+  });
+}
+
+export function useCreateStockTransfer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateStockTransfer) => {
+      const parsed = createStockTransferSchema.parse(input);
+      return postJson<unknown>('/stock-transfers', parsed);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: stKeys.all });
       qc.invalidateQueries({ queryKey: ledgerKeys.all });
     },
   });
@@ -177,4 +207,4 @@ export function useCreateStockOpname() {
   });
 }
 
-export type { GoodsReceipt, MaterialIssue, StockAdjustment, StockLedgerEntry, StockOpname, StockSummary, Warehouse };
+export type { GoodsReceipt, MaterialIssue, StockAdjustment, StockLedgerEntry, StockOpname, StockSummary, StockTransfer, Warehouse };

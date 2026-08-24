@@ -248,6 +248,69 @@ export class CreateStockOpnameDto {
   items!: StockOpnameItemDto[];
 }
 
+export class StockTransferItemDto {
+  @IsString()
+  @Length(1, 200)
+  description!: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0.01)
+  quantity!: number;
+
+  @IsOptional()
+  @IsString()
+  unit?: string;
+
+  @IsOptional()
+  @IsString()
+  wbsItemId?: string;
+}
+
+export class CreateStockTransferDto {
+  @IsString()
+  projectId!: string;
+
+  @IsString()
+  fromWarehouseId!: string;
+
+  @IsString()
+  toWarehouseId!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  remark?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => StockTransferItemDto)
+  items!: StockTransferItemDto[];
+}
+
+export class ListStockTransferQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  pageSize?: number;
+
+  @IsOptional()
+  @IsString()
+  projectId?: string;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
+}
+
 export class ListStockLedgerQueryDto {
   @IsOptional()
   @Type(() => Number)

@@ -7,10 +7,12 @@ import {
   CreateMaterialIssueDto,
   CreateStockAdjustmentDto,
   CreateStockOpnameDto,
+  CreateStockTransferDto,
   CreateWarehouseDto,
   ListGoodsReceiptQueryDto,
   ListMaterialIssueQueryDto,
   ListStockLedgerQueryDto,
+  ListStockTransferQueryDto,
   ListWarehouseQueryDto,
 } from './dto/inventory.dto';
 import { InventoryService } from './inventory.service';
@@ -84,6 +86,18 @@ export class InventoryController {
   @Permissions('StockOpname.CREATE')
   createStockOpname(@Body() dto: CreateStockOpnameDto, @Req() request: { user?: { sub?: string } }) {
     return this.service.createStockOpname(dto, request.user?.sub ?? 'system');
+  }
+
+  @Get('stock-transfers')
+  @Permissions('StockTransfer.VIEW')
+  listStockTransfers(@Query() query: ListStockTransferQueryDto) {
+    return this.service.listStockTransfers(query);
+  }
+
+  @Post('stock-transfers')
+  @Permissions('StockTransfer.CREATE')
+  createStockTransfer(@Body() dto: CreateStockTransferDto, @Req() request: { user?: { sub?: string } }) {
+    return this.service.createStockTransfer(dto, request.user?.sub ?? 'system');
   }
 
   @Get('stock-ledger')

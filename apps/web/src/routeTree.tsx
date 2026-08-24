@@ -15,6 +15,7 @@ import { StockLedgerPage } from './features/inventory/stock-ledger.page';
 import { MaterialIssuePage } from './features/inventory/material-issue.page';
 import { StockAdjustmentPage } from './features/inventory/stock-adjustment.page';
 import { StockOpnamePage } from './features/inventory/stock-opname.page';
+import { StockTransferPage } from './features/inventory/stock-transfer.page';
 import { ApprovalPage } from './features/approval/approval.page';
 import { requireAuth } from './app/router/require-auth';
 import { HealthBadge } from './widgets/health/health-badge';
@@ -165,7 +166,13 @@ const stockOpnameRoute = createRoute({
   component: StockOpnamePage,
 });
 
+const stockTransferRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/inventory/stock-transfers',
+  component: StockTransferPage,
+});
+
 export const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, prRoute, poRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, approvalRoute]),
+  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, prRoute, poRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute]),
 ]);

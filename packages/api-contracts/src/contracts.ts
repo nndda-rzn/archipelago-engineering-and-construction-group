@@ -526,6 +526,47 @@ export const approveTaskSchema = z.object({
 });
 export type ApproveTask = z.infer<typeof approveTaskSchema>;
 
+/** Stock transfer — FR-INV-005. */
+export const stockTransferSchema = z.object({
+  id: z.string(),
+  transferNumber: z.string(),
+  projectId: z.string(),
+  fromWarehouseId: z.string(),
+  toWarehouseId: z.string(),
+  status: z.string(),
+  remark: z.string().nullable(),
+  createdAt: z.string(),
+  items: z.array(
+    z.object({
+      id: z.string(),
+      description: z.string(),
+      quantity: z.number(),
+      unit: z.string(),
+      wbsItemId: z.string().nullable(),
+    }),
+  ),
+  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  fromWarehouse: z.object({ code: z.string(), name: z.string() }).optional(),
+  toWarehouse: z.object({ code: z.string(), name: z.string() }).optional(),
+});
+export type StockTransfer = z.infer<typeof stockTransferSchema>;
+
+export const createStockTransferSchema = z.object({
+  projectId: z.string(),
+  fromWarehouseId: z.string(),
+  toWarehouseId: z.string(),
+  remark: z.string().max(500).optional(),
+  items: z.array(
+    z.object({
+      description: z.string().min(1).max(200),
+      quantity: z.number().min(0.01),
+      unit: z.string().optional(),
+      wbsItemId: z.string().optional(),
+    }),
+  ).min(1),
+});
+export type CreateStockTransfer = z.infer<typeof createStockTransferSchema>;
+
 /** Stock adjustment — FR-INV-006 (wajib approval + reason code). */
 export const stockAdjustmentSchema = z.object({
   id: z.string(),

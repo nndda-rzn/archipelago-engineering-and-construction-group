@@ -51,6 +51,8 @@ const permissions = [
   ['StockAdjustment.APPROVE', 'StockAdjustment', 'APPROVE'],
   ['StockOpname.VIEW', 'StockOpname', 'VIEW'],
   ['StockOpname.CREATE', 'StockOpname', 'CREATE'],
+  ['StockTransfer.VIEW', 'StockTransfer', 'VIEW'],
+  ['StockTransfer.CREATE', 'StockTransfer', 'CREATE'],
 ] as const;
 
 async function main() {
