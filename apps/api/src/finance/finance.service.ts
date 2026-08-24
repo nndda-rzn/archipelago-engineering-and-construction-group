@@ -2,7 +2,7 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/database/prisma.service';
 import { AuditService } from '@/audit/audit.service';
-import type { CreateChartOfAccountDto, CreateClientInvoiceDto, CreateJournalDto, CreatePaymentDto, CreateProgressClaimDto, CreateVendorInvoiceDto, ListChartOfAccountQueryDto, ListClientInvoiceQueryDto, ListJournalQueryDto, ListPaymentQueryDto, ListProgressClaimQueryDto, ListVendorInvoiceQueryDto, CertifyClaimDto } from './dto/finance.dto';
+import type { CreateChartOfAccountDto, CreateClientInvoiceDto, CreateCollectionDto, CreateJournalDto, CreatePaymentDto, CreateProgressClaimDto, CreateVendorInvoiceDto, ListChartOfAccountQueryDto, ListClientInvoiceQueryDto, ListCollectionQueryDto, ListJournalQueryDto, ListPaymentQueryDto, ListProgressClaimQueryDto, ListVendorInvoiceQueryDto, CertifyClaimDto } from './dto/finance.dto';
 
 // Finance domain — FR-PRO-009 (three-way match: PO + Receipt + Invoice)
 @Injectable()
@@ -959,6 +959,186 @@ export class FinanceService {
         take: pageSize,
       }),
       this.prisma.clientInvoice.count({ where }),
+    ]);
+
+    return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+  }
+
+  // ─── AR: Collection (FR-FIN-010) ───────────────────────────────────────────
+
+  async createCollection(dto: CreateCollectionDto, actorId: string) {
+    const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+
+    let totalAmount = 0;
+    const items: Array<{ clientInvoiceId: string; amount: number }> = [];
+    for (const item of dto.items) {
+      const invoice = await this.prisma.clientInvoice.findUnique({ where: { id: item.clientInvoiceId } });
+      if (!invoice) throw new NotFoundException({ code: 'CLIENT_INVOICE_NOT_FOUND', message: 'Client invoice tidak ditemukan' });
+      if (invoice.status !== 'POSTED') {
+        throw new ConflictException({ code: 'INVOICE_NOT_POSTED', message: `Client invoice ${invoice.invoiceNumber} harus POSTED` });
+      }
+      if (invoice.projectId !== dto.projectId) {
+        throw new ConflictException({ code: 'INVOICE_PROJECT_MISMATCH', message: 'Invoice bukan milik project ini' });
+      }
+
+      // AR open = totalAmount − collected
+      const collectedAgg = await this.prisma.collectionItem.aggregate({
+        where: { clientInvoiceId: invoice.id, collection: { status: { not: 'CANCELLED' } } },
+        _sum: { amount: true },
+      });
+      const open = Number(invoice.totalAmount) - Number(collectedAgg._sum.amount ?? 0);
+      if (Number(item.amount) > open + 0.001) {
+        throw new ConflictException({
+          code: 'EXCEED_AR_OPEN',
+          message: `Penerimaan melebihi saldo invoice ${invoice.invoiceNumber} (open ${open})`,
+        });
+      }
+      totalAmount += Number(item.amount);
+      items.push({ clientInvoiceId: invoice.id, amount: Number(item.amount) });
+    }
+
+    const seq = await this.prisma.$transaction(async (tx) => {
+      const s = await tx.numberSequence.upsert({
+        where: { code: 'COL' },
+        update: { nextNumber: { increment: 1 } },
+        create: { code: 'COL', prefix: `COL-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
+      });
+      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+    });
+
+    const collection = await this.prisma.collection.create({
+      data: {
+        collectionNumber: seq,
+        projectId: dto.projectId,
+        client: dto.client,
+        bankAccount: dto.bankAccount ?? null,
+        reference: dto.reference ?? null,
+        remark: dto.remark ?? null,
+        totalAmount,
+        items: { create: items },
+      },
+      include: { items: true },
+    });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'Collection.CREATE',
+      resource: 'Collection',
+      resourceId: collection.id,
+      newValue: { collectionNumber: seq, totalAmount: Number(totalAmount), client: dto.client },
+      source: 'api',
+    });
+
+    return collection;
+  }
+
+  // Auto-post: collection POSTED → Debit Kas (1100), Credit Piutang (1200)
+  private async postCollectionJournal(collection: { id: string; collectionNumber: string; legalEntityId: string; totalAmount: number }, actorId: string) {
+    const cashAccount = await this.prisma.chartOfAccount.findFirst({
+      where: { legalEntityId: collection.legalEntityId, code: { startsWith: '110' } },
+    });
+    const arAccount = await this.prisma.chartOfAccount.findFirst({
+      where: { legalEntityId: collection.legalEntityId, code: { startsWith: '120' } },
+    });
+    if (!cashAccount || !arAccount) return null;
+
+    const total = Number(collection.totalAmount);
+
+    const journal = await this.prisma.$transaction(async (tx) => {
+      const seq = await this.generateJournalNumber(tx);
+      return tx.journal.create({
+        data: {
+          journalNumber: seq,
+          legalEntityId: collection.legalEntityId,
+          date: new Date(),
+          source: 'COLLECTION',
+          sourceId: collection.id,
+          reference: collection.collectionNumber,
+          description: `Collection ${collection.collectionNumber}`,
+          status: 'POSTED',
+          postedAt: new Date(),
+          postedBy: actorId,
+          lines: {
+            create: [
+              { accountId: cashAccount.id, description: 'Kas masuk dari klien', debit: total, credit: 0 },
+              { accountId: arAccount.id, description: 'Pelunasan piutang', debit: 0, credit: total },
+            ],
+          },
+        },
+      });
+    });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'Journal.AUTO_POST',
+      resource: 'Journal',
+      resourceId: journal.id,
+      newValue: { journalNumber: journal.journalNumber, source: 'COLLECTION', reference: collection.collectionNumber },
+      source: 'api',
+    });
+
+    return journal;
+  }
+
+  async postCollection(id: string, actorId: string) {
+    const collection = await this.prisma.collection.findUnique({
+      where: { id },
+      include: { project: { select: { legalEntityId: true } } },
+    });
+    if (!collection) throw new NotFoundException({ code: 'COLLECTION_NOT_FOUND', message: 'Collection tidak ditemukan' });
+    if (collection.status !== 'DRAFT') {
+      throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa diposting (${collection.status})` });
+    }
+
+    const posted = await this.prisma.collection.update({
+      where: { id },
+      data: { status: 'POSTED', collectedBy: actorId, collectedAt: new Date() },
+    });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'Collection.POST',
+      resource: 'Collection',
+      resourceId: id,
+      newValue: { collectionNumber: collection.collectionNumber, totalAmount: Number(collection.totalAmount) },
+      source: 'api',
+    });
+
+    await this.postCollectionJournal(
+      {
+        id: collection.id,
+        collectionNumber: collection.collectionNumber,
+        legalEntityId: collection.project.legalEntityId,
+        totalAmount: Number(collection.totalAmount),
+      },
+      actorId,
+    );
+
+    return posted;
+  }
+
+  async listCollections(query: ListCollectionQueryDto) {
+    const page = Number(query.page) || 1;
+    const pageSize = Math.min(Number(query.pageSize) || 50, 200);
+
+    const where: Prisma.CollectionWhereInput = {
+      ...(query.projectId ? { projectId: query.projectId } : {}),
+      ...(query.status ? { status: query.status } : {}),
+    };
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.collection.findMany({
+        where,
+        include: {
+          items: { include: { clientInvoice: { select: { invoiceNumber: true, totalAmount: true } } } },
+          project: { select: { code: true, name: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.collection.count({ where }),
     ]);
 
     return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };

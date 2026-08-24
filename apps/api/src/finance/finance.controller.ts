@@ -2,7 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } fro
 import { AuthGuard } from '@/auth/auth.guard';
 import { Permissions } from '@/auth/permissions.decorator';
 import { PermissionsGuard } from '@/auth/permissions.guard';
-import { CreateChartOfAccountDto, CreateClientInvoiceDto, CreateJournalDto, CreatePaymentDto, CreateProgressClaimDto, CreateVendorInvoiceDto, ListChartOfAccountQueryDto, ListClientInvoiceQueryDto, ListJournalQueryDto, ListPaymentQueryDto, ListProgressClaimQueryDto, ListVendorInvoiceQueryDto, TrialBalanceQueryDto, CertifyClaimDto } from './dto/finance.dto';
+import { CreateChartOfAccountDto, CreateClientInvoiceDto, CreateCollectionDto, CreateJournalDto, CreatePaymentDto, CreateProgressClaimDto, CreateVendorInvoiceDto, ListChartOfAccountQueryDto, ListClientInvoiceQueryDto, ListCollectionQueryDto, ListJournalQueryDto, ListPaymentQueryDto, ListProgressClaimQueryDto, ListVendorInvoiceQueryDto, TrialBalanceQueryDto, CertifyClaimDto } from './dto/finance.dto';
 import { FinanceService } from './finance.service';
 
 @Controller()
@@ -122,5 +122,23 @@ export class FinanceController {
   @Permissions('ClientInvoice.POST')
   postClientInvoice(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.service.postClientInvoice(id, request.user?.sub ?? 'system');
+  }
+
+  @Get('collections')
+  @Permissions('Collection.VIEW')
+  listCollections(@Query() query: ListCollectionQueryDto) {
+    return this.service.listCollections(query);
+  }
+
+  @Post('collections')
+  @Permissions('Collection.CREATE')
+  createCollection(@Body() dto: CreateCollectionDto, @Req() request: { user?: { sub?: string } }) {
+    return this.service.createCollection(dto, request.user?.sub ?? 'system');
+  }
+
+  @Post('collections/:id/post')
+  @Permissions('Collection.POST')
+  postCollection(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
+    return this.service.postCollection(id, request.user?.sub ?? 'system');
   }
 }
