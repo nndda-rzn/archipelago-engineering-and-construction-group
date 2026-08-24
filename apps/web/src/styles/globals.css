@@ -4,27 +4,133 @@
 
 :root {
   /* Brand Racing Red — PRD §20.2 */
-  --color-racing-red-50: #ffe5e5;
-  --color-racing-red-100: #ffcccc;
-  --color-racing-red-200: #ff9999;
-  --color-racing-red-300: #ff6666;
-  --color-racing-red-400: #ff3333;
-  --color-racing-red-500: #ff0000;
-  --color-racing-red-600: #cc0000;
-  --color-racing-red-700: #990000;
-  --color-racing-red-800: #660000;
-  --color-racing-red-900: #330000;
-  --color-racing-red-950: #240000;
+  --racing-red-50: #ffe5e5;
+  --racing-red-100: #ffcccc;
+  --racing-red-200: #ff9999;
+  --racing-red-300: #ff6666;
+  --racing-red-400: #ff3333;
+  --racing-red-500: #ff0000;
+  --racing-red-600: #cc0000;
+  --racing-red-700: #990000;
+  --racing-red-800: #660000;
+  --racing-red-900: #330000;
+  --racing-red-950: #240000;
+
+  /* Neutral — PRD §20.4 */
+  --neutral-0: #ffffff;
+  --neutral-50: #fafafa;
+  --neutral-100: #f5f5f5;
+  --neutral-200: #e5e5e5;
+  --neutral-300: #d4d4d4;
+  --neutral-400: #a3a3a3;
+  --neutral-500: #737373;
+  --neutral-600: #525252;
+  --neutral-700: #404040;
+  --neutral-800: #262626;
+  --neutral-900: #171717;
+  --neutral-950: #0a0a0a;
+
+  /* Semantic — Success */
+  --success-50: #f0fdf4;
+  --success-100: #dcfce7;
+  --success-300: #86efac;
+  --success-500: #22c55e;
+  --success-600: #16a34a;
+  --success-700: #15803d;
+
+  /* Semantic — Warning */
+  --warning-50: #fffbeb;
+  --warning-100: #fef3c7;
+  --warning-300: #fcd34d;
+  --warning-500: #f59e0b;
+  --warning-600: #d97706;
+  --warning-700: #b45309;
+
+  /* Semantic — Destructive */
+  --destructive-50: #fef2f2;
+  --destructive-100: #fee2e2;
+  --destructive-300: #fca5a5;
+  --destructive-500: #ef4444;
+  --destructive-600: #dc2626;
+  --destructive-700: #b91c1c;
+
+  /* Semantic — Info */
+  --info-50: #eff6ff;
+  --info-100: #dbeafe;
+  --info-300: #93c5fd;
+  --info-500: #3b82f6;
+  --info-600: #2563eb;
+  --info-700: #1d4ed8;
+
+  /* Project Health — ERP khusus */
+  --project-on-track-50: #f0fdf4;
+  --project-on-track-500: #22c55e;
+  --project-on-track-600: #16a34a;
+  --project-on-track-700: #15803d;
+
+  --project-at-risk-50: #fffbeb;
+  --project-at-risk-500: #f59e0b;
+  --project-at-risk-600: #d97706;
+  --project-at-risk-700: #b45309;
+
+  --project-critical-50: #fef2f2;
+  --project-critical-500: #ef4444;
+  --project-critical-600: #dc2626;
+  --project-critical-700: #b91c1c;
+
+  /* Financial */
+  --financial-positive-50: #ecfdf5;
+  --financial-positive-500: #10b981;
+  --financial-positive-600: #059669;
+  --financial-positive-700: #047857;
+
+  --financial-negative-50: #fef2f2;
+  --financial-negative-500: #ef4444;
+  --financial-negative-600: #dc2626;
+  --financial-negative-700: #b91c1c;
 }
 
 body {
-  background-color: #fafafa; /* workspace background PRD §20.4 */
-  color: #171717;
-  font-family:
-    Inter,
-    system-ui,
-    -apple-system,
-    sans-serif;
-  font-size: 14px; /* density enterprise */
+  background-color: var(--neutral-50);
+  color: var(--neutral-900);
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  font-size: 14px;
   margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus ring universal */
+*:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--racing-red-400);
+}
+
+/* Selection */
+::selection {
+  background: var(--racing-red-100);
+  color: var(--neutral-900);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--neutral-300);
+  border-radius: 3px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
