@@ -55,6 +55,7 @@ model User {
   username      String   @unique
   email         String   @unique
   displayName   String
+  passwordHash  String
   legalEntityId String?
   legalEntity   LegalEntity? @relation(fields: [legalEntityId], references: [id])
   organizationId String?
