@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@/auth/auth.guard';
 import { Permissions } from '@/auth/permissions.decorator';
 import { PermissionsGuard } from '@/auth/permissions.guard';
@@ -18,13 +18,13 @@ export class UserController {
 
   @Post()
   @Permissions('User.CREATE')
-  create(@Body() dto: CreateUserDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreateUserDto, @Req() request: { user?: { sub?: string } }) {
+    return this.service.create(dto, request.user?.sub ?? 'system');
   }
 
   @Post(':id/block')
   @Permissions('User.BLOCK')
-  block(@Param('id') id: string) {
-    return this.service.block(id);
+  block(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
+    return this.service.block(id, request.user?.sub ?? 'system');
   }
 }
