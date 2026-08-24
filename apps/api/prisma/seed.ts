@@ -43,6 +43,9 @@ const permissions = [
   ['StockLedger.VIEW', 'StockLedger', 'VIEW'],
   ['MaterialIssue.VIEW', 'MaterialIssue', 'VIEW'],
   ['MaterialIssue.CREATE', 'MaterialIssue', 'CREATE'],
+  ['Approval.VIEW', 'Approval', 'VIEW'],
+  ['Approval.SUBMIT', 'Approval', 'SUBMIT'],
+  ['Approval.APPROVE', 'Approval', 'APPROVE'],
 ] as const;
 
 async function main() {
@@ -113,6 +116,71 @@ async function main() {
     },
   });
 
+  // Demo approval roles (FR-FND-007) — approver untuk PR/PO
+  const buyerRole = await prisma.role.upsert({
+    where: { code: 'BUYER' },
+    update: {},
+    create: { code: 'BUYER', name: 'Buyer', description: 'Membuat PR' },
+  });
+  const procManagerRole = await prisma.role.upsert({
+    where: { code: 'PROCUREMENT_MANAGER' },
+    update: {},
+    create: { code: 'PROCUREMENT_MANAGER', name: 'Procurement Manager', description: 'Menyetujui PR/PO' },
+  });
+
+  const buyerPassword = await bcrypt.hash('Buyer123!', 12);
+  const buyer = await prisma.user.upsert({
+    where: { email: 'buyer@aec.local' },
+    update: { passwordHash: buyerPassword, legalEntityId: entity.id, status: 'ACTIVE' },
+    create: {
+      username: 'buyer',
+      email: 'buyer@aec.local',
+      displayName: 'Buyer Demo',
+      passwordHash: buyerPassword,
+      legalEntityId: entity.id,
+    },
+  });
+  await prisma.userRole.upsert({
+    where: { userId_roleId_effectiveFrom: { userId: buyer.id, roleId: buyerRole.id, effectiveFrom: new Date('2026-01-01T00:00:00.000Z') } },
+    update: { effectiveTo: null },
+    create: { userId: buyer.id, roleId: buyerRole.id, effectiveFrom: new Date('2026-01-01T00:00:00.000Z') },
+  });
+  // Admin dapat bertindak sebagai PROCUREMENT_MANAGER (approver demo)
+  await prisma.userRole.upsert({
+    where: { userId_roleId_effectiveFrom: { userId: admin.id, roleId: procManagerRole.id, effectiveFrom: new Date('2026-01-01T00:00:00.000Z') } },
+    update: { effectiveTo: null },
+    create: { userId: admin.id, roleId: procManagerRole.id, effectiveFrom: new Date('2026-01-01T00:00:00.000Z') },
+  });
+
+  // Buyer: bisa lihat/lihat project + buat PR + submit approval
+  const buyerPermissionCodes = [
+    'Project.VIEW',
+    'WBS.VIEW',
+    'PurchaseRequisition.VIEW',
+    'PurchaseRequisition.CREATE',
+    'PurchaseOrder.VIEW',
+    'PurchaseOrder.CREATE',
+    'Approval.VIEW',
+    'Approval.SUBMIT',
+    'Approval.APPROVE',
+  ];
+  for (const code of buyerPermissionCodes) {
+    const permission = await prisma.permission.findUnique({ where: { code } });
+    if (!permission) continue;
+    await prisma.rolePermission.upsert({
+      where: {
+        roleId_permissionId_scopeType_scopeValue: {
+          roleId: buyerRole.id,
+          permissionId: permission.id,
+          scopeType: 'GLOBAL',
+          scopeValue: '',
+        },
+      },
+      update: {},
+      create: { roleId: buyerRole.id, permissionId: permission.id, scopeType: 'GLOBAL', scopeValue: '' },
+    });
+  }
+
   // Demo project + WBS (PRD §46.4)
   const demoProject = await prisma.project.upsert({
     where: { code: 'PRJ-EPC-2027-014' },
@@ -142,7 +210,7 @@ async function main() {
   }
 
   console.log(
-    `Seeded ${entity.code}, ${role.code}, ${admin.email}, ${demoProject.code} + ${wbsLevels.length} WBS`,
+    `Seeded ${entity.code}, ${role.code}, ${admin.email}, ${buyer.email}, ${demoProject.code} + ${wbsLevels.length} WBS`,
   );
 
   // Demo warehouse project (FR-INV-002) — untuk goods receipt demo
