@@ -148,6 +148,7 @@ model Project {
   stockLedgerEntries StockLedgerEntry[]
   materialIssues MaterialIssue[]
   stockTransfers StockTransfer[]
+  vendorInvoices VendorInvoice[]
 
   @@index([legalEntityId])
   @@index([status])
@@ -254,6 +255,7 @@ model PurchaseOrder {
 
   items     PurchaseOrderItem[]
   goodsReceipts GoodsReceipt[]
+  vendorInvoices VendorInvoice[]
 
   @@index([projectId])
   @@index([status])
@@ -272,6 +274,7 @@ model PurchaseOrderItem {
   wbsItem    WbsItem? @relation(fields: [wbsItemId], references: [id])
 
   goodsReceipts GoodsReceiptItem[]
+  vendorInvoiceItems VendorInvoiceItem[]
 
   @@index([purchaseOrderId])
 }
@@ -466,6 +469,56 @@ model StockTransferItem {
   wbsItem       WbsItem? @relation(fields: [wbsItemId], references: [id])
 
   @@index([stockTransferId])
+}
+
+// ─── Finance: Vendor Invoice (FR-PRO-009) ────────────────────────────────────
+// Three-way match: PO + Goods Receipt + Invoice → AP (BR-001: posted tidak bisa diedit)
+
+// FR-PRO-009: Vendor Invoice berbasis PO
+model VendorInvoice {
+  id         String   @id @default(cuid())
+  invoiceNumber String @unique // mis. "INV-2027-EPC-000001"
+  poId       String
+  po         PurchaseOrder @relation(fields: [poId], references: [id])
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id])
+  vendor     String
+  vendorInvoiceNo String // nomor invoice dari vendor
+  invoiceDate DateTime @default(now())
+  currency   String   @default("IDR")
+  amount     Decimal  @db.Decimal(18, 2)
+  taxAmount  Decimal? @db.Decimal(18, 2)
+  totalAmount Decimal @db.Decimal(18, 2)
+  status     String   @default("DRAFT") // DRAFT | MATCHED | POSTED | REJECTED | CANCELLED
+  matchedAt  DateTime?
+  postedAt   DateTime?
+  postedBy   String?
+  remark     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  items      VendorInvoiceItem[]
+
+  @@index([poId])
+  @@index([projectId])
+  @@index([status])
+}
+
+model VendorInvoiceItem {
+  id           String   @id @default(cuid())
+  vendorInvoiceId String
+  vendorInvoice VendorInvoice @relation(fields: [vendorInvoiceId], references: [id], onDelete: Cascade)
+  poItemId     String?
+  poItem       PurchaseOrderItem? @relation(fields: [poItemId], references: [id])
+  description  String
+  quantity     Decimal  @db.Decimal(18, 2)
+  unit         String   @default("EA")
+  unitPrice    Decimal  @db.Decimal(18, 2)
+  totalPrice   Decimal  @db.Decimal(18, 2)
+  receivedQuantity Decimal? @db.Decimal(18, 2) // qty GR terkait (snapshot saat match)
+  matchStatus  String   @default("PENDING") // PENDING | MATCHED | MISMATCH
+
+  @@index([vendorInvoiceId])
 }
 
 // FR-FND-009: Number Sequence (configurable)
