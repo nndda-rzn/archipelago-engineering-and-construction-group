@@ -166,6 +166,88 @@ export class ListMaterialIssueQueryDto {
   warehouseId?: string;
 }
 
+export class StockAdjustmentItemDto {
+  @IsString()
+  @Length(1, 200)
+  description!: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  quantity!: number; // delta: + surplus, - loss
+
+  @IsOptional()
+  @IsString()
+  unit?: string;
+
+  @IsOptional()
+  @IsString()
+  wbsItemId?: string;
+}
+
+export class CreateStockAdjustmentDto {
+  @IsString()
+  projectId!: string;
+
+  @IsString()
+  warehouseId!: string;
+
+  @IsString()
+  @Length(2, 30)
+  reasonCode!: string; // DAMAGE | LOSS | SURPLUS | REVALUATION | OTHERS
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  reason?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => StockAdjustmentItemDto)
+  items!: StockAdjustmentItemDto[];
+}
+
+export class StockOpnameItemDto {
+  @IsString()
+  @Length(1, 200)
+  description!: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  bookQuantity!: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  actualQuantity!: number;
+
+  @IsOptional()
+  @IsString()
+  unit?: string;
+
+  @IsOptional()
+  @IsString()
+  wbsItemId?: string;
+}
+
+export class CreateStockOpnameDto {
+  @IsString()
+  projectId!: string;
+
+  @IsString()
+  warehouseId!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  remark?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => StockOpnameItemDto)
+  items!: StockOpnameItemDto[];
+}
+
 export class ListStockLedgerQueryDto {
   @IsOptional()
   @Type(() => Number)

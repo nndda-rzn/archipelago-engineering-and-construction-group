@@ -5,6 +5,8 @@ import { PermissionsGuard } from '@/auth/permissions.guard';
 import {
   CreateGoodsReceiptDto,
   CreateMaterialIssueDto,
+  CreateStockAdjustmentDto,
+  CreateStockOpnameDto,
   CreateWarehouseDto,
   ListGoodsReceiptQueryDto,
   ListMaterialIssueQueryDto,
@@ -52,6 +54,36 @@ export class InventoryController {
   @Permissions('MaterialIssue.CREATE')
   createMaterialIssue(@Body() dto: CreateMaterialIssueDto, @Req() request: { user?: { sub?: string } }) {
     return this.service.createMaterialIssue(dto, request.user?.sub ?? 'system');
+  }
+
+  @Get('stock-adjustments')
+  @Permissions('StockAdjustment.VIEW')
+  listStockAdjustments(@Query() query: { page?: number; pageSize?: number; projectId?: string }) {
+    return this.service.listStockAdjustments(query);
+  }
+
+  @Post('stock-adjustments')
+  @Permissions('StockAdjustment.CREATE')
+  createStockAdjustment(@Body() dto: CreateStockAdjustmentDto, @Req() request: { user?: { sub?: string } }) {
+    return this.service.createStockAdjustment(dto, request.user?.sub ?? 'system');
+  }
+
+  @Post('stock-adjustments/:id/approve')
+  @Permissions('StockAdjustment.APPROVE')
+  approveStockAdjustment(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
+    return this.service.approveStockAdjustment(id, request.user?.sub ?? 'system');
+  }
+
+  @Get('stock-opnames')
+  @Permissions('StockOpname.VIEW')
+  listStockOpnames(@Query() query: { page?: number; pageSize?: number; projectId?: string }) {
+    return this.service.listStockOpnames(query);
+  }
+
+  @Post('stock-opnames')
+  @Permissions('StockOpname.CREATE')
+  createStockOpname(@Body() dto: CreateStockOpnameDto, @Req() request: { user?: { sub?: string } }) {
+    return this.service.createStockOpname(dto, request.user?.sub ?? 'system');
   }
 
   @Get('stock-ledger')
