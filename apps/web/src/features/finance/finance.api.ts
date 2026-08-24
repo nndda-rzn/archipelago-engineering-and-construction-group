@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { chartOfAccountSchema, createChartOfAccountSchema, createClientInvoiceSchema, createJournalSchema, createPaymentSchema, createProgressClaimSchema, createVendorInvoiceSchema, clientInvoiceSchema, journalSchema, paymentSchema, progressClaimSchema, trialBalanceSchema, vendorInvoiceSchema, type ChartOfAccount, type ClientInvoice, type CreateChartOfAccount, type CreateClientInvoice, type CreateJournal, type CreatePayment, type CreateProgressClaim, type CreateVendorInvoice, type Journal, type Payment, type ProgressClaim, type TrialBalance, type VendorInvoice } from '@aec/api-contracts';
+import { chartOfAccountSchema, collectionSchema, createChartOfAccountSchema, createClientInvoiceSchema, createCollectionSchema, createJournalSchema, createPaymentSchema, createProgressClaimSchema, createVendorInvoiceSchema, clientInvoiceSchema, journalSchema, paymentSchema, progressClaimSchema, trialBalanceSchema, vendorInvoiceSchema, type ChartOfAccount, type ClientInvoice, type Collection, type CreateChartOfAccount, type CreateClientInvoice, type CreateCollection, type CreateJournal, type CreatePayment, type CreateProgressClaim, type CreateVendorInvoice, type Journal, type Payment, type ProgressClaim, type TrialBalance, type VendorInvoice } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
 
 export const invKeys = { all: ['vendor-invoices'] as const, list: (params: object) => [...invKeys.all, 'list', params] as const };
@@ -9,6 +9,7 @@ export const jrnKeys = { all: ['journals'] as const, list: (params: object) => [
 export const tbKeys = { all: ['trial-balance'] as const, get: (params: object) => [...tbKeys.all, 'get', params] as const };
 export const claimKeys = { all: ['progress-claims'] as const, list: (params: object) => [...claimKeys.all, 'list', params] as const };
 export const cinvKeys = { all: ['client-invoices'] as const, list: (params: object) => [...cinvKeys.all, 'list', params] as const };
+export const colKeys = { all: ['collections'] as const, list: (params: object) => [...colKeys.all, 'list', params] as const };
 
 export function useVendorInvoices(params: { page: number; pageSize: number }) {
   return useQuery({
@@ -209,4 +210,34 @@ export function usePostClientInvoice() {
   });
 }
 
-export type { ChartOfAccount, ClientInvoice, CreateChartOfAccount, CreateClientInvoice, CreateJournal, CreatePayment, CreateProgressClaim, Journal, Payment, ProgressClaim, TrialBalance, VendorInvoice };
+export function useCollections(params: { page: number; pageSize: number }) {
+  return useQuery({
+    queryKey: colKeys.list(params),
+    queryFn: async () => {
+      const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+      const data = await getJson<{ items: unknown; total: number }>(`/collections?${qs}`);
+      return { items: collectionSchema.array().parse(data.items), total: data.total };
+    },
+  });
+}
+
+export function useCreateCollection() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateCollection) => {
+      const parsed = createCollectionSchema.parse(input);
+      return postJson<unknown>('/collections', parsed);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: colKeys.all }),
+  });
+}
+
+export function usePostCollection() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => postJson<unknown>(`/collections/${id}/post`, {}),
+    onSuccess: () => qc.invalidateQueries({ queryKey: colKeys.all }),
+  });
+}
+
+export type { ChartOfAccount, ClientInvoice, Collection, CreateChartOfAccount, CreateClientInvoice, CreateCollection, CreateJournal, CreatePayment, CreateProgressClaim, Journal, Payment, ProgressClaim, TrialBalance, VendorInvoice };
