@@ -73,4 +73,30 @@ export const loginResponseSchema = z.object({
 });
 export type LoginResponse = z.infer<typeof loginResponseSchema>;
 
+/** Legal entity — FR-FND-001. */
+export const legalEntitySchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  legalName: z.string(),
+  taxIdentifier: z.string(),
+  country: z.string(),
+  functionalCurrency: z.string(),
+  reportingCurrency: z.string(),
+  fiscalCalendar: z.string(),
+  status: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type LegalEntity = z.infer<typeof legalEntitySchema>;
+
+export const createLegalEntitySchema = z.object({
+  code: z.string().min(2).max(20),
+  legalName: z.string().min(2).max(200),
+  taxIdentifier: z.string().min(2).max(50),
+  country: z.string().length(2),
+  functionalCurrency: z.string().length(3).default('IDR'),
+  reportingCurrency: z.string().length(3).default('IDR'),
+});
+export type CreateLegalEntity = z.infer<typeof createLegalEntitySchema>;
+
 export type { Id };
