@@ -19,8 +19,8 @@ const navGroups: NavGroup[] = [
   {
     label: 'Domain',
     items: [
-      { label: 'Komersial', icon: Briefcase, to: '/commercial' },
       { label: 'Proyek', icon: HardHat, to: '/projects' },
+      { label: 'Komersial', icon: Briefcase, to: '/commercial' },
       { label: 'Engineering', icon: Wrench, to: '/engineering' },
       { label: 'Pengadaan', icon: Package, to: '/procurement' },
       { label: 'Inventaris', icon: Truck, to: '/inventory' },

@@ -20,6 +20,9 @@ const permissions = [
   ['Role.CREATE', 'Role', 'CREATE'],
   ['Role.EDIT', 'Role', 'EDIT'],
   ['Audit.VIEW', 'Audit', 'VIEW'],
+  ['Project.VIEW', 'Project', 'VIEW'],
+  ['Project.CREATE', 'Project', 'CREATE'],
+  ['Project.EDIT', 'Project', 'EDIT'],
 ] as const;
 
 async function main() {

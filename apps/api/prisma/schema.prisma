@@ -28,6 +28,7 @@ model LegalEntity {
 
   organizations Organization[]
   users         User[]
+  projects      Project[]
 }
 
 // FR-FND-002: Effective-dated Organization
@@ -114,6 +115,32 @@ model UserRole {
   role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId, effectiveFrom])
+}
+
+// ─── Project domain ───────────────────────────────────────────────────────────
+
+// FR-PRJ-001: Project Master
+model Project {
+  id             String   @id @default(cuid())
+  code           String   @unique // mis. "PRJ-EPC-2027-014"
+  name           String
+  client         String
+  legalEntityId  String
+  legalEntity    LegalEntity @relation(fields: [legalEntityId], references: [id])
+  businessUnit   String?
+  location       String?
+  currency       String   @default("IDR")
+  contractValue  Decimal? @db.Decimal(18, 2)
+  startDate      DateTime?
+  completionDate DateTime?
+  director       String?
+  manager        String?
+  status         String   @default("PLANNING") // PLANNING | ACTIVE | ON_HOLD | COMPLETED | CLOSED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([legalEntityId])
+  @@index([status])
 }
 
 // FR-FND-009: Number Sequence (configurable)
