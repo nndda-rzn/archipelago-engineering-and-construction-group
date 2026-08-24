@@ -1,14 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createGoodsReceiptSchema,
+  createMaterialIssueSchema,
   createWarehouseSchema,
   goodsReceiptSchema,
+  materialIssueSchema,
   stockLedgerEntrySchema,
   stockSummarySchema,
   warehouseSchema,
   type CreateGoodsReceipt,
+  type CreateMaterialIssue,
   type CreateWarehouse,
   type GoodsReceipt,
+  type MaterialIssue,
   type StockLedgerEntry,
   type StockSummary,
   type Warehouse,
@@ -18,6 +22,7 @@ import { getJson, postJson } from '@/shared/lib/http';
 export const warehouseKeys = { all: ['warehouses'] as const, list: (params: object) => [...warehouseKeys.all, 'list', params] as const };
 export const grKeys = { all: ['goods-receipts'] as const, list: (params: object) => [...grKeys.all, 'list', params] as const };
 export const ledgerKeys = { all: ['stock-ledger'] as const, list: (params: object) => [...ledgerKeys.all, 'list', params] as const };
+export const miKeys = { all: ['material-issues'] as const, list: (params: object) => [...miKeys.all, 'list', params] as const };
 
 export function useWarehouses(params: { page: number; pageSize: number }) {
   return useQuery({
@@ -79,4 +84,29 @@ export function useStockSummary(projectId: string | null) {
   });
 }
 
-export type { GoodsReceipt, StockLedgerEntry, StockSummary, Warehouse };
+export function useMaterialIssues(params: { page: number; pageSize: number }) {
+  return useQuery({
+    queryKey: miKeys.list(params),
+    queryFn: async () => {
+      const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+      const data = await getJson<{ items: unknown; total: number }>(`/material-issues?${qs}`);
+      return { items: materialIssueSchema.array().parse(data.items), total: data.total };
+    },
+  });
+}
+
+export function useCreateMaterialIssue() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateMaterialIssue) => {
+      const parsed = createMaterialIssueSchema.parse(input);
+      return postJson<unknown>('/material-issues', parsed);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: miKeys.all });
+      qc.invalidateQueries({ queryKey: ledgerKeys.all });
+    },
+  });
+}
+
+export type { GoodsReceipt, MaterialIssue, StockLedgerEntry, StockSummary, Warehouse };
