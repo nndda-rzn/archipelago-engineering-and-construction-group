@@ -29,6 +29,7 @@ const navGroups: NavGroup[] = [
       { label: 'Purchase Order', icon: Package, to: '/procurement/po' },
       { label: 'Goods Receipt', icon: Package, to: '/inventory/goods-receipts' },
       { label: 'Material Issue', icon: Truck, to: '/inventory/material-issues' },
+      { label: 'Stock Transfer', icon: Truck, to: '/inventory/stock-transfers' },
       { label: 'Stock Ledger', icon: Truck, to: '/inventory/stock-ledger' },
       { label: 'Inventaris', icon: Truck, to: '/inventory' },
       { label: 'Konstruksi', icon: Construction, to: '/construction' },
