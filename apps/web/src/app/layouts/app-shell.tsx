@@ -29,6 +29,7 @@ const navGroups: NavGroup[] = [
       { label: 'Engineering', icon: Wrench, to: '/engineering' },
       { label: 'Pengadaan', icon: Package, to: '/procurement/pr' },
       { label: 'Purchase Order', icon: Package, to: '/procurement/po' },
+      { label: 'RFQ', icon: Package, to: '/procurement/rfq' },
       { label: 'Vendor Invoice', icon: DollarSign, to: '/finance/vendor-invoices' },
       { label: 'Payment', icon: DollarSign, to: '/finance/payments' },
       { label: 'Progress Claim', icon: DollarSign, to: '/finance/progress-claims' },
