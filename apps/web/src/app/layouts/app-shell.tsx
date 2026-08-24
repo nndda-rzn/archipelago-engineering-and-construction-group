@@ -1,5 +1,5 @@
 import { Outlet } from '@tanstack/react-router';
-import { Briefcase, Building2, ClipboardCheck, Construction, DollarSign, Gavel, HardHat, LayoutDashboard, Package, Shield, Truck, Users, Wrench } from 'lucide-react';
+import { Briefcase, Building2, ClipboardCheck, Construction, DollarSign, FolderTree, Gavel, HardHat, LayoutDashboard, Package, Shield, Truck, Users, Wrench } from 'lucide-react';
 import { cn } from '@aec/ui';
 
 type NavItem = { label: string; icon: typeof LayoutDashboard; to: string; active?: boolean };
@@ -20,6 +20,7 @@ const navGroups: NavGroup[] = [
     label: 'Domain',
     items: [
       { label: 'Proyek', icon: HardHat, to: '/projects' },
+      { label: 'WBS', icon: FolderTree, to: '/wbs' },
       { label: 'Komersial', icon: Briefcase, to: '/commercial' },
       { label: 'Engineering', icon: Wrench, to: '/engineering' },
       { label: 'Pengadaan', icon: Package, to: '/procurement' },
