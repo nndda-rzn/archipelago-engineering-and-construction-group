@@ -229,6 +229,36 @@ export const createProjectSchema = z.object({
 });
 export type CreateProject = z.infer<typeof createProjectSchema>;
 
+/** Project health — actual cost vs budget (FR-PRJ-004). */
+export const projectHealthSchema = z.object({
+  projectId: z.string(),
+  projectCode: z.string(),
+  projectName: z.string(),
+  client: z.string(),
+  legalEntityCode: z.string(),
+  contractValue: z.number(),
+  totalBudget: z.number(),
+  totalActual: z.number(),
+  revenue: z.number(),
+  variance: z.number(),
+  utilization: z.number().nullable(),
+  health: z.enum(['NO_BUDGET', 'ON_TRACK', 'AT_RISK', 'CRITICAL']),
+  generatedAt: z.string(),
+  wbs: z.array(
+    z.object({
+      id: z.string(),
+      code: z.string(),
+      name: z.string(),
+      parentId: z.string().nullable(),
+      budget: z.number(),
+      actual: z.number(),
+      variance: z.number(),
+      utilization: z.number().nullable(),
+    }),
+  ),
+});
+export type ProjectHealth = z.infer<typeof projectHealthSchema>;
+
 /** Procurement — FR-PRO-001/007. */
 export const prItemSchema = z.object({
   id: z.string(),
