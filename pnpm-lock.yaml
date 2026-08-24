@@ -117,6 +117,9 @@ importers:
       '@tanstack/react-router':
         specifier: ^1.93.0
         version: 1.170.32(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tanstack/react-table':
+        specifier: ^8.21.3
+        version: 8.21.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -235,6 +238,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      lucide-react:
+        specifier: ^1.33.0
+        version: 1.33.0(react@18.3.1)
       tailwind-merge:
         specifier: ^2.6.0
         version: 2.6.1
