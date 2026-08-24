@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { chartOfAccountSchema, createChartOfAccountSchema, createJournalSchema, createPaymentSchema, createVendorInvoiceSchema, journalSchema, paymentSchema, vendorInvoiceSchema, type ChartOfAccount, type CreateChartOfAccount, type CreateJournal, type CreatePayment, type CreateVendorInvoice, type Journal, type Payment, type VendorInvoice } from '@aec/api-contracts';
+import { chartOfAccountSchema, createChartOfAccountSchema, createJournalSchema, createPaymentSchema, createVendorInvoiceSchema, journalSchema, paymentSchema, trialBalanceSchema, vendorInvoiceSchema, type ChartOfAccount, type CreateChartOfAccount, type CreateJournal, type CreatePayment, type CreateVendorInvoice, type Journal, type Payment, type TrialBalance, type VendorInvoice } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
 
 export const invKeys = { all: ['vendor-invoices'] as const, list: (params: object) => [...invKeys.all, 'list', params] as const };
 export const payKeys = { all: ['payments'] as const, list: (params: object) => [...payKeys.all, 'list', params] as const };
 export const coaKeys = { all: ['chart-of-accounts'] as const, list: (params: object) => [...coaKeys.all, 'list', params] as const };
 export const jrnKeys = { all: ['journals'] as const, list: (params: object) => [...jrnKeys.all, 'list', params] as const };
+export const tbKeys = { all: ['trial-balance'] as const, get: (params: object) => [...tbKeys.all, 'get', params] as const };
 
 export function useVendorInvoices(params: { page: number; pageSize: number }) {
   return useQuery({
@@ -130,4 +131,19 @@ export function usePostJournal() {
   });
 }
 
-export type { ChartOfAccount, CreateChartOfAccount, CreateJournal, Journal, Payment, VendorInvoice };
+export function useTrialBalance(params: { legalEntityId?: string; from?: string; to?: string }) {
+  return useQuery({
+    queryKey: tbKeys.get(params),
+    queryFn: async () => {
+      const qs = new URLSearchParams();
+      if (params.legalEntityId) qs.set('legalEntityId', params.legalEntityId);
+      if (params.from) qs.set('from', params.from);
+      if (params.to) qs.set('to', params.to);
+      const data = await getJson<unknown>(`/gl/trial-balance?${qs}`);
+      return trialBalanceSchema.parse(data);
+    },
+    enabled: !!params.legalEntityId,
+  });
+}
+
+export type { ChartOfAccount, CreateChartOfAccount, CreateJournal, Journal, Payment, TrialBalance, VendorInvoice };

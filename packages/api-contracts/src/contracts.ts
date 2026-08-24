@@ -824,3 +824,28 @@ export const createJournalSchema = z.object({
   lines: z.array(createJournalLineSchema).min(1),
 });
 export type CreateJournal = z.infer<typeof createJournalSchema>;
+
+/** GL: Trial balance — FR-FIN-001. */
+export const trialBalanceSchema = z.object({
+  legalEntityId: z.string(),
+  legalEntityCode: z.string(),
+  generatedAt: z.string(),
+  from: z.string().nullable(),
+  to: z.string().nullable(),
+  totalDebit: z.number(),
+  totalCredit: z.number(),
+  balanced: z.boolean(),
+  lines: z.array(
+    z.object({
+      accountId: z.string(),
+      code: z.string(),
+      name: z.string(),
+      accountType: z.string(),
+      normalBalance: z.string(),
+      debit: z.number(),
+      credit: z.number(),
+      balance: z.number(),
+    }),
+  ),
+});
+export type TrialBalance = z.infer<typeof trialBalanceSchema>;

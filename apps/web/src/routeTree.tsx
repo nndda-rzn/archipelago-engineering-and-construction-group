@@ -21,6 +21,7 @@ import { VendorInvoicePage } from './features/finance/vendor-invoice.page';
 import { PaymentPage } from './features/finance/payment.page';
 import { ChartOfAccountPage } from './features/finance/chart-of-account.page';
 import { JournalPage } from './features/finance/journal.page';
+import { TrialBalancePage } from './features/finance/trial-balance.page';
 import { requireAuth } from './app/router/require-auth';
 import { HealthBadge } from './widgets/health/health-badge';
 
@@ -200,7 +201,13 @@ const journalRoute = createRoute({
   component: JournalPage,
 });
 
+const trialBalanceRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/finance/trial-balance',
+  component: TrialBalancePage,
+});
+
 export const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, prRoute, poRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute]),
+  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, prRoute, poRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute]),
 ]);
