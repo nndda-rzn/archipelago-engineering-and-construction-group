@@ -26,8 +26,8 @@ import { TrialBalancePage } from './features/finance/trial-balance.page';
 import { ProgressClaimPage } from './features/finance/progress-claim.page';
 import { ClientInvoicePage } from './features/finance/client-invoice.page';
 import { CollectionPage } from './features/finance/collection.page';
+import { DashboardPage } from './features/dashboard/dashboard.page';
 import { requireAuth } from './app/router/require-auth';
-import { HealthBadge } from './widgets/health/health-badge';
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
@@ -51,38 +51,7 @@ const appRoute = createRoute({
 const indexRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/',
-  component: () => (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-neutral-950">Dashboard</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">AEC ERP — Enterprise Construction &amp; EPC Platform</p>
-        </div>
-        <HealthBadge />
-      </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-          <div className="text-caption text-neutral-500">Proyek Aktif</div>
-          <div className="mt-1 font-mono text-h1 tabular-nums text-neutral-950">12</div>
-        </div>
-        <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-          <div className="text-caption text-neutral-500">Legal Entities</div>
-          <div className="mt-1 font-mono text-h1 tabular-nums text-neutral-950">5</div>
-        </div>
-        <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-          <div className="text-caption text-neutral-500">Vendor</div>
-          <div className="mt-1 font-mono text-h1 tabular-nums text-neutral-950">1.000+</div>
-        </div>
-        <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-          <div className="text-caption text-neutral-500">Status</div>
-          <div className="mt-1 flex items-center gap-1.5 text-body-sm font-medium text-project-on-track-600">
-            <span className="inline-block h-2 w-2 rounded-full bg-project-on-track-500" aria-hidden="true" />
-            Sistem Sehat
-          </div>
-        </div>
-      </div>
-    </div>
-  ),
+  component: DashboardPage,
 });
 
 const legalEntitiesRoute = createRoute({
