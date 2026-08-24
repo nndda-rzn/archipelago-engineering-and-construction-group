@@ -849,3 +849,67 @@ export const trialBalanceSchema = z.object({
   ),
 });
 export type TrialBalance = z.infer<typeof trialBalanceSchema>;
+
+/** AR: Progress claim — FR-FIN-008. */
+export const progressClaimSchema = z.object({
+  id: z.string(),
+  claimNumber: z.string(),
+  projectId: z.string(),
+  claimDate: z.string(),
+  period: z.string().nullable(),
+  description: z.string().nullable(),
+  amount: z.number(),
+  status: z.string(),
+  certifiedAmount: z.number().nullable(),
+  certifiedBy: z.string().nullable(),
+  certifiedAt: z.string().nullable(),
+  remark: z.string().nullable(),
+  createdAt: z.string(),
+  project: z.object({ code: z.string(), name: z.string() }).optional(),
+});
+export type ProgressClaim = z.infer<typeof progressClaimSchema>;
+
+export const createProgressClaimSchema = z.object({
+  projectId: z.string(),
+  claimDate: z.string().optional(),
+  period: z.string().max(30).optional(),
+  description: z.string().max(500).optional(),
+  amount: z.number().min(0.01),
+});
+export type CreateProgressClaim = z.infer<typeof createProgressClaimSchema>;
+
+export const certifyClaimSchema = z.object({
+  certifiedAmount: z.number().min(0),
+  remark: z.string().max(500).optional(),
+});
+export type CertifyClaim = z.infer<typeof certifyClaimSchema>;
+
+/** AR: Client invoice — FR-FIN-009. */
+export const clientInvoiceSchema = z.object({
+  id: z.string(),
+  invoiceNumber: z.string(),
+  projectId: z.string(),
+  claimId: z.string(),
+  client: z.string(),
+  invoiceDate: z.string(),
+  currency: z.string(),
+  amount: z.number(),
+  taxAmount: z.number().nullable(),
+  totalAmount: z.number(),
+  status: z.string(),
+  postedAt: z.string().nullable(),
+  postedBy: z.string().nullable(),
+  remark: z.string().nullable(),
+  createdAt: z.string(),
+  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  claim: z.object({ claimNumber: z.string(), period: z.string().nullable() }).optional(),
+});
+export type ClientInvoice = z.infer<typeof clientInvoiceSchema>;
+
+export const createClientInvoiceSchema = z.object({
+  claimId: z.string(),
+  invoiceDate: z.string().optional(),
+  taxAmount: z.number().min(0).optional(),
+  remark: z.string().max(500).optional(),
+});
+export type CreateClientInvoice = z.infer<typeof createClientInvoiceSchema>;
