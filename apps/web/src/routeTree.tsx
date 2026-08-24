@@ -1,13 +1,28 @@
-import { createRootRoute, createRoute } from '@tanstack/react-router';
+import { createRootRoute, createRoute, Outlet } from '@tanstack/react-router';
 import { AppShell } from './app/layouts/app-shell';
+import { LoginPage } from './features/auth/login.page';
 import { HealthBadge } from './widgets/health/health-badge';
 
 const rootRoute = createRootRoute({
+  component: () => <Outlet />,
+});
+
+// Standalone — tanpa AppShell
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/login',
+  component: LoginPage,
+});
+
+// App layout — pakai AppShell (sidebar + topbar)
+const appRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
   component: AppShell,
 });
 
 const indexRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => appRoute,
   path: '/',
   component: () => (
     <div>
@@ -43,4 +58,4 @@ const indexRoute = createRoute({
   ),
 });
 
-export const routeTree = rootRoute.addChildren([indexRoute]);
+export const routeTree = rootRoute.addChildren([loginRoute, appRoute.addChildren([indexRoute])]);

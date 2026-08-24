@@ -54,4 +54,23 @@ export const healthResponseSchema = z.object({
 });
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
 
+/** Auth — local JWT (PRD §26 disesuaikan: Keycloak menyusul). */
+export const loginRequestSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+});
+export type LoginRequest = z.infer<typeof loginRequestSchema>;
+
+export const loginResponseSchema = z.object({
+  accessToken: z.string(),
+  user: z.object({
+    id: z.string(),
+    email: z.string(),
+    username: z.string(),
+    displayName: z.string(),
+    roles: z.array(z.string()),
+  }),
+});
+export type LoginResponse = z.infer<typeof loginResponseSchema>;
+
 export type { Id };
