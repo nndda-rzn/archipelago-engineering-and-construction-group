@@ -151,6 +151,7 @@ model Project {
   opnames       StockOpname[]
   stockTransfers StockTransfer[]
   vendorInvoices VendorInvoice[]
+  payments      Payment[]
 
   @@index([legalEntityId])
   @@index([status])
@@ -578,6 +579,7 @@ model VendorInvoice {
   updatedAt  DateTime @updatedAt
 
   items      VendorInvoiceItem[]
+  payments   PaymentItem[]
 
   @@index([poId])
   @@index([projectId])
@@ -601,7 +603,43 @@ model VendorInvoiceItem {
   @@index([vendorInvoiceId])
 }
 
-// FR-FND-009: Number Sequence (configurable)
+// FR-FIN-005/007: Payment — bayar AP dari POSTED invoice
+model Payment {
+  id         String   @id @default(cuid())
+  paymentNumber String @unique // mis. "PAY-2027-EPC-000001"
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id])
+  vendor     String
+  bankAccount String? // rekening vendor / bank
+  currency   String   @default("IDR")
+  totalAmount Decimal  @db.Decimal(18, 2)
+  status     String   @default("DRAFT") // DRAFT | APPROVED | PAID | CANCELLED
+  paymentDate DateTime @default(now())
+  paidBy     String?
+  approvedBy String?
+  approvedAt DateTime?
+  reference  String? // no. transfer/bilyet
+  remark     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  items      PaymentItem[]
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model PaymentItem {
+  id        String   @id @default(cuid())
+  paymentId String
+  payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  invoiceId String
+  invoice   VendorInvoice @relation(fields: [invoiceId], references: [id])
+  amount    Decimal  @db.Decimal(18, 2) // bagian yang dibayar dari invoice ini
+
+  @@index([paymentId])
+  @@index([invoiceId])
+}
 
 // FR-FND-009: Number Sequence (configurable)
 model NumberSequence {
