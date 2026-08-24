@@ -5,10 +5,12 @@ import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
 import { WbsController } from './wbs.controller';
 import { WbsService } from './wbs.service';
+import { BudgetController } from './budget.controller';
+import { BudgetService } from './budget.service';
 
 @Module({
   imports: [AuditModule],
-  controllers: [ProjectController, WbsController],
-  providers: [ProjectService, WbsService, PrismaService],
+  controllers: [ProjectController, WbsController, BudgetController],
+  providers: [ProjectService, WbsService, BudgetService, PrismaService],
 })
 export class ProjectModule {}

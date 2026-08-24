@@ -140,6 +140,7 @@ model Project {
   updatedAt      DateTime @updatedAt
 
   wbsItems       WbsItem[]
+  budgetItems    BudgetItem[]
 
   @@index([legalEntityId])
   @@index([status])
@@ -160,7 +161,27 @@ model WbsItem {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  budgetItems BudgetItem[]
+
   @@unique([projectId, code])
+  @@index([projectId])
+}
+
+// FR-PRJ-005/006: Budget baseline per WBS + cost type
+model BudgetItem {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  wbsItemId String
+  wbsItem   WbsItem @relation(fields: [wbsItemId], references: [id], onDelete: Cascade)
+  costType  String  @default("DIRECT") // DIRECT | LABOR | MATERIAL | SUBCONTRACTOR | EQUIPMENT | INDIRECT | OVERHEAD
+  amount    Decimal @db.Decimal(18, 2) // nilai budget (baseline)
+  version   Int     @default(1)
+  status    String  @default("DRAFT") // DRAFT | PUBLISHED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, wbsItemId, costType])
   @@index([projectId])
 }
 

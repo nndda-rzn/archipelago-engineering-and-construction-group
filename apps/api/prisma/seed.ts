@@ -26,6 +26,9 @@ const permissions = [
   ['WBS.VIEW', 'WBS', 'VIEW'],
   ['WBS.CREATE', 'WBS', 'CREATE'],
   ['WBS.EDIT', 'WBS', 'EDIT'],
+  ['Budget.VIEW', 'Budget', 'VIEW'],
+  ['Budget.CREATE', 'Budget', 'CREATE'],
+  ['Budget.APPROVE', 'Budget', 'APPROVE'],
 ] as const;
 
 async function main() {
