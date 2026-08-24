@@ -99,4 +99,17 @@ export const createLegalEntitySchema = z.object({
 });
 export type CreateLegalEntity = z.infer<typeof createLegalEntitySchema>;
 
+/** List legal entity (server pagination/sort — PRD §22, §23.4). */
+export const legalEntityListParamsSchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(200).default(50),
+  sortBy: z.enum(['code', 'legalName', 'status', 'country', 'functionalCurrency']).optional(),
+  sortDir: z.enum(['asc', 'desc']).optional(),
+  search: z.string().max(100).optional(),
+});
+export type LegalEntityListParams = z.infer<typeof legalEntityListParamsSchema>;
+
+export const legalEntityListResponseSchema = paginatedResponseSchema(legalEntitySchema);
+export type LegalEntityListResponse = z.infer<typeof legalEntityListResponseSchema>;
+
 export type { Id };
