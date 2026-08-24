@@ -189,4 +189,44 @@ export type AuditLog = z.infer<typeof auditLogSchema>;
 export const auditLogListResponseSchema = paginatedResponseSchema(auditLogSchema);
 export type AuditLogListResponse = z.infer<typeof auditLogListResponseSchema>;
 
+/** Project — FR-PRJ-001. */
+export const projectSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  name: z.string(),
+  client: z.string(),
+  legalEntityId: z.string(),
+  businessUnit: z.string().nullable(),
+  location: z.string().nullable(),
+  currency: z.string(),
+  contractValue: z.number().nullable(),
+  startDate: z.string().nullable(),
+  completionDate: z.string().nullable(),
+  director: z.string().nullable(),
+  manager: z.string().nullable(),
+  status: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type Project = z.infer<typeof projectSchema>;
+
+export const projectListResponseSchema = paginatedResponseSchema(projectSchema);
+export type ProjectListResponse = z.infer<typeof projectListResponseSchema>;
+
+export const createProjectSchema = z.object({
+  code: z.string().min(3).max(30),
+  name: z.string().min(3).max(200),
+  client: z.string().min(2).max(200),
+  legalEntityId: z.string(),
+  businessUnit: z.string().optional(),
+  location: z.string().optional(),
+  currency: z.string().length(3).optional(),
+  contractValue: z.number().optional(),
+  startDate: z.string().optional(),
+  completionDate: z.string().optional(),
+  director: z.string().optional(),
+  manager: z.string().optional(),
+});
+export type CreateProject = z.infer<typeof createProjectSchema>;
+
 export type { Id };
