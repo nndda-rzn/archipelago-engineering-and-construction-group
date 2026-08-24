@@ -11,6 +11,8 @@ const navGroups: NavGroup[] = [
     items: [
       { label: 'Dashboard', icon: LayoutDashboard, to: '/' },
       { label: 'Legal Entities', icon: Building2, to: '/foundation/legal-entities' },
+      { label: 'User Management', icon: Users, to: '/foundation/users' },
+      { label: 'Role Management', icon: Shield, to: '/foundation/roles' },
     ],
   },
   {

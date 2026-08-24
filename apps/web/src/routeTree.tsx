@@ -2,6 +2,8 @@ import { createRootRoute, createRoute, Outlet } from '@tanstack/react-router';
 import { AppShell } from './app/layouts/app-shell';
 import { LoginPage } from './features/auth/login.page';
 import { LegalEntityListPage } from './features/foundation/legal-entity-list.page';
+import { UserManagementPage } from './features/foundation/user-management.page';
+import { RoleManagementPage } from './features/foundation/role-management.page';
 import { requireAuth } from './app/router/require-auth';
 import { HealthBadge } from './widgets/health/health-badge';
 
@@ -67,4 +69,19 @@ const legalEntitiesRoute = createRoute({
   component: LegalEntityListPage,
 });
 
-export const routeTree = rootRoute.addChildren([loginRoute, appRoute.addChildren([indexRoute, legalEntitiesRoute])]);
+const usersRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/foundation/users',
+  component: UserManagementPage,
+});
+
+const rolesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/foundation/roles',
+  component: RoleManagementPage,
+});
+
+export const routeTree = rootRoute.addChildren([
+  loginRoute,
+  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute]),
+]);
