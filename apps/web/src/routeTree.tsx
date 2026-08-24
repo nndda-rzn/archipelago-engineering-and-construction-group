@@ -8,6 +8,8 @@ import { AuditLogPage } from './features/audit/audit-log.page';
 import { ProjectListPage } from './features/project/project-list.page';
 import { WbsPage } from './features/project/wbs.page';
 import { BudgetPage } from './features/project/budget.page';
+import { PurchaseRequisitionPage } from './features/procurement/purchase-requisition.page';
+import { PurchaseOrderPage } from './features/procurement/purchase-order.page';
 import { requireAuth } from './app/router/require-auth';
 import { HealthBadge } from './widgets/health/health-badge';
 
@@ -109,7 +111,19 @@ const budgetRoute = createRoute({
   component: BudgetPage,
 });
 
+const prRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/procurement/pr',
+  component: PurchaseRequisitionPage,
+});
+
+const poRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/procurement/po',
+  component: PurchaseOrderPage,
+});
+
 export const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute]),
+  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, prRoute, poRoute]),
 ]);

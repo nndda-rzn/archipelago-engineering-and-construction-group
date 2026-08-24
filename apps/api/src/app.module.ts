@@ -6,9 +6,10 @@ import { AuthModule } from './auth/auth.module';
 import { FoundationModule } from './foundation/foundation.module';
 import { AuditModule } from './audit/audit.module';
 import { ProjectModule } from './project/project.module';
+import { ProcurementModule } from './procurement/procurement.module';
 
 @Module({
-  imports: [AuthModule, FoundationModule, AuditModule, ProjectModule],
+  imports: [AuthModule, FoundationModule, AuditModule, ProjectModule, ProcurementModule],
   controllers: [HealthController],
   providers: [
     {

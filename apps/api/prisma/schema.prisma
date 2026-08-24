@@ -141,6 +141,8 @@ model Project {
 
   wbsItems       WbsItem[]
   budgetItems    BudgetItem[]
+  purchaseRequisitions PurchaseRequisition[]
+  purchaseOrders       PurchaseOrder[]
 
   @@index([legalEntityId])
   @@index([status])
@@ -162,6 +164,8 @@ model WbsItem {
   updatedAt   DateTime @updatedAt
 
   budgetItems BudgetItem[]
+  requisitions PurchaseRequisition[]
+  poItems      PurchaseOrderItem[]
 
   @@unique([projectId, code])
   @@index([projectId])
@@ -183,6 +187,81 @@ model BudgetItem {
 
   @@unique([projectId, wbsItemId, costType])
   @@index([projectId])
+}
+
+// ─── Procurement domain ───────────────────────────────────────────────────────
+
+// FR-PRO-001: Purchase Requisition
+model PurchaseRequisition {
+  id        String   @id @default(cuid())
+  prNumber  String   @unique // mis. "PR-2027-EPC-000001"
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+  wbsItemId String?
+  wbsItem   WbsItem? @relation(fields: [wbsItemId], references: [id])
+  requestedBy String
+  requestedAt DateTime @default(now())
+  status    String   @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | REJECTED | CANCELLED
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items     PurchaseRequisitionItem[]
+  purchaseOrders PurchaseOrder[]
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model PurchaseRequisitionItem {
+  id          String   @id @default(cuid())
+  requisitionId String
+  requisition PurchaseRequisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Decimal  @db.Decimal(18, 2)
+  unit        String   @default("EA")
+  estimatedUnitPrice Decimal? @db.Decimal(18, 2)
+  estimatedTotal Decimal? @db.Decimal(18, 2)
+
+  @@index([requisitionId])
+}
+
+// FR-PRO-007: Purchase Order → commitment
+model PurchaseOrder {
+  id        String   @id @default(cuid())
+  poNumber  String   @unique // mis. "PO-2027-EPC-000001"
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+  requisitionId String?
+  requisition PurchaseRequisition? @relation(fields: [requisitionId], references: [id])
+  vendor    String
+  currency  String   @default("IDR")
+  totalAmount Decimal @db.Decimal(18, 2) @default(0)
+  status    String   @default("DRAFT") // DRAFT | APPROVED | RELEASED | CANCELLED
+  issuedAt  DateTime?
+  releasedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items     PurchaseOrderItem[]
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model PurchaseOrderItem {
+  id         String   @id @default(cuid())
+  purchaseOrderId String
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  description String
+  quantity   Decimal  @db.Decimal(18, 2)
+  unit       String   @default("EA")
+  unitPrice  Decimal  @db.Decimal(18, 2)
+  totalPrice Decimal  @db.Decimal(18, 2)
+  wbsItemId  String?
+  wbsItem    WbsItem? @relation(fields: [wbsItemId], references: [id])
+
+  @@index([purchaseOrderId])
 }
 
 // FR-FND-009: Number Sequence (configurable)
