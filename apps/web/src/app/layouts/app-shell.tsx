@@ -9,7 +9,8 @@ const navGroups: NavGroup[] = [
   {
     label: 'Main',
     items: [
-      { label: 'Dashboard', icon: LayoutDashboard, to: '/', active: true },
+      { label: 'Dashboard', icon: LayoutDashboard, to: '/' },
+      { label: 'Legal Entities', icon: Building2, to: '/foundation/legal-entities' },
     ],
   },
   {

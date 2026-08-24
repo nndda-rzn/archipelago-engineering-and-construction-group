@@ -1,6 +1,8 @@
 import { createRootRoute, createRoute, Outlet } from '@tanstack/react-router';
 import { AppShell } from './app/layouts/app-shell';
 import { LoginPage } from './features/auth/login.page';
+import { LegalEntityListPage } from './features/foundation/legal-entity-list.page';
+import { requireAuth } from './app/router/require-auth';
 import { HealthBadge } from './widgets/health/health-badge';
 
 const rootRoute = createRootRoute({
@@ -14,10 +16,11 @@ const loginRoute = createRoute({
   component: LoginPage,
 });
 
-// App layout — pakai AppShell (sidebar + topbar)
+// App layout — pakai AppShell (sidebar + topbar), wajib login
 const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
+  beforeLoad: requireAuth,
   component: AppShell,
 });
 
@@ -58,4 +61,10 @@ const indexRoute = createRoute({
   ),
 });
 
-export const routeTree = rootRoute.addChildren([loginRoute, appRoute.addChildren([indexRoute])]);
+const legalEntitiesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/foundation/legal-entities',
+  component: LegalEntityListPage,
+});
+
+export const routeTree = rootRoute.addChildren([loginRoute, appRoute.addChildren([indexRoute, legalEntitiesRoute])]);
