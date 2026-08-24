@@ -13,6 +13,7 @@
   "dependencies": {
     "@aec/api-contracts": "workspace:*",
     "@aec/shared-types": "workspace:*",
+    "@aec/ui": "workspace:*",
     "@tanstack/react-query": "^5.66.0",
     "@tanstack/react-router": "^1.93.0",
     "class-variance-authority": "^0.7.1",
