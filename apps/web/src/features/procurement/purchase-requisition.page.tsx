@@ -5,6 +5,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useCreatePr, usePrs, type PurchaseRequisition } from './procurement.api';
 import { useProjects } from '@/features/project/project.api';
 import { useWbsTree } from '@/features/project/wbs.api';
+import { useSubmitForApproval } from '@/features/approval/approval.api';
 
 const PAGE_SIZE = 20;
 
@@ -39,7 +40,36 @@ const columns = [
     header: 'Status',
     cell: (info) => <Badge variant={statusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge>,
   }),
+  columnHelper.display({
+    id: 'actions',
+    header: '',
+    cell: ({ row }) => <SubmitButton pr={row.original} />,
+  }),
 ];
+
+function SubmitButton({ pr }: { pr: PurchaseRequisition }) {
+  const submit = useSubmitForApproval();
+  if (pr.status !== 'DRAFT') return null;
+  return (
+    <Button
+      size="sm"
+      variant="secondary"
+      onClick={() => {
+        if (window.confirm(`Ajukan ${pr.prNumber} untuk approval?`)) {
+          submit.mutate({
+            transactionType: 'PurchaseRequisition',
+            transactionId: pr.id,
+            transactionCode: pr.prNumber,
+            approverRoleCode: 'PROCUREMENT_MANAGER',
+          });
+        }
+      }}
+      loading={submit.isPending}
+    >
+      Ajukan Approval
+    </Button>
+  );
+}
 
 type FormItem = { description: string; quantity: string; unit: string; estimatedUnitPrice: string };
 

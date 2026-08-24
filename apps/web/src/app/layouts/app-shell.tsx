@@ -14,6 +14,7 @@ const navGroups: NavGroup[] = [
       { label: 'User Management', icon: Users, to: '/foundation/users' },
       { label: 'Role Management', icon: Shield, to: '/foundation/roles' },
       { label: 'Audit Trail', icon: ClipboardCheck, to: '/foundation/audit-logs' },
+      { label: 'Approval', icon: Shield, to: '/approvals' },
     ],
   },
   {
