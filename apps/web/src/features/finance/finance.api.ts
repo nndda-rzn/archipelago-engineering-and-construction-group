@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { chartOfAccountSchema, createChartOfAccountSchema, createJournalSchema, createPaymentSchema, createVendorInvoiceSchema, journalSchema, paymentSchema, trialBalanceSchema, vendorInvoiceSchema, type ChartOfAccount, type CreateChartOfAccount, type CreateJournal, type CreatePayment, type CreateVendorInvoice, type Journal, type Payment, type TrialBalance, type VendorInvoice } from '@aec/api-contracts';
+import { chartOfAccountSchema, createChartOfAccountSchema, createClientInvoiceSchema, createJournalSchema, createPaymentSchema, createProgressClaimSchema, createVendorInvoiceSchema, clientInvoiceSchema, journalSchema, paymentSchema, progressClaimSchema, trialBalanceSchema, vendorInvoiceSchema, type ChartOfAccount, type ClientInvoice, type CreateChartOfAccount, type CreateClientInvoice, type CreateJournal, type CreatePayment, type CreateProgressClaim, type CreateVendorInvoice, type Journal, type Payment, type ProgressClaim, type TrialBalance, type VendorInvoice } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
 
 export const invKeys = { all: ['vendor-invoices'] as const, list: (params: object) => [...invKeys.all, 'list', params] as const };
@@ -7,6 +7,8 @@ export const payKeys = { all: ['payments'] as const, list: (params: object) => [
 export const coaKeys = { all: ['chart-of-accounts'] as const, list: (params: object) => [...coaKeys.all, 'list', params] as const };
 export const jrnKeys = { all: ['journals'] as const, list: (params: object) => [...jrnKeys.all, 'list', params] as const };
 export const tbKeys = { all: ['trial-balance'] as const, get: (params: object) => [...tbKeys.all, 'get', params] as const };
+export const claimKeys = { all: ['progress-claims'] as const, list: (params: object) => [...claimKeys.all, 'list', params] as const };
+export const cinvKeys = { all: ['client-invoices'] as const, list: (params: object) => [...cinvKeys.all, 'list', params] as const };
 
 export function useVendorInvoices(params: { page: number; pageSize: number }) {
   return useQuery({
@@ -146,4 +148,65 @@ export function useTrialBalance(params: { legalEntityId?: string; from?: string;
   });
 }
 
-export type { ChartOfAccount, CreateChartOfAccount, CreateJournal, Journal, Payment, TrialBalance, VendorInvoice };
+export function useProgressClaims(params: { page: number; pageSize: number }) {
+  return useQuery({
+    queryKey: claimKeys.list(params),
+    queryFn: async () => {
+      const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+      const data = await getJson<{ items: unknown; total: number }>(`/progress-claims?${qs}`);
+      return { items: progressClaimSchema.array().parse(data.items), total: data.total };
+    },
+  });
+}
+
+export function useCreateProgressClaim() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateProgressClaim) => {
+      const parsed = createProgressClaimSchema.parse(input);
+      return postJson<unknown>('/progress-claims', parsed);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: claimKeys.all }),
+  });
+}
+
+export function useCertifyClaim() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, certifiedAmount, remark }: { id: string; certifiedAmount: number; remark?: string }) =>
+      postJson<unknown>(`/progress-claims/${id}/certify`, { certifiedAmount, remark }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: claimKeys.all }),
+  });
+}
+
+export function useClientInvoices(params: { page: number; pageSize: number }) {
+  return useQuery({
+    queryKey: cinvKeys.list(params),
+    queryFn: async () => {
+      const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+      const data = await getJson<{ items: unknown; total: number }>(`/client-invoices?${qs}`);
+      return { items: clientInvoiceSchema.array().parse(data.items), total: data.total };
+    },
+  });
+}
+
+export function useCreateClientInvoice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateClientInvoice) => {
+      const parsed = createClientInvoiceSchema.parse(input);
+      return postJson<unknown>('/client-invoices', parsed);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: cinvKeys.all }),
+  });
+}
+
+export function usePostClientInvoice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => postJson<unknown>(`/client-invoices/${id}/post`, {}),
+    onSuccess: () => qc.invalidateQueries({ queryKey: cinvKeys.all }),
+  });
+}
+
+export type { ChartOfAccount, ClientInvoice, CreateChartOfAccount, CreateClientInvoice, CreateJournal, CreatePayment, CreateProgressClaim, Journal, Payment, ProgressClaim, TrialBalance, VendorInvoice };
