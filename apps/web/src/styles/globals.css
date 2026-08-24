@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Brand Racing Red — PRD §20.2 */
+  --color-racing-red-50: #ffe5e5;
+  --color-racing-red-100: #ffcccc;
+  --color-racing-red-200: #ff9999;
+  --color-racing-red-300: #ff6666;
+  --color-racing-red-400: #ff3333;
+  --color-racing-red-500: #ff0000;
+  --color-racing-red-600: #cc0000;
+  --color-racing-red-700: #990000;
+  --color-racing-red-800: #660000;
+  --color-racing-red-900: #330000;
+  --color-racing-red-950: #240000;
+}
+
+body {
+  background-color: #fafafa; /* workspace background PRD §20.4 */
+  color: #171717;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 14px; /* density enterprise */
+  margin: 0;
+}
