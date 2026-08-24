@@ -46,6 +46,11 @@ const permissions = [
   ['Approval.VIEW', 'Approval', 'VIEW'],
   ['Approval.SUBMIT', 'Approval', 'SUBMIT'],
   ['Approval.APPROVE', 'Approval', 'APPROVE'],
+  ['StockAdjustment.VIEW', 'StockAdjustment', 'VIEW'],
+  ['StockAdjustment.CREATE', 'StockAdjustment', 'CREATE'],
+  ['StockAdjustment.APPROVE', 'StockAdjustment', 'APPROVE'],
+  ['StockOpname.VIEW', 'StockOpname', 'VIEW'],
+  ['StockOpname.CREATE', 'StockOpname', 'CREATE'],
   ['StockTransfer.VIEW', 'StockTransfer', 'VIEW'],
   ['StockTransfer.CREATE', 'StockTransfer', 'CREATE'],
 ] as const;
