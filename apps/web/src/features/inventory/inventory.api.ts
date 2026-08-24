@@ -2,19 +2,23 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createGoodsReceiptSchema,
   createMaterialIssueSchema,
+  createStockTransferSchema,
   createWarehouseSchema,
   goodsReceiptSchema,
   materialIssueSchema,
   stockLedgerEntrySchema,
   stockSummarySchema,
+  stockTransferSchema,
   warehouseSchema,
   type CreateGoodsReceipt,
   type CreateMaterialIssue,
+  type CreateStockTransfer,
   type CreateWarehouse,
   type GoodsReceipt,
   type MaterialIssue,
   type StockLedgerEntry,
   type StockSummary,
+  type StockTransfer,
   type Warehouse,
 } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
@@ -23,6 +27,7 @@ export const warehouseKeys = { all: ['warehouses'] as const, list: (params: obje
 export const grKeys = { all: ['goods-receipts'] as const, list: (params: object) => [...grKeys.all, 'list', params] as const };
 export const ledgerKeys = { all: ['stock-ledger'] as const, list: (params: object) => [...ledgerKeys.all, 'list', params] as const };
 export const miKeys = { all: ['material-issues'] as const, list: (params: object) => [...miKeys.all, 'list', params] as const };
+export const stKeys = { all: ['stock-transfers'] as const, list: (params: object) => [...stKeys.all, 'list', params] as const };
 
 export function useWarehouses(params: { page: number; pageSize: number }) {
   return useQuery({
@@ -109,4 +114,29 @@ export function useCreateMaterialIssue() {
   });
 }
 
-export type { GoodsReceipt, MaterialIssue, StockLedgerEntry, StockSummary, Warehouse };
+export function useStockTransfers(params: { page: number; pageSize: number }) {
+  return useQuery({
+    queryKey: stKeys.list(params),
+    queryFn: async () => {
+      const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+      const data = await getJson<{ items: unknown; total: number }>(`/stock-transfers?${qs}`);
+      return { items: stockTransferSchema.array().parse(data.items), total: data.total };
+    },
+  });
+}
+
+export function useCreateStockTransfer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateStockTransfer) => {
+      const parsed = createStockTransferSchema.parse(input);
+      return postJson<unknown>('/stock-transfers', parsed);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: stKeys.all });
+      qc.invalidateQueries({ queryKey: ledgerKeys.all });
+    },
+  });
+}
+
+export type { GoodsReceipt, MaterialIssue, StockLedgerEntry, StockSummary, StockTransfer, Warehouse };

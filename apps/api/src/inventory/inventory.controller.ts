@@ -5,10 +5,12 @@ import { PermissionsGuard } from '@/auth/permissions.guard';
 import {
   CreateGoodsReceiptDto,
   CreateMaterialIssueDto,
+  CreateStockTransferDto,
   CreateWarehouseDto,
   ListGoodsReceiptQueryDto,
   ListMaterialIssueQueryDto,
   ListStockLedgerQueryDto,
+  ListStockTransferQueryDto,
   ListWarehouseQueryDto,
 } from './dto/inventory.dto';
 import { InventoryService } from './inventory.service';
@@ -52,6 +54,18 @@ export class InventoryController {
   @Permissions('MaterialIssue.CREATE')
   createMaterialIssue(@Body() dto: CreateMaterialIssueDto, @Req() request: { user?: { sub?: string } }) {
     return this.service.createMaterialIssue(dto, request.user?.sub ?? 'system');
+  }
+
+  @Get('stock-transfers')
+  @Permissions('StockTransfer.VIEW')
+  listStockTransfers(@Query() query: ListStockTransferQueryDto) {
+    return this.service.listStockTransfers(query);
+  }
+
+  @Post('stock-transfers')
+  @Permissions('StockTransfer.CREATE')
+  createStockTransfer(@Body() dto: CreateStockTransferDto, @Req() request: { user?: { sub?: string } }) {
+    return this.service.createStockTransfer(dto, request.user?.sub ?? 'system');
   }
 
   @Get('stock-ledger')

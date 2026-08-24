@@ -13,6 +13,7 @@ import { PurchaseOrderPage } from './features/procurement/purchase-order.page';
 import { GoodsReceiptPage } from './features/inventory/goods-receipt.page';
 import { StockLedgerPage } from './features/inventory/stock-ledger.page';
 import { MaterialIssuePage } from './features/inventory/material-issue.page';
+import { StockTransferPage } from './features/inventory/stock-transfer.page';
 import { ApprovalPage } from './features/approval/approval.page';
 import { requireAuth } from './app/router/require-auth';
 import { HealthBadge } from './widgets/health/health-badge';
@@ -151,7 +152,13 @@ const approvalRoute = createRoute({
   component: ApprovalPage,
 });
 
+const stockTransferRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/inventory/stock-transfers',
+  component: StockTransferPage,
+});
+
 export const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, prRoute, poRoute, grRoute, stockLedgerRoute, materialIssueRoute, approvalRoute]),
+  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, prRoute, poRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockTransferRoute, approvalRoute]),
 ]);

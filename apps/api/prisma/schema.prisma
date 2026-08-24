@@ -147,6 +147,7 @@ model Project {
   goodsReceipts  GoodsReceipt[]
   stockLedgerEntries StockLedgerEntry[]
   materialIssues MaterialIssue[]
+  stockTransfers StockTransfer[]
 
   @@index([legalEntityId])
   @@index([status])
@@ -173,6 +174,7 @@ model WbsItem {
   goodsReceiptItems GoodsReceiptItem[]
   stockLedgerEntries StockLedgerEntry[]
   materialIssueItems MaterialIssueItem[]
+  transferItems  StockTransferItem[]
 
   @@unique([projectId, code])
   @@index([projectId])
@@ -292,6 +294,8 @@ model Warehouse {
   goodsReceipts GoodsReceipt[]
   stockLedgerEntries StockLedgerEntry[]
   materialIssues MaterialIssue[]
+  transfersFrom StockTransfer[] @relation("TransferFrom")
+  transfersTo   StockTransfer[] @relation("TransferTo")
 
   @@index([projectId])
 }
@@ -424,6 +428,44 @@ model ApprovalTask {
   @@unique([transactionType, transactionId])
   @@index([status])
   @@index([approverRoleCode])
+}
+
+// FR-INV-005: Stock Transfer — dari warehouse ke warehouse, optional in-transit
+model StockTransfer {
+  id         String   @id @default(cuid())
+  transferNumber String @unique // mis. "ST-2027-EPC-000001"
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id])
+  fromWarehouseId String
+  fromWarehouse Warehouse @relation("TransferFrom", fields: [fromWarehouseId], references: [id])
+  toWarehouseId   String
+  toWarehouse     Warehouse @relation("TransferTo", fields: [toWarehouseId], references: [id])
+  transferredAt DateTime @default(now())
+  transferredBy String
+  status     String   @default("POSTED") // DRAFT | POSTED | CANCELLED
+  remark     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  items      StockTransferItem[]
+
+  @@index([projectId])
+  @@index([fromWarehouseId])
+  @@index([toWarehouseId])
+  @@index([status])
+}
+
+model StockTransferItem {
+  id            String   @id @default(cuid())
+  stockTransferId String
+  stockTransfer StockTransfer @relation(fields: [stockTransferId], references: [id], onDelete: Cascade)
+  description   String
+  quantity      Decimal  @db.Decimal(18, 2)
+  unit          String   @default("EA")
+  wbsItemId     String?
+  wbsItem       WbsItem? @relation(fields: [wbsItemId], references: [id])
+
+  @@index([stockTransferId])
 }
 
 // FR-FND-009: Number Sequence (configurable)
