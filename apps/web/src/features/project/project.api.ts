@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createProjectSchema, projectHealthSchema, projectListResponseSchema, type CreateProject, type ProjectHealth } from '@aec/api-contracts';
+import { createProjectSchema, portfolioSchema, projectHealthSchema, projectListResponseSchema, type CreateProject, type Portfolio, type ProjectHealth } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
 
 export const projectKeys = {
   all: ['projects'] as const,
   list: (params: { page: number; pageSize: number; search?: string }) => [...projectKeys.all, 'list', params] as const,
   health: (projectId: string) => [...projectKeys.all, 'health', projectId] as const,
+  portfolio: () => [...projectKeys.all, 'portfolio'] as const,
 };
 
 export function useProjects(params: { page: number; pageSize: number; search?: string }) {
@@ -43,4 +44,14 @@ export function useProjectHealth(projectId: string) {
     enabled: !!projectId,
   });
 }
-export type { ProjectHealth };
+
+export function usePortfolio() {
+  return useQuery({
+    queryKey: projectKeys.portfolio(),
+    queryFn: async () => {
+      const data = await getJson<unknown>('/projects/portfolio');
+      return portfolioSchema.parse(data);
+    },
+  });
+}
+export type { Portfolio, ProjectHealth };
