@@ -3,6 +3,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createLegalEntitySchema } from '@aec/api-contracts';
 import { z } from 'zod';
+import { createColumnHelper } from '@tanstack/react-table';
+import { Button, Input, Label, Badge, DataGrid } from '@aec/ui';
+import { useCreateLegalEntity, useLegalEntities } from './legal-entity.api';
+import type { LegalEntity } from '@aec/api-contracts';
 
 type CreateLegalEntityForm = {
   code: string;
@@ -21,8 +25,6 @@ const formSchema = z.object({
   functionalCurrency: z.string().length(3),
   reportingCurrency: z.string().length(3),
 });
-import { Button, Input, Label, Badge } from '@aec/ui';
-import { useCreateLegalEntity, useLegalEntities } from './legal-entity.api';
 
 const statusVariant: Record<string, 'success' | 'warning' | 'muted' | 'default'> = {
   ACTIVE: 'success',
@@ -30,6 +32,38 @@ const statusVariant: Record<string, 'success' | 'warning' | 'muted' | 'default'>
   INACTIVE: 'muted',
   ARCHIVED: 'muted',
 };
+
+const columnHelper = createColumnHelper<LegalEntity>();
+
+const columns = [
+  columnHelper.accessor('code', {
+    header: 'Kode',
+    cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span>,
+  }),
+  columnHelper.accessor('legalName', {
+    header: 'Nama Legal',
+    cell: (info) => <span className="text-neutral-900">{info.getValue()}</span>,
+  }),
+  columnHelper.accessor('taxIdentifier', {
+    header: 'NPWP',
+    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue()}</span>,
+  }),
+  columnHelper.accessor('country', {
+    header: 'Negara',
+    cell: (info) => <span className="text-neutral-600">{info.getValue()}</span>,
+  }),
+  columnHelper.accessor('functionalCurrency', {
+    header: 'Mata Uang',
+    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue()}</span>,
+  }),
+  columnHelper.accessor('status', {
+    header: 'Status',
+    cell: (info) => {
+      const status = info.getValue();
+      return <Badge variant={statusVariant[status] ?? 'default'}>{status}</Badge>;
+    },
+  }),
+];
 
 export function LegalEntityListPage() {
   const { data, isLoading, isError, refetch } = useLegalEntities();
@@ -96,41 +130,14 @@ export function LegalEntityListPage() {
       )}
 
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-        {isLoading && <p className="p-6 text-body-sm text-neutral-500">Memuat…</p>}
-        {isError && (
-          <div className="p-6 text-body-sm text-destructive-600">
-            Gagal memuat data.{' '}
-            <button type="button" className="text-racing-red-600 hover:underline" onClick={() => refetch()}>Coba lagi</button>
-          </div>
-        )}
-        {data && (
-          <table className="w-full border-collapse text-left text-body-sm">
-            <thead>
-              <tr className="border-b border-neutral-200 bg-neutral-50 text-caption uppercase text-neutral-500">
-                <th className="px-4 py-2 font-medium">Kode</th>
-                <th className="px-4 py-2 font-medium">Nama Legal</th>
-                <th className="px-4 py-2 font-medium">NPWP</th>
-                <th className="px-4 py-2 font-medium">Negara</th>
-                <th className="px-4 py-2 font-medium">Mata Uang</th>
-                <th className="px-4 py-2 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((entity) => (
-                <tr key={entity.id} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50">
-                  <td className="px-4 py-2.5 font-mono text-neutral-800">{entity.code}</td>
-                  <td className="px-4 py-2.5 text-neutral-900">{entity.legalName}</td>
-                  <td className="px-4 py-2.5 font-mono text-neutral-600">{entity.taxIdentifier}</td>
-                  <td className="px-4 py-2.5 text-neutral-600">{entity.country}</td>
-                  <td className="px-4 py-2.5 font-mono text-neutral-600">{entity.functionalCurrency}</td>
-                  <td className="px-4 py-2.5">
-                    <Badge variant={statusVariant[entity.status] ?? 'default'}>{entity.status}</Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <DataGrid
+          columns={columns}
+          data={data ?? []}
+          isLoading={isLoading}
+          isError={isError}
+          onRetry={() => refetch()}
+          emptyMessage="Belum ada legal entity"
+        />
       </div>
     </div>
   );
