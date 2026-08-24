@@ -13,6 +13,12 @@ const permissions = [
   ['LegalEntity.CREATE', 'LegalEntity', 'CREATE'],
   ['LegalEntity.EDIT', 'LegalEntity', 'EDIT'],
   ['LegalEntity.BLOCK', 'LegalEntity', 'BLOCK'],
+  ['User.VIEW', 'User', 'VIEW'],
+  ['User.CREATE', 'User', 'CREATE'],
+  ['User.BLOCK', 'User', 'BLOCK'],
+  ['Role.VIEW', 'Role', 'VIEW'],
+  ['Role.CREATE', 'Role', 'CREATE'],
+  ['Role.EDIT', 'Role', 'EDIT'],
 ] as const;
 
 async function main() {
