@@ -36,6 +36,11 @@ const permissions = [
   ['PurchaseOrder.CREATE', 'PurchaseOrder', 'CREATE'],
   ['PurchaseOrder.APPROVE', 'PurchaseOrder', 'APPROVE'],
   ['PurchaseOrder.RELEASE', 'PurchaseOrder', 'RELEASE'],
+  ['Warehouse.VIEW', 'Warehouse', 'VIEW'],
+  ['Warehouse.CREATE', 'Warehouse', 'CREATE'],
+  ['GoodsReceipt.VIEW', 'GoodsReceipt', 'VIEW'],
+  ['GoodsReceipt.CREATE', 'GoodsReceipt', 'CREATE'],
+  ['StockLedger.VIEW', 'StockLedger', 'VIEW'],
 ] as const;
 
 async function main() {
@@ -137,6 +142,20 @@ async function main() {
   console.log(
     `Seeded ${entity.code}, ${role.code}, ${admin.email}, ${demoProject.code} + ${wbsLevels.length} WBS`,
   );
+
+  // Demo warehouse project (FR-INV-002) — untuk goods receipt demo
+  const demoWarehouse = await prisma.warehouse.upsert({
+    where: { code: 'WH-PROJ-014' },
+    update: {},
+    create: {
+      code: 'WH-PROJ-014',
+      name: 'Warehouse Proyek 014',
+      warehouseType: 'PROJECT',
+      projectId: demoProject.id,
+      location: 'Karawang',
+    },
+  });
+  console.log(`Seeded warehouse ${demoWarehouse.code}`);
 }
 
 main()

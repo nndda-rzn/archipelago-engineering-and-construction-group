@@ -10,6 +10,8 @@ import { WbsPage } from './features/project/wbs.page';
 import { BudgetPage } from './features/project/budget.page';
 import { PurchaseRequisitionPage } from './features/procurement/purchase-requisition.page';
 import { PurchaseOrderPage } from './features/procurement/purchase-order.page';
+import { GoodsReceiptPage } from './features/inventory/goods-receipt.page';
+import { StockLedgerPage } from './features/inventory/stock-ledger.page';
 import { requireAuth } from './app/router/require-auth';
 import { HealthBadge } from './widgets/health/health-badge';
 
@@ -123,7 +125,19 @@ const poRoute = createRoute({
   component: PurchaseOrderPage,
 });
 
+const grRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/inventory/goods-receipts',
+  component: GoodsReceiptPage,
+});
+
+const stockLedgerRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/inventory/stock-ledger',
+  component: StockLedgerPage,
+});
+
 export const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, prRoute, poRoute]),
+  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, prRoute, poRoute, grRoute, stockLedgerRoute]),
 ]);

@@ -346,3 +346,105 @@ export const upsertBudgetSchema = z.object({
   amount: z.number().min(0),
 });
 export type UpsertBudget = z.infer<typeof upsertBudgetSchema>;
+
+/** Inventory — FR-INV-001/002, FR-PRO-009 (receipt leg). */
+export const warehouseSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  name: z.string(),
+  warehouseType: z.string(),
+  projectId: z.string().nullable(),
+  location: z.string().nullable(),
+  status: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  project: z.object({ code: z.string(), name: z.string() }).optional(),
+});
+export type Warehouse = z.infer<typeof warehouseSchema>;
+
+export const createWarehouseSchema = z.object({
+  code: z.string().min(2).max(30),
+  name: z.string().min(2).max(200),
+  warehouseType: z.string().optional(),
+  projectId: z.string().optional(),
+  location: z.string().max(200).optional(),
+});
+export type CreateWarehouse = z.infer<typeof createWarehouseSchema>;
+
+export const goodsReceiptSchema = z.object({
+  id: z.string(),
+  grNumber: z.string(),
+  poId: z.string(),
+  projectId: z.string(),
+  warehouseId: z.string(),
+  receivedBy: z.string(),
+  status: z.string(),
+  remark: z.string().nullable(),
+  createdAt: z.string(),
+  items: z.array(
+    z.object({
+      id: z.string(),
+      poItemId: z.string().nullable(),
+      description: z.string(),
+      quantity: z.number(),
+      unit: z.string(),
+      unitPrice: z.number().nullable(),
+      wbsItemId: z.string().nullable(),
+    }),
+  ),
+  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  warehouse: z.object({ code: z.string(), name: z.string() }).optional(),
+  po: z.object({ poNumber: z.string(), vendor: z.string() }).optional(),
+});
+export type GoodsReceipt = z.infer<typeof goodsReceiptSchema>;
+
+export const createGoodsReceiptSchema = z.object({
+  poId: z.string(),
+  warehouseId: z.string(),
+  remark: z.string().max(500).optional(),
+  items: z.array(
+    z.object({
+      poItemId: z.string(),
+      quantity: z.number().min(0.01),
+      wbsItemId: z.string().optional(),
+    }),
+  ).min(1),
+});
+export type CreateGoodsReceipt = z.infer<typeof createGoodsReceiptSchema>;
+
+export const stockLedgerEntrySchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  wbsItemId: z.string().nullable(),
+  warehouseId: z.string(),
+  documentType: z.string(),
+  documentId: z.string().nullable(),
+  reference: z.string().nullable(),
+  description: z.string().nullable(),
+  movementType: z.string(),
+  quantity: z.number(),
+  unit: z.string(),
+  unitPrice: z.number().nullable(),
+  totalValue: z.number().nullable(),
+  balanceAfter: z.number(),
+  createdAt: z.string(),
+  project: z.object({ code: z.string() }).optional(),
+  wbsItem: z.object({ code: z.string(), name: z.string() }).optional(),
+  warehouse: z.object({ code: z.string(), name: z.string() }).optional(),
+});
+export type StockLedgerEntry = z.infer<typeof stockLedgerEntrySchema>;
+
+export const stockSummarySchema = z.object({
+  projectId: z.string(),
+  items: z.array(
+    z.object({
+      wbsItemId: z.string().nullable(),
+      wbsItem: z.object({ code: z.string(), name: z.string() }).nullable(),
+      warehouseId: z.string(),
+      warehouse: z.object({ code: z.string(), name: z.string() }),
+      quantity: z.number(),
+      totalValue: z.number(),
+    }),
+  ),
+});
+export type StockSummary = z.infer<typeof stockSummarySchema>;

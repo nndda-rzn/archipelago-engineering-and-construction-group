@@ -143,6 +143,9 @@ model Project {
   budgetItems    BudgetItem[]
   purchaseRequisitions PurchaseRequisition[]
   purchaseOrders       PurchaseOrder[]
+  warehouses     Warehouse[]
+  goodsReceipts  GoodsReceipt[]
+  stockLedgerEntries StockLedgerEntry[]
 
   @@index([legalEntityId])
   @@index([status])
@@ -166,6 +169,8 @@ model WbsItem {
   budgetItems BudgetItem[]
   requisitions PurchaseRequisition[]
   poItems      PurchaseOrderItem[]
+  goodsReceiptItems GoodsReceiptItem[]
+  stockLedgerEntries StockLedgerEntry[]
 
   @@unique([projectId, code])
   @@index([projectId])
@@ -244,6 +249,7 @@ model PurchaseOrder {
   updatedAt DateTime @updatedAt
 
   items     PurchaseOrderItem[]
+  goodsReceipts GoodsReceipt[]
 
   @@index([projectId])
   @@index([status])
@@ -261,7 +267,96 @@ model PurchaseOrderItem {
   wbsItemId  String?
   wbsItem    WbsItem? @relation(fields: [wbsItemId], references: [id])
 
+  goodsReceipts GoodsReceiptItem[]
+
   @@index([purchaseOrderId])
+}
+
+// ─── Inventory domain ─────────────────────────────────────────────────────────
+
+// FR-INV-002: Warehouse — corporate | project | temporary | virtual
+model Warehouse {
+  id         String   @id @default(cuid())
+  code       String   @unique // mis. "WH-PROJ-014"
+  name       String
+  warehouseType String @default("PROJECT") // CORPORATE | PROJECT | TEMPORARY | VIRTUAL
+  projectId  String?
+  project    Project? @relation(fields: [projectId], references: [id])
+  location   String?
+  status     String   @default("ACTIVE")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  goodsReceipts GoodsReceipt[]
+  stockLedgerEntries StockLedgerEntry[]
+
+  @@index([projectId])
+}
+
+// FR-PRO-009 (leg Receipt): terima barang dari RELEASED PO → stock ledger
+model GoodsReceipt {
+  id         String   @id @default(cuid())
+  grNumber   String   @unique // mis. "GR-2027-EPC-000001"
+  poId       String
+  po         PurchaseOrder @relation(fields: [poId], references: [id])
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id])
+  warehouseId String
+  warehouse  Warehouse @relation(fields: [warehouseId], references: [id])
+  receivedAt DateTime @default(now())
+  receivedBy String
+  status     String   @default("POSTED") // DRAFT | POSTED | CANCELLED
+  remark     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  items      GoodsReceiptItem[]
+
+  @@index([poId])
+  @@index([projectId])
+  @@index([warehouseId])
+}
+
+model GoodsReceiptItem {
+  id          String   @id @default(cuid())
+  goodsReceiptId String
+  goodsReceipt GoodsReceipt @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
+  poItemId    String?
+  poItem      PurchaseOrderItem? @relation(fields: [poItemId], references: [id])
+  description String
+  quantity    Decimal  @db.Decimal(18, 2) // qty diterima (bisa partial)
+  unit        String   @default("EA")
+  unitPrice   Decimal? @db.Decimal(18, 2)
+  wbsItemId   String?
+  wbsItem     WbsItem? @relation(fields: [wbsItemId], references: [id])
+
+  @@index([goodsReceiptId])
+}
+
+// FR-INV-001: Stock Ledger — immutable movement records, qty current derivable
+model StockLedgerEntry {
+  id         String   @id @default(cuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id])
+  wbsItemId  String?
+  wbsItem    WbsItem? @relation(fields: [wbsItemId], references: [id])
+  warehouseId String
+  warehouse  Warehouse @relation(fields: [warehouseId], references: [id])
+  documentType String // GR | ISSUE | TRANSFER_IN | TRANSFER_OUT | ADJUSTMENT | RESERVATION
+  documentId String?  // id dokumen sumber (mis. GoodsReceiptItem.id)
+  reference  String?  // no. dokumen (mis. "GR-2027-EPC-000001")
+  description String?
+  movementType String // IN | OUT | ADJUST
+  quantity   Decimal  @db.Decimal(18, 2) // qty bertanda (positif IN / negatif OUT)
+  unit       String   @default("EA")
+  unitPrice  Decimal? @db.Decimal(18, 2)
+  totalValue Decimal? @db.Decimal(18, 2)
+  balanceAfter Decimal @db.Decimal(18, 2) // running balance (immutable snapshot)
+  createdAt  DateTime @default(now())
+
+  @@index([projectId, wbsItemId, warehouseId])
+  @@index([documentType, documentId])
+  @@index([createdAt])
 }
 
 // FR-FND-009: Number Sequence (configurable)
