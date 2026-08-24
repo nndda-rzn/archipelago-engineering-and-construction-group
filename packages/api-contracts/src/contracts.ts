@@ -259,6 +259,42 @@ export const projectHealthSchema = z.object({
 });
 export type ProjectHealth = z.infer<typeof projectHealthSchema>;
 
+/** Portfolio dashboard — FR-EXE. */
+export const portfolioSchema = z.object({
+  generatedAt: z.string(),
+  totals: z.object({
+    projectCount: z.number(),
+    totalContract: z.number(),
+    totalBudget: z.number(),
+    totalActual: z.number(),
+    totalRevenue: z.number(),
+    totalVariance: z.number(),
+  }),
+  healthCounts: z.object({
+    NO_BUDGET: z.number(),
+    ON_TRACK: z.number(),
+    AT_RISK: z.number(),
+    CRITICAL: z.number(),
+  }),
+  items: z.array(
+    z.object({
+      projectId: z.string(),
+      projectCode: z.string(),
+      projectName: z.string(),
+      client: z.string(),
+      status: z.string(),
+      contractValue: z.number(),
+      budget: z.number(),
+      actual: z.number(),
+      revenue: z.number(),
+      variance: z.number(),
+      utilization: z.number().nullable(),
+      health: z.enum(['NO_BUDGET', 'ON_TRACK', 'AT_RISK', 'CRITICAL']),
+    }),
+  ),
+});
+export type Portfolio = z.infer<typeof portfolioSchema>;
+
 /** Procurement — FR-PRO-001/007. */
 export const prItemSchema = z.object({
   id: z.string(),
