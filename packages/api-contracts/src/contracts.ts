@@ -567,6 +567,91 @@ export const createStockTransferSchema = z.object({
 });
 export type CreateStockTransfer = z.infer<typeof createStockTransferSchema>;
 
+/** Stock adjustment — FR-INV-006 (wajib approval + reason code). */
+export const stockAdjustmentSchema = z.object({
+  id: z.string(),
+  adjustmentNumber: z.string(),
+  projectId: z.string(),
+  warehouseId: z.string(),
+  reasonCode: z.string(),
+  reason: z.string().nullable(),
+  status: z.string(),
+  adjustedBy: z.string(),
+  approvedBy: z.string().nullable(),
+  approvedAt: z.string().nullable(),
+  createdAt: z.string(),
+  items: z.array(
+    z.object({
+      id: z.string(),
+      description: z.string(),
+      quantity: z.number(),
+      unit: z.string(),
+      wbsItemId: z.string().nullable(),
+    }),
+  ),
+  project: z.object({ code: z.string() }).optional(),
+  warehouse: z.object({ code: z.string(), name: z.string() }).optional(),
+});
+export type StockAdjustment = z.infer<typeof stockAdjustmentSchema>;
+
+export const createStockAdjustmentSchema = z.object({
+  projectId: z.string(),
+  warehouseId: z.string(),
+  reasonCode: z.string().min(2).max(30),
+  reason: z.string().max(500).optional(),
+  items: z.array(
+    z.object({
+      description: z.string().min(1).max(200),
+      quantity: z.number(),
+      unit: z.string().optional(),
+      wbsItemId: z.string().optional(),
+    }),
+  ).min(1),
+});
+export type CreateStockAdjustment = z.infer<typeof createStockAdjustmentSchema>;
+
+/** Stock opname — FR-INV-007 (count sheet + reconciliation). */
+export const stockOpnameSchema = z.object({
+  id: z.string(),
+  opnameNumber: z.string(),
+  projectId: z.string(),
+  warehouseId: z.string(),
+  status: z.string(),
+  countedBy: z.string(),
+  remark: z.string().nullable(),
+  createdAt: z.string(),
+  items: z.array(
+    z.object({
+      id: z.string(),
+      description: z.string(),
+      bookQuantity: z.number(),
+      actualQuantity: z.number(),
+      difference: z.number(),
+      unit: z.string(),
+      wbsItemId: z.string().nullable(),
+    }),
+  ),
+  project: z.object({ code: z.string() }).optional(),
+  warehouse: z.object({ code: z.string(), name: z.string() }).optional(),
+});
+export type StockOpname = z.infer<typeof stockOpnameSchema>;
+
+export const createStockOpnameSchema = z.object({
+  projectId: z.string(),
+  warehouseId: z.string(),
+  remark: z.string().max(500).optional(),
+  items: z.array(
+    z.object({
+      description: z.string().min(1).max(200),
+      bookQuantity: z.number().min(0),
+      actualQuantity: z.number().min(0),
+      unit: z.string().optional(),
+      wbsItemId: z.string().optional(),
+    }),
+  ).min(1),
+});
+export type CreateStockOpname = z.infer<typeof createStockOpnameSchema>;
+
 /** Vendor invoice — FR-PRO-009 (three-way match: PO + GR + Invoice). */
 export const vendorInvoiceSchema = z.object({
   id: z.string(),
