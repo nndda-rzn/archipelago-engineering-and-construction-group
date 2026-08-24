@@ -1,0 +1,129 @@
+// AEC ERP — Prisma schema
+// Foundation domain (PRD §9.1, §16.2) — Phase 1 baseline
+// Referensi: FR-FND-001 (legal entity), FR-FND-004 (RBAC), FR-FND-009 (number sequence)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Foundation domain ────────────────────────────────────────────────────────
+
+// FR-FND-001: Multi-Legal Entity
+model LegalEntity {
+  id                String   @id @default(cuid())
+  code              String   @unique // company code, mis. "AEC-CON"
+  legalName         String
+  taxIdentifier     String   @unique
+  country           String
+  functionalCurrency String  @default("IDR")
+  reportingCurrency String   @default("IDR")
+  fiscalCalendar    String   @default("STANDARD")
+  status            String   @default("ACTIVE") // MasterDataStatus
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organizations Organization[]
+  users         User[]
+}
+
+// FR-FND-002: Effective-dated Organization
+model Organization {
+  id          String   @id @default(cuid())
+  legalEntityId String
+  legalEntity LegalEntity @relation(fields: [legalEntityId], references: [id])
+  name        String
+  orgType     String // GROUP | LEGAL_ENTITY | BUSINESS_UNIT | DIVISION | REGION | BRANCH | DEPARTMENT | SECTION
+  parentId    String?
+  parent      Organization?  @relation("OrgHierarchy", fields: [parentId], references: [id])
+  children    Organization[] @relation("OrgHierarchy")
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+}
+
+// FR-FND-003: User (employee mapping disederhanakan untuk baseline)
+model User {
+  id            String   @id @default(cuid())
+  username      String   @unique
+  email         String   @unique
+  displayName   String
+  legalEntityId String?
+  legalEntity   LegalEntity? @relation(fields: [legalEntityId], references: [id])
+  organizationId String?
+  organization  Organization? @relation(fields: [organizationId], references: [id])
+  status        String   @default("ACTIVE")
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userRoles     UserRole[]
+}
+
+// FR-FND-004: Role-Based Access Control — Resource + Action + Scope
+model Role {
+  id          String   @id @default(cuid())
+  code        String   @unique // mis. "BUYER", "PROCUREMENT_MANAGER"
+  name        String
+  description String?
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions RolePermission[]
+  userRoles   UserRole[]
+}
+
+model Permission {
+  id          String @id @default(cuid())
+  code        String @unique // mis. "PurchaseOrder.APPROVE"
+  resource    String // mis. "PurchaseOrder"
+  action      String // mis. "APPROVE"
+  description String?
+
+  rolePermissions RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  scopeType    String @default("GLOBAL") // GLOBAL | LEGAL_ENTITY | BUSINESS_UNIT | PROJECT
+  scopeValue   String? // entity/project id bila scope terbatas
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId, scopeType, scopeValue])
+}
+
+model UserRole {
+  userId String
+  roleId String
+  effectiveFrom DateTime @default(now())
+  effectiveTo   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId, effectiveFrom])
+}
+
+// FR-FND-009: Number Sequence (configurable)
+model NumberSequence {
+  id         String  @id @default(cuid())
+  code       String  @unique // mis. "PR", "PO", "PRJ"
+  prefix     String // mis. "PR-2027-EPC-"
+  nextNumber Int     @default(1)
+  padding    Int     @default(6)
+  status     String  @default("ACTIVE")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
