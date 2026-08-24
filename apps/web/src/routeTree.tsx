@@ -1,28 +1,61 @@
-import { createRootRoute, createRoute, createRouter } from '@tanstack/react-router';
+import { createRootRoute, createRoute, Outlet } from '@tanstack/react-router';
 import { AppShell } from './app/layouts/app-shell';
+import { LoginPage } from './features/auth/login.page';
 import { HealthBadge } from './widgets/health/health-badge';
 
-// FSD: app/router — route table + guards menyusul
 const rootRoute = createRootRoute({
+  component: () => <Outlet />,
+});
+
+// Standalone — tanpa AppShell
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/login',
+  component: LoginPage,
+});
+
+// App layout — pakai AppShell (sidebar + topbar)
+const appRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
   component: AppShell,
 });
 
 const indexRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => appRoute,
   path: '/',
   component: () => (
-    <div className="p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Dashboard</h1>
+    <div>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-h1 text-neutral-950">Dashboard</h1>
+          <p className="mt-1 text-body-sm text-neutral-500">AEC ERP — Enterprise Construction &amp; EPC Platform</p>
+        </div>
         <HealthBadge />
       </div>
-      <p className="mt-2 text-sm text-neutral-500">
-        AEC ERP — Enterprise Construction &amp; EPC Platform
-      </p>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+          <div className="text-caption text-neutral-500">Proyek Aktif</div>
+          <div className="mt-1 font-mono text-h1 tabular-nums text-neutral-950">12</div>
+        </div>
+        <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+          <div className="text-caption text-neutral-500">Legal Entities</div>
+          <div className="mt-1 font-mono text-h1 tabular-nums text-neutral-950">5</div>
+        </div>
+        <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+          <div className="text-caption text-neutral-500">Vendor</div>
+          <div className="mt-1 font-mono text-h1 tabular-nums text-neutral-950">1.000+</div>
+        </div>
+        <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+          <div className="text-caption text-neutral-500">Status</div>
+          <div className="mt-1 flex items-center gap-1.5 text-body-sm font-medium text-project-on-track-600">
+            <span className="inline-block h-2 w-2 rounded-full bg-project-on-track-500" aria-hidden="true" />
+            Sistem Sehat
+          </div>
+        </div>
+      </div>
     </div>
   ),
 });
 
-const routeTree = rootRoute.addChildren([indexRoute]);
-
-export { routeTree };
+export const routeTree = rootRoute.addChildren([loginRoute, appRoute.addChildren([indexRoute])]);

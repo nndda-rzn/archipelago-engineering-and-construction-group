@@ -33,3 +33,39 @@ export async function getJson<T>(path: string): Promise<T> {
 
   return res.json() as Promise<T>;
 }
+
+export async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const errBody = (await res.json().catch(() => null)) as {
+      error?: { code?: string; message?: string; correlationId?: string };
+    } | null;
+    throw new ApiError(
+      errBody?.error?.message ?? `Request failed: ${res.status}`,
+      errBody?.error?.code ?? 'HTTP_ERROR',
+      errBody?.error?.correlationId,
+    );
+  }
+
+  return res.json() as Promise<T>;
+}
+
+/** Simpan token ke localStorage (sederhana — Keycloak menyusul). */
+const TOKEN_KEY = 'aec_token';
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token: string) {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+}
