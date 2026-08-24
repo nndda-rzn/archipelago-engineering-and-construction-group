@@ -1,5 +1,5 @@
 import type { Config } from 'tailwindcss';
-import aecPreset from '@aec/config/tailwind/tailwind.preset.cjs';
+import aecPreset from '@aec/config/tailwind.preset';
 
 export default {
   presets: [aecPreset],
