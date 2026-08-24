@@ -358,6 +358,76 @@ export const createPoSchema = z.object({
 });
 export type CreatePo = z.infer<typeof createPoSchema>;
 
+/** RFQ — FR-PRO-003/004. */
+export const rfqSchema = z.object({
+  id: z.string(),
+  rfqNumber: z.string(),
+  projectId: z.string(),
+  requisitionId: z.string().nullable(),
+  title: z.string(),
+  description: z.string().nullable(),
+  dueDate: z.string().nullable(),
+  status: z.string(),
+  awardedVendor: z.string().nullable(),
+  awardedQuoteId: z.string().nullable(),
+  createdBy: z.string(),
+  createdAt: z.string(),
+  items: z.array(
+    z.object({
+      id: z.string(),
+      description: z.string(),
+      quantity: z.number(),
+      unit: z.string(),
+      wbsItemId: z.string().nullable(),
+    }),
+  ),
+  quotes: z.array(
+    z.object({
+      id: z.string(),
+      vendor: z.string(),
+      totalAmount: z.number(),
+      leadTimeDays: z.number().nullable(),
+      isWinner: z.boolean(),
+      status: z.string(),
+      remark: z.string().nullable(),
+      items: z.array(z.object({ id: z.string(), rfqItemId: z.string(), unitPrice: z.number(), totalPrice: z.number() })),
+    }),
+  ),
+  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  requisition: z.object({ prNumber: z.string() }).optional(),
+});
+export type Rfq = z.infer<typeof rfqSchema>;
+
+export const createRfqSchema = z.object({
+  projectId: z.string(),
+  requisitionId: z.string().optional(),
+  title: z.string().min(2).max(200),
+  description: z.string().max(500).optional(),
+  dueDate: z.string().optional(),
+  items: z.array(
+    z.object({
+      description: z.string().min(1).max(200),
+      quantity: z.number().min(0.01),
+      unit: z.string().optional(),
+      wbsItemId: z.string().optional(),
+    }),
+  ).min(1),
+});
+export type CreateRfq = z.infer<typeof createRfqSchema>;
+
+export const createQuoteSchema = z.object({
+  vendor: z.string().min(2).max(200),
+  leadTimeDays: z.number().int().min(1).optional(),
+  remark: z.string().max(500).optional(),
+  items: z.array(
+    z.object({
+      rfqItemId: z.string(),
+      unitPrice: z.number().min(0),
+    }),
+  ).min(1),
+});
+export type CreateQuote = z.infer<typeof createQuoteSchema>;
+
 export type { Id };
 
 /** WBS — FR-PRJ-002. */
