@@ -12,7 +12,7 @@ const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
   APPROVED: 'warning',
   PAID: 'success',
   CANCELLED: 'default',
-};
+}; 
 
 const columnHelper = createColumnHelper<Payment>();
 

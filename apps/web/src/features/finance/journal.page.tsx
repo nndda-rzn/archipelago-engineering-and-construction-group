@@ -1,0 +1,238 @@
+import { useState } from 'react';
+import { createColumnHelper } from '@tanstack/react-table';
+import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
+import { useLegalEntities } from '@/features/foundation/legal-entity.api';
+import { useChartOfAccounts, useCreateJournal, useJournals, usePostJournal, type Journal } from './finance.api';
+
+const PAGE_SIZE = 20;
+
+const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
+  DRAFT: 'default',
+  POSTED: 'success',
+  REVERSED: 'warning',
+};
+
+const sourceLabel: Record<string, string> = {
+  MANUAL: 'Manual',
+  INVOICE: 'Invoice',
+  PAYMENT: 'Payment',
+};
+
+const columnHelper = createColumnHelper<Journal>();
+
+const columns = [
+  columnHelper.accessor('journalNumber', {
+    header: 'No. Journal',
+    cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span>,
+  }),
+  columnHelper.accessor('date', {
+    header: 'Tanggal',
+    cell: (info) => new Date(info.getValue()).toLocaleDateString('id-ID'),
+  }),
+  columnHelper.accessor('source', {
+    header: 'Sumber',
+    cell: (info) => <Badge variant="default">{sourceLabel[info.getValue()] ?? info.getValue()}</Badge>,
+  }),
+  columnHelper.accessor('reference', {
+    header: 'Referensi',
+    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? '-'}</span>,
+  }),
+  columnHelper.accessor('description', {
+    header: 'Deskripsi',
+    cell: (info) => <span className="max-w-[260px] truncate text-neutral-700">{info.getValue()}</span>,
+  }),
+  columnHelper.accessor('status', {
+    header: 'Status',
+    cell: (info) => <Badge variant={statusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge>,
+  }),
+  columnHelper.display({
+    id: 'actions',
+    header: '',
+    cell: ({ row }) => <PostButton journal={row.original} />,
+  }),
+];
+
+function PostButton({ journal }: { journal: Journal }) {
+  const post = usePostJournal();
+  if (journal.status !== 'DRAFT') return null;
+  return (
+    <Button
+      size="sm"
+      variant="secondary"
+      onClick={() => {
+        if (window.confirm(`Posting ${journal.journalNumber}? Journal terkunci (BR-001).`)) post.mutate(journal.id);
+      }}
+      loading={post.isPending}
+    >
+      Posting
+    </Button>
+  );
+}
+
+type Line = { accountId: string; debit: number; credit: number; description?: string };
+
+function JournalForm({ onDone, entityId }: { onDone: () => void; entityId: string }) {
+  const [description, setDescription] = useState('');
+  const [reference, setReference] = useState('');
+  const [lines, setLines] = useState<Line[]>([]);
+  const { data: accounts } = useChartOfAccounts({ legalEntityId: entityId });
+  const create = useCreateJournal();
+
+  const totalDebit = lines.reduce((sum, l) => sum + (l.debit || 0), 0);
+  const totalCredit = lines.reduce((sum, l) => sum + (l.credit || 0), 0);
+  const balanced = Math.abs(totalDebit - totalCredit) < 0.001 && totalDebit > 0;
+
+  const addLine = () => setLines((prev) => [...prev, { accountId: '', debit: 0, credit: 0 }]);
+  const updateLine = (index: number, patch: Partial<Line>) => setLines((prev) => prev.map((l, i) => (i === index ? { ...l, ...patch } : l)));
+  const removeLine = (index: number) => setLines((prev) => prev.filter((_, i) => i !== index));
+
+  const onSubmit = () => {
+    if (!description || !balanced) return;
+    const validLines = lines.filter((l) => l.accountId && ((l.debit || 0) > 0 || (l.credit || 0) > 0));
+    if (validLines.length === 0) return;
+    create.mutate(
+      {
+        legalEntityId: entityId,
+        description,
+        reference: reference || undefined,
+        lines: validLines.map((l) => ({ accountId: l.accountId, debit: l.debit, credit: l.credit, description: l.description || undefined })),
+      },
+      {
+        onSuccess: () => {
+          setDescription('');
+          setReference('');
+          setLines([]);
+          onDone();
+        },
+      },
+    );
+  };
+
+  return (
+    <div className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="jrn-desc">Deskripsi</Label>
+          <Input id="jrn-desc" placeholder="mis. Biaya operasional bulanan" value={description} onChange={(e) => setDescription(e.target.value)} />
+        </div>
+        <div>
+          <Label htmlFor="jrn-ref">Referensi (opsional)</Label>
+          <Input id="jrn-ref" placeholder="No. dokumen" value={reference} onChange={(e) => setReference(e.target.value)} />
+        </div>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-md border border-neutral-200">
+        <table className="w-full text-left text-body">
+          <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
+            <tr>
+              <th className="px-3 py-2">Akun</th>
+              <th className="px-3 py-2">Deskripsi Line</th>
+              <th className="px-3 py-2 text-right">Debit</th>
+              <th className="px-3 py-2 text-right">Kredit</th>
+              <th className="px-3 py-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {lines.map((line, index) => (
+              <tr key={index} className="border-t border-neutral-100">
+                <td className="px-3 py-2">
+                  <select
+                    value={line.accountId}
+                    onChange={(e) => updateLine(index, { accountId: e.target.value })}
+                    className="h-8 w-48 rounded-md border border-neutral-200 bg-white px-2 text-body focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
+                  >
+                    <option value="">Pilih akun…</option>
+                    {(accounts ?? []).map((acc) => <option key={acc.id} value={acc.id}>{acc.code} — {acc.name}</option>)}
+                  </select>
+                </td>
+                <td className="px-3 py-2">
+                  <Input value={line.description ?? ''} placeholder="opsional" onChange={(e) => updateLine(index, { description: e.target.value })} className="h-8 w-44" />
+                </td>
+                <td className="px-3 py-2">
+                  <Input type="number" min={0} value={line.debit || ''} placeholder="0" onChange={(e) => updateLine(index, { debit: Number(e.target.value), credit: line.credit > 0 && Number(e.target.value) > 0 ? 0 : line.credit })} className="h-8 w-28 text-right" />
+                </td>
+                <td className="px-3 py-2">
+                  <Input type="number" min={0} value={line.credit || ''} placeholder="0" onChange={(e) => updateLine(index, { credit: Number(e.target.value), debit: line.debit > 0 && Number(e.target.value) > 0 ? 0 : line.debit })} className="h-8 w-28 text-right" />
+                </td>
+                <td className="px-3 py-2 text-right">
+                  <Button type="button" variant="ghost" size="sm" onClick={() => removeLine(index)}>Hapus</Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {lines.length === 0 && <p className="p-3 text-caption text-neutral-500">Belum ada line. Tambahkan akun debit/kredit.</p>}
+      </div>
+
+      <div className="mt-3 flex items-center justify-between">
+        <div className="flex gap-6 text-body-sm">
+          <span className="text-neutral-600">Total Debit: <span className="font-mono tabular-nums">{new Intl.NumberFormat('id-ID').format(totalDebit)}</span></span>
+          <span className="text-neutral-600">Total Kredit: <span className="font-mono tabular-nums">{new Intl.NumberFormat('id-ID').format(totalCredit)}</span></span>
+          {lines.length > 0 && (
+            <span className={balanced ? 'text-semantic-success' : 'text-destructive-600'}>
+              {balanced ? 'Balance ✓' : 'Belum balance'}
+            </span>
+          )}
+        </div>
+        <Button type="button" variant="secondary" size="sm" onClick={addLine}>+ Tambah Line</Button>
+      </div>
+
+      <div className="mt-4 flex justify-end gap-2">
+        <Button type="button" variant="ghost" onClick={onDone}>Batal</Button>
+        <Button type="button" onClick={onSubmit} loading={create.isPending} disabled={!balanced}>Simpan Journal DRAFT</Button>
+      </div>
+      {create.isError && <p className="mt-2 text-caption text-destructive-600">Gagal: journal harus balance, akun valid & aktif.</p>}
+    </div>
+  );
+}
+
+export function JournalPage() {
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
+  const [showForm, setShowForm] = useState(false);
+  const [entityId, setEntityId] = useState('');
+  const entities = useLegalEntities({ page: 1, pageSize: 100 });
+  const defaultEntityId = entityId || entities.data?.items[0]?.id || '';
+
+  const { data, isLoading, isError, refetch } = useJournals({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
+
+  return (
+    <div>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-h1 text-neutral-950">GL Journal</h1>
+          <p className="mt-1 text-body-sm text-neutral-500">Double-entry journal — debit = kredit (FR-FIN-003/004)</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <select
+            value={defaultEntityId}
+            onChange={(e) => setEntityId(e.target.value)}
+            aria-label="Pilih legal entity"
+            className="flex h-9 w-48 rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
+          >
+            <option value="">Pilih entity…</option>
+            {(entities.data?.items ?? []).map((en) => <option key={en.id} value={en.id}>{en.code}</option>)}
+          </select>
+          <Button size="sm" onClick={() => setShowForm((s) => !s)}>
+            {showForm ? 'Tutup' : '+ Buat Journal'}
+          </Button>
+        </div>
+      </div>
+
+      {showForm && defaultEntityId && <JournalForm onDone={() => setShowForm(false)} entityId={defaultEntityId} />}
+
+      <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
+        <DataGrid
+          columns={columns}
+          data={data?.items ?? []}
+          rowCount={data?.total ?? 0}
+          pagination={pagination}
+          onPaginationChange={setPagination}
+          isLoading={isLoading}
+          isError={isError}
+          onRetry={() => refetch()}
+          emptyMessage="Belum ada journal"
+        />
+      </div>
+    </div>
+  );
+}
