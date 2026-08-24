@@ -22,6 +22,12 @@ export class ProjectController {
     return this.service.findOne(id);
   }
 
+  @Get(':id/health')
+  @Permissions('Project.VIEW')
+  health(@Param('id') id: string) {
+    return this.service.health(id);
+  }
+
   @Post()
   @Permissions('Project.CREATE')
   create(@Body() dto: CreateProjectDto, @Req() request: { user?: { sub?: string } }) {
