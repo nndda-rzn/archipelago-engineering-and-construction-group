@@ -8,9 +8,10 @@ import { AuditModule } from './audit/audit.module';
 import { ProjectModule } from './project/project.module';
 import { ProcurementModule } from './procurement/procurement.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { ApprovalModule } from './approval/approval.module';
 
 @Module({
-  imports: [AuthModule, FoundationModule, AuditModule, ProjectModule, ProcurementModule, InventoryModule],
+  imports: [AuthModule, FoundationModule, AuditModule, ProjectModule, ProcurementModule, InventoryModule, ApprovalModule],
   controllers: [HealthController],
   providers: [
     {

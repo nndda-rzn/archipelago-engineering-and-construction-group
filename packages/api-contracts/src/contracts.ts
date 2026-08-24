@@ -492,3 +492,36 @@ export const createMaterialIssueSchema = z.object({
   ).min(1),
 });
 export type CreateMaterialIssue = z.infer<typeof createMaterialIssueSchema>;
+
+/** Approval workflow — FR-FND-007 (MVP). */
+export const approvalTaskSchema = z.object({
+  id: z.string(),
+  transactionType: z.string(),
+  transactionId: z.string(),
+  transactionCode: z.string().nullable(),
+  stepName: z.string(),
+  status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']),
+  requesterId: z.string(),
+  approverId: z.string().nullable(),
+  approverRoleCode: z.string(),
+  comment: z.string().nullable(),
+  decidedAt: z.string().nullable(),
+  createdAt: z.string(),
+  canApprove: z.boolean().optional(),
+});
+export type ApprovalTask = z.infer<typeof approvalTaskSchema>;
+
+export const submitForApprovalSchema = z.object({
+  transactionType: z.enum(['PurchaseRequisition', 'PurchaseOrder']),
+  transactionId: z.string(),
+  approverRoleCode: z.string().min(2).max(50),
+  transactionCode: z.string().optional(),
+});
+export type SubmitForApproval = z.infer<typeof submitForApprovalSchema>;
+
+export const approveTaskSchema = z.object({
+  taskId: z.string(),
+  decision: z.enum(['APPROVE', 'REJECT']),
+  comment: z.string().max(500).optional(),
+});
+export type ApproveTask = z.infer<typeof approveTaskSchema>;
