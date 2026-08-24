@@ -18,6 +18,7 @@ import { StockAdjustmentPage } from './features/inventory/stock-adjustment.page'
 import { StockOpnamePage } from './features/inventory/stock-opname.page';
 import { StockTransferPage } from './features/inventory/stock-transfer.page';
 import { ApprovalPage } from './features/approval/approval.page';
+import { WorkflowDefinitionPage } from './features/approval/workflow-definition.page';
 import { VendorInvoicePage } from './features/finance/vendor-invoice.page';
 import { PaymentPage } from './features/finance/payment.page';
 import { ChartOfAccountPage } from './features/finance/chart-of-account.page';
@@ -204,7 +205,13 @@ const collectionRoute = createRoute({
   component: CollectionPage,
 });
 
+const workflowRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/workflows',
+  component: WorkflowDefinitionPage,
+});
+
 export const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, projectHealthRoute, prRoute, poRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute]),
+  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, projectHealthRoute, prRoute, poRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, workflowRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute]),
 ]);

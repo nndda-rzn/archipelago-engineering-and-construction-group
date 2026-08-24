@@ -592,6 +592,58 @@ export const approveTaskSchema = z.object({
 });
 export type ApproveTask = z.infer<typeof approveTaskSchema>;
 
+/** Workflow definition & versioning — FR-FND-007. */
+export const workflowStepSchema = z.object({
+  id: z.string(),
+  definitionId: z.string(),
+  stepOrder: z.number(),
+  name: z.string(),
+  approverRoleCode: z.string(),
+  conditionField: z.string().nullable(),
+  conditionOp: z.string().nullable(),
+  conditionValue: z.number().nullable(),
+});
+export type WorkflowStep = z.infer<typeof workflowStepSchema>;
+
+export const workflowDefinitionSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  version: z.number(),
+  status: z.string(),
+  transactionType: z.string(),
+  createdBy: z.string(),
+  createdAt: z.string(),
+  steps: z.array(workflowStepSchema),
+});
+export type WorkflowDefinition = z.infer<typeof workflowDefinitionSchema>;
+
+export const createWorkflowDefinitionSchema = z.object({
+  code: z.string().min(2).max(50),
+  name: z.string().min(2).max(100),
+  description: z.string().max(500).optional(),
+  transactionType: z.enum(['PurchaseRequisition', 'PurchaseOrder']),
+  status: z.enum(['DRAFT', 'ACTIVE']).optional(),
+});
+export type CreateWorkflowDefinition = z.infer<typeof createWorkflowDefinitionSchema>;
+
+export const addWorkflowStepSchema = z.object({
+  stepOrder: z.number().int().min(1),
+  name: z.string().min(1).max(100),
+  approverRoleCode: z.string().min(2).max(50),
+  conditionField: z.string().optional(),
+  conditionOp: z.enum(['>', '<', '>=', '<=', '==']).optional(),
+  conditionValue: z.number().optional(),
+});
+export type AddWorkflowStep = z.infer<typeof addWorkflowStepSchema>;
+
+export const publishWorkflowSchema = z.object({
+  newVersionName: z.string().min(2).max(100),
+  description: z.string().max(500).optional(),
+});
+export type PublishWorkflow = z.infer<typeof publishWorkflowSchema>;
+
 /** Stock transfer — FR-INV-005. */
 export const stockTransferSchema = z.object({
   id: z.string(),

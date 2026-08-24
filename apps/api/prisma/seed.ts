@@ -46,6 +46,9 @@ const permissions = [
   ['Approval.VIEW', 'Approval', 'VIEW'],
   ['Approval.SUBMIT', 'Approval', 'SUBMIT'],
   ['Approval.APPROVE', 'Approval', 'APPROVE'],
+  ['Workflow.VIEW', 'Workflow', 'VIEW'],
+  ['Workflow.CREATE', 'Workflow', 'CREATE'],
+  ['Workflow.EDIT', 'Workflow', 'EDIT'],
   ['StockAdjustment.VIEW', 'StockAdjustment', 'VIEW'],
   ['StockAdjustment.CREATE', 'StockAdjustment', 'CREATE'],
   ['StockAdjustment.APPROVE', 'StockAdjustment', 'APPROVE'],
@@ -299,6 +302,42 @@ async function main() {
     });
   }
   console.log(`Seeded ${coaBaseline.length} COA baseline`);
+
+  // Workflow definition demo (FR-FND-007 full) — PR & PO approval
+  const workflowSeeds = [
+    {
+      code: 'PR_APPROVAL',
+      transactionType: 'PurchaseRequisition',
+      steps: [
+        { stepOrder: 1, name: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER' },
+      ],
+    },
+    {
+      code: 'PO_APPROVAL',
+      transactionType: 'PurchaseOrder',
+      steps: [
+        { stepOrder: 1, name: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER', conditionField: 'totalAmount', conditionOp: '<=', conditionValue: 5000000 },
+        { stepOrder: 2, name: 'Approval Direksi', approverRoleCode: 'SUPER_ADMIN', conditionField: 'totalAmount', conditionOp: '>', conditionValue: 5000000 },
+      ],
+    },
+  ];
+  for (const wf of workflowSeeds) {
+    const existing = await prisma.workflowDefinition.findFirst({ where: { code: wf.code } });
+    if (!existing) {
+      const def = await prisma.workflowDefinition.create({
+        data: {
+          code: wf.code,
+          name: wf.code.replace('_', ' '),
+          version: 1,
+          status: 'ACTIVE',
+          transactionType: wf.transactionType,
+          createdBy: 'system',
+          steps: { create: wf.steps.map((s) => ({ ...s, conditionValue: s.conditionValue ?? null })) },
+        },
+      });
+      console.log(`Seeded workflow ${def.code} v${def.version}`);
+    }
+  }
 }
 
 main()

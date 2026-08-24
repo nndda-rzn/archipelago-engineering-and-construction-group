@@ -423,8 +423,43 @@ model MaterialIssueItem {
 }
 
 // ─── Approval workflow (FR-FND-007) ──────────────────────────────────────────
-// MVP: data-driven approval task per transaksi. Maker-checker BR-003.
-// (Workflow definition/versioning penuh — menyusul)
+// Data-driven: WorkflowDefinition (versioned) + ApprovalTask per transaksi.
+
+// FR-FND-007: Workflow definition — versioned, conditional steps
+model WorkflowDefinition {
+  id        String   @id @default(cuid())
+  code      String   // mis. "PR_APPROVAL", "PO_APPROVAL"
+  name      String
+  description String?
+  version   Int      @default(1)
+  status    String   @default("DRAFT") // DRAFT | ACTIVE | ARCHIVED
+  transactionType String // "PurchaseRequisition" | "PurchaseOrder" | ...
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  steps     WorkflowStep[]
+
+  @@unique([code, version])
+  @@index([transactionType])
+  @@index([status])
+}
+
+model WorkflowStep {
+  id            String   @id @default(cuid())
+  definitionId  String
+  definition    WorkflowDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+  stepOrder     Int      @default(1)
+  name          String // mis. "Approval Manager"
+  approverRoleCode String // role yang boleh approve step ini
+  conditionField String? // mis. "totalAmount" — conditional routing
+  conditionOp   String? // ">" | "<" | ">=" | "<=" | "=="
+  conditionValue Decimal? @db.Decimal(18, 2)
+  createdAt     DateTime @default(now())
+
+  @@unique([definitionId, stepOrder])
+  @@index([definitionId])
+}
 
 // FR-FND-007: Approval step untuk transaksi (DRAFT → SUBMITTED → APPROVED/REJECTED)
 model ApprovalTask {

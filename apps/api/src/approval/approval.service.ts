@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Inject, Inj
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/database/prisma.service';
 import { AuditService } from '@/audit/audit.service';
-import type { ApproveTaskDto, SubmitForApprovalDto } from './dto/approval.dto';
+import type { AddWorkflowStepDto, ApproveTaskDto, CreateWorkflowDefinitionDto, PublishWorkflowDto, SubmitForApprovalDto } from './dto/approval.dto';
 
 // FR-FND-007: approval workflow (MVP) + BR-003 (maker-checker), BR-007 (PO tidak release tanpa valid approval)
 @Injectable()
@@ -39,15 +39,218 @@ export class ApprovalService {
     return !!assignment;
   }
 
+  // ─── Workflow definition & versioning (FR-FND-007 full) ────────────────────
+
+  async createDefinition(dto: CreateWorkflowDefinitionDto, actorId: string) {
+    const existing = await this.prisma.workflowDefinition.findFirst({ where: { code: dto.code } });
+    if (existing) throw new ConflictException({ code: 'WORKFLOW_EXISTS', message: `Workflow ${dto.code} sudah ada` });
+
+    const definition = await this.prisma.workflowDefinition.create({
+      data: {
+        code: dto.code,
+        name: dto.name,
+        description: dto.description ?? null,
+        version: 1,
+        status: dto.status ?? 'DRAFT',
+        transactionType: dto.transactionType,
+        createdBy: actorId,
+      },
+    });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'Workflow.CREATE',
+      resource: 'Workflow',
+      resourceId: definition.id,
+      newValue: { code: dto.code, version: 1, transactionType: dto.transactionType },
+      source: 'api',
+    });
+
+    return definition;
+  }
+
+  async listDefinitions() {
+    return this.prisma.workflowDefinition.findMany({
+      include: { steps: { orderBy: { stepOrder: 'asc' } } },
+      orderBy: [{ code: 'asc' }, { version: 'desc' }],
+    });
+  }
+
+  async getActiveDefinition(transactionType: string) {
+    return this.prisma.workflowDefinition.findFirst({
+      where: { transactionType, status: 'ACTIVE' },
+      include: { steps: { orderBy: { stepOrder: 'asc' } } },
+      orderBy: { version: 'desc' },
+    });
+  }
+
+  async addStep(id: string, dto: AddWorkflowStepDto, actorId: string) {
+    const definition = await this.prisma.workflowDefinition.findUnique({ where: { id } });
+    if (!definition) throw new NotFoundException({ code: 'WORKFLOW_NOT_FOUND', message: 'Workflow tidak ditemukan' });
+    if (definition.status !== 'DRAFT') {
+      throw new ConflictException({ code: 'NOT_DRAFT', message: 'Step hanya bisa ditambah saat DRAFT' });
+    }
+
+    const existing = await this.prisma.workflowStep.findUnique({
+      where: { definitionId_stepOrder: { definitionId: id, stepOrder: dto.stepOrder } },
+    });
+    if (existing) throw new ConflictException({ code: 'STEP_EXISTS', message: `Step order ${dto.stepOrder} sudah ada` });
+
+    const step = await this.prisma.workflowStep.create({
+      data: {
+        definitionId: id,
+        stepOrder: dto.stepOrder,
+        name: dto.name,
+        approverRoleCode: dto.approverRoleCode,
+        conditionField: dto.conditionField ?? null,
+        conditionOp: dto.conditionOp ?? null,
+        conditionValue: dto.conditionValue ?? null,
+      },
+    });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'Workflow.ADD_STEP',
+      resource: 'Workflow',
+      resourceId: id,
+      newValue: { code: definition.code, stepOrder: dto.stepOrder, approverRoleCode: dto.approverRoleCode },
+      source: 'api',
+    });
+
+    return step;
+  }
+
+  async publishWorkflow(id: string, dto: PublishWorkflowDto, actorId: string) {
+    const definition = await this.prisma.workflowDefinition.findUnique({
+      where: { id },
+      include: { steps: { orderBy: { stepOrder: 'asc' } } },
+    });
+    if (!definition) throw new NotFoundException({ code: 'WORKFLOW_NOT_FOUND', message: 'Workflow tidak ditemukan' });
+    if (definition.status !== 'DRAFT') {
+      throw new ConflictException({ code: 'NOT_DRAFT', message: 'Hanya DRAFT yang bisa di-publish' });
+    }
+    if (definition.steps.length === 0) {
+      throw new ConflictException({ code: 'NO_STEPS', message: 'Workflow harus punya minimal 1 step' });
+    }
+
+    const published = await this.prisma.$transaction(async (tx) => {
+      await tx.workflowDefinition.updateMany({
+        where: { transactionType: definition.transactionType, status: 'ACTIVE' },
+        data: { status: 'ARCHIVED' },
+      });
+      const updated = await tx.workflowDefinition.update({
+        where: { id },
+        data: { status: 'ACTIVE', name: dto.newVersionName, description: dto.description ?? definition.description },
+      });
+      return updated;
+    });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'Workflow.PUBLISH',
+      resource: 'Workflow',
+      resourceId: id,
+      newValue: { code: definition.code, version: definition.version, transactionType: definition.transactionType },
+      source: 'api',
+    });
+
+    return published;
+  }
+
+  async createNewVersion(code: string, actorId: string) {
+    const latest = await this.prisma.workflowDefinition.findFirst({
+      where: { code },
+      include: { steps: true },
+      orderBy: { version: 'desc' },
+    });
+    if (!latest) throw new NotFoundException({ code: 'WORKFLOW_NOT_FOUND', message: `Workflow ${code} tidak ada` });
+
+    const newVersion = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.workflowDefinition.create({
+        data: {
+          code,
+          name: `${latest.name} v${latest.version + 1}`,
+          description: latest.description,
+          version: latest.version + 1,
+          status: 'DRAFT',
+          transactionType: latest.transactionType,
+          createdBy: actorId,
+          steps: {
+            create: latest.steps
+              .sort((a, b) => a.stepOrder - b.stepOrder)
+              .map((s) => ({
+                stepOrder: s.stepOrder,
+                name: s.name,
+                approverRoleCode: s.approverRoleCode,
+                conditionField: s.conditionField,
+                conditionOp: s.conditionOp,
+                conditionValue: s.conditionValue,
+              })),
+          },
+        },
+        include: { steps: { orderBy: { stepOrder: 'asc' } } },
+      });
+      return created;
+    });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'Workflow.NEW_VERSION',
+      resource: 'Workflow',
+      resourceId: newVersion.id,
+      newValue: { code, version: newVersion.version },
+      source: 'api',
+    });
+
+    return newVersion;
+  }
+
+  // Evaluate conditional step routing
+  private evaluateCondition(step: { conditionField: string | null; conditionOp: string | null; conditionValue: Prisma.Decimal | null }, docValue: number | null): boolean {
+    if (!step.conditionField || !step.conditionOp || step.conditionValue == null || docValue == null) return true;
+    const threshold = Number(step.conditionValue);
+    switch (step.conditionOp) {
+      case '>': return docValue > threshold;
+      case '<': return docValue < threshold;
+      case '>=': return docValue >= threshold;
+      case '<=': return docValue <= threshold;
+      case '==': return docValue === threshold;
+      default: return true;
+    }
+  }
+
+  // Ambil nilai field untuk condition (totalAmount dll)
+  private getDocValue(doc: Record<string, unknown>, field: string | null): number | null {
+    if (!field) return null;
+    const value = (doc as Record<string, unknown>)[field];
+    if (value == null) return null;
+    return Number(value);
+  }
+
   // ─── Submit → buat ApprovalTask ─────────────────────────────────────────────
 
   async submitForApproval(dto: SubmitForApprovalDto, actorId: string) {
-    const { transactionType, transactionId, approverRoleCode, transactionCode } = dto;
+    const { transactionType, transactionId, transactionCode } = dto;
 
     const doc = await this.getTransaction(transactionType, transactionId);
     if (!doc) throw new NotFoundException({ code: 'TRANSACTION_NOT_FOUND', message: 'Transaksi tidak ditemukan' });
     if (doc.status !== 'DRAFT') {
       throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa disubmit (status saat ini ${doc.status})` });
+    }
+
+    // Resolve workflow: prefer ACTIVE definition, fallback manual approverRoleCode
+    const workflow = await this.getActiveDefinition(transactionType);
+    let approverRoleCode = dto.approverRoleCode;
+
+    if (workflow) {
+      const steps = workflow.steps;
+      const firstStep = steps[0];
+      const docValue = this.getDocValue(doc as unknown as Record<string, unknown>, firstStep?.conditionField ?? null);
+      const applicable = steps.filter((step) => this.evaluateCondition(step, docValue));
+      if (applicable.length === 0) {
+        throw new ConflictException({ code: 'NO_APPLICABLE_STEP', message: 'Tidak ada step workflow yang berlaku untuk transaksi ini' });
+      }
+      approverRoleCode = applicable[0]!.approverRoleCode;
     }
 
     // maker-checker setup: pastikan ada approver selain requester
@@ -78,7 +281,7 @@ export class ApprovalService {
       action: 'APPROVAL.SUBMIT',
       resource: transactionType,
       resourceId: transactionId,
-      newValue: { taskId: task.id, approverRoleCode, transactionCode },
+      newValue: { taskId: task.id, approverRoleCode, transactionCode, workflowCode: workflow?.code ?? null },
       source: 'api',
     });
 

@@ -1,9 +1,9 @@
-import { Body, Controller, Get, Inject, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@/auth/auth.guard';
 import { Permissions } from '@/auth/permissions.decorator';
 import { PermissionsGuard } from '@/auth/permissions.guard';
 import { ApprovalService } from './approval.service';
-import { ApproveTaskDto, SubmitForApprovalDto } from './dto/approval.dto';
+import { AddWorkflowStepDto, ApproveTaskDto, CreateWorkflowDefinitionDto, PublishWorkflowDto, SubmitForApprovalDto } from './dto/approval.dto';
 
 @Controller('approvals')
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -26,5 +26,37 @@ export class ApprovalController {
   @Permissions('Approval.APPROVE')
   decide(@Body() dto: ApproveTaskDto, @Req() request: { user?: { sub?: string } }) {
     return this.service.decide(dto, request.user?.sub ?? 'system');
+  }
+
+  // ─── Workflow definition & versioning ──────────────────────────────────────
+
+  @Get('workflows')
+  @Permissions('Workflow.VIEW')
+  listDefinitions() {
+    return this.service.listDefinitions();
+  }
+
+  @Post('workflows')
+  @Permissions('Workflow.CREATE')
+  createDefinition(@Body() dto: CreateWorkflowDefinitionDto, @Req() request: { user?: { sub?: string } }) {
+    return this.service.createDefinition(dto, request.user?.sub ?? 'system');
+  }
+
+  @Post('workflows/:id/steps')
+  @Permissions('Workflow.EDIT')
+  addStep(@Param('id') id: string, @Body() dto: AddWorkflowStepDto, @Req() request: { user?: { sub?: string } }) {
+    return this.service.addStep(id, dto, request.user?.sub ?? 'system');
+  }
+
+  @Post('workflows/:id/publish')
+  @Permissions('Workflow.EDIT')
+  publish(@Param('id') id: string, @Body() dto: PublishWorkflowDto, @Req() request: { user?: { sub?: string } }) {
+    return this.service.publishWorkflow(id, dto, request.user?.sub ?? 'system');
+  }
+
+  @Post('workflows/:code/version')
+  @Permissions('Workflow.EDIT')
+  newVersion(@Param('code') code: string, @Req() request: { user?: { sub?: string } }) {
+    return this.service.createNewVersion(code, request.user?.sub ?? 'system');
   }
 }
