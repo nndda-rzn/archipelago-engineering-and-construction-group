@@ -2,7 +2,7 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/database/prisma.service';
 import { AuditService } from '@/audit/audit.service';
-import type { CreateChartOfAccountDto, CreateJournalDto, CreatePaymentDto, CreateVendorInvoiceDto, ListChartOfAccountQueryDto, ListJournalQueryDto, ListPaymentQueryDto, ListVendorInvoiceQueryDto } from './dto/finance.dto';
+import type { CreateChartOfAccountDto, CreateClientInvoiceDto, CreateJournalDto, CreatePaymentDto, CreateProgressClaimDto, CreateVendorInvoiceDto, ListChartOfAccountQueryDto, ListClientInvoiceQueryDto, ListJournalQueryDto, ListPaymentQueryDto, ListProgressClaimQueryDto, ListVendorInvoiceQueryDto, CertifyClaimDto } from './dto/finance.dto';
 
 // Finance domain — FR-PRO-009 (three-way match: PO + Receipt + Invoice)
 @Injectable()
@@ -698,5 +698,269 @@ export class FinanceService {
     });
 
     return journal;
+  }
+
+  // ─── AR: Progress Claim + Client Invoice (FR-FIN-008/009) ──────────────────
+
+  async createProgressClaim(dto: CreateProgressClaimDto, actorId: string) {
+    const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+
+    const seq = await this.prisma.$transaction(async (tx) => {
+      const s = await tx.numberSequence.upsert({
+        where: { code: 'CLM' },
+        update: { nextNumber: { increment: 1 } },
+        create: { code: 'CLM', prefix: `CLM-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
+      });
+      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+    });
+
+    const claim = await this.prisma.progressClaim.create({
+      data: {
+        claimNumber: seq,
+        projectId: dto.projectId,
+        claimDate: dto.claimDate ? new Date(dto.claimDate) : new Date(),
+        period: dto.period ?? null,
+        description: dto.description ?? null,
+        amount: Number(dto.amount),
+      },
+    });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'ProgressClaim.CREATE',
+      resource: 'ProgressClaim',
+      resourceId: claim.id,
+      newValue: { claimNumber: seq, amount: Number(dto.amount), projectId: dto.projectId },
+      source: 'api',
+    });
+
+    return claim;
+  }
+
+  async certifyClaim(id: string, dto: CertifyClaimDto, actorId: string) {
+    const claim = await this.prisma.progressClaim.findUnique({ where: { id } });
+    if (!claim) throw new NotFoundException({ code: 'CLAIM_NOT_FOUND', message: 'Claim tidak ditemukan' });
+    if (claim.status !== 'DRAFT') {
+      throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa disertifikasi (${claim.status})` });
+    }
+
+    const certified = await this.prisma.progressClaim.update({
+      where: { id },
+      data: {
+        status: 'CERTIFIED',
+        certifiedAmount: Number(dto.certifiedAmount),
+        certifiedBy: actorId,
+        certifiedAt: new Date(),
+        remark: dto.remark ?? null,
+      },
+    });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'ProgressClaim.CERTIFY',
+      resource: 'ProgressClaim',
+      resourceId: id,
+      newValue: { claimNumber: claim.claimNumber, certifiedAmount: Number(dto.certifiedAmount) },
+      source: 'api',
+    });
+
+    return certified;
+  }
+
+  async listProgressClaims(query: ListProgressClaimQueryDto) {
+    const page = Number(query.page) || 1;
+    const pageSize = Math.min(Number(query.pageSize) || 50, 200);
+
+    const where: Prisma.ProgressClaimWhereInput = {
+      ...(query.projectId ? { projectId: query.projectId } : {}),
+      ...(query.status ? { status: query.status } : {}),
+    };
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.progressClaim.findMany({
+        where,
+        include: { project: { select: { code: true, name: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.progressClaim.count({ where }),
+    ]);
+
+    return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+  }
+
+  async createClientInvoice(dto: CreateClientInvoiceDto, actorId: string) {
+    const claim = await this.prisma.progressClaim.findUnique({
+      where: { id: dto.claimId },
+      include: { project: { select: { legalEntityId: true, client: true } } },
+    });
+    if (!claim) throw new NotFoundException({ code: 'CLAIM_NOT_FOUND', message: 'Claim tidak ditemukan' });
+    if (claim.status !== 'CERTIFIED') {
+      throw new ConflictException({ code: 'CLAIM_NOT_CERTIFIED', message: 'Hanya claim CERTIFIED yang bisa di-invoice' });
+    }
+
+    const existing = await this.prisma.clientInvoice.findUnique({ where: { claimId: claim.id } });
+    if (existing) throw new ConflictException({ code: 'CLAIM_ALREADY_INVOICED', message: 'Claim sudah punya client invoice' });
+
+    const amount = Number(claim.certifiedAmount ?? claim.amount);
+    const tax = Number(dto.taxAmount ?? 0);
+    const total = amount + tax;
+
+    const seq = await this.prisma.$transaction(async (tx) => {
+      const s = await tx.numberSequence.upsert({
+        where: { code: 'CINV' },
+        update: { nextNumber: { increment: 1 } },
+        create: { code: 'CINV', prefix: `CINV-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
+      });
+      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+    });
+
+    const invoice = await this.prisma.clientInvoice.create({
+      data: {
+        invoiceNumber: seq,
+        projectId: claim.projectId,
+        claimId: claim.id,
+        client: claim.project.client,
+        invoiceDate: dto.invoiceDate ? new Date(dto.invoiceDate) : new Date(),
+        amount,
+        taxAmount: tax > 0 ? tax : null,
+        totalAmount: total,
+        remark: dto.remark ?? null,
+      },
+    });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'ClientInvoice.CREATE',
+      resource: 'ClientInvoice',
+      resourceId: invoice.id,
+      newValue: { invoiceNumber: seq, amount, taxAmount: tax, totalAmount: total, claimNumber: claim.claimNumber },
+      source: 'api',
+    });
+
+    return invoice;
+  }
+
+  // Auto-post: client invoice POSTED → Debit Piutang (1200), Credit Pendapatan (4100) + PPN Keluaran (2200)
+  private async postClientInvoiceJournal(invoice: { id: string; invoiceNumber: string; legalEntityId: string; amount: number; taxAmount: number | null; totalAmount: number }, actorId: string) {
+    const arAccount = await this.prisma.chartOfAccount.findFirst({
+      where: { legalEntityId: invoice.legalEntityId, code: { startsWith: '120' } },
+    });
+    const revenueAccount = await this.prisma.chartOfAccount.findFirst({
+      where: { legalEntityId: invoice.legalEntityId, code: { startsWith: '410' } },
+    });
+    const vatOutAccount = await this.prisma.chartOfAccount.findFirst({
+      where: { legalEntityId: invoice.legalEntityId, code: { startsWith: '220' } },
+    });
+    if (!arAccount || !revenueAccount) return null;
+
+    const amount = Number(invoice.amount);
+    const tax = Number(invoice.taxAmount ?? 0);
+    const vatLine = tax > 0 && vatOutAccount
+      ? { accountId: vatOutAccount.id, description: 'PPN Keluaran', debit: 0, credit: tax }
+      : { accountId: revenueAccount.id, description: 'PPN Keluaran (termasuk)', debit: 0, credit: tax };
+
+    const journal = await this.prisma.$transaction(async (tx) => {
+      const seq = await this.generateJournalNumber(tx);
+      return tx.journal.create({
+        data: {
+          journalNumber: seq,
+          legalEntityId: invoice.legalEntityId,
+          date: new Date(),
+          source: 'CLIENT_INVOICE',
+          sourceId: invoice.id,
+          reference: invoice.invoiceNumber,
+          description: `Client Invoice ${invoice.invoiceNumber}`,
+          status: 'POSTED',
+          postedAt: new Date(),
+          postedBy: actorId,
+          lines: {
+            create: [
+              { accountId: arAccount.id, description: 'Piutang ke klien', debit: amount + tax, credit: 0 },
+              { accountId: revenueAccount.id, description: 'Pendapatan progres', debit: 0, credit: amount },
+              ...(tax > 0 ? [vatLine] : []),
+            ],
+          },
+        },
+      });
+    });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'Journal.AUTO_POST',
+      resource: 'Journal',
+      resourceId: journal.id,
+      newValue: { journalNumber: journal.journalNumber, source: 'CLIENT_INVOICE', reference: invoice.invoiceNumber },
+      source: 'api',
+    });
+
+    return journal;
+  }
+
+  async postClientInvoice(id: string, actorId: string) {
+    const invoice = await this.prisma.clientInvoice.findUnique({
+      where: { id },
+      include: { project: { select: { legalEntityId: true } } },
+    });
+    if (!invoice) throw new NotFoundException({ code: 'CLIENT_INVOICE_NOT_FOUND', message: 'Client invoice tidak ditemukan' });
+    if (invoice.status !== 'DRAFT') {
+      throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa diposting (${invoice.status})` });
+    }
+
+    const posted = await this.prisma.clientInvoice.update({
+      where: { id },
+      data: { status: 'POSTED', postedAt: new Date(), postedBy: actorId },
+    });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'ClientInvoice.POST',
+      resource: 'ClientInvoice',
+      resourceId: id,
+      newValue: { invoiceNumber: invoice.invoiceNumber, totalAmount: Number(invoice.totalAmount) },
+      source: 'api',
+    });
+
+    await this.postClientInvoiceJournal(
+      {
+        id: invoice.id,
+        invoiceNumber: invoice.invoiceNumber,
+        legalEntityId: invoice.project.legalEntityId,
+        amount: Number(invoice.amount),
+        taxAmount: invoice.taxAmount != null ? Number(invoice.taxAmount) : null,
+        totalAmount: Number(invoice.totalAmount),
+      },
+      actorId,
+    );
+
+    return posted;
+  }
+
+  async listClientInvoices(query: ListClientInvoiceQueryDto) {
+    const page = Number(query.page) || 1;
+    const pageSize = Math.min(Number(query.pageSize) || 50, 200);
+
+    const where: Prisma.ClientInvoiceWhereInput = {
+      ...(query.projectId ? { projectId: query.projectId } : {}),
+      ...(query.status ? { status: query.status } : {}),
+    };
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.clientInvoice.findMany({
+        where,
+        include: {
+          project: { select: { code: true, name: true } },
+          claim: { select: { claimNumber: true, period: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.clientInvoice.count({ where }),
+    ]);
+
+    return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
   }
 }
