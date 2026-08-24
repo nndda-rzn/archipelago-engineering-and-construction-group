@@ -23,6 +23,9 @@ const permissions = [
   ['Project.VIEW', 'Project', 'VIEW'],
   ['Project.CREATE', 'Project', 'CREATE'],
   ['Project.EDIT', 'Project', 'EDIT'],
+  ['WBS.VIEW', 'WBS', 'VIEW'],
+  ['WBS.CREATE', 'WBS', 'CREATE'],
+  ['WBS.EDIT', 'WBS', 'EDIT'],
 ] as const;
 
 async function main() {
@@ -93,7 +96,37 @@ async function main() {
     },
   });
 
-  console.log(`Seeded ${entity.code}, ${role.code}, ${admin.email}`);
+  // Demo project + WBS (PRD §46.4)
+  const demoProject = await prisma.project.upsert({
+    where: { code: 'PRJ-EPC-2027-014' },
+    update: {},
+    create: {
+      code: 'PRJ-EPC-2027-014',
+      name: 'EPC Industrial Processing Facility',
+      client: 'PT Klien Utama',
+      legalEntityId: entity.id,
+      location: 'Karawang',
+      currency: 'IDR',
+    },
+  });
+
+  const wbsLevels = [
+    { code: '1', name: 'Engineering' },
+    { code: '2', name: 'Procurement' },
+    { code: '3', name: 'Construction' },
+    { code: '4', name: 'Commissioning' },
+  ];
+  for (const w of wbsLevels) {
+    await prisma.wbsItem.upsert({
+      where: { projectId_code: { projectId: demoProject.id, code: w.code } },
+      update: {},
+      create: { projectId: demoProject.id, code: w.code, name: w.name, sortOrder: Number(w.code) },
+    });
+  }
+
+  console.log(
+    `Seeded ${entity.code}, ${role.code}, ${admin.email}, ${demoProject.code} + ${wbsLevels.length} WBS`,
+  );
 }
 
 main()

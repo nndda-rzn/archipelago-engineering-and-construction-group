@@ -139,8 +139,29 @@ model Project {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  wbsItems       WbsItem[]
+
   @@index([legalEntityId])
   @@index([status])
+}
+
+// FR-PRJ-002: WBS — hierarchical, unlimited practical depth
+model WbsItem {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  code        String // mis. "1", "1.1", "1.1.1"
+  name        String
+  description String?
+  parentId    String?
+  parent      WbsItem?  @relation("WbsHierarchy", fields: [parentId], references: [id])
+  children    WbsItem[] @relation("WbsHierarchy")
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, code])
+  @@index([projectId])
 }
 
 // FR-FND-009: Number Sequence (configurable)

@@ -230,3 +230,31 @@ export const createProjectSchema = z.object({
 export type CreateProject = z.infer<typeof createProjectSchema>;
 
 export type { Id };
+
+/** WBS — FR-PRJ-002. */
+export const wbsItemSchema: z.ZodType<{
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  children: WbsItem[];
+}> = z.lazy(() =>
+  z.object({
+    id: z.string(),
+    code: z.string(),
+    name: z.string(),
+    description: z.string().nullable(),
+    sortOrder: z.number(),
+    children: wbsItemSchema.array(),
+  }),
+);
+export type WbsItem = z.infer<typeof wbsItemSchema>;
+
+export const createWbsItemSchema = z.object({
+  code: z.string().min(1).max(30),
+  name: z.string().min(1).max(200),
+  description: z.string().max(500).optional(),
+  parentId: z.string().optional(),
+});
+export type CreateWbsItem = z.infer<typeof createWbsItemSchema>;
