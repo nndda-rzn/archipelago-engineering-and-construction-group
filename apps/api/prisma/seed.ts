@@ -53,6 +53,11 @@ const permissions = [
   ['StockOpname.CREATE', 'StockOpname', 'CREATE'],
   ['StockTransfer.VIEW', 'StockTransfer', 'VIEW'],
   ['StockTransfer.CREATE', 'StockTransfer', 'CREATE'],
+  ['ChartOfAccount.VIEW', 'ChartOfAccount', 'VIEW'],
+  ['ChartOfAccount.CREATE', 'ChartOfAccount', 'CREATE'],
+  ['Journal.VIEW', 'Journal', 'VIEW'],
+  ['Journal.CREATE', 'Journal', 'CREATE'],
+  ['Journal.POST', 'Journal', 'POST'],
 ] as const;
 
 async function main() {
@@ -263,6 +268,28 @@ async function main() {
       create: { roleId: role.id, permissionId: permission.id, scopeType: 'GLOBAL', scopeValue: '' },
     });
   }
+
+  // COA baseline (FR-FIN-002) — PSAK sederhana
+  const coaBaseline: Array<{ code: string; name: string; accountType: string; normalBalance: string }> = [
+    { code: '1100', name: 'Kas dan Bank', accountType: 'ASSET', normalBalance: 'DEBIT' },
+    { code: '1200', name: 'Piutang Usaha', accountType: 'ASSET', normalBalance: 'DEBIT' },
+    { code: '1510', name: 'PPN Masukan', accountType: 'ASSET', normalBalance: 'DEBIT' },
+    { code: '1600', name: 'Persediaan', accountType: 'ASSET', normalBalance: 'DEBIT' },
+    { code: '2100', name: 'Utang Usaha', accountType: 'LIABILITY', normalBalance: 'CREDIT' },
+    { code: '2200', name: 'Utang Pajak', accountType: 'LIABILITY', normalBalance: 'CREDIT' },
+    { code: '3100', name: 'Modal', accountType: 'EQUITY', normalBalance: 'CREDIT' },
+    { code: '4100', name: 'Pendapatan', accountType: 'REVENUE', normalBalance: 'CREDIT' },
+    { code: '6100', name: 'Beban Material', accountType: 'EXPENSE', normalBalance: 'DEBIT' },
+    { code: '6200', name: 'Beban Operasional', accountType: 'EXPENSE', normalBalance: 'DEBIT' },
+  ];
+  for (const acc of coaBaseline) {
+    await prisma.chartOfAccount.upsert({
+      where: { legalEntityId_code: { legalEntityId: entity.id, code: acc.code } },
+      update: {},
+      create: { legalEntityId: entity.id, code: acc.code, name: acc.name, accountType: acc.accountType, normalBalance: acc.normalBalance },
+    });
+  }
+  console.log(`Seeded ${coaBaseline.length} COA baseline`);
 }
 
 main()
