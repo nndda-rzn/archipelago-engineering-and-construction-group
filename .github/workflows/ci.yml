@@ -34,11 +34,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma client
+        run: pnpm --filter @aec/api exec prisma generate
+
       - name: Typecheck
         run: pnpm typecheck
 
       - name: Build
         run: pnpm build
-
-      - name: Prisma generate (api)
-        run: pnpm --filter @aec/api exec prisma generate
