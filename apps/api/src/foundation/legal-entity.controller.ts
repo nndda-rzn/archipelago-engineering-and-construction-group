@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@/auth/auth.guard';
 import { Permissions } from '@/auth/permissions.decorator';
 import { PermissionsGuard } from '@/auth/permissions.guard';
@@ -9,7 +9,7 @@ import { LegalEntityService } from './legal-entity.service';
 @Controller('legal-entities')
 @UseGuards(AuthGuard, PermissionsGuard)
 export class LegalEntityController {
-  constructor(private readonly service: LegalEntityService) {}
+  constructor(@Inject(LegalEntityService) private readonly service: LegalEntityService) {}
 
   @Get()
   @Permissions('LegalEntity.VIEW')

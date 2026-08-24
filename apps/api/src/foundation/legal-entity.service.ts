@@ -1,11 +1,11 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/database/prisma.service';
 import type { CreateLegalEntityDto } from './dto/create-legal-entity.dto';
 import type { UpdateLegalEntityDto } from './dto/update-legal-entity.dto';
 
 @Injectable()
 export class LegalEntityService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   findAll() {
     return this.prisma.legalEntity.findMany({ orderBy: { code: 'asc' } });
