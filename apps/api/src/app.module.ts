@@ -3,9 +3,10 @@ import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { HealthController } from './health/health.controller';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { AuthModule } from './auth/auth.module';
+import { FoundationModule } from './foundation/foundation.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, FoundationModule],
   controllers: [HealthController],
   providers: [
     {
