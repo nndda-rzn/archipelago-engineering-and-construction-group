@@ -4,6 +4,7 @@ import {
   getCoreRowModel,
   useReactTable,
   type ColumnDef,
+  type Row,
   type SortingState,
   type PaginationState,
 } from '@tanstack/react-table';
@@ -24,6 +25,8 @@ export interface DataGridProps<TData> {
   onPaginationChange?: (pagination: PaginationState) => void;
   sorting?: SortingState;
   onSortingChange?: (sorting: SortingState) => void;
+  /** Click row handler — untuk detail drill-down. */
+  onRowClick?: (row: Row<TData>) => void;
 }
 
 export function DataGrid<TData>({
@@ -38,6 +41,7 @@ export function DataGrid<TData>({
   onPaginationChange,
   sorting,
   onSortingChange,
+  onRowClick,
 }: DataGridProps<TData>) {
   const isServer = pagination !== undefined && onPaginationChange !== undefined;
 
@@ -132,7 +136,11 @@ export function DataGrid<TData>({
               </tr>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50">
+                <tr
+                  key={row.id}
+                  className={`border-b border-neutral-100 last:border-0 hover:bg-neutral-50 ${onRowClick ? 'cursor-pointer' : ''}`}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-4 py-2.5">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
