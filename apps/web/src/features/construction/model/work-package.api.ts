@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createWorkPackageSchema, workPackageListResponseSchema, type WorkPackage } from '@aec/api-contracts';
+import { createDailyReportSchema, createWorkPackageSchema, dailyReportListResponseSchema, workPackageListResponseSchema, type DailyReport, type WorkPackage } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
 
 export const workPackageKeys = {
@@ -71,3 +71,45 @@ export function useAddProgress(projectId: string) {
 }
 
 export type { WorkPackage };
+
+// FR-CON-003: Daily report
+export const dailyReportKeys = {
+  all: (projectId: string) => ['projects', projectId, 'daily-reports'] as const,
+  list: (projectId: string, params: object) => [...dailyReportKeys.all(projectId), 'list', params] as const,
+};
+
+export function useDailyReports(projectId: string, params: { page: number; pageSize: number }) {
+  return useQuery({
+    queryKey: dailyReportKeys.list(projectId, params),
+    queryFn: async () => {
+      const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+      const data = await getJson<{ items: unknown; total: number }>(`/projects/${projectId}/daily-reports?${qs}`);
+      const parsed = dailyReportListResponseSchema.parse(data);
+      return { items: parsed.items, total: parsed.total };
+    },
+    enabled: !!projectId,
+  });
+}
+
+export function useCreateDailyReport(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationKey: [...dailyReportKeys.all(projectId), 'create'],
+    mutationFn: (input: {
+      reportDate?: string;
+      weather?: string;
+      temperatureC?: number;
+      summary: string;
+      issues?: string;
+      hseNote?: string;
+      qualityNote?: string;
+      equipmentList?: string;
+      materialList?: string;
+      manpowerLines?: { trade: string; manpowerCount: number; hoursWorked: number; note?: string }[];
+    }) => {
+      const parsed = createDailyReportSchema.parse({ projectId, ...input });
+      return postJson<unknown>(`/projects/${projectId}/daily-reports`, parsed);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: dailyReportKeys.all(projectId) }),
+  });
+}
