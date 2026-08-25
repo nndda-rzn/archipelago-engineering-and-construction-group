@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button, Input, Label } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useVendorInvoices, useCreatePayment } from '../model/finance.api';
+import { formatIdr } from '@/shared/lib/format';
 
 type PayLine = { invoiceId: string; amount: number };
 
@@ -82,7 +83,7 @@ export function PaymentForm({ onDone }: { onDone: () => void }) {
                 <tr key={inv.id} className="border-t border-neutral-100">
                   <td className="px-3 py-2 font-mono text-neutral-700">{inv.invoiceNumber}</td>
                   <td className="px-3 py-2 text-right tabular-nums text-neutral-600">
-                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(inv.totalAmount)}
+                    {formatIdr(inv.totalAmount)}
                   </td>
                   <td className="px-3 py-2">
                     {added ? (

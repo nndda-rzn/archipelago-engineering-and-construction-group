@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
 import { useCreatePo, usePos, usePrs, useReleasePo, type PurchaseOrder } from '@/features/procurement';
+import { formatIdr } from '@/shared/lib/format';
 
 const PAGE_SIZE = 20;
 
@@ -31,7 +32,7 @@ const columns = [
     header: 'Total',
     cell: (info) => (
       <span className="font-mono tabular-nums text-neutral-700">
-        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(info.getValue())}
+        {formatIdr(info.getValue())}
       </span>
     ),
   }),

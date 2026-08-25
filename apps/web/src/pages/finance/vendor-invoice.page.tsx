@@ -3,6 +3,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid } from '@aec/ui';
 import { usePostVendorInvoice, useVendorInvoices, type VendorInvoice } from '@/features/finance';
 import { InvoiceForm } from '@/features/finance';
+import { formatIdr } from '@/shared/lib/format';
 
 const PAGE_SIZE = 20;
 
@@ -33,7 +34,7 @@ const columns = [
     header: 'Total',
     cell: (info) => (
       <span className="font-mono tabular-nums text-neutral-700">
-        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(info.getValue())}
+        {formatIdr(info.getValue())}
       </span>
     ),
   }),

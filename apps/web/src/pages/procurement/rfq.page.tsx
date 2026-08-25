@@ -2,12 +2,11 @@ import { useState } from 'react';
 import { Badge, Button, Input } from '@aec/ui';
 import { useCreateQuote, useEvaluateRfq, useRfqs, useSendRfq, type Rfq } from '@/features/procurement';
 import { RfqForm } from '@/features/procurement';
+import { formatIdr as fmt } from '@/shared/lib/format';
 
 const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
   DRAFT: 'default', SENT: 'default', QUOTED: 'warning', EVALUATED: 'warning', AWARDED: 'success', CANCELLED: 'warning',
 };
-
-const fmt = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
 
 function RfqActions({ rfq }: { rfq: Rfq }) {
   const send = useSendRfq();

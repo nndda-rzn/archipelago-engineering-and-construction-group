@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button, Input, Label } from '@aec/ui';
 import { useChartOfAccounts, useCreateJournal } from '../model/finance.api';
+import { formatNumber } from '@/shared/lib/format';
 
 type Line = { accountId: string; debit: number; credit: number; description?: string };
 
@@ -73,8 +74,8 @@ export function JournalForm({ onDone, entityId }: { onDone: () => void; entityId
       </div>
       <div className="mt-3 flex items-center justify-between">
         <div className="flex gap-6 text-body-sm">
-          <span className="text-neutral-600">Total Debit: <span className="font-mono tabular-nums">{new Intl.NumberFormat('id-ID').format(totalDebit)}</span></span>
-          <span className="text-neutral-600">Total Kredit: <span className="font-mono tabular-nums">{new Intl.NumberFormat('id-ID').format(totalCredit)}</span></span>
+          <span className="text-neutral-600">Total Debit: <span className="font-mono tabular-nums">{formatNumber(totalDebit)}</span></span>
+          <span className="text-neutral-600">Total Kredit: <span className="font-mono tabular-nums">{formatNumber(totalCredit)}</span></span>
           {lines.length > 0 && (<span className={balanced ? 'text-semantic-success' : 'text-destructive-600'}>{balanced ? 'Balance ✓' : 'Belum balance'}</span>)}
         </div>
         <Button type="button" variant="secondary" size="sm" onClick={addLine}>+ Tambah Line</Button>

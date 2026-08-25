@@ -2,9 +2,7 @@ import { useState } from 'react';
 import { Badge, Button } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useProjectHealth } from '@/features/project';
-
-const fmt = (n: number) =>
-  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
+import { formatIdr as fmt } from '@/shared/lib/format';
 
 const healthVariant: Record<string, 'default' | 'success' | 'warning'> = {
   NO_BUDGET: 'default',

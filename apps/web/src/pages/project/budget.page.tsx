@@ -3,6 +3,7 @@ import { Badge, Button } from '@aec/ui';
 import { CheckCircle2, Lock } from 'lucide-react';
 import { useBudget, usePublishBudget, useUpsertBudget } from '@/features/project';
 import { useProjects } from '@/entities/project';
+import { formatIdrCustom } from '@/shared/lib/format';
 
 const PAGE_SIZE = 100;
 
@@ -125,7 +126,7 @@ export function BudgetPage() {
             <span className="text-caption font-medium uppercase text-neutral-500">WBS</span>
             <span className="text-caption font-medium uppercase text-neutral-500">
               Total: <span className="font-mono tabular-nums text-neutral-900">
-                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: selectedProject?.currency ?? 'IDR', maximumFractionDigits: 0 }).format(data.totalBudget)}
+                {formatIdrCustom(data.totalBudget, selectedProject?.currency ?? 'IDR')}
               </span>
             </span>
           </div>

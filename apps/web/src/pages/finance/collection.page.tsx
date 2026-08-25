@@ -3,6 +3,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useClientInvoices, useCollections, useCreateCollection, usePostCollection, type Collection } from '@/features/finance';
+import { formatIdr as fmt } from '@/shared/lib/format';
 
 const PAGE_SIZE = 20;
 
@@ -11,9 +12,6 @@ const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
   POSTED: 'success',
   CANCELLED: 'warning',
 };
-
-const fmt = (n: number) =>
-  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
 
 const columnHelper = createColumnHelper<Collection>();
 

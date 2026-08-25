@@ -1,4 +1,5 @@
 import type { Portfolio } from '@aec/api-contracts';
+import { formatIdr } from '@/shared/lib/format';
 
 export type HealthKey = Portfolio['items'][number]['health'];
 export type PortfolioTotals = Portfolio['totals'];
@@ -48,10 +49,10 @@ export function DashboardGrid({
   return (
     <div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Total Kontrak" value={fmtIdr(totals.totalContract)} />
-        <KpiCard label="Budget" value={fmtIdr(totals.totalBudget)} />
-        <KpiCard label="Actual Cost" value={fmtIdr(totals.totalActual)} />
-        <KpiCard label="Revenue" value={fmtIdr(totals.totalRevenue)} />
+        <KpiCard label="Total Kontrak" value={formatIdr(totals.totalContract)} />
+        <KpiCard label="Budget" value={formatIdr(totals.totalBudget)} />
+        <KpiCard label="Actual Cost" value={formatIdr(totals.totalActual)} />
+        <KpiCard label="Revenue" value={formatIdr(totals.totalRevenue)} />
       </div>
       <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-5">
         <KpiCard label="Project" value={String(projectCount)} />
@@ -62,8 +63,4 @@ export function DashboardGrid({
       </div>
     </div>
   );
-}
-
-function fmtIdr(n: number) {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
 }
