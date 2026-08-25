@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
 import { useProjects } from '@/entities/project';
+import { useWorkPackages } from '@/features/construction';
 import { useCreateProgressClaim, useCertifyClaim, useProgressClaims, type ProgressClaim } from '@/features/finance';
 import { formatIdr as fmt } from '@/shared/lib/format';
 
@@ -24,6 +25,21 @@ const columns = [
   columnHelper.accessor('project', {
     header: 'Project',
     cell: (info) => <span className="text-neutral-700">{info.getValue()?.code}</span>,
+  }),
+  columnHelper.accessor('workPackage', {
+    header: 'Work Package',
+    cell: (info) => {
+      const wp = info.getValue();
+      return wp ? <span className="font-mono text-neutral-600">{wp.wpNumber}</span> : '—';
+    },
+  }),
+  columnHelper.accessor('physicalProgressAtClaim', {
+    header: 'Fisik',
+    cell: (info) => (info.getValue() != null ? <span className="font-mono tabular-nums text-neutral-600">{info.getValue()}%</span> : '—'),
+  }),
+  columnHelper.accessor('billableProgress', {
+    header: 'Billable',
+    cell: (info) => (info.getValue() != null ? <span className="font-mono tabular-nums text-neutral-700">{info.getValue()}%</span> : '—'),
   }),
   columnHelper.accessor('period', {
     header: 'Periode',
@@ -89,14 +105,27 @@ function ClaimForm({ onDone }: { onDone: () => void }) {
   const [period, setPeriod] = useState('');
   const [amount, setAmount] = useState(0);
   const [description, setDescription] = useState('');
+  const [workPackageId, setWorkPackageId] = useState('');
+  const [billableProgress, setBillableProgress] = useState('');
   const projects = useProjects({ page: 1, pageSize: 100 });
+  const { data: workPackages } = useWorkPackages(projectId, { page: 1, pageSize: 100 });
   const create = useCreateProgressClaim();
+
+  const selectedWp = workPackages?.items.find((w) => w.id === workPackageId);
 
   const onSubmit = () => {
     if (!projectId || amount <= 0) return;
     create.mutate(
-      { projectId, period: period || undefined, amount, description: description || undefined },
-      { onSuccess: () => { setPeriod(''); setAmount(0); setDescription(''); onDone(); } },
+      {
+        projectId,
+        period: period || undefined,
+        amount,
+        description: description || undefined,
+        workPackageId: workPackageId || undefined,
+        physicalProgressAtClaim: selectedWp?.latestProgress ?? undefined,
+        billableProgress: billableProgress ? Number(billableProgress) : undefined,
+      },
+      { onSuccess: () => { setPeriod(''); setAmount(0); setDescription(''); setWorkPackageId(''); setBillableProgress(''); onDone(); } },
     );
   };
 
@@ -108,7 +137,7 @@ function ClaimForm({ onDone }: { onDone: () => void }) {
           <select
             id="clm-project"
             value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
+            onChange={(e) => { setProjectId(e.target.value); setWorkPackageId(''); }}
             className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
           >
             <option value="">Pilih project…</option>
@@ -118,6 +147,34 @@ function ClaimForm({ onDone }: { onDone: () => void }) {
         <div>
           <Label htmlFor="clm-period">Periode</Label>
           <Input id="clm-period" placeholder="mis. 2026-08" value={period} onChange={(e) => setPeriod(e.target.value)} />
+        </div>
+        <div>
+          <Label htmlFor="clm-wp">Work Package (basis klaim)</Label>
+          <select
+            id="clm-wp"
+            value={workPackageId}
+            onChange={(e) => setWorkPackageId(e.target.value)}
+            disabled={!projectId}
+            className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20 disabled:bg-neutral-50"
+          >
+            <option value="">Tanpa work package</option>
+            {(workPackages?.items ?? []).map((w) => (
+              <option key={w.id} value={w.id}>{w.wpNumber} — {w.title} ({w.latestProgress ?? 0}%)</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <Label htmlFor="clm-billable">Billable Progress (%)</Label>
+          <Input
+            id="clm-billable"
+            type="number"
+            min={0}
+            max={100}
+            placeholder={selectedWp ? `Fisik saat ini: ${selectedWp.latestProgress ?? 0}%` : 'Opsional'}
+            value={billableProgress}
+            onChange={(e) => setBillableProgress(e.target.value)}
+            disabled={!selectedWp}
+          />
         </div>
         <div>
           <Label htmlFor="clm-amount">Nilai Klaim</Label>

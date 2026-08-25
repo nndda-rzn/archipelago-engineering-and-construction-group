@@ -209,6 +209,10 @@ export const progressClaimSchema = z.object({
   remark: z.string().nullable(),
   createdAt: z.string(),
   project: z.object({ code: z.string(), name: z.string() }).optional(),
+  workPackageId: z.string().nullable().optional(),
+  workPackage: z.object({ wpNumber: z.string(), title: z.string() }).nullable().optional(),
+  physicalProgressAtClaim: z.number().nullable().optional(),
+  billableProgress: z.number().nullable().optional(),
 });
 export type ProgressClaim = z.infer<typeof progressClaimSchema>;
 
@@ -218,6 +222,9 @@ export const createProgressClaimSchema = z.object({
   period: z.string().max(30).optional(),
   description: z.string().max(500).optional(),
   amount: z.number().min(0.01),
+  workPackageId: z.string().optional(),
+  physicalProgressAtClaim: z.number().min(0).max(100).optional(),
+  billableProgress: z.number().min(0).max(100).optional(),
 });
 export type CreateProgressClaim = z.infer<typeof createProgressClaimSchema>;
 

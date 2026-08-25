@@ -18,7 +18,16 @@ export function useProgressClaims(params: { page: number; pageSize: number }) {
 export function useCreateProgressClaim() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { projectId: string; claimDate?: string; period?: string; description?: string; amount: number }) => {
+    mutationFn: (input: {
+      projectId: string;
+      claimDate?: string;
+      period?: string;
+      description?: string;
+      amount: number;
+      workPackageId?: string;
+      physicalProgressAtClaim?: number;
+      billableProgress?: number;
+    }) => {
       const parsed = createProgressClaimSchema.parse(input);
       return postJson<unknown>('/progress-claims', parsed);
     },
