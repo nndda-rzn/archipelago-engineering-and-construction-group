@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, Input, Label } from '@aec/ui';
-import { useCreateWorkflowDefinition } from './approval.api';
+import { useCreateWorkflowDefinition } from '../model/approval.api';
 
 export function CreateWorkflowForm({ onDone }: { onDone: () => void }) {
   const [code, setCode] = useState('');

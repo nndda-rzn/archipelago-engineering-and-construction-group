@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, DataGrid } from '@aec/ui';
-import { useAuditLogs } from '@/features/audit/audit.api';
+import { useAuditLogs } from '@/features/audit';
 import type { AuditLog } from '@aec/api-contracts';
 
 const PAGE_SIZE = 20;

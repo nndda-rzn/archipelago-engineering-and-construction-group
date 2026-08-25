@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Badge, Button, Input, Label } from '@aec/ui';
-import { useAddWorkflowStep, usePublishWorkflow, useNewWorkflowVersion, type WorkflowDefinition } from './approval.api';
+import { useAddWorkflowStep, usePublishWorkflow, useNewWorkflowVersion, type WorkflowDefinition } from '../model/approval.api';
 
 const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
   DRAFT: 'default',

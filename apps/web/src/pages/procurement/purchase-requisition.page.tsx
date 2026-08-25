@@ -5,7 +5,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useCreatePr, usePrs, type PurchaseRequisition } from '@/features/procurement';
 import { useProjects } from '@/entities/project';
 import { useWbsTree } from '@/entities/wbs';
-import { useSubmitForApproval } from '@/features/approval/approval.api';
+import { useSubmitForApproval } from '@/features/approval';
 
 const PAGE_SIZE = 20;
 

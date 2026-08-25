@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginRequestSchema, type LoginRequest } from '@aec/api-contracts';
 import { Button, Input, Label, cn } from '@aec/ui';
-import { useLogin } from '@/features/auth/auth.api';
+import { useLogin } from '@/features/auth';
 
 export function LoginPage() {
   const login = useLogin();
