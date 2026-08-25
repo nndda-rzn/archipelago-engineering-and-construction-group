@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Inject, Param, Post, Req, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@/auth/auth.guard';
-import { Permissions } from '@/auth/permissions.decorator';
-import { PermissionsGuard } from '@/auth/permissions.guard';
+import { AuthGuard } from '@/shared/guards/auth.guard';
+import { Permissions } from '@/shared/decorators/permissions.decorator';
+import { PermissionsGuard } from '@/shared/guards/permissions.guard';
 import { CreateWbsItemDto } from './dto/wbs.dto';
 import { WbsService } from './wbs.service';
 

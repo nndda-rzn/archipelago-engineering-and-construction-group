@@ -3,8 +3,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { AuthGuard } from './auth.guard';
-import { PermissionsGuard } from './permissions.guard';
+import { AuthGuard } from '@/shared/guards/auth.guard';
+import { PermissionsGuard } from '@/shared/guards/permissions.guard';
 import { Reflector } from '@nestjs/core';
 import { AuditModule } from '@/audit/audit.module';
 

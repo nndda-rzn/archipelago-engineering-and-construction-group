@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@/auth/auth.guard';
-import { Permissions } from '@/auth/permissions.decorator';
-import { PermissionsGuard } from '@/auth/permissions.guard';
+import { AuthGuard } from '@/shared/guards/auth.guard';
+import { Permissions } from '@/shared/decorators/permissions.decorator';
+import { PermissionsGuard } from '@/shared/guards/permissions.guard';
 import { CreateUserDto, ListUserQueryDto } from './dto/user.dto';
 import { UserService } from './user.service';
 
