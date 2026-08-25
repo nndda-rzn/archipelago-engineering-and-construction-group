@@ -1,7 +1,7 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
-import type { CreateWbsItemDto } from './dto/wbs.dto';
+import type { CreateWbsItemDto } from '../../presentation/dto/wbs.dto';
 
 export type WbsTreeNode = {
   id: string;
