@@ -776,6 +776,8 @@ model ProgressClaim {
   period        String? // mis. "2026-08"
   description   String?
   amount        Decimal  @db.Decimal(18, 2) // nilai klaim diajukan
+  claimType     String   @default("PROGRESS") // PROGRESS | COST | TIME | EOT | CONTRACTUAL (FR-CMR-007)
+  requestedExtensionDays Int? // untuk TIME/EOT claim — jumlah hari EOT
   status        String   @default("DRAFT") // DRAFT | CERTIFIED | REJECTED | REVISED
   certifiedAmount Decimal? @db.Decimal(18, 2) // nilai sertifikasi gross
   retentionRate  Decimal  @default(0) @db.Decimal(5, 2) // % retensi kontrak (FR-CMR-003)
@@ -799,6 +801,7 @@ model ProgressClaim {
 
   @@index([projectId])
   @@index([status])
+  @@index([claimType])
   @@index([workPackageId])
 }
 

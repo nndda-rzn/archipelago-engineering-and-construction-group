@@ -4,11 +4,12 @@ import { getJson, postJson } from '@/shared/lib/http';
 
 export const claimKeys = { all: ['progress-claims'] as const, list: (params: object) => [...claimKeys.all, 'list', params] as const };
 
-export function useProgressClaims(params: { page: number; pageSize: number }) {
+export function useProgressClaims(params: { page: number; pageSize: number; claimType?: string }) {
   return useQuery({
     queryKey: claimKeys.list(params),
     queryFn: async () => {
       const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+      if (params.claimType) qs.set('claimType', params.claimType);
       const data = await getJson<{ items: unknown; total: number }>(`/progress-claims?${qs}`);
       return { items: progressClaimSchema.array().parse(data.items), total: data.total };
     },
@@ -24,6 +25,8 @@ export function useCreateProgressClaim() {
       period?: string;
       description?: string;
       amount: number;
+      claimType?: string;
+      requestedExtensionDays?: number;
       workPackageId?: string;
       physicalProgressAtClaim?: number;
       billableProgress?: number;

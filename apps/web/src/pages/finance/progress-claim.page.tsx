@@ -15,12 +15,26 @@ const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
   REVISED: 'warning',
 };
 
+const CLAIM_TYPES = ['PROGRESS', 'COST', 'TIME', 'EOT', 'CONTRACTUAL'] as const;
+
+const claimTypeLabel: Record<string, string> = {
+  PROGRESS: 'Progres',
+  COST: 'Biaya',
+  TIME: 'Waktu',
+  EOT: 'EOT',
+  CONTRACTUAL: 'Kontraktual',
+};
+
 const columnHelper = createColumnHelper<ProgressClaim>();
 
 const columns = [
   columnHelper.accessor('claimNumber', {
     header: 'No. Klaim',
     cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span>,
+  }),
+  columnHelper.accessor('claimType', {
+    header: 'Tipe',
+    cell: (info) => <Badge variant={info.getValue() === 'PROGRESS' ? 'default' : 'warning'}>{claimTypeLabel[info.getValue()] ?? info.getValue()}</Badge>,
   }),
   columnHelper.accessor('project', {
     header: 'Project',
@@ -156,7 +170,9 @@ function CertifyButton({ claim }: { claim: ProgressClaim }) {
 function ClaimForm({ onDone }: { onDone: () => void }) {
   const [projectId, setProjectId] = useState('');
   const [period, setPeriod] = useState('');
+  const [claimType, setClaimType] = useState('PROGRESS');
   const [amount, setAmount] = useState(0);
+  const [requestedExtensionDays, setRequestedExtensionDays] = useState('');
   const [description, setDescription] = useState('');
   const [workPackageId, setWorkPackageId] = useState('');
   const [billableProgress, setBillableProgress] = useState('');
@@ -165,6 +181,7 @@ function ClaimForm({ onDone }: { onDone: () => void }) {
   const create = useCreateProgressClaim();
 
   const selectedWp = workPackages?.items.find((w) => w.id === workPackageId);
+  const isTimeType = claimType === 'TIME' || claimType === 'EOT';
 
   const onSubmit = () => {
     if (!projectId || amount <= 0) return;
@@ -173,12 +190,14 @@ function ClaimForm({ onDone }: { onDone: () => void }) {
         projectId,
         period: period || undefined,
         amount,
+        claimType: claimType !== 'PROGRESS' ? claimType : undefined,
+        requestedExtensionDays: isTimeType && requestedExtensionDays ? Number(requestedExtensionDays) : undefined,
         description: description || undefined,
         workPackageId: workPackageId || undefined,
         physicalProgressAtClaim: selectedWp?.latestProgress ?? undefined,
         billableProgress: billableProgress ? Number(billableProgress) : undefined,
       },
-      { onSuccess: () => { setPeriod(''); setAmount(0); setDescription(''); setWorkPackageId(''); setBillableProgress(''); onDone(); } },
+      { onSuccess: () => { setPeriod(''); setAmount(0); setDescription(''); setWorkPackageId(''); setBillableProgress(''); setRequestedExtensionDays(''); setClaimType('PROGRESS'); onDone(); } },
     );
   };
 
@@ -198,9 +217,30 @@ function ClaimForm({ onDone }: { onDone: () => void }) {
           </select>
         </div>
         <div>
+          <Label htmlFor="clm-type">Tipe Klaim (FR-CMR-007)</Label>
+          <select
+            id="clm-type"
+            value={claimType}
+            onChange={(e) => setClaimType(e.target.value)}
+            className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
+          >
+            {CLAIM_TYPES.map((t) => <option key={t} value={t}>{t} — {claimTypeLabel[t]}</option>)}
+          </select>
+        </div>
+        <div>
           <Label htmlFor="clm-period">Periode</Label>
           <Input id="clm-period" placeholder="mis. 2026-08" value={period} onChange={(e) => setPeriod(e.target.value)} />
         </div>
+        <div>
+          <Label htmlFor="clm-amount">Nilai Klaim</Label>
+          <Input id="clm-amount" type="number" min={0} step={100000} value={amount || ''} onChange={(e) => setAmount(Number(e.target.value))} />
+        </div>
+        {isTimeType && (
+          <div>
+            <Label htmlFor="clm-eot">Requested Extension Days</Label>
+            <Input id="clm-eot" type="number" min={1} max={3650} placeholder="Jumlah hari EOT" value={requestedExtensionDays} onChange={(e) => setRequestedExtensionDays(e.target.value)} />
+          </div>
+        )}
         <div>
           <Label htmlFor="clm-wp">Work Package (basis klaim)</Label>
           <select
@@ -230,10 +270,6 @@ function ClaimForm({ onDone }: { onDone: () => void }) {
           />
         </div>
         <div>
-          <Label htmlFor="clm-amount">Nilai Klaim</Label>
-          <Input id="clm-amount" type="number" min={0} step={100000} value={amount || ''} onChange={(e) => setAmount(Number(e.target.value))} />
-        </div>
-        <div>
           <Label htmlFor="clm-desc">Deskripsi</Label>
           <Input id="clm-desc" placeholder="Progres pekerjaan…" value={description} onChange={(e) => setDescription(e.target.value)} />
         </div>
@@ -250,18 +286,30 @@ function ClaimForm({ onDone }: { onDone: () => void }) {
 export function ProgressClaimPage() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
   const [showForm, setShowForm] = useState(false);
-  const { data, isLoading, isError, refetch } = useProgressClaims({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
+  const [claimTypeFilter, setClaimTypeFilter] = useState('');
+  const { data, isLoading, isError, refetch } = useProgressClaims({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize, claimType: claimTypeFilter || undefined });
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Progress Claim</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Klaim progres pekerjaan ke klien (FR-FIN-008)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Klaim progres pekerjaan ke klien — tipe PROGRESS/COST/TIME/EOT/KONTRACTUAL (FR-CMR-007)</p>
         </div>
-        <Button size="sm" onClick={() => setShowForm((s) => !s)}>
-          {showForm ? 'Tutup' : '+ Buat Klaim'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <select
+            aria-label="Filter tipe klaim"
+            value={claimTypeFilter}
+            onChange={(e) => { setClaimTypeFilter(e.target.value); setPagination({ pageIndex: 0, pageSize: PAGE_SIZE }); }}
+            className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
+          >
+            <option value="">Semua tipe</option>
+            {CLAIM_TYPES.map((t) => <option key={t} value={t}>{t} — {claimTypeLabel[t]}</option>)}
+          </select>
+          <Button size="sm" onClick={() => setShowForm((s) => !s)}>
+            {showForm ? 'Tutup' : '+ Buat Klaim'}
+          </Button>
+        </div>
       </div>
 
       {showForm && <ClaimForm onDone={() => setShowForm(false)} />}
