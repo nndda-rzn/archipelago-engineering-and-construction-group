@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Badge, Button } from '@aec/ui';
 import { useLegalEntities } from '@/entities/legal-entity';
 import { useTrialBalance } from '@/features/finance';
+import { formatIdr as fmt } from '@/shared/lib/format';
 
 const typeLabel: Record<string, string> = {
   ASSET: 'Aset',
@@ -10,9 +11,6 @@ const typeLabel: Record<string, string> = {
   REVENUE: 'Pendapatan',
   EXPENSE: 'Beban',
 };
-
-const fmt = (n: number) =>
-  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
 
 export function TrialBalancePage() {
   const [entityId, setEntityId] = useState('');

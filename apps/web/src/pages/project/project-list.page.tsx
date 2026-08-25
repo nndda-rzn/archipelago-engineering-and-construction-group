@@ -7,6 +7,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
 import { useCreateProject, useProjects } from '@/entities/project';
 import { useLegalEntities } from '@/entities/legal-entity';
+import { formatIdr } from '@/shared/lib/format';
 
 const PAGE_SIZE = 20;
 
@@ -43,7 +44,7 @@ const columns = [
       const v = info.getValue();
       return (
         <span className="font-mono tabular-nums text-neutral-700">
-          {v != null ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(v) : '-'}
+          {v != null ? formatIdr(v) : '-'}
         </span>
       );
     },

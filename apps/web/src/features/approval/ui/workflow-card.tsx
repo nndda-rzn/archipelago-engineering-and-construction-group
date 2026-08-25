@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Badge, Button, Input, Label } from '@aec/ui';
 import { useAddWorkflowStep, usePublishWorkflow, useNewWorkflowVersion, type WorkflowDefinition } from '../model/approval.api';
+import { formatNumber } from '@/shared/lib/format';
 
 const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
   DRAFT: 'default',
@@ -16,7 +17,7 @@ function StepBadge({ conditionField, conditionOp, conditionValue }: { conditionF
   if (!conditionField || !conditionOp || conditionValue == null) return null;
   return (
     <Badge variant="default">
-      {conditionField} {opLabel[conditionOp] ?? conditionOp} {new Intl.NumberFormat('id-ID').format(conditionValue)}
+      {conditionField} {opLabel[conditionOp] ?? conditionOp} {formatNumber(conditionValue)}
     </Badge>
   );
 }

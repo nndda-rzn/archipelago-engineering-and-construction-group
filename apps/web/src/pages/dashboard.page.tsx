@@ -1,9 +1,7 @@
 import { Badge, Button } from '@aec/ui';
 import { usePortfolio } from '@/features/project';
 import { DashboardGrid, healthMeta, type HealthKey } from '@/widgets/dashboard-grid';
-
-const fmt = (n: number) =>
-  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
+import { formatIdr as fmt } from '@/shared/lib/format';
 
 export function DashboardPage() {
   const { data, isLoading, isError, refetch } = usePortfolio();

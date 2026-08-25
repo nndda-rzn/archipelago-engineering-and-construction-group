@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
 import { useStockLedger, useStockSummary, useCreateWarehouse, useWarehouses } from '@/features/inventory';
+import { formatIdr } from '@/shared/lib/format';
 
 const PAGE_SIZE = 20;
 
@@ -151,7 +152,7 @@ export function StockLedgerPage() {
                     <td className="px-3 py-2 text-neutral-600">{item.warehouse.code}</td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums text-neutral-800">{item.quantity}</td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums text-neutral-700">
-                      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(item.totalValue)}
+                      {formatIdr(item.totalValue)}
                     </td>
                   </tr>
                 ))}

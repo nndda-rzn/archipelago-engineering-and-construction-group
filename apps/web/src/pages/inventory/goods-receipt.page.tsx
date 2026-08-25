@@ -3,6 +3,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
 import { usePos, type PurchaseOrder } from '@/features/procurement';
 import { useGoodsReceipts, useCreateGoodsReceipt, useWarehouses, type GoodsReceipt } from '@/features/inventory';
+import { formatIdr } from '@/shared/lib/format';
 
 const PAGE_SIZE = 20;
 
@@ -113,7 +114,7 @@ function ReceiptForm({ onDone }: { onDone: () => void }) {
                   <td className="px-3 py-2 text-right tabular-nums text-neutral-700">{item.quantity}</td>
                   <td className="px-3 py-2 text-neutral-600">{item.unit}</td>
                   <td className="px-3 py-2 text-right tabular-nums text-neutral-600">
-                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(item.unitPrice)}
+                    {formatIdr(item.unitPrice)}
                   </td>
                   <td className="px-3 py-2">
                     <Input

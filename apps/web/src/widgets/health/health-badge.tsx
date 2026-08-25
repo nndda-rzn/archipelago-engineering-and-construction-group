@@ -1,4 +1,4 @@
-import { useHealth } from '@/entities/health/health.api';
+import { useHealth } from '@/entities/health';
 
 export function HealthBadge() {
   const { data, isLoading, isError, refetch } = useHealth();

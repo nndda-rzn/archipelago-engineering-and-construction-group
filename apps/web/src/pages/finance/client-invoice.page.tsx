@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
 import { useClientInvoices, useCreateClientInvoice, usePostClientInvoice, useProgressClaims, type ClientInvoice } from '@/features/finance';
+import { formatIdr as fmt } from '@/shared/lib/format';
 
 const PAGE_SIZE = 20;
 
@@ -11,9 +12,6 @@ const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
   PAID: 'success',
   CANCELLED: 'warning',
 };
-
-const fmt = (n: number) =>
-  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
 
 const columnHelper = createColumnHelper<ClientInvoice>();
 
