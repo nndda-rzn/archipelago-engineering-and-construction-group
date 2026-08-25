@@ -78,6 +78,9 @@ const permissions = [
   ['WorkPackage.VIEW', 'WorkPackage', 'VIEW'],
   ['WorkPackage.CREATE', 'WorkPackage', 'CREATE'],
   ['WorkPackage.EDIT', 'WorkPackage', 'EDIT'],
+  ['DailyReport.VIEW', 'DailyReport', 'VIEW'],
+  ['DailyReport.CREATE', 'DailyReport', 'CREATE'],
+  ['DailyReport.EDIT', 'DailyReport', 'EDIT'],
 ] as const;
 
 async function main() {
