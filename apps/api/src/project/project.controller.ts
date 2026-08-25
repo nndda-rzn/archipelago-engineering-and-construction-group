@@ -4,11 +4,17 @@ import { Permissions } from '@/auth/permissions.decorator';
 import { PermissionsGuard } from '@/auth/permissions.guard';
 import { CreateProjectDto, ListProjectQueryDto } from './dto/project.dto';
 import { ProjectService } from './project.service';
+import { ProjectHealthService } from './services/project-health.service';
+import { PortfolioService } from './services/portfolio.service';
 
 @Controller('projects')
 @UseGuards(AuthGuard, PermissionsGuard)
 export class ProjectController {
-  constructor(@Inject(ProjectService) private readonly service: ProjectService) {}
+  constructor(
+    @Inject(ProjectService) private readonly service: ProjectService,
+    @Inject(ProjectHealthService) private readonly healthSvc: ProjectHealthService,
+    @Inject(PortfolioService) private readonly portfolioSvc: PortfolioService,
+  ) {}
 
   @Get()
   @Permissions('Project.VIEW')
@@ -19,7 +25,7 @@ export class ProjectController {
   @Get('portfolio')
   @Permissions('Project.VIEW')
   portfolio() {
-    return this.service.portfolio();
+    return this.portfolioSvc.portfolio();
   }
 
   @Get(':id')
@@ -31,7 +37,7 @@ export class ProjectController {
   @Get(':id/health')
   @Permissions('Project.VIEW')
   health(@Param('id') id: string) {
-    return this.service.health(id);
+    return this.healthSvc.health(id);
   }
 
   @Post()
