@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Badge, Button } from '@aec/ui';
-import { useWorkflowDefinitions } from '@/features/approval/approval.api';
-import { WorkflowCard } from '@/features/approval/workflow-card';
-import { CreateWorkflowForm } from '@/features/approval/workflow-form';
+import { useWorkflowDefinitions } from '@/features/approval';
+import { WorkflowCard } from '@/features/approval';
+import { CreateWorkflowForm } from '@/features/approval';
 
 const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
   DRAFT: 'default', ACTIVE: 'success', ARCHIVED: 'warning',

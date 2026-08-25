@@ -1,5 +1,5 @@
 import { Badge, Button } from '@aec/ui';
-import { usePortfolio } from '@/features/project/project.api';
+import { usePortfolio } from '@/features/project';
 import { DashboardGrid, healthMeta, type HealthKey } from '@/widgets/dashboard-grid';
 
 const fmt = (n: number) =>

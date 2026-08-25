@@ -1,6 +1,6 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid } from '@aec/ui';
-import { useApprovalTasks, useDecideApproval, type ApprovalTask } from '@/features/approval/approval.api';
+import { useApprovalTasks, useDecideApproval, type ApprovalTask } from '@/features/approval';
 
 const columnHelper = createColumnHelper<ApprovalTask>();
 
