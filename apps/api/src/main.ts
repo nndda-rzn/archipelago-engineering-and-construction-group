@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { validateEnv } from './config/env';
+import { validateEnv } from './shared/config/env';
 
 async function bootstrap() {
   const env = validateEnv(process.env);
