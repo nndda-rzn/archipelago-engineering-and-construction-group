@@ -2,8 +2,8 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import * as bcrypt from 'bcrypt';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
-import { AuditService } from '@/audit/audit.service';
-import type { CreateUserDto, ListUserQueryDto } from './dto/user.dto';
+import { AuditService } from './audit.service';
+import type { CreateUserDto, ListUserQueryDto } from '../../presentation/dto/user.dto';
 
 @Injectable()
 export class UserService {

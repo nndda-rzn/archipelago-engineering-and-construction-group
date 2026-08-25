@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
-import { AuditService } from '@/audit/audit.service';
+import { AuditService } from '@/modules/foundation';
 
 @Injectable()
 export class GlHelper {

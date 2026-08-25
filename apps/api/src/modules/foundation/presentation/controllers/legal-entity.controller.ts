@@ -2,10 +2,10 @@ import { Body, Controller, Get, Inject, Param, Patch, Post, Query, UseGuards } f
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
-import { CreateLegalEntityDto } from './dto/create-legal-entity.dto';
-import { ListLegalEntityQueryDto } from './dto/list-legal-entity-query.dto';
-import { UpdateLegalEntityDto } from './dto/update-legal-entity.dto';
-import { LegalEntityService } from './legal-entity.service';
+import { CreateLegalEntityDto } from '../dto/create-legal-entity.dto';
+import { ListLegalEntityQueryDto } from '../dto/list-legal-entity-query.dto';
+import { UpdateLegalEntityDto } from '../dto/update-legal-entity.dto';
+import { LegalEntityService } from '../../application/services/legal-entity.service';
 
 @Controller('legal-entities')
 @UseGuards(AuthGuard, PermissionsGuard)

@@ -2,8 +2,8 @@ import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } fro
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
-import { CreateUserDto, ListUserQueryDto } from './dto/user.dto';
-import { UserService } from './user.service';
+import { CreateUserDto, ListUserQueryDto } from '../dto/user.dto';
+import { UserService } from '../../application/services/user.service';
 
 @Controller('users')
 @UseGuards(AuthGuard, PermissionsGuard)

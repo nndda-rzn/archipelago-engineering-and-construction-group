@@ -2,8 +2,8 @@ import { Body, Controller, Get, Inject, Param, Post, UseGuards } from '@nestjs/c
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
-import { AssignPermissionsDto, CreateRoleDto } from './dto/role.dto';
-import { RoleService } from './role.service';
+import { AssignPermissionsDto, CreateRoleDto } from '../dto/role.dto';
+import { RoleService } from '../../application/services/role.service';
 
 @Controller('roles')
 @UseGuards(AuthGuard, PermissionsGuard)
