@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
 import { useProjects } from '@/entities/project';
-import { useCreateProgressClaim, useCertifyClaim, useProgressClaims, type ProgressClaim } from '@/features/finance/finance.api';
+import { useCreateProgressClaim, useCertifyClaim, useProgressClaims, type ProgressClaim } from '@/features/finance';
 
 const PAGE_SIZE = 20;
 

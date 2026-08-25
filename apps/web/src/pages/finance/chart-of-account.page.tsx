@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Badge, Button, Input, Label } from '@aec/ui';
 import { useLegalEntities } from '@/entities/legal-entity';
-import { useChartOfAccounts, useCreateChartOfAccount, type ChartOfAccount } from '@/features/finance/finance.api';
+import { useChartOfAccounts, useCreateChartOfAccount, type ChartOfAccount } from '@/features/finance';
 
 const typeVariant: Record<string, 'default' | 'success' | 'warning'> = {
   ASSET: 'success',

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid } from '@aec/ui';
-import { useApprovePayment, usePayPayment, usePayments, type Payment } from '@/features/finance/finance.api';
-import { PaymentForm } from '@/features/finance/payment-form';
+import { useApprovePayment, usePayPayment, usePayments, type Payment } from '@/features/finance';
+import { PaymentForm } from '@/features/finance';
 
 const PAGE_SIZE = 20;
 
