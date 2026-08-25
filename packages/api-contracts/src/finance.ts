@@ -207,6 +207,8 @@ export const progressClaimSchema = z.object({
   retentionRate: z.number().nullable().optional(),
   retentionAmount: z.number().nullable().optional(),
   netCertifiedAmount: z.number().nullable().optional(),
+  recoveryAmount: z.number().nullable().optional(),
+  cumulativeRecovered: z.number().nullable().optional(),
   certifiedBy: z.string().nullable(),
   certifiedAt: z.string().nullable(),
   remark: z.string().nullable(),
