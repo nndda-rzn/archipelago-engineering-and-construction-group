@@ -46,6 +46,7 @@ const navGroups: NavGroup[] = [
       { label: 'Stock Ledger', icon: Truck, to: '/inventory/stock-ledger' },
       { label: 'Inventaris', icon: Truck, to: '/inventory' },
       { label: 'Konstruksi', icon: Construction, to: '/construction/work-packages' },
+      { label: 'Daily Report', icon: Construction, to: '/construction/daily-reports' },
       { label: 'Keuangan', icon: DollarSign, to: '/finance' },
       { label: 'HCM', icon: Users, to: '/hcm' },
       { label: 'Peralatan', icon: Gavel, to: '/equipment' },

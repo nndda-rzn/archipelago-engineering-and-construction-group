@@ -160,6 +160,7 @@ model Project {
   collections    Collection[]
   rfqs           Rfq[]
   workPackages   ConstructionWorkPackage[]
+  dailyReports   ConstructionDailyReport[]
 
   @@index([legalEntityId])
   @@index([status])
@@ -966,6 +967,45 @@ model WorkPackageProgress {
   createdAt      DateTime @default(now())
 
   @@index([workPackageId])
+}
+
+// FR-CON-003: Daily report — catatan harian lapangan konstruksi
+model ConstructionDailyReport {
+  id            String   @id @default(cuid())
+  drNumber      String   @unique // mis. "DR-2026-EPC-000001"
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id])
+  reportDate    DateTime @default(now())
+  weather       String? // CERAH | HUJAN | BERAWAN | MENDUNG
+  temperatureC  Decimal? @db.Decimal(4, 1)
+  summary       String // ringkasan aktivitas hari ini
+  issues        String? // masalah lapangan
+  hseNote       String? // catatan keselamatan/HSE
+  qualityNote   String? // catatan kualitas/QC
+  manpowerTotal Int      @default(0)
+  equipmentList String? // daftar equipment dipakai
+  materialList  String? // daftar material dipakai
+  status        String   @default("SUBMITTED") // DRAFT | SUBMITTED
+  reportedBy    String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  manpowerLines DailyReportManpower[]
+
+  @@index([projectId])
+  @@index([reportDate])
+}
+
+model DailyReportManpower {
+  id             String   @id @default(cuid())
+  dailyReportId  String
+  dailyReport    ConstructionDailyReport @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  trade         String // mis. "KONSTRUKSI", "BESI", "MEKANIKAL", "LISTRIK"
+  manpowerCount Int
+  hoursWorked   Decimal  @db.Decimal(5, 2)
+  note          String?
+
+  @@index([dailyReportId])
 }
 
 // FR-FND-009: Number Sequence (configurable)

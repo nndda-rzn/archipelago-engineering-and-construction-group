@@ -63,3 +63,64 @@ export const createProgressSchema = z.object({
   progressDate: z.string().optional(),
 });
 export type CreateProgress = z.infer<typeof createProgressSchema>;
+
+// FR-CON-003: Daily report
+export const dailyReportSchema = z.object({
+  id: z.string(),
+  drNumber: z.string(),
+  projectId: z.string(),
+  reportDate: z.string(),
+  weather: z.string().nullable(),
+  temperatureC: z.number().nullable(),
+  summary: z.string(),
+  issues: z.string().nullable(),
+  hseNote: z.string().nullable(),
+  qualityNote: z.string().nullable(),
+  manpowerTotal: z.number(),
+  equipmentList: z.string().nullable(),
+  materialList: z.string().nullable(),
+  status: z.string(),
+  reportedBy: z.string(),
+  createdAt: z.string(),
+  manpowerLines: z.array(
+    z.object({
+      id: z.string(),
+      trade: z.string(),
+      manpowerCount: z.number(),
+      hoursWorked: z.number(),
+      note: z.string().nullable(),
+    }),
+  ),
+});
+export type DailyReport = z.infer<typeof dailyReportSchema>;
+
+export const createDailyReportSchema = z.object({
+  projectId: z.string(),
+  reportDate: z.string().optional(),
+  weather: z.string().optional(),
+  temperatureC: z.number().optional(),
+  summary: z.string().min(5).max(2000),
+  issues: z.string().max(2000).optional(),
+  hseNote: z.string().max(2000).optional(),
+  qualityNote: z.string().max(2000).optional(),
+  equipmentList: z.string().max(1000).optional(),
+  materialList: z.string().max(1000).optional(),
+  manpowerLines: z.array(
+    z.object({
+      trade: z.string().min(2).max(50),
+      manpowerCount: z.number().min(1).max(500),
+      hoursWorked: z.number().min(0).max(24),
+      note: z.string().max(200).optional(),
+    }),
+  ).optional(),
+});
+export type CreateDailyReport = z.infer<typeof createDailyReportSchema>;
+
+export const dailyReportListResponseSchema = z.object({
+  items: z.array(dailyReportSchema),
+  total: z.number(),
+  page: z.number(),
+  pageSize: z.number(),
+  totalPages: z.number(),
+});
+export type DailyReportListResponse = z.infer<typeof dailyReportListResponseSchema>;
