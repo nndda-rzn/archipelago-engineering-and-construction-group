@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
-import { useStockLedger, useStockSummary, useCreateWarehouse, useWarehouses } from '@/features/inventory/inventory.api';
+import { useStockLedger, useStockSummary, useCreateWarehouse, useWarehouses } from '@/features/inventory';
 
 const PAGE_SIZE = 20;
 
@@ -11,7 +11,7 @@ const movementVariant: Record<string, 'success' | 'warning' | 'default'> = {
   ADJUST: 'default',
 };
 
-const columnHelper = createColumnHelper<import('@/features/inventory/inventory.api').StockLedgerEntry>();
+const columnHelper = createColumnHelper<import('@/features/inventory').StockLedgerEntry>();
 
 const columns = [
   columnHelper.accessor('createdAt', {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
 import { Plus, Trash2 } from 'lucide-react';
-import { useCreatePr, usePrs, type PurchaseRequisition } from '@/features/procurement/procurement.api';
+import { useCreatePr, usePrs, type PurchaseRequisition } from '@/features/procurement';
 import { useProjects } from '@/entities/project';
 import { useWbsTree } from '@/entities/wbs';
 import { useSubmitForApproval } from '@/features/approval/approval.api';

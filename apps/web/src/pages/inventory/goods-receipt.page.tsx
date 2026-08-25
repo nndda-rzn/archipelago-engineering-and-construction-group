@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
-import { usePos, type PurchaseOrder } from '@/features/procurement/procurement.api';
-import { useGoodsReceipts, useCreateGoodsReceipt, useWarehouses, type GoodsReceipt } from '@/features/inventory/inventory.api';
+import { usePos, type PurchaseOrder } from '@/features/procurement';
+import { useGoodsReceipts, useCreateGoodsReceipt, useWarehouses, type GoodsReceipt } from '@/features/inventory';
 
 const PAGE_SIZE = 20;
 

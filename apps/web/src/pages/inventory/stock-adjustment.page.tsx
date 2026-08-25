@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
 import { useProjects } from '@/entities/project';
-import { useWarehouses, useCreateStockAdjustment, useApproveStockAdjustment, useStockAdjustments, type StockAdjustment } from '@/features/inventory/inventory.api';
+import { useWarehouses, useCreateStockAdjustment, useApproveStockAdjustment, useStockAdjustments, type StockAdjustment } from '@/features/inventory';
 
 const PAGE_SIZE = 20;
 
