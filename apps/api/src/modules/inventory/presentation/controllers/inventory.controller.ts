@@ -14,14 +14,14 @@ import {
   ListStockLedgerQueryDto,
   ListStockTransferQueryDto,
   ListWarehouseQueryDto,
-} from './dto/inventory.dto';
-import { WarehouseService } from './services/warehouse.service';
-import { GoodsReceiptService } from './services/goods-receipt.service';
-import { MaterialIssueService } from './services/material-issue.service';
-import { StockTransferService } from './services/stock-transfer.service';
-import { StockAdjustmentService } from './services/stock-adjustment.service';
-import { StockOpnameService } from './services/stock-opname.service';
-import { StockLedgerService } from './services/stock-ledger.service';
+} from '../dto/inventory.dto';
+import { WarehouseService } from '../../application/services/warehouse.service';
+import { GoodsReceiptService } from '../../application/services/goods-receipt.service';
+import { MaterialIssueService } from '../../application/services/material-issue.service';
+import { StockTransferService } from '../../application/services/stock-transfer.service';
+import { StockAdjustmentService } from '../../application/services/stock-adjustment.service';
+import { StockOpnameService } from '../../application/services/stock-opname.service';
+import { StockLedgerService } from '../../application/services/stock-ledger.service';
 
 @Controller()
 @UseGuards(AuthGuard, PermissionsGuard)

@@ -1,7 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
-import type { ListStockLedgerQueryDto } from '../dto/inventory.dto';
+import type { ListStockLedgerQueryDto } from '../../presentation/dto/inventory.dto';
 
 @Injectable()
 export class StockLedgerService {
