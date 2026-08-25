@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { createRoleSchema, type RoleWithPermissions } from '@aec/api-contracts';
 import { z } from 'zod';
 import { Badge, Button, Input, Label } from '@aec/ui';
-import { useCreateRole, useRoles } from '@/features/foundation/role.api';
+import { useCreateRole, useRoles } from '@/entities/role';
 
 const formSchema = z.object({
   code: createRoleSchema.shape.code,

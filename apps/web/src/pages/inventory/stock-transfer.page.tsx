@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
-import { useProjects } from '@/features/project/project.api';
+import { useProjects } from '@/entities/project';
 import { useWarehouses, useCreateStockTransfer, useStockTransfers, type StockTransfer } from '@/features/inventory/inventory.api';
 
 const PAGE_SIZE = 20;

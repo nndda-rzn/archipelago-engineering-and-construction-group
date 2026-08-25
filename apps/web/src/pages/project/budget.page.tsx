@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Badge, Button } from '@aec/ui';
 import { CheckCircle2, Lock } from 'lucide-react';
 import { useBudget, usePublishBudget, useUpsertBudget } from '@/features/project/budget.api';
-import { useProjects } from '@/features/project/project.api';
+import { useProjects } from '@/entities/project';
 
 const PAGE_SIZE = 100;
 

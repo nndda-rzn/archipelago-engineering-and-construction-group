@@ -5,8 +5,8 @@ import { createProjectSchema, projectSchema, type Project } from '@aec/api-contr
 import { z } from 'zod';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
-import { useCreateProject, useProjects } from '@/features/project/project.api';
-import { useLegalEntities } from '@/features/foundation/legal-entity.api';
+import { useCreateProject, useProjects } from '@/entities/project';
+import { useLegalEntities } from '@/entities/legal-entity';
 
 const PAGE_SIZE = 20;
 
