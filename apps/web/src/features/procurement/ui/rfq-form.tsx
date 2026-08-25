@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Input, Label } from '@aec/ui';
 import { useProjects } from '@/entities/project';
-import { useCreateRfq } from '../procurement/procurement.api';
+import { useCreateRfq } from '../model/procurement.api';
 
 type RfqLine = { description: string; quantity: number; unit: string };
 

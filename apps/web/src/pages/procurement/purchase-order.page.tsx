@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
-import { useCreatePo, usePos, usePrs, useReleasePo, type PurchaseOrder } from '@/features/procurement/procurement.api';
+import { useCreatePo, usePos, usePrs, useReleasePo, type PurchaseOrder } from '@/features/procurement';
 
 const PAGE_SIZE = 20;
 

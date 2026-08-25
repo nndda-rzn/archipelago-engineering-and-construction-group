@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Badge, Button, Input } from '@aec/ui';
-import { useCreateQuote, useEvaluateRfq, useRfqs, useSendRfq, type Rfq } from '@/features/procurement/procurement.api';
-import { RfqForm } from '@/features/procurement/rfq-form';
+import { useCreateQuote, useEvaluateRfq, useRfqs, useSendRfq, type Rfq } from '@/features/procurement';
+import { RfqForm } from '@/features/procurement';
 
 const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
   DRAFT: 'default', SENT: 'default', QUOTED: 'warning', EVALUATED: 'warning', AWARDED: 'success', CANCELLED: 'warning',
