@@ -12,6 +12,7 @@ import { ProjectHealthPage } from './pages/project/project-health.page';
 import { PurchaseRequisitionPage } from './pages/procurement/purchase-requisition.page';
 import { PurchaseOrderPage } from './pages/procurement/purchase-order.page';
 import { RfqPage } from './pages/procurement/rfq.page';
+import { WorkPackagesPage } from './pages/construction/work-packages.page';
 import { GoodsReceiptPage } from './pages/inventory/goods-receipt.page';
 import { StockLedgerPage } from './pages/inventory/stock-ledger.page';
 import { MaterialIssuePage } from './pages/inventory/material-issue.page';
@@ -218,7 +219,13 @@ const rfqRoute = createRoute({
   component: RfqPage,
 });
 
+const workPackagesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/construction/work-packages',
+  component: WorkPackagesPage,
+});
+
 export const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, projectHealthRoute, prRoute, poRoute, rfqRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, workflowRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute]),
+  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, projectHealthRoute, prRoute, poRoute, rfqRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, workflowRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute, workPackagesRoute]),
 ]);
