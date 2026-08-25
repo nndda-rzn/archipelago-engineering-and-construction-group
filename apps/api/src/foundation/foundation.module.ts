@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { PrismaService } from '@/database/prisma.service';
+import { PrismaService } from '@/shared/database/prisma.service';
 import { AuthModule } from '@/auth/auth.module';
 import { AuditModule } from '@/audit/audit.module';
 import { LegalEntityController } from './legal-entity.controller';

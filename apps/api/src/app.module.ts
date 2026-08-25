@@ -1,7 +1,7 @@
 import { Module, ValidationPipe } from '@nestjs/common';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { HealthController } from './health/health.controller';
-import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
 import { AuthModule } from './auth/auth.module';
 import { FoundationModule } from './foundation/foundation.module';
 import { AuditModule } from './audit/audit.module';

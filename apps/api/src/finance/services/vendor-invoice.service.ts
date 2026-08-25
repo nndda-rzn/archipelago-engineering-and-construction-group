@@ -1,6 +1,6 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
-import { PrismaService } from '@/database/prisma.service';
+import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/audit/audit.service';
 import { GlHelper } from './shared/gl.helper';
 import type { CreateVendorInvoiceDto, ListVendorInvoiceQueryDto } from '../dto/finance.dto';
