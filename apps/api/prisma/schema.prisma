@@ -784,8 +784,15 @@ model ProgressClaim {
 
   clientInvoice ClientInvoice?
 
+  // FR-CMR-001/002: Claim berbasis work package — physical ≠ billable (BR-013)
+  workPackageId String?
+  workPackage   ConstructionWorkPackage? @relation(fields: [workPackageId], references: [id])
+  physicalProgressAtClaim Decimal? @db.Decimal(5, 2) // snapshot progress fisik saat klaim
+  billableProgress Decimal? @db.Decimal(5, 2) // progress yang ditagihkan (bisa ≠ physical)
+
   @@index([projectId])
   @@index([status])
+  @@index([workPackageId])
 }
 
 // FR-FIN-009: Client Invoice — faktur AR ke klien (dari claim CERTIFIED)
@@ -950,6 +957,7 @@ model ConstructionWorkPackage {
   updatedAt   DateTime @updatedAt
 
   progress    WorkPackageProgress[]
+  claims      ProgressClaim[]
 
   @@index([projectId])
   @@index([wbsItemId])
