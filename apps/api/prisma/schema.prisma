@@ -159,6 +159,7 @@ model Project {
   clientInvoices ClientInvoice[]
   collections    Collection[]
   rfqs           Rfq[]
+  workPackages   ConstructionWorkPackage[]
 
   @@index([legalEntityId])
   @@index([status])
@@ -190,6 +191,7 @@ model WbsItem {
   transferItems  StockTransferItem[]
   journalLines   JournalLine[]
   rfqItems       RfqItem[]
+  workPackages   ConstructionWorkPackage[]
 
   @@unique([projectId, code])
   @@index([projectId])
@@ -921,6 +923,49 @@ model RfqQuoteItem {
   totalPrice Decimal  @db.Decimal(18, 2)
 
   @@index([quoteId])
+}
+
+// ─── Construction (FR-CON) ────────────────────────────────────────────────────
+
+// FR-CON-001: Work package — unit kerja konstruksi terhubung WBS
+model ConstructionWorkPackage {
+  id          String   @id @default(cuid())
+  wpNumber    String   @unique // mis. "WP-2027-EPC-000001"
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  wbsItemId   String
+  wbsItem     WbsItem  @relation(fields: [wbsItemId], references: [id])
+  title       String
+  description String?
+  scope       String? // ruang lingkup kerja
+  plannedQty  Decimal  @db.Decimal(18, 2) // qty rencana (m2, ton, unit sesuai WBS)
+  unit        String   @default("EA")
+  startDate   DateTime?
+  endDate     DateTime?
+  status      String   @default("DRAFT") // DRAFT | IN_PROGRESS | COMPLETED | CANCELLED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  progress    WorkPackageProgress[]
+
+  @@index([projectId])
+  @@index([wbsItemId])
+  @@index([status])
+}
+
+// FR-CON-004: Progress fisik per work package dari defined measurement method
+model WorkPackageProgress {
+  id             String   @id @default(cuid())
+  workPackageId  String
+  workPackage    ConstructionWorkPackage @relation(fields: [workPackageId], references: [id], onDelete: Cascade)
+  progressDate   DateTime @default(now())
+  physicalProgress Decimal @db.Decimal(5, 2) // % kumulatif 0-100
+  achievedQty    Decimal  @db.Decimal(18, 2) // qty terukur (measurement method)
+  note           String?
+  measuredBy     String // nama/role surveyor
+  createdAt      DateTime @default(now())
+
+  @@index([workPackageId])
 }
 
 // FR-FND-009: Number Sequence (configurable)
