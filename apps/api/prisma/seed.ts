@@ -81,6 +81,12 @@ const permissions = [
   ['DailyReport.VIEW', 'DailyReport', 'VIEW'],
   ['DailyReport.CREATE', 'DailyReport', 'CREATE'],
   ['DailyReport.EDIT', 'DailyReport', 'EDIT'],
+  ['Commissioning.VIEW', 'Commissioning', 'VIEW'],
+  ['Commissioning.CREATE', 'Commissioning', 'CREATE'],
+  ['Commissioning.EDIT', 'Commissioning', 'EDIT'],
+  ['Handover.VIEW', 'Handover', 'VIEW'],
+  ['Handover.CREATE', 'Handover', 'CREATE'],
+  ['Handover.APPROVE', 'Handover', 'APPROVE'],
 ] as const;
 
 async function main() {

@@ -124,3 +124,87 @@ export const dailyReportListResponseSchema = z.object({
   totalPages: z.number(),
 });
 export type DailyReportListResponse = z.infer<typeof dailyReportListResponseSchema>;
+
+// FR-CON-005: Commissioning system (hierarkis)
+export const commissioningSystemSchema: z.ZodType<{
+  id: string;
+  projectId: string;
+  parentId: string | null;
+  code: string;
+  name: string;
+  level: string;
+  status: string;
+  remark: string | null;
+  children?: CommissioningSystem[];
+}> = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  parentId: z.string().nullable(),
+  code: z.string(),
+  name: z.string(),
+  level: z.string(),
+  status: z.string(),
+  remark: z.string().nullable(),
+  children: z.array(z.lazy(() => commissioningSystemSchema)).optional(),
+});
+export type CommissioningSystem = z.infer<typeof commissioningSystemSchema>;
+
+export const createCommissioningSchema = z.object({
+  projectId: z.string(),
+  parentId: z.string().optional(),
+  code: z.string().min(1).max(30),
+  name: z.string().min(2).max(200),
+  level: z.enum(['PLANT', 'SYSTEM', 'SUBSYSTEM', 'EQUIPMENT']),
+  remark: z.string().max(500).optional(),
+});
+export type CreateCommissioning = z.infer<typeof createCommissioningSchema>;
+
+// FR-CON-006: Handover package
+export const handoverPackageSchema = z.object({
+  id: z.string(),
+  hoNumber: z.string(),
+  projectId: z.string(),
+  title: z.string(),
+  handoverDate: z.string().nullable(),
+  status: z.string(),
+  checklist: z.string().nullable(),
+  approvedBy: z.string().nullable(),
+  approvedAt: z.string().nullable(),
+  note: z.string().nullable(),
+  createdAt: z.string(),
+  items: z.array(
+    z.object({
+      id: z.string(),
+      documentName: z.string(),
+      isMandatory: z.boolean(),
+      status: z.string(),
+      verifiedBy: z.string().nullable(),
+      verifiedAt: z.string().nullable(),
+    }),
+  ),
+});
+export type HandoverPackage = z.infer<typeof handoverPackageSchema>;
+
+export const createHandoverSchema = z.object({
+  projectId: z.string(),
+  title: z.string().min(3).max(200),
+  handoverDate: z.string().optional(),
+  checklist: z.string().max(1000).optional(),
+  note: z.string().max(1000).optional(),
+  items: z.array(
+    z.object({
+      documentName: z.string().min(2).max(200),
+      isMandatory: z.boolean().optional(),
+    }),
+  ).optional(),
+});
+export type CreateHandover = z.infer<typeof createHandoverSchema>;
+
+export const handoverListResponseSchema = z.object({
+  items: z.array(handoverPackageSchema),
+  total: z.number(),
+  page: z.number(),
+  pageSize: z.number(),
+  totalPages: z.number(),
+});
+export type HandoverListResponse = z.infer<typeof handoverListResponseSchema>;

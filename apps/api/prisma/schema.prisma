@@ -161,6 +161,8 @@ model Project {
   rfqs           Rfq[]
   workPackages   ConstructionWorkPackage[]
   dailyReports   ConstructionDailyReport[]
+  commissioningSystems CommissioningSystem[]
+  handoverPackages      HandoverPackage[]
 
   @@index([legalEntityId])
   @@index([status])
@@ -1006,6 +1008,62 @@ model DailyReportManpower {
   note          String?
 
   @@index([dailyReportId])
+}
+
+// FR-CON-005: Commissioning hierarchy — Plant → System → Subsystem → Equipment
+model CommissioningSystem {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  parentId    String?
+  parent      CommissioningSystem? @relation("CommissioningHierarchy", fields: [parentId], references: [id])
+  children    CommissioningSystem[] @relation("CommissioningHierarchy")
+  code        String // mis. "PLANT-01", "SYS-01", "SUB-01", "EQ-01"
+  name        String
+  level       String // PLANT | SYSTEM | SUBSYSTEM | EQUIPMENT
+  status      String   @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | COMPLETED
+  remark      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, code])
+  @@index([projectId])
+  @@index([parentId])
+}
+
+// FR-CON-006: Handover/closeout — cek dokumen mandatory sebelum serah terima
+model HandoverPackage {
+  id            String   @id @default(cuid())
+  hoNumber      String   @unique // mis. "HO-2026-EPC-000001"
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id])
+  title         String
+  handoverDate  DateTime?
+  status        String   @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | COMPLETED
+  checklist     String? // ringkasan dokumen mandatory (as-built, test record, manual)
+  approvedBy    String?
+  approvedAt    DateTime?
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  items         HandoverItem[]
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model HandoverItem {
+  id             String   @id @default(cuid())
+  handoverId     String
+  handover       HandoverPackage @relation(fields: [handoverId], references: [id], onDelete: Cascade)
+  documentName   String // mis. "As-Built Drawing", "Test Certificate"
+  isMandatory    Boolean  @default(true)
+  status         String   @default("PENDING") // PENDING | SUBMITTED | VERIFIED
+  verifiedBy     String?
+  verifiedAt     DateTime?
+
+  @@index([handoverId])
 }
 
 // FR-FND-009: Number Sequence (configurable)

@@ -14,6 +14,8 @@ import { PurchaseOrderPage } from './pages/procurement/purchase-order.page';
 import { RfqPage } from './pages/procurement/rfq.page';
 import { WorkPackagesPage } from './pages/construction/work-packages.page';
 import { DailyReportsPage } from './pages/construction/daily-reports.page';
+import { CommissioningPage } from './pages/construction/commissioning.page';
+import { HandoverPage } from './pages/construction/handover.page';
 import { GoodsReceiptPage } from './pages/inventory/goods-receipt.page';
 import { StockLedgerPage } from './pages/inventory/stock-ledger.page';
 import { MaterialIssuePage } from './pages/inventory/material-issue.page';
@@ -232,7 +234,19 @@ const dailyReportsRoute = createRoute({
   component: DailyReportsPage,
 });
 
+const commissioningRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/construction/commissioning',
+  component: CommissioningPage,
+});
+
+const handoverRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/construction/handover',
+  component: HandoverPage,
+});
+
 export const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, projectHealthRoute, prRoute, poRoute, rfqRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, workflowRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute, workPackagesRoute, dailyReportsRoute]),
+  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, projectHealthRoute, prRoute, poRoute, rfqRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, workflowRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute, workPackagesRoute, dailyReportsRoute, commissioningRoute, handoverRoute]),
 ]);
