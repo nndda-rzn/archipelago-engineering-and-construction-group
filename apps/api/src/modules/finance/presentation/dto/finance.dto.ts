@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsNumber, IsOptional, IsString, Length, Max, MaxLength, Min, ValidateNested } from 'class-validator';
+import { IsArray, IsIn, IsInt, IsNumber, IsOptional, IsString, Length, Max, MaxLength, Min, ValidateNested } from 'class-validator';
 
 export class VendorInvoiceItemDto {
   @IsString()
@@ -230,6 +230,17 @@ export class CreateProgressClaimDto {
   amount!: number;
 
   @IsOptional()
+  @IsIn(['PROGRESS', 'COST', 'TIME', 'EOT', 'CONTRACTUAL'])
+  claimType?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(3650)
+  requestedExtensionDays?: number;
+
+  @IsOptional()
   @IsString()
   workPackageId?: string;
 
@@ -306,6 +317,10 @@ export class ListProgressClaimQueryDto {
   @IsOptional()
   @IsString()
   status?: string;
+
+  @IsOptional()
+  @IsIn(['PROGRESS', 'COST', 'TIME', 'EOT', 'CONTRACTUAL'])
+  claimType?: string;
 }
 
 export class ListClientInvoiceQueryDto {

@@ -45,6 +45,8 @@ export class ProgressClaimService {
         period: dto.period ?? null,
         description: dto.description ?? null,
         amount: Number(dto.amount),
+        claimType: dto.claimType ?? 'PROGRESS',
+        requestedExtensionDays: dto.requestedExtensionDays ?? null,
         workPackageId: dto.workPackageId ?? null,
         physicalProgressAtClaim,
         billableProgress: dto.billableProgress ?? null,
@@ -60,6 +62,8 @@ export class ProgressClaimService {
       newValue: {
         claimNumber: seq,
         amount: Number(dto.amount),
+        claimType: dto.claimType ?? 'PROGRESS',
+        requestedExtensionDays: dto.requestedExtensionDays ?? null,
         projectId: dto.projectId,
         workPackageId: dto.workPackageId ?? null,
         physicalProgressAtClaim,
@@ -146,6 +150,7 @@ export class ProgressClaimService {
     const where: Prisma.ProgressClaimWhereInput = {
       ...(query.projectId ? { projectId: query.projectId } : {}),
       ...(query.status ? { status: query.status } : {}),
+      ...(query.claimType ? { claimType: query.claimType } : {}),
     };
 
     const [items, total] = await this.prisma.$transaction([
