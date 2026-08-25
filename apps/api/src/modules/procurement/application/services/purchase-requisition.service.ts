@@ -2,7 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
-import type { CreatePrDto, ListPrQueryDto } from '../dto/procurement.dto';
+import type { CreatePrDto, ListPrQueryDto } from '../../presentation/dto/procurement.dto';
 
 @Injectable()
 export class PurchaseRequisitionService {
