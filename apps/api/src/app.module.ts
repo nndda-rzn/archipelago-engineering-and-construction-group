@@ -4,7 +4,7 @@ import { HealthController } from './health/health.controller';
 import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
 import { FoundationModule } from './modules/foundation';
 import { ProjectModule } from './modules/project';
-import { ProcurementModule } from './procurement/procurement.module';
+import { ProcurementModule } from './modules/procurement';
 import { InventoryModule } from './inventory/inventory.module';
 import { ApprovalModule } from './approval/approval.module';
 import { FinanceModule } from './finance/finance.module';

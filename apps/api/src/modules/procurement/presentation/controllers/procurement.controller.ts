@@ -2,10 +2,10 @@ import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } fro
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
-import { CreatePoDto, CreatePrDto, CreateQuoteDto, CreateRfqDto, ListPoQueryDto, ListPrQueryDto, ListRfqQueryDto } from './dto/procurement.dto';
-import { PurchaseRequisitionService } from './services/purchase-requisition.service';
-import { PurchaseOrderService } from './services/purchase-order.service';
-import { RfqService } from './services/rfq.service';
+import { CreatePoDto, CreatePrDto, CreateQuoteDto, CreateRfqDto, ListPoQueryDto, ListPrQueryDto, ListRfqQueryDto } from '../dto/procurement.dto';
+import { PurchaseRequisitionService } from '../../application/services/purchase-requisition.service';
+import { PurchaseOrderService } from '../../application/services/purchase-order.service';
+import { RfqService } from '../../application/services/rfq.service';
 
 @Controller()
 @UseGuards(AuthGuard, PermissionsGuard)
