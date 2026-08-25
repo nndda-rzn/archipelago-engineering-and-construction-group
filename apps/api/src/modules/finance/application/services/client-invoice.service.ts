@@ -3,7 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { GlHelper } from './shared/gl.helper';
-import type { CreateClientInvoiceDto, ListClientInvoiceQueryDto } from '../dto/finance.dto';
+import type { CreateClientInvoiceDto, ListClientInvoiceQueryDto } from '../../presentation/dto/finance.dto';
 
 @Injectable()
 export class ClientInvoiceService {

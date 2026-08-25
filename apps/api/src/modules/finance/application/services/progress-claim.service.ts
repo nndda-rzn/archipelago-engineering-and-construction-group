@@ -2,7 +2,7 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
-import type { CreateProgressClaimDto, CertifyClaimDto, ListProgressClaimQueryDto } from '../dto/finance.dto';
+import type { CreateProgressClaimDto, CertifyClaimDto, ListProgressClaimQueryDto } from '../../presentation/dto/finance.dto';
 
 @Injectable()
 export class ProgressClaimService {

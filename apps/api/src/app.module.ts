@@ -7,7 +7,7 @@ import { ProjectModule } from './modules/project';
 import { ProcurementModule } from './modules/procurement';
 import { InventoryModule } from './modules/inventory';
 import { ApprovalModule } from './approval/approval.module';
-import { FinanceModule } from './finance/finance.module';
+import { FinanceModule } from './modules/finance';
 
 @Module({
   imports: [FoundationModule, ProjectModule, ProcurementModule, InventoryModule, ApprovalModule, FinanceModule],
