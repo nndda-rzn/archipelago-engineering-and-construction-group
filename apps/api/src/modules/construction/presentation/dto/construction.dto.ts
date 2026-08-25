@@ -81,3 +81,67 @@ export class CreateProgressDto {
   @IsDateString()
   progressDate?: string;
 }
+
+export class CreateDailyReportDto {
+  @IsString()
+  projectId!: string;
+
+  @IsOptional()
+  @IsDateString()
+  reportDate?: string;
+
+  @IsOptional()
+  @IsString()
+  weather?: string;
+
+  @IsOptional()
+  @IsNumber()
+  temperatureC?: number;
+
+  @IsString()
+  @Length(5, 2000)
+  summary!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  issues?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  hseNote?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  qualityNote?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  equipmentList?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  materialList?: string;
+
+  @IsOptional()
+  manpowerLines?: { trade: string; manpowerCount: number; hoursWorked: number; note?: string }[];
+}
+
+export class ListDailyReportQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  pageSize?: number;
+}
