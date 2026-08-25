@@ -72,7 +72,10 @@ export class ProgressClaimService {
   }
 
   async certifyClaim(id: string, dto: CertifyClaimDto, actorId: string) {
-    const claim = await this.prisma.progressClaim.findUnique({ where: { id } });
+    const claim = await this.prisma.progressClaim.findUnique({
+      where: { id },
+      include: { project: { select: { advanceAmount: true, advanceRecoveryRate: true } } },
+    });
     if (!claim) throw new NotFoundException({ code: 'CLAIM_NOT_FOUND', message: 'Claim tidak ditemukan' });
     if (claim.status !== 'DRAFT') {
       throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa disertifikasi (${claim.status})` });
@@ -84,6 +87,22 @@ export class ProgressClaimService {
     const retentionAmount = Math.round(certifiedAmount * retentionRate) / 100;
     const netCertifiedAmount = Math.round((certifiedAmount - retentionAmount) * 100) / 100;
 
+    // FR-CMR-004: recovery uang muka — rate dari project, cap sisa DP
+    const advanceAmount = claim.project.advanceAmount != null ? Number(claim.project.advanceAmount) : 0;
+    const recoveryRate = Number(claim.project.advanceRecoveryRate ?? 0);
+    let recoveryAmount = 0;
+    let cumulativeRecovered: number | null = null;
+    if (advanceAmount > 0 && recoveryRate > 0) {
+      const { _sum } = await this.prisma.progressClaim.aggregate({
+        where: { projectId: claim.projectId, status: 'CERTIFIED', id: { not: claim.id } },
+        _sum: { recoveryAmount: true },
+      });
+      const recoveredSoFar = Number(_sum.recoveryAmount ?? 0);
+      const remaining = Math.round((advanceAmount - recoveredSoFar) * 100) / 100;
+      recoveryAmount = Math.min(Math.round(netCertifiedAmount * recoveryRate) / 100, remaining, netCertifiedAmount);
+      cumulativeRecovered = Math.round((recoveredSoFar + recoveryAmount) * 100) / 100;
+    }
+
     const certified = await this.prisma.progressClaim.update({
       where: { id },
       data: {
@@ -92,6 +111,8 @@ export class ProgressClaimService {
         retentionRate,
         retentionAmount,
         netCertifiedAmount,
+        recoveryAmount: recoveryAmount > 0 || advanceAmount > 0 ? recoveryAmount : null,
+        cumulativeRecovered,
         certifiedBy: actorId,
         certifiedAt: new Date(),
         remark: dto.remark ?? null,
@@ -109,6 +130,8 @@ export class ProgressClaimService {
         retentionRate,
         retentionAmount,
         netCertifiedAmount,
+        recoveryAmount,
+        cumulativeRecovered,
       },
       source: 'api',
     });

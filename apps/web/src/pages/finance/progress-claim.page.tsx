@@ -76,6 +76,15 @@ const columns = [
       return v != null ? <span className="font-mono tabular-nums text-neutral-800 font-medium">{fmt(v)}</span> : '—';
     },
   }),
+  columnHelper.accessor('cumulativeRecovered', {
+    header: 'DP Kembali',
+    cell: (info) => {
+      const v = info.getValue();
+      const row = info.row.original;
+      if (row.status !== 'CERTIFIED') return '—';
+      return v != null ? <span className="font-mono tabular-nums text-amber-700">{fmt(v)}</span> : '—';
+    },
+  }),
   columnHelper.accessor('status', {
     header: 'Status',
     cell: (info) => <Badge variant={statusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge>,

@@ -26,8 +26,9 @@ export class ClientInvoiceService {
     const existing = await this.prisma.clientInvoice.findUnique({ where: { claimId: claim.id } });
     if (existing) throw new ConflictException({ code: 'CLAIM_ALREADY_INVOICED', message: 'Claim sudah punya client invoice' });
 
-    // FR-CMR-003: invoice menagih nilai NET setelah retensi (retention ditahan di claim)
-    const amount = Number(claim.netCertifiedAmount ?? claim.certifiedAmount ?? claim.amount);
+    // FR-CMR-003/004: invoice menagih nilai NET setelah retensi + recovery uang muka
+    const net = Number(claim.netCertifiedAmount ?? claim.certifiedAmount ?? claim.amount);
+    const amount = Math.round((net - Number(claim.recoveryAmount ?? 0)) * 100) / 100;
     const tax = Number(dto.taxAmount ?? 0);
     const total = amount + tax;
 

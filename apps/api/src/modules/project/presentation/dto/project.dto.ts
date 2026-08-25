@@ -35,6 +35,16 @@ export class CreateProjectDto {
   contractValue?: number;
 
   @IsOptional()
+  @Type(() => Number)
+  advanceAmount?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @Min(0)
+  @Max(100)
+  advanceRecoveryRate?: number;
+
+  @IsOptional()
   @IsDateString()
   startDate?: string;
 

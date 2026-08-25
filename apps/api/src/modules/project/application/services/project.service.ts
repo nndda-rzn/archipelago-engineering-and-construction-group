@@ -64,6 +64,8 @@ export class ProjectService {
         location: dto.location ?? null,
         currency: dto.currency ?? 'IDR',
         contractValue: dto.contractValue ?? null,
+        advanceAmount: dto.advanceAmount ?? null,
+        advanceRecoveryRate: dto.advanceRecoveryRate ?? 0,
         startDate: dto.startDate ? new Date(dto.startDate) : null,
         completionDate: dto.completionDate ? new Date(dto.completionDate) : null,
         director: dto.director ?? null,
