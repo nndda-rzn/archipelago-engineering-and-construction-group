@@ -15,6 +15,19 @@ export class ProgressClaimService {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
 
+    // FR-CMR-001/002: claim berbasis work package — validasi kepemilikan + snapshot progress fisik
+    let physicalProgressAtClaim: number | null = null;
+    if (dto.workPackageId) {
+      const wp = await this.prisma.constructionWorkPackage.findUnique({
+        where: { id: dto.workPackageId },
+        include: { progress: { orderBy: { progressDate: 'desc' }, take: 1, select: { physicalProgress: true } } },
+      });
+      if (!wp || wp.projectId !== dto.projectId) {
+        throw new NotFoundException({ code: 'WP_NOT_FOUND', message: 'Work package tidak ditemukan di project ini' });
+      }
+      physicalProgressAtClaim = dto.physicalProgressAtClaim ?? Number(wp.progress[0]?.physicalProgress ?? 0);
+    }
+
     const seq = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'CLM' },
@@ -32,7 +45,11 @@ export class ProgressClaimService {
         period: dto.period ?? null,
         description: dto.description ?? null,
         amount: Number(dto.amount),
+        workPackageId: dto.workPackageId ?? null,
+        physicalProgressAtClaim,
+        billableProgress: dto.billableProgress ?? null,
       },
+      include: { workPackage: { select: { wpNumber: true, title: true } } },
     });
 
     await this.audit.record({
@@ -40,7 +57,14 @@ export class ProgressClaimService {
       action: 'ProgressClaim.CREATE',
       resource: 'ProgressClaim',
       resourceId: claim.id,
-      newValue: { claimNumber: seq, amount: Number(dto.amount), projectId: dto.projectId },
+      newValue: {
+        claimNumber: seq,
+        amount: Number(dto.amount),
+        projectId: dto.projectId,
+        workPackageId: dto.workPackageId ?? null,
+        physicalProgressAtClaim,
+        billableProgress: dto.billableProgress ?? null,
+      },
       source: 'api',
     });
 
