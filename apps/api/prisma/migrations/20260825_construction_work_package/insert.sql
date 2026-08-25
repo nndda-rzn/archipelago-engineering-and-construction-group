@@ -1,1 +1,0 @@
-INSERT INTO _prisma_migrations (id, checksum, finished_at, migration_name, logs, rolled_back_at, started_at, applied_steps_count) VALUES ('20260825_construction_work_package', '5b8e3261be31f8430ebda2bbbe37f87a', '2026-08-25 15:07:23.117', '20260825_construction_work_package', NULL, NULL, '2026-08-25 15:07:23.117', 1) ON CONFLICT (id) DO NOTHING;
