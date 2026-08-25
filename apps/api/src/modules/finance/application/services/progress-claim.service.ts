@@ -78,9 +78,24 @@ export class ProgressClaimService {
       throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa disertifikasi (${claim.status})` });
     }
 
+    // FR-CMR-003: retention dihitung eksplisit — net = certified - retention (BR-013)
+    const certifiedAmount = Number(dto.certifiedAmount);
+    const retentionRate = dto.retentionRate ?? 0;
+    const retentionAmount = Math.round(certifiedAmount * retentionRate) / 100;
+    const netCertifiedAmount = Math.round((certifiedAmount - retentionAmount) * 100) / 100;
+
     const certified = await this.prisma.progressClaim.update({
       where: { id },
-      data: { status: 'CERTIFIED', certifiedAmount: Number(dto.certifiedAmount), certifiedBy: actorId, certifiedAt: new Date(), remark: dto.remark ?? null },
+      data: {
+        status: 'CERTIFIED',
+        certifiedAmount,
+        retentionRate,
+        retentionAmount,
+        netCertifiedAmount,
+        certifiedBy: actorId,
+        certifiedAt: new Date(),
+        remark: dto.remark ?? null,
+      },
     });
 
     await this.audit.record({
@@ -88,7 +103,13 @@ export class ProgressClaimService {
       action: 'ProgressClaim.CERTIFY',
       resource: 'ProgressClaim',
       resourceId: id,
-      newValue: { claimNumber: claim.claimNumber, certifiedAmount: Number(dto.certifiedAmount) },
+      newValue: {
+        claimNumber: claim.claimNumber,
+        certifiedAmount,
+        retentionRate,
+        retentionAmount,
+        netCertifiedAmount,
+      },
       source: 'api',
     });
 

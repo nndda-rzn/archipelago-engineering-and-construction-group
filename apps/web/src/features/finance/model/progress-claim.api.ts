@@ -38,8 +38,8 @@ export function useCreateProgressClaim() {
 export function useCertifyClaim() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, certifiedAmount, remark }: { id: string; certifiedAmount: number; remark?: string }) =>
-      postJson<unknown>(`/progress-claims/${id}/certify`, { certifiedAmount, remark }),
+    mutationFn: ({ id, certifiedAmount, retentionRate, remark }: { id: string; certifiedAmount: number; retentionRate?: number; remark?: string }) =>
+      postJson<unknown>(`/progress-claims/${id}/certify`, { certifiedAmount, retentionRate, remark }),
     onSuccess: () => qc.invalidateQueries({ queryKey: claimKeys.all }),
   });
 }
