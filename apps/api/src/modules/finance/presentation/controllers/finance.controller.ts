@@ -7,15 +7,15 @@ import {
   CreatePaymentDto, CreateProgressClaimDto, CreateVendorInvoiceDto, ListChartOfAccountQueryDto,
   ListClientInvoiceQueryDto, ListCollectionQueryDto, ListJournalQueryDto, ListPaymentQueryDto,
   ListProgressClaimQueryDto, ListVendorInvoiceQueryDto, TrialBalanceQueryDto, CertifyClaimDto,
-} from './dto/finance.dto';
-import { VendorInvoiceService } from './services/vendor-invoice.service';
-import { PaymentService } from './services/payment.service';
-import { ChartOfAccountService } from './services/chart-of-account.service';
-import { JournalService } from './services/journal.service';
-import { TrialBalanceService } from './services/trial-balance.service';
-import { ProgressClaimService } from './services/progress-claim.service';
-import { ClientInvoiceService } from './services/client-invoice.service';
-import { CollectionService } from './services/collection.service';
+} from '../dto/finance.dto';
+import { VendorInvoiceService } from '../../application/services/vendor-invoice.service';
+import { PaymentService } from '../../application/services/payment.service';
+import { ChartOfAccountService } from '../../application/services/chart-of-account.service';
+import { JournalService } from '../../application/services/journal.service';
+import { TrialBalanceService } from '../../application/services/trial-balance.service';
+import { ProgressClaimService } from '../../application/services/progress-claim.service';
+import { ClientInvoiceService } from '../../application/services/client-invoice.service';
+import { CollectionService } from '../../application/services/collection.service';
 
 @Controller()
 @UseGuards(AuthGuard, PermissionsGuard)
