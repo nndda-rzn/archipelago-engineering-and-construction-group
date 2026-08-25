@@ -1,8 +1,8 @@
 import { Controller, Get, Inject, Query, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@/auth/auth.guard';
-import { Permissions } from '@/auth/permissions.decorator';
-import { PermissionsGuard } from '@/auth/permissions.guard';
-import { AuditService } from './audit.service';
+import { AuthGuard } from '@/shared/guards/auth.guard';
+import { Permissions } from '@/shared/decorators/permissions.decorator';
+import { PermissionsGuard } from '@/shared/guards/permissions.guard';
+import { AuditService } from '../../application/services/audit.service';
 
 class ListAuditQueryDto {
   page?: number;

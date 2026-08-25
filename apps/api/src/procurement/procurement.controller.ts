@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '@/auth/auth.guard';
-import { Permissions } from '@/auth/permissions.decorator';
-import { PermissionsGuard } from '@/auth/permissions.guard';
+import { AuthGuard } from '@/shared/guards/auth.guard';
+import { Permissions } from '@/shared/decorators/permissions.decorator';
+import { PermissionsGuard } from '@/shared/guards/permissions.guard';
 import { CreatePoDto, CreatePrDto, CreateQuoteDto, CreateRfqDto, ListPoQueryDto, ListPrQueryDto, ListRfqQueryDto } from './dto/procurement.dto';
 import { PurchaseRequisitionService } from './services/purchase-requisition.service';
 import { PurchaseOrderService } from './services/purchase-order.service';

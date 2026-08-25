@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
-import { AuditModule } from '@/audit/audit.module';
 import { FinanceController } from './finance.controller';
 import { VendorInvoiceService } from './services/vendor-invoice.service';
 import { PaymentService } from './services/payment.service';
@@ -13,7 +12,7 @@ import { CollectionService } from './services/collection.service';
 import { GlHelper } from './services/shared/gl.helper';
 
 @Module({
-  imports: [AuditModule],
+  imports: [],
   controllers: [FinanceController],
   providers: [
     PrismaService,

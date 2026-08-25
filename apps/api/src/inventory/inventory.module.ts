@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
-import { AuditModule } from '@/audit/audit.module';
 import { InventoryController } from './inventory.controller';
 import { WarehouseService } from './services/warehouse.service';
 import { GoodsReceiptService } from './services/goods-receipt.service';
@@ -11,7 +10,7 @@ import { StockOpnameService } from './services/stock-opname.service';
 import { StockLedgerService } from './services/stock-ledger.service';
 
 @Module({
-  imports: [AuditModule],
+  imports: [],
   controllers: [InventoryController],
   providers: [
     PrismaService,

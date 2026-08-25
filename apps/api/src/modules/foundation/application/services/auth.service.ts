@@ -2,8 +2,8 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '@/shared/database/prisma.service';
-import { AuditService } from '@/audit/audit.service';
-import type { LoginDto } from './dto/login.dto';
+import { AuditService } from './audit.service';
+import type { LoginDto } from '../../presentation/dto/login.dto';
 
 export type AuthUser = {
   id: string;

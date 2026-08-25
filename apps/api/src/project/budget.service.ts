@@ -1,6 +1,6 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
-import { AuditService } from '@/audit/audit.service';
+import { AuditService } from '@/modules/foundation';
 import type { PublishBudgetDto, UpsertBudgetItemDto } from './dto/budget.dto';
 
 @Injectable()

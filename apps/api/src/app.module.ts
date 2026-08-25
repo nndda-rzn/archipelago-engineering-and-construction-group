@@ -2,9 +2,7 @@ import { Module, ValidationPipe } from '@nestjs/common';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { HealthController } from './health/health.controller';
 import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
-import { AuthModule } from './auth/auth.module';
-import { FoundationModule } from './foundation/foundation.module';
-import { AuditModule } from './audit/audit.module';
+import { FoundationModule } from './modules/foundation';
 import { ProjectModule } from './project/project.module';
 import { ProcurementModule } from './procurement/procurement.module';
 import { InventoryModule } from './inventory/inventory.module';
@@ -12,7 +10,7 @@ import { ApprovalModule } from './approval/approval.module';
 import { FinanceModule } from './finance/finance.module';
 
 @Module({
-  imports: [AuthModule, FoundationModule, AuditModule, ProjectModule, ProcurementModule, InventoryModule, ApprovalModule, FinanceModule],
+  imports: [FoundationModule, ProjectModule, ProcurementModule, InventoryModule, ApprovalModule, FinanceModule],
   controllers: [HealthController],
   providers: [
     {
