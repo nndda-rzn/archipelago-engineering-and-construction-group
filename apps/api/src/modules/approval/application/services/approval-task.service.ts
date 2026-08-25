@@ -2,7 +2,7 @@ import { ConflictException, ForbiddenException, Inject, Injectable, NotFoundExce
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { ConditionEvaluator } from './shared/condition-evaluator';
-import type { ApproveTaskDto, SubmitForApprovalDto } from '../dto/approval.dto';
+import type { ApproveTaskDto, SubmitForApprovalDto } from '../../presentation/dto/approval.dto';
 
 @Injectable()
 export class ApprovalTaskService {
