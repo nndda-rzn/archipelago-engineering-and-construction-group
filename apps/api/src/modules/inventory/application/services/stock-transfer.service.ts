@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, Inject, Injectable, NotFoundExc
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
-import type { CreateStockTransferDto, ListStockTransferQueryDto } from '../dto/inventory.dto';
+import type { CreateStockTransferDto, ListStockTransferQueryDto } from '../../presentation/dto/inventory.dto';
 
 @Injectable()
 export class StockTransferService {

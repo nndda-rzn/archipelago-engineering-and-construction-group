@@ -2,7 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
-import type { CreateStockOpnameDto } from '../dto/inventory.dto';
+import type { CreateStockOpnameDto } from '../../presentation/dto/inventory.dto';
 
 @Injectable()
 export class StockOpnameService {
