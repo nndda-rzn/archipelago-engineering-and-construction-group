@@ -1,7 +1,7 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
-import type { AddWorkflowStepDto, CreateWorkflowDefinitionDto, PublishWorkflowDto } from '../dto/approval.dto';
+import type { AddWorkflowStepDto, CreateWorkflowDefinitionDto, PublishWorkflowDto } from '../../presentation/dto/approval.dto';
 
 @Injectable()
 export class WorkflowDefinitionService {

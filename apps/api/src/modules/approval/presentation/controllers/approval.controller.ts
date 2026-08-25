@@ -2,9 +2,9 @@ import { Body, Controller, Get, Inject, Param, Post, Req, UseGuards } from '@nes
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
-import { AddWorkflowStepDto, ApproveTaskDto, CreateWorkflowDefinitionDto, PublishWorkflowDto, SubmitForApprovalDto } from './dto/approval.dto';
-import { ApprovalTaskService } from './services/approval-task.service';
-import { WorkflowDefinitionService } from './services/workflow-definition.service';
+import { AddWorkflowStepDto, ApproveTaskDto, CreateWorkflowDefinitionDto, PublishWorkflowDto, SubmitForApprovalDto } from '../dto/approval.dto';
+import { ApprovalTaskService } from '../../application/services/approval-task.service';
+import { WorkflowDefinitionService } from '../../application/services/workflow-definition.service';
 
 @Controller('approvals')
 @UseGuards(AuthGuard, PermissionsGuard)
