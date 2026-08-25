@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Input, Label } from '@aec/ui';
-import { useProjects } from '@/features/project/project.api';
-import { useWbsTree } from '@/features/project/wbs.api';
+import { useProjects } from '@/entities/project';
+import { useWbsTree } from '@/entities/wbs';
 import { useWarehouses, useCreateMaterialIssue } from './inventory.api';
 
 type IssueLine = { description: string; quantity: number; unit: string; wbsItemId: string };

@@ -5,7 +5,7 @@ import { createLegalEntitySchema, type LegalEntity, type LegalEntityListParams }
 import { z } from 'zod';
 import { createColumnHelper, type SortingState } from '@tanstack/react-table';
 import { Button, Input, Label, Badge, DataGrid } from '@aec/ui';
-import { useCreateLegalEntity, useLegalEntities } from '@/features/foundation/legal-entity.api';
+import { useCreateLegalEntity, useLegalEntities } from '@/entities/legal-entity';
 
 type CreateLegalEntityForm = {
   code: string;

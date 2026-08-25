@@ -5,8 +5,8 @@ import { createWbsItemSchema, type WbsItem } from '@aec/api-contracts';
 import { z } from 'zod';
 import { ChevronRight, FolderTree } from 'lucide-react';
 import { Button, Input, Label } from '@aec/ui';
-import { useCreateWbsItem, useWbsTree } from '@/features/project/wbs.api';
-import { useProjects } from '@/features/project/project.api';
+import { useCreateWbsItem, useWbsTree } from '@/entities/wbs';
+import { useProjects } from '@/entities/project';
 
 const PAGE_SIZE = 100;
 

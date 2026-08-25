@@ -5,7 +5,7 @@ import { createUserSchema, type User } from '@aec/api-contracts';
 import { z } from 'zod';
 import { createColumnHelper, type SortingState } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
-import { useBlockUser, useCreateUser, useUsers } from '@/features/foundation/user.api';
+import { useBlockUser, useCreateUser, useUsers } from '@/entities/user';
 
 const PAGE_SIZE = 20;
 

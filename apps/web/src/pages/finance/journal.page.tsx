@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid } from '@aec/ui';
-import { useLegalEntities } from '@/features/foundation/legal-entity.api';
+import { useLegalEntities } from '@/entities/legal-entity';
 import { useJournals, usePostJournal, type Journal } from '@/features/finance/finance.api';
 import { JournalForm } from '@/features/finance/journal-form';
 

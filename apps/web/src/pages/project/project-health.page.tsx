@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Badge, Button } from '@aec/ui';
-import { useProjects, useProjectHealth } from '@/features/project/project.api';
+import { useProjects } from '@/entities/project';
+import { useProjectHealth } from '@/features/project/project.api';
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
