@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Badge, Button } from '@aec/ui';
 import { useLegalEntities } from '@/entities/legal-entity';
-import { useTrialBalance } from '@/features/finance/finance.api';
+import { useTrialBalance } from '@/features/finance';
 
 const typeLabel: Record<string, string> = {
   ASSET: 'Aset',

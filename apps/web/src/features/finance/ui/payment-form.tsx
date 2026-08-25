@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Input, Label } from '@aec/ui';
 import { useProjects } from '@/entities/project';
-import { useVendorInvoices, useCreatePayment } from './finance.api';
+import { useVendorInvoices, useCreatePayment } from '../model/finance.api';
 
 type PayLine = { invoiceId: string; amount: number };
 

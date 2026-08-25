@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, Input, Label } from '@aec/ui';
-import { useChartOfAccounts, useCreateJournal } from './finance.api';
+import { useChartOfAccounts, useCreateJournal } from '../model/finance.api';
 
 type Line = { accountId: string; debit: number; credit: number; description?: string };
 

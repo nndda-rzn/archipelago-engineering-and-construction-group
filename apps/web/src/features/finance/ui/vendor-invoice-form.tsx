@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Input, Label } from '@aec/ui';
 import { usePos } from '@/features/procurement/procurement.api';
-import { useCreateVendorInvoice } from './finance.api';
+import { useCreateVendorInvoice } from '../model/finance.api';
 
 type InvoiceLine = { poItemId: string; quantity: number; unitPrice: number };
 

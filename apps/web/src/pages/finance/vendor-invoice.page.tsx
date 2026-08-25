@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid } from '@aec/ui';
-import { usePostVendorInvoice, useVendorInvoices, type VendorInvoice } from '@/features/finance/finance.api';
-import { InvoiceForm } from '@/features/finance/vendor-invoice-form';
+import { usePostVendorInvoice, useVendorInvoices, type VendorInvoice } from '@/features/finance';
+import { InvoiceForm } from '@/features/finance';
 
 const PAGE_SIZE = 20;
 
