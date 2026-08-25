@@ -2,8 +2,8 @@ import { Body, Controller, Get, Inject, Param, Post, Req, UseGuards } from '@nes
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
-import { CreateWbsItemDto } from './dto/wbs.dto';
-import { WbsService } from './wbs.service';
+import { CreateWbsItemDto } from '../dto/wbs.dto';
+import { WbsService } from '../../application/services/wbs.service';
 
 @Controller('projects/:projectId/wbs')
 @UseGuards(AuthGuard, PermissionsGuard)

@@ -2,10 +2,10 @@ import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } fro
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
-import { CreateProjectDto, ListProjectQueryDto } from './dto/project.dto';
-import { ProjectService } from './project.service';
-import { ProjectHealthService } from './services/project-health.service';
-import { PortfolioService } from './services/portfolio.service';
+import { CreateProjectDto, ListProjectQueryDto } from '../dto/project.dto';
+import { ProjectService } from '../../application/services/project.service';
+import { ProjectHealthService } from '../../application/services/project-health.service';
+import { PortfolioService } from '../../application/services/portfolio.service';
 
 @Controller('projects')
 @UseGuards(AuthGuard, PermissionsGuard)

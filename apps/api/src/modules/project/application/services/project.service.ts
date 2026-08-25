@@ -2,7 +2,7 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
-import type { CreateProjectDto, ListProjectQueryDto } from './dto/project.dto';
+import type { CreateProjectDto, ListProjectQueryDto } from '../../presentation/dto/project.dto';
 
 @Injectable()
 export class ProjectService {
