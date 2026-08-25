@@ -1,5 +1,5 @@
 import { ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@/database/prisma.service';
+import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/audit/audit.service';
 import { ConditionEvaluator } from './shared/condition-evaluator';
 import type { ApproveTaskDto, SubmitForApprovalDto } from '../dto/approval.dto';

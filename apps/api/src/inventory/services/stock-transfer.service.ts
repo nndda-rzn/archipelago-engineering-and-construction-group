@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
-import { PrismaService } from '@/database/prisma.service';
+import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/audit/audit.service';
 import type { CreateStockTransferDto, ListStockTransferQueryDto } from '../dto/inventory.dto';
 

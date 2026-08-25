@@ -1,6 +1,6 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
-import { PrismaService } from '@/database/prisma.service';
+import { PrismaService } from '@/shared/database/prisma.service';
 import type { CreateLegalEntityDto } from './dto/create-legal-entity.dto';
 import type { UpdateLegalEntityDto } from './dto/update-legal-entity.dto';
 import type { ListLegalEntityQueryDto } from './dto/list-legal-entity-query.dto';

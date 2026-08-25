@@ -1,5 +1,5 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@/database/prisma.service';
+import { PrismaService } from '@/shared/database/prisma.service';
 import type { AssignPermissionsDto, CreateRoleDto } from './dto/role.dto';
 
 @Injectable()
