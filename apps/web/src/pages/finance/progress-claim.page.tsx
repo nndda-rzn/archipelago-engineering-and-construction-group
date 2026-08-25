@@ -56,6 +56,26 @@ const columns = [
       return <span className="font-mono tabular-nums text-neutral-700">{v != null ? fmt(v) : '—'}</span>;
     },
   }),
+  columnHelper.accessor('retentionRate', {
+    header: 'Retensi',
+    cell: (info) => {
+      const rate = info.getValue();
+      const row = info.row.original;
+      if (rate == null || row.status !== 'CERTIFIED') return '—';
+      return (
+        <span className="font-mono tabular-nums text-neutral-600">
+          {row.retentionAmount != null ? `${fmt(row.retentionAmount)} (${rate}%)` : `${rate}%`}
+        </span>
+      );
+    },
+  }),
+  columnHelper.accessor('netCertifiedAmount', {
+    header: 'Net',
+    cell: (info) => {
+      const v = info.getValue();
+      return v != null ? <span className="font-mono tabular-nums text-neutral-800 font-medium">{fmt(v)}</span> : '—';
+    },
+  }),
   columnHelper.accessor('status', {
     header: 'Status',
     cell: (info) => <Badge variant={statusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge>,
@@ -71,8 +91,12 @@ function CertifyButton({ claim }: { claim: ProgressClaim }) {
   const certify = useCertifyClaim();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState(Number(claim.amount));
+  const [retentionRate, setRetentionRate] = useState(5);
 
   if (claim.status !== 'DRAFT') return null;
+
+  const retention = Math.round(amount * retentionRate) / 100;
+  const net = Math.round((amount - retention) * 100) / 100;
 
   return open ? (
     <div className="flex items-center gap-2">
@@ -85,10 +109,30 @@ function CertifyButton({ claim }: { claim: ProgressClaim }) {
         className="h-8 w-32 text-right"
         aria-label="Nilai sertifikasi"
       />
+      <div className="flex items-center gap-1">
+        <Input
+          type="number"
+          min={0}
+          max={100}
+          value={retentionRate || ''}
+          onChange={(e) => setRetentionRate(Number(e.target.value))}
+          className="h-8 w-16 text-right"
+          aria-label="Retensi (%)"
+        />
+        <span className="text-caption text-neutral-500">%</span>
+      </div>
+      <span className="hidden text-caption text-neutral-500 xl:inline" title="Retensi → Net">
+        {fmt(retention)} → {fmt(net)}
+      </span>
       <Button
         size="sm"
         variant="secondary"
-        onClick={() => certify.mutate({ id: claim.id, certifiedAmount: amount }, { onSuccess: () => setOpen(false) })}
+        onClick={() =>
+          certify.mutate(
+            { id: claim.id, certifiedAmount: amount, retentionRate },
+            { onSuccess: () => setOpen(false) },
+          )
+        }
         loading={certify.isPending}
       >
         Simpan

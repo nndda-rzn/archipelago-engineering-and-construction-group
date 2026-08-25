@@ -775,7 +775,10 @@ model ProgressClaim {
   description   String?
   amount        Decimal  @db.Decimal(18, 2) // nilai klaim diajukan
   status        String   @default("DRAFT") // DRAFT | CERTIFIED | REJECTED | REVISED
-  certifiedAmount Decimal? @db.Decimal(18, 2) // nilai setelah sertifikasi
+  certifiedAmount Decimal? @db.Decimal(18, 2) // nilai sertifikasi gross
+  retentionRate Decimal  @default(0) @db.Decimal(5, 2) // % retensi kontrak (FR-CMR-003)
+  retentionAmount Decimal? @db.Decimal(18, 2) // retention = certifiedAmount x rate / 100
+  netCertifiedAmount Decimal? @db.Decimal(18, 2) // certified - retention (nilai net ditagih)
   certifiedBy   String?
   certifiedAt   DateTime?
   remark        String?

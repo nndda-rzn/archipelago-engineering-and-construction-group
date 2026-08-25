@@ -204,6 +204,9 @@ export const progressClaimSchema = z.object({
   amount: z.number(),
   status: z.string(),
   certifiedAmount: z.number().nullable(),
+  retentionRate: z.number().nullable().optional(),
+  retentionAmount: z.number().nullable().optional(),
+  netCertifiedAmount: z.number().nullable().optional(),
   certifiedBy: z.string().nullable(),
   certifiedAt: z.string().nullable(),
   remark: z.string().nullable(),
@@ -230,6 +233,7 @@ export type CreateProgressClaim = z.infer<typeof createProgressClaimSchema>;
 
 export const certifyClaimSchema = z.object({
   certifiedAmount: z.number().min(0),
+  retentionRate: z.number().min(0).max(100).optional(),
   remark: z.string().max(500).optional(),
 });
 export type CertifyClaim = z.infer<typeof certifyClaimSchema>;

@@ -255,6 +255,13 @@ export class CertifyClaimDto {
   certifiedAmount!: number;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  retentionRate?: number;
+
+  @IsOptional()
   @IsString()
   @MaxLength(500)
   remark?: string;
