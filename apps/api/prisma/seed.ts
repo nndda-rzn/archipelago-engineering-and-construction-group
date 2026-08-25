@@ -75,6 +75,9 @@ const permissions = [
   ['Collection.VIEW', 'Collection', 'VIEW'],
   ['Collection.CREATE', 'Collection', 'CREATE'],
   ['Collection.POST', 'Collection', 'POST'],
+  ['WorkPackage.VIEW', 'WorkPackage', 'VIEW'],
+  ['WorkPackage.CREATE', 'WorkPackage', 'CREATE'],
+  ['WorkPackage.EDIT', 'WorkPackage', 'EDIT'],
 ] as const;
 
 async function main() {
