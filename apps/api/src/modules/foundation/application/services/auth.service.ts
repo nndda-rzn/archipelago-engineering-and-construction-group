@@ -4,7 +4,6 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from './audit.service';
 import type { LoginDto } from '../../presentation/dto/login.dto';
-
 export type AuthUser = {
   id: string;
   email: string;
@@ -58,5 +57,18 @@ export class AuthService {
       accessToken: await this.jwt.signAsync(payload),
       user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, roles },
     };
+  }
+
+  /** Ambil profil user aktif dari token (GET /auth/me). */
+  async me(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { userRoles: { include: { role: true } } },
+    });
+    if (!user || user.status !== 'ACTIVE') {
+      throw new UnauthorizedException({ code: 'USER_INACTIVE', message: 'User tidak aktif' });
+    }
+    const roles = user.userRoles.filter((assignment) => assignment.role.status === 'ACTIVE').map((assignment) => assignment.role.code);
+    return { id: user.id, email: user.email, username: user.username, displayName: user.displayName, roles };
   }
 }
