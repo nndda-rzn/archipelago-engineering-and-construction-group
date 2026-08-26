@@ -45,6 +45,11 @@ export function DataGrid<TData>({
 }: DataGridProps<TData>) {
   const isServer = pagination !== undefined && onPaginationChange !== undefined;
 
+  // Client mode: internal pagination state agar TanStack tak crash (getPageCount butuh state.pagination).
+  const [internalPagination, setInternalPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
+  const effectivePagination = pagination ?? internalPagination;
+  const handlePaginationChange = onPaginationChange ?? setInternalPagination;
+
   const table = useReactTable({
     data,
     columns,
@@ -53,13 +58,13 @@ export function DataGrid<TData>({
     manualSorting: sorting !== undefined && onSortingChange !== undefined,
     rowCount: rowCount ?? data.length,
     state: {
-      pagination,
+      pagination: effectivePagination,
       sorting,
     },
-    onPaginationChange: onPaginationChange ? (updater) => {
-      const next = typeof updater === 'function' ? updater(table.getState().pagination) : updater;
-      onPaginationChange(next);
-    } : undefined,
+    onPaginationChange: (updater) => {
+      const next = typeof updater === 'function' ? updater(effectivePagination) : updater;
+      handlePaginationChange(next);
+    },
     onSortingChange: onSortingChange ? (updater) => {
       const next = typeof updater === 'function' ? updater(table.getState().sorting) : updater;
       onSortingChange(next);
