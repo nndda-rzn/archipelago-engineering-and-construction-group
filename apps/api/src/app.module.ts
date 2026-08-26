@@ -12,9 +12,10 @@ import { ConstructionModule } from './modules/construction';
 import { HcmModule } from './modules/hcm';
 import { HseModule } from './modules/hse';
 import { QualityModule } from './modules/quality';
+import { GovernanceModule } from './modules/governance';
 
 @Module({
-  imports: [FoundationModule, ProjectModule, ProcurementModule, InventoryModule, ApprovalModule, FinanceModule, ConstructionModule, HcmModule, HseModule, QualityModule],
+  imports: [FoundationModule, ProjectModule, ProcurementModule, InventoryModule, ApprovalModule, FinanceModule, ConstructionModule, HcmModule, HseModule, QualityModule, GovernanceModule],
   controllers: [HealthController],
   providers: [
     {
