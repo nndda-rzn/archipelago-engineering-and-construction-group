@@ -1,5 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid } from '@aec/ui';
+import { Badge, Button, DataGrid, useToast } from '@aec/ui';
 import { useApprovalTasks, useDecideApproval, type ApprovalTask } from '@/features/approval';
 
 const columnHelper = createColumnHelper<ApprovalTask>();
@@ -50,6 +50,7 @@ const columns = [
 
 function DecideButtons({ task }: { task: ApprovalTask }) {
   const decide = useDecideApproval();
+  const toast = useToast();
   if (!task.canApprove) return null;
 
   return (
@@ -59,7 +60,13 @@ function DecideButtons({ task }: { task: ApprovalTask }) {
         variant="secondary"
         onClick={() => {
           if (window.confirm(`Approve ${task.transactionCode ?? task.transactionId}?`)) {
-            decide.mutate({ taskId: task.id, decision: 'APPROVE' });
+            decide.mutate(
+              { taskId: task.id, decision: 'APPROVE' },
+              {
+                onSuccess: () => toast({ title: 'Disetujui', description: task.transactionCode ?? undefined, variant: 'success' }),
+                onError: () => toast({ title: 'Gagal menyetujui', description: 'Periksa kembali dokumen terkait.', variant: 'error' }),
+              },
+            );
           }
         }}
         loading={decide.isPending}
@@ -71,7 +78,13 @@ function DecideButtons({ task }: { task: ApprovalTask }) {
         variant="ghost"
         onClick={() => {
           const comment = window.prompt('Alasan reject (opsional)') ?? undefined;
-          decide.mutate({ taskId: task.id, decision: 'REJECT', comment });
+          decide.mutate(
+            { taskId: task.id, decision: 'REJECT', comment },
+            {
+              onSuccess: () => toast({ title: 'Ditolak', description: task.transactionCode ?? undefined, variant: 'info' }),
+              onError: () => toast({ title: 'Gagal menolak', description: 'Periksa kembali dokumen terkait.', variant: 'error' }),
+            },
+          );
         }}
       >
         Reject
