@@ -93,7 +93,7 @@
 body {
   background-color: var(--neutral-50);
   color: var(--neutral-900);
-  font-family: Inter, system-ui, -apple-system, sans-serif;
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
   font-size: 14px;
   margin: 0;
   -webkit-font-smoothing: antialiased;
