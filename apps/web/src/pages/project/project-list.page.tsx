@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { createProjectSchema, projectSchema, type Project } from '@aec/api-contracts';
 import { z } from 'zod';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
+import { Badge, Button, DataGrid, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateProject, useProjects } from '@/entities/project';
 import { useLegalEntities } from '@/entities/legal-entity';
 import { formatIdr } from '@/shared/lib/format';
@@ -76,7 +76,7 @@ export function ProjectListPage() {
   const entities = useLegalEntities({ page: 1, pageSize: 100 });
   const create = useCreateProject();
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<z.infer<typeof formSchema>>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
 
@@ -121,16 +121,19 @@ export function ProjectListPage() {
             </div>
             <div>
               <Label htmlFor="legalEntityId">Legal Entity</Label>
-              <select
-                id="legalEntityId"
-                className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body text-neutral-900 hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
-                {...register('legalEntityId')}
+              <Select
+                value={watch('legalEntityId')}
+                onValueChange={(v) => setValue('legalEntityId', v)}
               >
-                <option value="">Pilih entity…</option>
-                {(entities.data?.items ?? []).map((e) => (
-                  <option key={e.id} value={e.id}>{e.code} — {e.legalName}</option>
-                ))}
-              </select>
+                <SelectTrigger id="legalEntityId" error={!!errors.legalEntityId}>
+                  <SelectValue placeholder="Pilih entity…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(entities.data?.items ?? []).map((e) => (
+                    <SelectItem key={e.id} value={e.id}>{e.code} — {e.legalName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {errors.legalEntityId && <p className="mt-1 text-caption text-destructive-600">{errors.legalEntityId.message}</p>}
             </div>
             <div className="col-span-2">

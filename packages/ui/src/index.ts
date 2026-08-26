@@ -4,6 +4,7 @@ export { Input, type InputProps } from './primitives/input';
 export { Badge, type BadgeProps } from './primitives/badge';
 export { Card, CardHeader, CardTitle } from './primitives/card';
 export { Label } from './primitives/label';
+export { Select, SelectGroup, SelectValue, SelectTrigger, SelectContent, SelectItem } from './primitives/select';
 export { ToastProvider, ToastPrimitive, useToast } from './primitives/toast';
 export { Skeleton, TableSkeleton, KpiSkeleton } from './primitives/skeleton';
 export { EmptyState, ErrorState, GridState } from './enterprise/state';
