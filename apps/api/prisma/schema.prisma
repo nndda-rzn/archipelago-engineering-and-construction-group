@@ -156,55 +156,56 @@ model Project {
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
 
-  wbsItems              WbsItem[]
-  budgetItems           BudgetItem[]
-  purchaseRequisitions  PurchaseRequisition[]
-  purchaseOrders        PurchaseOrder[]
-  warehouses            Warehouse[]
-  goodsReceipts         GoodsReceipt[]
-  stockLedgerEntries    StockLedgerEntry[]
-  materialIssues        MaterialIssue[]
-  adjustments           StockAdjustment[]
-  opnames               StockOpname[]
-  stockTransfers        StockTransfer[]
-  vendorInvoices        VendorInvoice[]
-  payments              Payment[]
-  journalLines          JournalLine[]
-  progressClaims        ProgressClaim[]
-  clientInvoices        ClientInvoice[]
-  collections           Collection[]
-  variations            ProjectVariation[]
-  subcontracts          Subcontract[]
-  assignments           ProjectAssignment[]
-  timesheets            Timesheet[]
-  equipmentAssignments  EquipmentAssignment[]
-  equipmentUtilizations EquipmentUtilization[]
-  equipmentUsages       EquipmentUsage[]
-  payrollAllocations    PayrollAllocation[]
-  safetyObservations    SafetyObservation[]
-  hseIncidents          HseIncident[]
-  permitsToWork         PermitToWork[]
-  itps                  Itp[]
-  inspections           InspectionRequest[]
-  ncrs                  Ncr[]
-  punchListItems        PunchListItem[]
-  risks                 Risk[]
-  legalCases            LegalCase[]
-  contracts             Contract[]
-  deliverables          Deliverable[]
-  drawings              Drawing[]
-  rfis                  Rfi[]
-  submittals            Submittal[]
-  transmittals          Transmittal[]
-  rfqs                  Rfq[]
-  workPackages          ConstructionWorkPackage[]
-  dailyReports          ConstructionDailyReport[]
-  commissioningSystems  CommissioningSystem[]
-  handoverPackages      HandoverPackage[]
-  costCodes             CostCode[]
-  controlAccounts       ControlAccount[]
-  forecasts             Forecast[]
-  bankGuarantees        BankGuarantee[]
+  wbsItems                 WbsItem[]
+  budgetItems              BudgetItem[]
+  purchaseRequisitions     PurchaseRequisition[]
+  purchaseOrders           PurchaseOrder[]
+  warehouses               Warehouse[]
+  goodsReceipts            GoodsReceipt[]
+  stockLedgerEntries       StockLedgerEntry[]
+  materialIssues           MaterialIssue[]
+  adjustments              StockAdjustment[]
+  opnames                  StockOpname[]
+  stockTransfers           StockTransfer[]
+  vendorInvoices           VendorInvoice[]
+  payments                 Payment[]
+  journalLines             JournalLine[]
+  progressClaims           ProgressClaim[]
+  clientInvoices           ClientInvoice[]
+  collections              Collection[]
+  variations               ProjectVariation[]
+  subcontracts             Subcontract[]
+  assignments              ProjectAssignment[]
+  timesheets               Timesheet[]
+  equipmentAssignments     EquipmentAssignment[]
+  equipmentUtilizations    EquipmentUtilization[]
+  equipmentUsages          EquipmentUsage[]
+  payrollAllocations       PayrollAllocation[]
+  safetyObservations       SafetyObservation[]
+  hseIncidents             HseIncident[]
+  permitsToWork            PermitToWork[]
+  itps                     Itp[]
+  inspections              InspectionRequest[]
+  ncrs                     Ncr[]
+  punchListItems           PunchListItem[]
+  risks                    Risk[]
+  legalCases               LegalCase[]
+  contracts                Contract[]
+  deliverables             Deliverable[]
+  drawings                 Drawing[]
+  rfis                     Rfi[]
+  submittals               Submittal[]
+  transmittals             Transmittal[]
+  rfqs                     Rfq[]
+  workPackages             ConstructionWorkPackage[]
+  dailyReports             ConstructionDailyReport[]
+  commissioningSystems     CommissioningSystem[]
+  handoverPackages         HandoverPackage[]
+  costCodes                CostCode[]
+  controlAccounts          ControlAccount[]
+  forecasts                Forecast[]
+  bankGuarantees           BankGuarantee[]
+  vendorPerformanceRatings VendorPerformanceRating[]
 
   @@index([legalEntityId])
   @@index([status])
@@ -341,6 +342,7 @@ model PurchaseRequisition {
   requestedAt DateTime @default(now())
   status      String   @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | REJECTED | CANCELLED
   description String?
+  estimatedTotal Decimal? @db.Decimal(18, 2) // total estimasi PR (FR-PRO-002 budget check)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -376,6 +378,7 @@ model PurchaseOrder {
   vendor        String
   currency      String               @default("IDR")
   totalAmount   Decimal              @default(0) @db.Decimal(18, 2)
+  version       Int                  @default(1) // FR-PRO-008: PO change versioned
   status        String               @default("DRAFT") // DRAFT | APPROVED | RELEASED | CANCELLED
   issuedAt      DateTime?
   releasedBy    String?
@@ -385,8 +388,30 @@ model PurchaseOrder {
   items          PurchaseOrderItem[]
   goodsReceipts  GoodsReceipt[]
   vendorInvoices VendorInvoice[]
+  poChanges      PurchaseOrderChange[]
 
   @@index([projectId])
+  @@index([status])
+}
+
+// FR-PRO-008: PO change — perubahan amount/scope versioned, tidak overwrite
+model PurchaseOrderChange {
+  id              String        @id @default(cuid())
+  changeNumber    String        @unique // mis. "POC-2027-000001"
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  version         Int           @default(1)
+  previousTotal   Decimal       @db.Decimal(18, 2)
+  newTotal        Decimal       @db.Decimal(18, 2)
+  reason          String
+  status          String        @default("DRAFT") // DRAFT | APPROVED | REJECTED
+  createdBy       String
+  approvedBy      String?
+  approvedAt      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([purchaseOrderId])
   @@index([status])
 }
 
@@ -1886,8 +1911,29 @@ model Vendor {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  ratings VendorPerformanceRating[]
+
   @@index([category])
   @@index([status])
+}
+
+// FR-PRO-010: Vendor performance rating — delivery/quality/commercial/HSE/responsiveness
+model VendorPerformanceRating {
+  id         String   @id @default(cuid())
+  vendorId   String
+  vendor     Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  projectId  String?
+  project    Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  category   String   @default("DELIVERY") // DELIVERY | QUALITY | COMMERCIAL | HSE | RESPONSIVENESS
+  score      Int // 1-5
+  remark     String?
+  ratedBy    String
+  ratingDate DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([vendorId])
+  @@index([category])
 }
 
 // FR-FND-010: Fiscal period — FUTURE/OPEN/SOFT_CLOSED/CLOSED/LOCKED
@@ -1948,20 +1994,22 @@ model RfqItem {
   @@index([rfqId])
 }
 
-// FR-PRO-004: Quote vendor per RFQ item + total
+// FR-PRO-004/005/006: Quote vendor per RFQ item + technical/commercial evaluation
 model RfqQuote {
-  id           String   @id @default(cuid())
-  rfqId        String
-  rfq          Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
-  vendor       String
-  quoteDate    DateTime @default(now())
-  totalAmount  Decimal  @db.Decimal(18, 2) // total penawaran (dihitung dari items)
-  currency     String   @default("IDR")
-  leadTimeDays Int? // estimasi pengiriman
-  remark       String?
-  isWinner     Boolean  @default(false)
-  status       String   @default("SUBMITTED") // SUBMITTED | WITHDRAWN
-  createdAt    DateTime @default(now())
+  id              String   @id @default(cuid())
+  rfqId           String
+  rfq             Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  vendor          String
+  quoteDate       DateTime @default(now())
+  totalAmount     Decimal  @db.Decimal(18, 2) // total penawaran (dihitung dari items)
+  currency        String   @default("IDR")
+  leadTimeDays    Int? // estimasi pengiriman
+  remark          String?
+  isWinner        Boolean  @default(false)
+  status          String   @default("SUBMITTED") // SUBMITTED | WITHDRAWN
+  technicalStatus String   @default("PENDING") // PENDING | PASS | REJECT (FR-PRO-005)
+  technicalNote   String? // catatan evaluasi teknis
+  createdAt       DateTime @default(now())
 
   items RfqQuoteItem[]
 
