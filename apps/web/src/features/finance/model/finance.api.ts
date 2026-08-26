@@ -7,6 +7,7 @@ export * from './progress-claim.api';
 export * from './client-invoice.api';
 export * from './collection.api';
 export * from './variation.api';
+export * from './subcontract.api';
 
 export type { VendorInvoice } from '@aec/api-contracts';
 export type { Payment } from '@aec/api-contracts';
@@ -17,3 +18,4 @@ export type { ProgressClaim } from '@aec/api-contracts';
 export type { ClientInvoice } from '@aec/api-contracts';
 export type { Collection } from '@aec/api-contracts';
 export type { Variation } from '@aec/api-contracts';
+export type { Subcontract, SubcontractProgress } from '@aec/api-contracts';
