@@ -129,10 +129,11 @@ export class ApprovalTaskService {
     return updated;
   }
 
-  async listTasks(actorId: string) {
-    const [tasks, pending] = await Promise.all([
-      this.prisma.approvalTask.findMany({ orderBy: { createdAt: 'desc' }, take: 100 }),
-      this.prisma.approvalTask.count({ where: { status: 'PENDING' } }),
+  async listTasks(actorId: string, page = 1, pageSize = 20) {
+    const skip = (page - 1) * pageSize;
+    const [tasks, total] = await Promise.all([
+      this.prisma.approvalTask.findMany({ orderBy: { createdAt: 'desc' }, skip, take: pageSize }),
+      this.prisma.approvalTask.count(),
     ]);
 
     const withActions = await Promise.all(
@@ -142,6 +143,6 @@ export class ApprovalTaskService {
       }),
     );
 
-    return { items: withActions, total: pending };
+    return { items: withActions, total };
   }
 }
