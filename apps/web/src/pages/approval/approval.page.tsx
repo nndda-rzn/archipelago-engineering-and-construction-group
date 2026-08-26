@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid, useToast } from '@aec/ui';
+import { Badge, Button, DataGrid, ConfirmDialog, useToast } from '@aec/ui';
 import { useApprovalTasks, useDecideApproval, type ApprovalTask } from '@/features/approval';
 import { formatDateTime } from '@/shared/lib/format';
 
@@ -53,6 +53,7 @@ const columns = [
 function DecideButtons({ task }: { task: ApprovalTask }) {
   const decide = useDecideApproval();
   const toast = useToast();
+  const [confirmOpen, setConfirmOpen] = useState(false);
   if (!task.canApprove) return null;
 
   return (
@@ -60,17 +61,7 @@ function DecideButtons({ task }: { task: ApprovalTask }) {
       <Button
         size="sm"
         variant="secondary"
-        onClick={() => {
-          if (window.confirm(`Approve ${task.transactionCode ?? task.transactionId}?`)) {
-            decide.mutate(
-              { taskId: task.id, decision: 'APPROVE' },
-              {
-                onSuccess: () => toast({ title: 'Disetujui', description: task.transactionCode ?? undefined, variant: 'success' }),
-                onError: () => toast({ title: 'Gagal menyetujui', description: 'Periksa kembali dokumen terkait.', variant: 'error' }),
-              },
-            );
-          }
-        }}
+        onClick={() => setConfirmOpen(true)}
         loading={decide.isPending}
       >
         Approve
@@ -91,6 +82,23 @@ function DecideButtons({ task }: { task: ApprovalTask }) {
       >
         Reject
       </Button>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Setujui dokumen"
+        description={`Approve ${task.transactionCode ?? task.transactionId}?`}
+        confirmLabel="Approve"
+        loading={decide.isPending}
+        onConfirm={() =>
+          decide.mutate(
+            { taskId: task.id, decision: 'APPROVE' },
+            {
+              onSuccess: () => toast({ title: 'Disetujui', description: task.transactionCode ?? undefined, variant: 'success' }),
+              onError: () => toast({ title: 'Gagal menyetujui', description: 'Periksa kembali dokumen terkait.', variant: 'error' }),
+            },
+          )
+        }
+      />
     </div>
   );
 }
