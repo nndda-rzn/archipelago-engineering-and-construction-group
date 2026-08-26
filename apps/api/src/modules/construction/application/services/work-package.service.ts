@@ -79,6 +79,7 @@ export class WorkPackageService {
         unit: dto.unit ?? 'EA',
         startDate: dto.startDate ? new Date(dto.startDate) : null,
         endDate: dto.endDate ? new Date(dto.endDate) : null,
+        requiresIFC: dto.requiresIFC ?? false,
       },
     });
 
@@ -101,9 +102,21 @@ export class WorkPackageService {
       throw new ConflictException({ code: 'WP_NOT_DRAFT', message: `Hanya DRAFT yang bisa dimulai (${wp.status})` });
     }
 
+    // FR-CON-002: readiness gate — WP wajib IFC tidak boleh mulai tanpa current IFC
+    if (wp.requiresIFC) {
+      const ifcCount = await this.prisma.drawing.count({ where: { projectId: wp.projectId, isIFC: true } });
+      if (ifcCount === 0) {
+        await this.prisma.constructionWorkPackage.update({
+          where: { id },
+          data: { readyStatus: 'BLOCKED', readyNote: 'Current IFC belum tersedia (FR-CON-002)' },
+        });
+        throw new ConflictException({ code: 'READINESS_GATE_BLOCKED', message: 'Work package butuh current IFC — belum tersedia (FR-CON-002)' });
+      }
+    }
+
     const updated = await this.prisma.constructionWorkPackage.update({
       where: { id },
-      data: { status: 'IN_PROGRESS' },
+      data: { status: 'IN_PROGRESS', readyStatus: 'READY', readyNote: 'Prerequisite terpenuhi' },
     });
 
     await this.audit.record({
@@ -111,11 +124,30 @@ export class WorkPackageService {
       action: 'WorkPackage.START',
       resource: 'ConstructionWorkPackage',
       resourceId: id,
-      newValue: { wpNumber: wp.wpNumber },
+      newValue: { wpNumber: wp.wpNumber, readyStatus: 'READY' },
       source: 'api',
     });
 
     return updated;
+  }
+
+  // FR-CON-002: readiness check — status gate tanpa start
+  async readiness(id: string) {
+    const wp = await this.prisma.constructionWorkPackage.findUnique({ where: { id } });
+    if (!wp) throw new NotFoundException({ code: 'WP_NOT_FOUND', message: 'Work package tidak ditemukan' });
+
+    const ifcCount = await this.prisma.drawing.count({ where: { projectId: wp.projectId, isIFC: true } });
+    const ready = !wp.requiresIFC || ifcCount > 0;
+
+    const updated = await this.prisma.constructionWorkPackage.update({
+      where: { id },
+      data: {
+        readyStatus: ready ? 'READY' : 'BLOCKED',
+        readyNote: ready ? 'Prerequisite terpenuhi' : 'Current IFC belum tersedia (FR-CON-002)',
+      },
+    });
+
+    return { wpId: id, wpNumber: wp.wpNumber, requiresIFC: wp.requiresIFC, currentIfcCount: ifcCount, ready, readyStatus: updated.readyStatus };
   }
 
   async complete(id: string, actorId: string) {

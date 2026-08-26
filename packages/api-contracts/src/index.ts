@@ -17,3 +17,4 @@ export * from './engineering';
 export * from './master-data';
 export * from './treasury';
 export * from './finance-closure';
+export * from './foundation-hardening';
