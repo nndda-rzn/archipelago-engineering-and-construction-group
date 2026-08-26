@@ -29,6 +29,25 @@ const AUTH_HEADERS = (): Record<string, string> => {
   return { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
 };
 
+/**
+ * Decimal Prisma dikirim sebagai string ("5000000000"), tapi zod schema response pakai number().
+ * Revive string numerik -> number, KECUALI key identitas yang memang string (kode, nomor dokumen, NPWP, dll).
+ * Catatan: Int field (probability, version, score) dikirim sebagai number asli — hanya Decimal yang jadi string.
+ */
+const NUMERIC_STRING_EXCLUDE = /(Code|Number|Id|Phone|Hash|Revision)$|tax|accountNumber|serialNumber|^unit$|^currency$/i;
+
+export function jsonReviver(key: string, value: unknown): unknown {
+  if (
+    typeof value === 'string' &&
+    value.trim() !== '' &&
+    !Number.isNaN(Number(value)) &&
+    !NUMERIC_STRING_EXCLUDE.test(key)
+  ) {
+    return Number(value);
+  }
+  return value;
+}
+
 export async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, { headers: AUTH_HEADERS() });
 
@@ -44,7 +63,7 @@ export async function getJson<T>(path: string): Promise<T> {
     );
   }
 
-  return res.json() as Promise<T>;
+  return res.text().then((text) => JSON.parse(text, jsonReviver)) as Promise<T>;
 }
 
 export async function postJson<T>(path: string, body: unknown): Promise<T> {
@@ -66,7 +85,7 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
     );
   }
 
-  return res.json() as Promise<T>;
+  return res.text().then((text) => JSON.parse(text, jsonReviver)) as Promise<T>;
 }
 
 /** Simpan token ke localStorage (sederhana — Keycloak menyusul). */
