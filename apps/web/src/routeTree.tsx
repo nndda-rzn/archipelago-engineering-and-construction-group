@@ -32,6 +32,7 @@ import { TrialBalancePage } from './pages/finance/trial-balance.page';
 import { ProgressClaimPage } from './pages/finance/progress-claim.page';
 import { ClientInvoicePage } from './pages/finance/client-invoice.page';
 import { CollectionPage } from './pages/finance/collection.page';
+import { VariationPage } from './pages/finance/variation.page';
 import { DashboardPage } from './pages/dashboard.page';
 import { requireAuth } from './app/router/require-auth';
 
@@ -210,6 +211,12 @@ const collectionRoute = createRoute({
   component: CollectionPage,
 });
 
+const variationRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/finance/variations',
+  component: VariationPage,
+});
+
 const workflowRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/workflows',
@@ -248,5 +255,5 @@ const handoverRoute = createRoute({
 
 export const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, projectHealthRoute, prRoute, poRoute, rfqRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, workflowRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute, workPackagesRoute, dailyReportsRoute, commissioningRoute, handoverRoute]),
+  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, projectHealthRoute, prRoute, poRoute, rfqRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, workflowRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute, variationRoute, workPackagesRoute, dailyReportsRoute, commissioningRoute, handoverRoute]),
 ]);

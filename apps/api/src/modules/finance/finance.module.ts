@@ -9,6 +9,7 @@ import { TrialBalanceService } from './application/services/trial-balance.servic
 import { ProgressClaimService } from './application/services/progress-claim.service';
 import { ClientInvoiceService } from './application/services/client-invoice.service';
 import { CollectionService } from './application/services/collection.service';
+import { VariationService } from './application/services/variation.service';
 import { GlHelper } from './application/services/shared/gl.helper';
 
 @Module({
@@ -25,6 +26,7 @@ import { GlHelper } from './application/services/shared/gl.helper';
     ProgressClaimService,
     ClientInvoiceService,
     CollectionService,
+    VariationService,
   ],
 })
 export class FinanceModule {}
