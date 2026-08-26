@@ -66,10 +66,10 @@ const loginRoute = createRoute({
   component: LoginPage,
 });
 
-// App layout — pakai AppShell (sidebar + topbar), wajib login
+// App layout — pakai AppShell (sidebar + topbar), wajib login. Pathless layout: root path dipegang child.
 const appRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/',
+  id: 'app',
   beforeLoad: requireAuth,
   component: AppShell,
 });
