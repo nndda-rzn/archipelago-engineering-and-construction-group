@@ -14,3 +14,4 @@ export * from './governance';
 export * from './analytics';
 export * from './commercial';
 export * from './engineering';
+export * from './master-data';
