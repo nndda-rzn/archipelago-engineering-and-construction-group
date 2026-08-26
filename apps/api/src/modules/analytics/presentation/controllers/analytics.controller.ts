@@ -22,4 +22,22 @@ export class AnalyticsController {
   anomalies() {
     return this.analytics.anomalies();
   }
+
+  @Get('cash-flow')
+  @Permissions('Analytics.VIEW')
+  cashFlow() {
+    return this.analytics.cashFlow();
+  }
+
+  @Get('aging')
+  @Permissions('Analytics.VIEW')
+  aging() {
+    return this.analytics.aging();
+  }
+
+  @Get('project-cost-summary')
+  @Permissions('Analytics.VIEW')
+  projectCostSummary() {
+    return this.analytics.projectCostSummary();
+  }
 }
