@@ -171,6 +171,9 @@ model Project {
   equipmentUtilizations EquipmentUtilization[]
   equipmentUsages EquipmentUsage[]
   payrollAllocations PayrollAllocation[]
+  safetyObservations SafetyObservation[]
+  hseIncidents       HseIncident[]
+  permitsToWork      PermitToWork[]
   rfqs           Rfq[]
   workPackages   ConstructionWorkPackage[]
   dailyReports   ConstructionDailyReport[]
@@ -1162,6 +1165,92 @@ model PayrollAllocation {
   @@index([employeeId])
   @@index([projectId])
   @@index([period])
+}
+
+// FR-HSE-001: Safety observation — safe/unsafe
+model SafetyObservation {
+  id                String   @id @default(cuid())
+  observationNumber String   @unique // mis. "OBS-2027-000001"
+  projectId         String?
+  project           Project? @relation(fields: [projectId], references: [id])
+  observationDate   DateTime @default(now())
+  type              String   @default("UNSAFE") // SAFE | UNSAFE
+  description       String
+  observedBy        String
+  status            String   @default("OPEN") // OPEN | RESOLVED
+  resolvedAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([type])
+  @@index([status])
+}
+
+// FR-HSE-002: Incident — severity + escalation; FR-HSE-003: investigation root cause
+model HseIncident {
+  id            String   @id @default(cuid())
+  incidentNumber String   @unique // mis. "INC-2027-000001"
+  projectId     String?
+  project       Project? @relation(fields: [projectId], references: [id])
+  incidentDate  DateTime @default(now())
+  type          String   @default("NEAR_MISS") // INJURY | NEAR_MISS | PROPERTY | ENVIRONMENT | OTHER
+  severity      String   @default("MEDIUM") // LOW | MEDIUM | HIGH | CRITICAL
+  description   String
+  rootCause     String?  // FR-HSE-003: hasil investigasi
+  status        String   @default("OPEN") // OPEN | INVESTIGATING | RESOLVED
+  resolvedAt    DateTime?
+  reportedBy    String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  correctiveActions CorrectiveAction[] @relation("IncidentActions")
+
+  @@index([projectId])
+  @@index([severity])
+  @@index([status])
+}
+
+// FR-HSE-004: Permit to Work — validity + area
+model PermitToWork {
+  id           String   @id @default(cuid())
+  permitNumber String   @unique // mis. "PTW-2027-000001"
+  projectId    String?
+  project      Project? @relation(fields: [projectId], references: [id])
+  area         String
+  description  String?
+  validFrom    DateTime
+  validTo      DateTime
+  status       String   @default("ACTIVE") // ACTIVE | EXPIRED | REVOKED
+  issuedTo     String
+  revokedAt    DateTime?
+  revokedBy    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
+// FR-HSE-005: Corrective action — owner, due date, evidence, verification
+model CorrectiveAction {
+  id          String   @id @default(cuid())
+  sourceType  String // OBSERVATION | INCIDENT
+  sourceId    String
+  incidentId  String?
+  incident    HseIncident? @relation("IncidentActions", fields: [incidentId], references: [id], onDelete: Cascade)
+  action      String
+  owner       String
+  dueDate     DateTime
+  evidence    String?
+  status      String   @default("OPEN") // OPEN | IN_PROGRESS | VERIFIED | CLOSED
+  verifiedBy  String?
+  verifiedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sourceType, sourceId])
+  @@index([status])
 }
 
 // ─── Procurement: RFQ + Vendor Evaluation (FR-PRO-003/004) ───────────────────
