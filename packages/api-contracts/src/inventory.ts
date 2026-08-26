@@ -10,7 +10,7 @@ export const warehouseSchema = z.object({
   status: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type Warehouse = z.infer<typeof warehouseSchema>;
 
@@ -44,9 +44,9 @@ export const goodsReceiptSchema = z.object({
       wbsItemId: z.string().nullable(),
     }),
   ),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
-  warehouse: z.object({ code: z.string(), name: z.string() }).optional(),
-  po: z.object({ poNumber: z.string(), vendor: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
+  warehouse: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
+  po: z.object({ poNumber: z.string(), vendor: z.string() }).nullable().optional(),
 });
 export type GoodsReceipt = z.infer<typeof goodsReceiptSchema>;
 
@@ -80,9 +80,9 @@ export const stockLedgerEntrySchema = z.object({
   totalValue: z.number().nullable(),
   balanceAfter: z.number(),
   createdAt: z.string(),
-  project: z.object({ code: z.string() }).optional(),
-  wbsItem: z.object({ code: z.string(), name: z.string() }).optional(),
-  warehouse: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string() }).nullable().optional(),
+  wbsItem: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
+  warehouse: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type StockLedgerEntry = z.infer<typeof stockLedgerEntrySchema>;
 
@@ -122,8 +122,8 @@ export const materialIssueSchema = z.object({
       wbsItemId: z.string().nullable(),
     }),
   ),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
-  warehouse: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
+  warehouse: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type MaterialIssue = z.infer<typeof materialIssueSchema>;
 
@@ -162,9 +162,9 @@ export const stockTransferSchema = z.object({
       wbsItemId: z.string().nullable(),
     }),
   ),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
-  fromWarehouse: z.object({ code: z.string(), name: z.string() }).optional(),
-  toWarehouse: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
+  fromWarehouse: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
+  toWarehouse: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type StockTransfer = z.infer<typeof stockTransferSchema>;
 
@@ -205,8 +205,8 @@ export const stockAdjustmentSchema = z.object({
       wbsItemId: z.string().nullable(),
     }),
   ),
-  project: z.object({ code: z.string() }).optional(),
-  warehouse: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string() }).nullable().optional(),
+  warehouse: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type StockAdjustment = z.infer<typeof stockAdjustmentSchema>;
 
@@ -246,8 +246,8 @@ export const stockOpnameSchema = z.object({
       wbsItemId: z.string().nullable(),
     }),
   ),
-  project: z.object({ code: z.string() }).optional(),
-  warehouse: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string() }).nullable().optional(),
+  warehouse: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type StockOpname = z.infer<typeof stockOpnameSchema>;
 

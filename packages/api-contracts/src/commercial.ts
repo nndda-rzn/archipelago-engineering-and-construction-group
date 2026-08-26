@@ -39,7 +39,7 @@ export const opportunitySchema = z.object({
   status: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  client: z.object({ name: z.string() }).optional(),
+  client: z.object({ name: z.string() }).nullable().optional(),
 });
 export type Opportunity = z.infer<typeof opportunitySchema>;
 
@@ -72,8 +72,8 @@ export const contractSchema = z.object({
   status: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  client: z.object({ name: z.string() }).optional(),
-  project: z.object({ code: z.string() }).optional(),
+  client: z.object({ name: z.string() }).nullable().optional(),
+  project: z.object({ code: z.string() }).nullable().optional(),
 });
 export type Contract = z.infer<typeof contractSchema>;
 
@@ -101,7 +101,7 @@ export const bidDecisionSchema = z.object({
   rationale: z.string().nullable(),
   decidedBy: z.string(),
   decidedAt: z.string(),
-  opportunity: z.object({ oppNumber: z.string(), title: z.string() }).optional(),
+  opportunity: z.object({ oppNumber: z.string(), title: z.string() }).nullable().optional(),
 });
 export type BidDecision = z.infer<typeof bidDecisionSchema>;
 
@@ -182,7 +182,7 @@ export const tenderSubmissionSchema = z.object({
   acknowledgement: z.string().nullable(),
   fileHash: z.string().nullable(),
   status: z.string(),
-  opportunity: z.object({ oppNumber: z.string(), title: z.string() }).optional(),
+  opportunity: z.object({ oppNumber: z.string(), title: z.string() }).nullable().optional(),
   estimate: z.object({ estimateNumber: z.string(), version: z.number() }).nullable().optional(),
 });
 export type TenderSubmission = z.infer<typeof tenderSubmissionSchema>;

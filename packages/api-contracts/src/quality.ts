@@ -10,7 +10,7 @@ export const itpSchema = z.object({
   status: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  workPackage: z.object({ wpNumber: z.string() }).optional(),
+  workPackage: z.object({ wpNumber: z.string() }).nullable().optional(),
 });
 export type Itp = z.infer<typeof itpSchema>;
 
@@ -35,7 +35,7 @@ export const inspectionRequestSchema = z.object({
   inspectedBy: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  workPackage: z.object({ wpNumber: z.string() }).optional(),
+  workPackage: z.object({ wpNumber: z.string() }).nullable().optional(),
 });
 export type InspectionRequest = z.infer<typeof inspectionRequestSchema>;
 
@@ -63,7 +63,7 @@ export const ncrSchema = z.object({
   closedAt: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  workPackage: z.object({ wpNumber: z.string() }).optional(),
+  workPackage: z.object({ wpNumber: z.string() }).nullable().optional(),
 });
 export type Ncr = z.infer<typeof ncrSchema>;
 
@@ -89,7 +89,7 @@ export const punchListItemSchema = z.object({
   closedBy: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  workPackage: z.object({ wpNumber: z.string() }).optional(),
+  workPackage: z.object({ wpNumber: z.string() }).nullable().optional(),
 });
 export type PunchListItem = z.infer<typeof punchListItemSchema>;
 

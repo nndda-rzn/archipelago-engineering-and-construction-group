@@ -13,7 +13,7 @@ export const deliverableSchema = z.object({
   status: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  project: z.object({ code: z.string() }).optional(),
+  project: z.object({ code: z.string() }).nullable().optional(),
 });
 export type Deliverable = z.infer<typeof deliverableSchema>;
 
@@ -47,7 +47,7 @@ export const drawingSchema = z.object({
   status: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  project: z.object({ code: z.string() }).optional(),
+  project: z.object({ code: z.string() }).nullable().optional(),
   revisions: z.array(drawingRevisionSchema).optional(),
 });
 export type Drawing = z.infer<typeof drawingSchema>;
@@ -74,7 +74,7 @@ export const rfiSchema = z.object({
   answeredAt: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  project: z.object({ code: z.string() }).optional(),
+  project: z.object({ code: z.string() }).nullable().optional(),
 });
 export type Rfi = z.infer<typeof rfiSchema>;
 
@@ -97,7 +97,7 @@ export const submittalSchema = z.object({
   reviewedAt: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  project: z.object({ code: z.string() }).optional(),
+  project: z.object({ code: z.string() }).nullable().optional(),
 });
 export type Submittal = z.infer<typeof submittalSchema>;
 
@@ -119,7 +119,7 @@ export const transmittalSchema = z.object({
   sentBy: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  project: z.object({ code: z.string() }).optional(),
+  project: z.object({ code: z.string() }).nullable().optional(),
 });
 export type Transmittal = z.infer<typeof transmittalSchema>;
 

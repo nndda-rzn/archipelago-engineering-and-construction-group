@@ -15,7 +15,7 @@ export const workPackageSchema = z.object({
   endDate: z.string().nullable(),
   status: z.string(),
   createdAt: z.string(),
-  wbs: z.object({ code: z.string(), name: z.string() }).optional(),
+  wbs: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
   latestProgress: z.number().nullable().optional(),
 });
 export type WorkPackage = z.infer<typeof workPackageSchema>;

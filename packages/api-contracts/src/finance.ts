@@ -31,8 +31,8 @@ export const vendorInvoiceSchema = z.object({
       matchStatus: z.string(),
     }),
   ),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
-  po: z.object({ poNumber: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
+  po: z.object({ poNumber: z.string() }).nullable().optional(),
 });
 export type VendorInvoice = z.infer<typeof vendorInvoiceSchema>;
 
@@ -70,10 +70,10 @@ export const paymentSchema = z.object({
       id: z.string(),
       invoiceId: z.string(),
       amount: z.number(),
-      invoice: z.object({ invoiceNumber: z.string(), totalAmount: z.number() }).optional(),
+      invoice: z.object({ invoiceNumber: z.string(), totalAmount: z.number() }).nullable().optional(),
     }),
   ),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type Payment = z.infer<typeof paymentSchema>;
 
@@ -104,7 +104,7 @@ export const chartOfAccountSchema = z.object({
   description: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  parent: z.object({ code: z.string(), name: z.string() }).optional(),
+  parent: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type ChartOfAccount = z.infer<typeof chartOfAccountSchema>;
 
@@ -127,7 +127,7 @@ export const journalLineSchema = z.object({
   credit: z.number(),
   projectId: z.string().nullable(),
   wbsItemId: z.string().nullable(),
-  account: z.object({ code: z.string(), name: z.string() }).optional(),
+  account: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type JournalLine = z.infer<typeof journalLineSchema>;
 
@@ -145,7 +145,7 @@ export const journalSchema = z.object({
   postedBy: z.string().nullable(),
   createdAt: z.string(),
   lines: z.array(journalLineSchema),
-  legalEntity: z.object({ code: z.string() }).optional(),
+  legalEntity: z.object({ code: z.string() }).nullable().optional(),
 });
 export type Journal = z.infer<typeof journalSchema>;
 
@@ -215,7 +215,7 @@ export const progressClaimSchema = z.object({
   certifiedAt: z.string().nullable(),
   remark: z.string().nullable(),
   createdAt: z.string(),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
   workPackageId: z.string().nullable().optional(),
   workPackage: z.object({ wpNumber: z.string(), title: z.string() }).nullable().optional(),
   physicalProgressAtClaim: z.number().nullable().optional(),
@@ -260,8 +260,8 @@ export const clientInvoiceSchema = z.object({
   postedBy: z.string().nullable(),
   remark: z.string().nullable(),
   createdAt: z.string(),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
-  claim: z.object({ claimNumber: z.string(), period: z.string().nullable() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
+  claim: z.object({ claimNumber: z.string(), period: z.string().nullable() }).nullable().optional(),
 });
 export type ClientInvoice = z.infer<typeof clientInvoiceSchema>;
 
@@ -292,10 +292,10 @@ export const collectionSchema = z.object({
       id: z.string(),
       clientInvoiceId: z.string(),
       amount: z.number(),
-      clientInvoice: z.object({ invoiceNumber: z.string(), totalAmount: z.number() }).optional(),
+      clientInvoice: z.object({ invoiceNumber: z.string(), totalAmount: z.number() }).nullable().optional(),
     }),
   ),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type Collection = z.infer<typeof collectionSchema>;
 
@@ -331,7 +331,7 @@ export const variationSchema = z.object({
   rejectedAt: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type Variation = z.infer<typeof variationSchema>;
 
@@ -360,7 +360,7 @@ export const subcontractSchema = z.object({
   createdBy: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type Subcontract = z.infer<typeof subcontractSchema>;
 

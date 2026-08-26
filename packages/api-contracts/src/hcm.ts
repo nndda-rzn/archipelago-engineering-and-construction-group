@@ -17,7 +17,7 @@ export const employeeSchema = z.object({
   leaveDate: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  legalEntity: z.object({ code: z.string(), legalName: z.string() }).optional(),
+  legalEntity: z.object({ code: z.string(), legalName: z.string() }).nullable().optional(),
   manager: z.object({ name: z.string() }).nullable().optional(),
 });
 export type Employee = z.infer<typeof employeeSchema>;
@@ -48,7 +48,7 @@ export const projectAssignmentSchema = z.object({
   exceptionApproved: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type ProjectAssignment = z.infer<typeof projectAssignmentSchema>;
 
@@ -76,8 +76,8 @@ export const timesheetSchema = z.object({
   approvedAt: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  employee: z.object({ name: z.string() }).optional(),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  employee: z.object({ name: z.string() }).nullable().optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type Timesheet = z.infer<typeof timesheetSchema>;
 
@@ -128,7 +128,7 @@ export const equipmentAssignmentSchema = z.object({
   status: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type EquipmentAssignment = z.infer<typeof equipmentAssignmentSchema>;
 
@@ -191,7 +191,7 @@ export const equipmentUsageSchema = z.object({
   description: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type EquipmentUsage = z.infer<typeof equipmentUsageSchema>;
 
@@ -216,7 +216,7 @@ export const payrollAllocationSchema = z.object({
   createdBy: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  employee: z.object({ name: z.string(), employeeNumber: z.string() }).optional(),
+  employee: z.object({ name: z.string(), employeeNumber: z.string() }).nullable().optional(),
   project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type PayrollAllocation = z.infer<typeof payrollAllocationSchema>;

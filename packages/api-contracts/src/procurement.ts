@@ -19,7 +19,7 @@ export const purchaseRequisitionSchema = z.object({
   description: z.string().nullable(),
   createdAt: z.string(),
   items: z.array(prItemSchema),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type PurchaseRequisition = z.infer<typeof purchaseRequisitionSchema>;
 
@@ -50,8 +50,8 @@ export const purchaseOrderSchema = z.object({
   status: z.string(),
   createdAt: z.string(),
   items: z.array(z.object({ id: z.string(), description: z.string(), quantity: z.number(), unit: z.string(), unitPrice: z.number(), totalPrice: z.number() })),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
-  requisition: z.object({ prNumber: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
+  requisition: z.object({ prNumber: z.string() }).nullable().optional(),
 });
 export type PurchaseOrder = z.infer<typeof purchaseOrderSchema>;
 
@@ -96,8 +96,8 @@ export const rfqSchema = z.object({
       items: z.array(z.object({ id: z.string(), rfqItemId: z.string(), unitPrice: z.number(), totalPrice: z.number() })),
     }),
   ),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
-  requisition: z.object({ prNumber: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
+  requisition: z.object({ prNumber: z.string() }).nullable().optional(),
 });
 export type Rfq = z.infer<typeof rfqSchema>;
 
