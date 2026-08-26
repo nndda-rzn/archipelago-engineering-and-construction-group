@@ -8,6 +8,7 @@ import {
   ListClientInvoiceQueryDto, ListCollectionQueryDto, ListJournalQueryDto, ListPaymentQueryDto,
   ListProgressClaimQueryDto, ListVendorInvoiceQueryDto, TrialBalanceQueryDto, CertifyClaimDto,
   CreateVariationDto, ListVariationQueryDto,
+  CreateSubcontractDto, CreateSubcontractProgressDto, ListSubcontractQueryDto, ListSubcontractProgressQueryDto,
 } from '../dto/finance.dto';
 import { VendorInvoiceService } from '../../application/services/vendor-invoice.service';
 import { PaymentService } from '../../application/services/payment.service';
@@ -18,6 +19,7 @@ import { ProgressClaimService } from '../../application/services/progress-claim.
 import { ClientInvoiceService } from '../../application/services/client-invoice.service';
 import { CollectionService } from '../../application/services/collection.service';
 import { VariationService } from '../../application/services/variation.service';
+import { SubcontractService } from '../../application/services/subcontract.service';
 
 @Controller()
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -32,6 +34,7 @@ export class FinanceController {
     @Inject(ClientInvoiceService) private readonly clientInvoice: ClientInvoiceService,
     @Inject(CollectionService) private readonly collection: CollectionService,
     @Inject(VariationService) private readonly variation: VariationService,
+    @Inject(SubcontractService) private readonly subcon: SubcontractService,
   ) {}
 
   @Get('vendor-invoices')
@@ -188,5 +191,41 @@ export class FinanceController {
   @Permissions('Variation.REJECT')
   rejectVariation(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.variation.rejectVariation(id, request.user?.sub ?? 'system');
+  }
+
+  @Get('subcontracts')
+  @Permissions('Subcontract.VIEW')
+  listSubcontracts(@Query() query: ListSubcontractQueryDto) {
+    return this.subcon.listSubcontracts(query);
+  }
+
+  @Post('subcontracts')
+  @Permissions('Subcontract.CREATE')
+  createSubcontract(@Body() dto: CreateSubcontractDto, @Req() request: { user?: { sub?: string } }) {
+    return this.subcon.createSubcontract(dto, request.user?.sub ?? 'system');
+  }
+
+  @Get('subcontracts/:id/progress')
+  @Permissions('Subcontract.VIEW')
+  listSubcontractProgress(@Param('id') id: string, @Query() query: ListSubcontractProgressQueryDto) {
+    return this.subcon.listProgress(id, query);
+  }
+
+  @Post('subcontracts/:id/progress')
+  @Permissions('SubcontractProgress.CREATE')
+  createSubcontractProgress(@Param('id') id: string, @Body() dto: CreateSubcontractProgressDto, @Req() request: { user?: { sub?: string } }) {
+    return this.subcon.createProgress({ ...dto, subcontractId: id }, request.user?.sub ?? 'system');
+  }
+
+  @Post('subcontracts/:id/progress/:progressId/verify')
+  @Permissions('SubcontractProgress.VERIFY')
+  verifySubcontractProgress(@Param('id') id: string, @Param('progressId') progressId: string, @Req() request: { user?: { sub?: string } }) {
+    return this.subcon.verifyProgress(id, progressId, request.user?.sub ?? 'system');
+  }
+
+  @Post('subcontracts/:id/progress/:progressId/reject')
+  @Permissions('SubcontractProgress.REJECT')
+  rejectSubcontractProgress(@Param('id') id: string, @Param('progressId') progressId: string, @Req() request: { user?: { sub?: string } }) {
+    return this.subcon.rejectProgress(id, progressId, request.user?.sub ?? 'system');
   }
 }

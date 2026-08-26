@@ -33,6 +33,7 @@ import { ProgressClaimPage } from './pages/finance/progress-claim.page';
 import { ClientInvoicePage } from './pages/finance/client-invoice.page';
 import { CollectionPage } from './pages/finance/collection.page';
 import { VariationPage } from './pages/finance/variation.page';
+import { SubcontractPage } from './pages/finance/subcontract.page';
 import { DashboardPage } from './pages/dashboard.page';
 import { requireAuth } from './app/router/require-auth';
 
@@ -217,6 +218,12 @@ const variationRoute = createRoute({
   component: VariationPage,
 });
 
+const subcontractRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/finance/subcontracts',
+  component: SubcontractPage,
+});
+
 const workflowRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/workflows',
@@ -255,5 +262,5 @@ const handoverRoute = createRoute({
 
 export const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, projectHealthRoute, prRoute, poRoute, rfqRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, workflowRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute, variationRoute, workPackagesRoute, dailyReportsRoute, commissioningRoute, handoverRoute]),
+  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, projectHealthRoute, prRoute, poRoute, rfqRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, workflowRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute, variationRoute, subcontractRoute, workPackagesRoute, dailyReportsRoute, commissioningRoute, handoverRoute]),
 ]);

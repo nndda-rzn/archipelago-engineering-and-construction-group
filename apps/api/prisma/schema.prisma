@@ -161,6 +161,7 @@ model Project {
   clientInvoices ClientInvoice[]
   collections    Collection[]
   variations     ProjectVariation[]
+  subcontracts   Subcontract[]
   rfqs           Rfq[]
   workPackages   ConstructionWorkPackage[]
   dailyReports   ConstructionDailyReport[]
@@ -891,6 +892,50 @@ model ProjectVariation {
   updatedAt       DateTime @updatedAt
 
   @@index([projectId])
+  @@index([status])
+}
+
+// FR-CMR-008: Subcontract — subkontraktor, pembayaran berdasarkan verified progress
+model Subcontract {
+  id              String   @id @default(cuid())
+  subconNumber    String   @unique // mis. "SC-2027-EPC-000001"
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id])
+  vendor          String
+  title           String
+  description     String?
+  contractValue   Decimal  @db.Decimal(18, 2)
+  currency        String   @default("IDR")
+  status          String   @default("ACTIVE") // DRAFT | ACTIVE | COMPLETED | TERMINATED
+  startDate       DateTime?
+  endDate         DateTime?
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  progressEntries SubcontractProgress[]
+
+  @@index([projectId])
+  @@index([status])
+}
+
+// FR-CMR-008: verified progress — pembayaran subkon mengikuti progress yang diverifikasi
+model SubcontractProgress {
+  id              String   @id @default(cuid())
+  subcontractId   String
+  subcontract     Subcontract @relation(fields: [subcontractId], references: [id], onDelete: Cascade)
+  period          String? // mis. "2026-08"
+  progressDate    DateTime @default(now())
+  progressPercent Decimal  @db.Decimal(5, 2) // progres fisik diverifikasi (%)
+  verifiedAmount  Decimal  @db.Decimal(18, 2) // nilai bayar = contractValue x progress (FR-CMR-008)
+  status          String   @default("SUBMITTED") // SUBMITTED | VERIFIED | REJECTED
+  verifiedBy      String?
+  verifiedAt      DateTime?
+  remark          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([subcontractId])
   @@index([status])
 }
 
