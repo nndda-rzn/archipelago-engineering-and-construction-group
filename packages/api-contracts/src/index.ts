@@ -11,3 +11,4 @@ export * from './hcm';
 export * from './hse';
 export * from './quality';
 export * from './governance';
+export * from './analytics';
