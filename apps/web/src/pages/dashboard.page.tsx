@@ -1,4 +1,4 @@
-import { Badge, Button } from '@aec/ui';
+import { Badge, Button, EmptyState, ErrorState, KpiSkeleton } from '@aec/ui';
 import { usePortfolio } from '@/features/project';
 import { DashboardGrid, healthMeta, type HealthKey } from '@/widgets/dashboard-grid';
 import { formatIdr as fmt } from '@/shared/lib/format';
@@ -16,14 +16,23 @@ export function DashboardPage() {
         <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={isLoading}>Muat Ulang</Button>
       </div>
 
-      {isLoading && <p className="text-body-sm text-neutral-500">Memuat portfolio…</p>}
-      {isError && <p className="text-body-sm text-destructive-600">Gagal memuat portfolio.</p>}
+      {isLoading && <KpiSkeleton count={4} />}
+      {isError && (
+        <ErrorState
+          message="Portfolio tidak dapat dimuat."
+          onRetry={() => refetch()}
+          className="rounded-md border border-neutral-200 bg-white shadow-xs"
+        />
+      )}
 
       {!isLoading && !isError && data && (
         <>
           <DashboardGrid totals={data.totals} healthCounts={data.healthCounts} projectCount={data.totals.projectCount} />
 
           <div className="mt-6 rounded-md border border-neutral-200 bg-white shadow-xs">
+            {data.items.length === 0 ? (
+              <EmptyState title="Belum ada project" description="Buat project pertama untuk mulai mengelola portfolio." />
+            ) : (
             <table className="w-full text-left text-body">
               <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
                 <tr>
@@ -72,6 +81,7 @@ export function DashboardPage() {
                 </tr>
               </tfoot>
             </table>
+            )}
           </div>
         </>
       )}
