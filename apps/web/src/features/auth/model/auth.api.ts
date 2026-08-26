@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import { useRouter } from '@tanstack/react-router';
 import { loginResponseSchema } from '@aec/api-contracts';
 import { postJson, setToken } from '@/shared/lib/http';
 
@@ -7,6 +8,7 @@ export const authKeys = {
 };
 
 export function useLogin() {
+  const router = useRouter();
   return useMutation({
     mutationKey: [...authKeys.all, 'login'],
     mutationFn: async (input: { email: string; password: string }) => {
@@ -14,6 +16,9 @@ export function useLogin() {
       const parsed = loginResponseSchema.parse(data);
       setToken(parsed.accessToken);
       return parsed;
+    },
+    onSuccess: () => {
+      void router.navigate({ to: '/' });
     },
   });
 }
