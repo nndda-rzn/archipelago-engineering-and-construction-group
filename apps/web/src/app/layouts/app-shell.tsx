@@ -45,6 +45,7 @@ const navGroups: NavGroup[] = [
       { label: 'GL Journal', icon: DollarSign, to: '/finance/journals' },
       { label: 'Trial Balance', icon: DollarSign, to: '/finance/trial-balance' },
       { label: 'Chart of Accounts', icon: DollarSign, to: '/finance/chart-of-accounts' },
+      { label: 'Finance Closure', icon: DollarSign, to: '/finance/closure' },
       { label: 'Treasury', icon: DollarSign, to: '/treasury' },
       { label: 'Goods Receipt', icon: Package, to: '/inventory/goods-receipts' },
       { label: 'Material Issue', icon: Truck, to: '/inventory/material-issues' },

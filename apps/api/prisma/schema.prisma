@@ -40,6 +40,9 @@ model LegalEntity {
   cashForecasts    CashForecast[]
   fxExposures      FxExposure[]
   cashPositions    CashPosition[]
+  icFrom           IntercompanyTransaction[] @relation("IcFrom")
+  icTo             IntercompanyTransaction[] @relation("IcTo")
+  periodCloses     PeriodClose[]
 }
 
 // FR-FND-002: Effective-dated Organization
@@ -971,6 +974,49 @@ model CollectionItem {
 
   @@index([collectionId])
   @@index([clientInvoiceId])
+}
+
+// ─── Finance Closure (Fase 11D) ───────────────────────────────────────────────
+
+// FR-FIN-009: Intercompany — transaksi antar legal entity, wajib reciprocal + reconciliation
+model IntercompanyTransaction {
+  id                String      @id @default(cuid())
+  transactionNumber String      @unique // mis. "IC-2026-000001"
+  fromEntityId      String
+  fromEntity        LegalEntity @relation("IcFrom", fields: [fromEntityId], references: [id])
+  toEntityId        String
+  toEntity          LegalEntity @relation("IcTo", fields: [toEntityId], references: [id])
+  amount            Decimal     @db.Decimal(18, 2)
+  currency          String      @default("IDR")
+  description       String?
+  status            String      @default("DRAFT") // DRAFT | POSTED | REVERSED
+  postedAt          DateTime?
+  postedBy          String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([fromEntityId])
+  @@index([toEntityId])
+  @@index([status])
+}
+
+// FR-FIN-010: Period close — month-end: cutoff, accrual, depreciation, revaluation, reconciliation, closing, lock
+model PeriodClose {
+  id            String      @id @default(cuid())
+  legalEntityId String
+  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id])
+  period        String // mis. "2026-08"
+  status        String      @default("OPEN") // OPEN | IN_PROGRESS | CLOSED | LOCKED
+  steps         Json? // { cutoff: bool, accrual: bool, depreciation: bool, revaluation: bool, reconciliation: bool, closing: bool }
+  journalCount  Int         @default(0) // jumlah journal POSTED dalam periode saat close
+  closedBy      String?
+  closedAt      DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([legalEntityId, period])
+  @@index([legalEntityId])
+  @@index([status])
 }
 
 // FR-CMR-005/006: Variation — potential change tidak ubah contract value, approved variation update
