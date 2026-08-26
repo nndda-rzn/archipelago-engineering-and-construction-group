@@ -6,13 +6,19 @@ import {
   ApproveTimesheetDto, CreateEmployeeDto, CreateProjectAssignmentDto, CreateTimesheetDto,
   EndAssignmentDto, ListEmployeeQueryDto, ListTimesheetQueryDto,
 } from '../dto/hcm.dto';
+import {
+  CreateEquipmentAssignmentDto, CreateEquipmentBreakdownDto, CreateEquipmentDto, CreateEquipmentPmDto,
+  CreateEquipmentUsageDto, CreateEquipmentUtilizationDto, ListEquipmentQueryDto,
+} from '../dto/equipment.dto';
 import { EmployeeService } from '../../application/services/employee.service';
+import { EquipmentService } from '../../application/services/equipment.service';
 
 @Controller()
 @UseGuards(AuthGuard, PermissionsGuard)
 export class HcmController {
   constructor(
     @Inject(EmployeeService) private readonly employee: EmployeeService,
+    @Inject(EquipmentService) private readonly equipment: EquipmentService,
   ) {}
 
   @Get('employees')
@@ -61,5 +67,96 @@ export class HcmController {
   @Permissions('Timesheet.APPROVE')
   approveTimesheet(@Param('id') id: string, @Body() dto: ApproveTimesheetDto, @Req() request: { user?: { sub?: string } }) {
     return this.employee.approveTimesheet(id, dto, request.user?.sub ?? 'system');
+  }
+
+  // ─── Equipment (FR-EQP-001..006) ───
+  @Get('equipment')
+  @Permissions('Equipment.VIEW')
+  listEquipment(@Query() query: ListEquipmentQueryDto) {
+    return this.equipment.listEquipment(query);
+  }
+
+  @Post('equipment')
+  @Permissions('Equipment.CREATE')
+  createEquipment(@Body() dto: CreateEquipmentDto, @Req() request: { user?: { sub?: string } }) {
+    return this.equipment.createEquipment(dto, request.user?.sub ?? 'system');
+  }
+
+  @Get('equipment/:id/assignments')
+  @Permissions('Equipment.VIEW')
+  listEquipmentAssignments(@Param('id') id: string) {
+    return this.equipment.listAssignments(id);
+  }
+
+  @Post('equipment/:id/assignments')
+  @Permissions('EquipmentAssignment.CREATE')
+  createEquipmentAssignment(@Param('id') id: string, @Body() dto: CreateEquipmentAssignmentDto, @Req() request: { user?: { sub?: string } }) {
+    return this.equipment.createAssignment(id, dto, request.user?.sub ?? 'system');
+  }
+
+  @Post('equipment/:id/assignments/:assignmentId/end')
+  @Permissions('EquipmentAssignment.CREATE')
+  endEquipmentAssignment(@Param('id') id: string, @Param('assignmentId') assignmentId: string, @Req() request: { user?: { sub?: string } }) {
+    return this.equipment.endAssignment(id, assignmentId, request.user?.sub ?? 'system');
+  }
+
+  @Get('equipment/:id/utilizations')
+  @Permissions('Equipment.VIEW')
+  listEquipmentUtilizations(@Param('id') id: string) {
+    return this.equipment.listUtilizations(id);
+  }
+
+  @Post('equipment/:id/utilizations')
+  @Permissions('Equipment.OPERATE')
+  createEquipmentUtilization(@Param('id') id: string, @Body() dto: CreateEquipmentUtilizationDto, @Req() request: { user?: { sub?: string } }) {
+    return this.equipment.createUtilization(id, dto, request.user?.sub ?? 'system');
+  }
+
+  @Get('equipment/:id/pms')
+  @Permissions('Equipment.VIEW')
+  listEquipmentPms(@Param('id') id: string) {
+    return this.equipment.listPms(id);
+  }
+
+  @Post('equipment/:id/pms')
+  @Permissions('Equipment.PM')
+  createEquipmentPm(@Param('id') id: string, @Body() dto: CreateEquipmentPmDto, @Req() request: { user?: { sub?: string } }) {
+    return this.equipment.createPm(id, dto, request.user?.sub ?? 'system');
+  }
+
+  @Post('equipment/:id/pms/:pmId/complete')
+  @Permissions('Equipment.PM')
+  completeEquipmentPm(@Param('id') id: string, @Param('pmId') pmId: string, @Req() request: { user?: { sub?: string } }) {
+    return this.equipment.completePm(id, pmId, request.user?.sub ?? 'system');
+  }
+
+  @Get('equipment/:id/breakdowns')
+  @Permissions('Equipment.VIEW')
+  listEquipmentBreakdowns(@Param('id') id: string) {
+    return this.equipment.listBreakdowns(id);
+  }
+
+  @Post('equipment/:id/breakdowns')
+  @Permissions('Equipment.OPERATE')
+  createEquipmentBreakdown(@Param('id') id: string, @Body() dto: CreateEquipmentBreakdownDto, @Req() request: { user?: { sub?: string } }) {
+    return this.equipment.createBreakdown(id, dto, request.user?.sub ?? 'system');
+  }
+
+  @Post('equipment/:id/breakdowns/:breakdownId/resolve')
+  @Permissions('Equipment.OPERATE')
+  resolveEquipmentBreakdown(@Param('id') id: string, @Param('breakdownId') breakdownId: string, @Req() request: { user?: { sub?: string } }) {
+    return this.equipment.resolveBreakdown(id, breakdownId, request.user?.sub ?? 'system');
+  }
+
+  @Get('equipment/:id/usages')
+  @Permissions('Equipment.VIEW')
+  listEquipmentUsages(@Param('id') id: string) {
+    return this.equipment.listUsages(id);
+  }
+
+  @Post('equipment/:id/usages')
+  @Permissions('Equipment.OPERATE')
+  createEquipmentUsage(@Param('id') id: string, @Body() dto: CreateEquipmentUsageDto, @Req() request: { user?: { sub?: string } }) {
+    return this.equipment.createUsage(id, dto, request.user?.sub ?? 'system');
   }
 }

@@ -32,6 +32,7 @@ model LegalEntity {
   chartOfAccounts ChartOfAccount[]
   journals      Journal[]
   employees     Employee[]
+  equipment     Equipment[]
 }
 
 // FR-FND-002: Effective-dated Organization
@@ -166,6 +167,9 @@ model Project {
   subcontracts   Subcontract[]
   assignments    ProjectAssignment[]
   timesheets     Timesheet[]
+  equipmentAssignments EquipmentAssignment[]
+  equipmentUtilizations EquipmentUtilization[]
+  equipmentUsages EquipmentUsage[]
   rfqs           Rfq[]
   workPackages   ConstructionWorkPackage[]
   dailyReports   ConstructionDailyReport[]
@@ -1018,6 +1022,123 @@ model Timesheet {
   @@index([employeeId])
   @@index([projectId])
   @@index([status])
+}
+
+// FR-EQP-001: Equipment master (code, category, serial, owner, status, meter)
+model Equipment {
+  id              String   @id @default(cuid())
+  equipmentNumber String   @unique // mis. "EQ-2027-000001"
+  name            String
+  category        String   @default("HEAVY") // HEAVY | LIGHT | VEHICLE | TOOL | OTHER
+  serialNumber    String?
+  owner           String   @default("COMPANY") // COMPANY | RENTED | LEASED
+  acquisitionDate DateTime?
+  currentMeter    Decimal  @default(0) @db.Decimal(12, 2) // jam/satuan meter terakhir
+  status          String   @default("AVAILABLE") // AVAILABLE | ASSIGNED | MAINTENANCE | BREAKDOWN | RETIRED
+  legalEntityId   String?
+  legalEntity     LegalEntity? @relation(fields: [legalEntityId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  assignments     EquipmentAssignment[]
+  utilizations    EquipmentUtilization[]
+  pmSchedules     EquipmentPm[]
+  breakdowns      EquipmentBreakdown[]
+  usages          EquipmentUsage[]
+
+  @@index([category])
+  @@index([status])
+}
+
+// FR-EQP-002: Assignment effective-dated ke project
+model EquipmentAssignment {
+  id          String   @id @default(cuid())
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  startDate   DateTime
+  endDate     DateTime?
+  status      String   @default("ACTIVE") // ACTIVE | ENDED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([equipmentId])
+  @@index([projectId])
+  @@index([status])
+}
+
+// FR-EQP-003: Utilization — available time vs operating time
+model EquipmentUtilization {
+  id            String   @id @default(cuid())
+  equipmentId   String
+  equipment     Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  projectId     String?
+  project       Project? @relation(fields: [projectId], references: [id])
+  utilizationDate DateTime @default(now())
+  availableHours Decimal @db.Decimal(6, 2) // jam tersedia (mis. 10)
+  operatingHours Decimal @db.Decimal(6, 2) // jam operasi
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([equipmentId])
+  @@index([utilizationDate])
+}
+
+// FR-EQP-004: Preventive maintenance — dipicu tanggal / jam / meter
+model EquipmentPm {
+  id           String   @id @default(cuid())
+  equipmentId  String
+  equipment    Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  triggerType  String   @default("DATE") // DATE | HOURS | METER
+  dueDate      DateTime? // untuk trigger DATE
+  dueMeter     Decimal? @db.Decimal(12, 2) // untuk trigger HOURS/METER
+  scheduledDate DateTime @default(now())
+  status       String   @default("SCHEDULED") // SCHEDULED | DONE | OVERDUE
+  completedAt  DateTime?
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([equipmentId])
+  @@index([status])
+}
+
+// FR-EQP-005: Breakdown — downtime + cost impact
+model EquipmentBreakdown {
+  id            String   @id @default(cuid())
+  equipmentId   String
+  equipment     Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  breakdownDate DateTime @default(now())
+  downtimeHours Decimal @db.Decimal(6, 2)
+  costImpact    Decimal  @default(0) @db.Decimal(18, 2)
+  description   String?
+  status        String   @default("OPEN") // OPEN | RESOLVED
+  resolvedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([equipmentId])
+  @@index([status])
+}
+
+// FR-EQP-006: Equipment usage → project cost
+model EquipmentUsage {
+  id          String   @id @default(cuid())
+  equipmentId String
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  usageDate   DateTime @default(now())
+  hours       Decimal  @db.Decimal(6, 2)
+  costAmount  Decimal  @db.Decimal(18, 2) // biaya ke project
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([equipmentId])
+  @@index([projectId])
 }
 
 // ─── Procurement: RFQ + Vendor Evaluation (FR-PRO-003/004) ───────────────────
