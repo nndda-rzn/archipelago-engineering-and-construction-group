@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
+import { ToastProvider } from '@aec/ui';
 import { QueryProvider } from '@/app/providers/query-provider';
 import { routeTree } from './routeTree';
 import '@fontsource/ibm-plex-sans/400.css';
@@ -19,8 +20,10 @@ declare module '@tanstack/react-router' {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryProvider>
-      <RouterProvider router={router} />
-    </QueryProvider>
+    <ToastProvider>
+      <QueryProvider>
+        <RouterProvider router={router} />
+      </QueryProvider>
+    </ToastProvider>
   </StrictMode>,
 );
