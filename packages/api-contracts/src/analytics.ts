@@ -39,3 +39,51 @@ export const anomalyListSchema = z.object({
   generatedAt: z.string(),
 });
 export type AnomalyList = z.infer<typeof anomalyListSchema>;
+
+export const cashFlowSeriesSchema = z.object({
+  month: z.string(),
+  cashIn: z.number(),
+  cashOut: z.number(),
+  net: z.number(),
+});
+export type CashFlowSeries = z.infer<typeof cashFlowSeriesSchema>;
+
+export const cashFlowSchema = z.object({
+  series: z.array(cashFlowSeriesSchema),
+  totalCashIn: z.number(),
+  totalCashOut: z.number(),
+  netCash: z.number(),
+  generatedAt: z.string(),
+});
+export type CashFlow = z.infer<typeof cashFlowSchema>;
+
+export const agingBucketSchema = z.object({
+  bucket: z.string(),
+  amount: z.number(),
+});
+export type AgingBucket = z.infer<typeof agingBucketSchema>;
+
+export const agingSchema = z.object({
+  ar: z.array(agingBucketSchema),
+  ap: z.array(agingBucketSchema),
+  generatedAt: z.string(),
+});
+export type Aging = z.infer<typeof agingSchema>;
+
+export const projectCostSummaryItemSchema = z.object({
+  projectCode: z.string(),
+  projectName: z.string(),
+  contractValue: z.number(),
+  budget: z.number(),
+  cost: z.number(),
+  revenue: z.number(),
+  margin: z.number(),
+  budgetUsagePct: z.number(),
+});
+export type ProjectCostSummaryItem = z.infer<typeof projectCostSummaryItemSchema>;
+
+export const projectCostSummarySchema = z.object({
+  items: z.array(projectCostSummaryItemSchema),
+  generatedAt: z.string(),
+});
+export type ProjectCostSummary = z.infer<typeof projectCostSummarySchema>;

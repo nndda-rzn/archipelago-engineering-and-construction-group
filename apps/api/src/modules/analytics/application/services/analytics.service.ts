@@ -120,4 +120,119 @@ export class AnalyticsService {
 
     return { anomalies, total: anomalies.length, generatedAt: new Date().toISOString() };
   }
+
+  // ─── Advanced Reporting (Fase 10) ───
+
+  // Cash flow: cash in (collection) vs cash out (payment) per bulan
+  async cashFlow() {
+    const [collections, payments] = await this.prisma.$transaction([
+      this.prisma.collection.findMany({ where: { status: 'POSTED' }, select: { totalAmount: true, collectedAt: true } }),
+      this.prisma.payment.findMany({ where: { status: 'PAID' }, select: { totalAmount: true, paymentDate: true } }),
+    ]);
+
+    const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const byMonth = new Map<string, { cashIn: number; cashOut: number }>();
+    for (const c of collections) {
+      const k = monthKey(new Date(c.collectedAt));
+      const cur = byMonth.get(k) ?? { cashIn: 0, cashOut: 0 };
+      cur.cashIn += Number(c.totalAmount);
+      byMonth.set(k, cur);
+    }
+    for (const p of payments) {
+      const k = monthKey(new Date(p.paymentDate));
+      const cur = byMonth.get(k) ?? { cashIn: 0, cashOut: 0 };
+      cur.cashOut += Number(p.totalAmount);
+      byMonth.set(k, cur);
+    }
+
+    const series = [...byMonth.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, v]) => ({ month, ...v, net: Math.round((v.cashIn - v.cashOut) * 100) / 100 }));
+    const totalIn = series.reduce((s, r) => s + r.cashIn, 0);
+    const totalOut = series.reduce((s, r) => s + r.cashOut, 0);
+
+    return { series, totalCashIn: totalIn, totalCashOut: totalOut, netCash: Math.round((totalIn - totalOut) * 100) / 100, generatedAt: new Date().toISOString() };
+  }
+
+  // Aging AP/AR (FR-FIN-007): invoice belum dibayar dikelompokkan umur
+  async aging() {
+    const today = new Date();
+    const bucket = (d: Date): string => {
+      const days = Math.floor((today.getTime() - d.getTime()) / 86400000);
+      if (days <= 0) return 'CURRENT';
+      if (days <= 30) return '1-30';
+      if (days <= 60) return '31-60';
+      if (days <= 90) return '61-90';
+      return '90+';
+    };
+
+    // AR: client invoice POSTED belum lunas
+    const clientInvoices = await this.prisma.clientInvoice.findMany({
+      where: { status: 'POSTED' },
+      include: { collections: { select: { amount: true } } },
+    });
+    const arBuckets = new Map<string, number>();
+    for (const inv of clientInvoices) {
+      const paid = inv.collections.reduce((s, c) => s + Number(c.amount), 0);
+      const remaining = Math.round((Number(inv.totalAmount) - paid) * 100) / 100;
+      if (remaining > 0) {
+        const b = bucket(new Date(inv.invoiceDate));
+        arBuckets.set(b, (arBuckets.get(b) ?? 0) + remaining);
+      }
+    }
+
+    // AP: vendor invoice POSTED belum dibayar
+    const vendorInvoices = await this.prisma.vendorInvoice.findMany({
+      where: { status: 'POSTED' },
+      include: { payments: { select: { amount: true } } },
+    });
+    const apBuckets = new Map<string, number>();
+    for (const inv of vendorInvoices) {
+      const paid = (inv.payments ?? []).reduce((s, p) => s + Number(p.amount), 0);
+      const remaining = Math.round((Number(inv.totalAmount) - paid) * 100) / 100;
+      if (remaining > 0) {
+        const b = bucket(new Date(inv.createdAt));
+        apBuckets.set(b, (apBuckets.get(b) ?? 0) + remaining);
+      }
+    }
+
+    const order = ['CURRENT', '1-30', '31-60', '61-90', '90+'];
+    return {
+      ar: order.map((b) => ({ bucket: b, amount: Math.round((arBuckets.get(b) ?? 0) * 100) / 100 })),
+      ap: order.map((b) => ({ bucket: b, amount: Math.round((apBuckets.get(b) ?? 0) * 100) / 100 })),
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
+  // Project cost summary: budget vs cost vs claim per project
+  async projectCostSummary() {
+    const projects = await this.prisma.project.findMany({ select: { id: true, code: true, name: true, contractValue: true } });
+    const [budgetAgg, vendorInvoiceAgg, clientInvoiceAgg] = await Promise.all([
+      this.prisma.budgetItem.groupBy({ by: ['projectId'], _sum: { amount: true } }),
+      this.prisma.vendorInvoice.groupBy({ by: ['projectId'], where: { status: 'POSTED' }, _sum: { totalAmount: true } }),
+      this.prisma.clientInvoice.groupBy({ by: ['projectId'], where: { status: 'POSTED' }, _sum: { totalAmount: true } }),
+    ]);
+    const budgetMap = new Map(budgetAgg.map((r) => [r.projectId, Number(r._sum?.amount ?? 0)]));
+    const costMap = new Map(vendorInvoiceAgg.map((r) => [r.projectId, Number(r._sum?.totalAmount ?? 0)]));
+    const revenueMap = new Map(clientInvoiceAgg.map((r) => [r.projectId, Number(r._sum?.totalAmount ?? 0)]));
+
+    const items = projects.map((p) => {
+      const budget = budgetMap.get(p.id) ?? 0;
+      const cost = costMap.get(p.id) ?? 0;
+      const revenue = revenueMap.get(p.id) ?? 0;
+      const contract = p.contractValue != null ? Number(p.contractValue) : 0;
+      return {
+        projectCode: p.code,
+        projectName: p.name,
+        contractValue: Math.round(contract * 100) / 100,
+        budget: Math.round(budget * 100) / 100,
+        cost: Math.round(cost * 100) / 100,
+        revenue: Math.round(revenue * 100) / 100,
+        margin: Math.round((revenue - cost) * 100) / 100,
+        budgetUsagePct: budget > 0 ? Math.round((cost / budget) * 1000) / 10 : 0,
+      };
+    });
+
+    return { items, generatedAt: new Date().toISOString() };
+  }
 }
