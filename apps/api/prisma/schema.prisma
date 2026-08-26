@@ -1563,7 +1563,11 @@ model Opportunity {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  contracts Contract[]
+  contracts          Contract[]
+  bidDecisions       BidDecision[]
+  estimates          Estimate[]
+  tenderSubmissions  TenderSubmission[]
+  contractDeviations ContractDeviation[]
 
   @@index([clientId])
   @@index([stage])
@@ -1591,8 +1595,123 @@ model Contract {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
+  amendments ContractAmendment[]
+
   @@index([projectId])
   @@index([clientId])
+  @@index([status])
+}
+
+// FR-COM-002: Bid/No-Bid decision — gate sebelum bid preparation
+model BidDecision {
+  id            String      @id @default(cuid())
+  opportunityId String
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  decision      String      @default("PENDING") // PENDING | BID | NO_BID
+  rationale     String?
+  decidedBy     String
+  decidedAt     DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([opportunityId])
+  @@index([decision])
+}
+
+// FR-COM-003: Estimate versioning — WORKING→REVIEW→APPROVED→SUPERSEDED→FINAL_BID→AWARD_RECONCILED
+model Estimate {
+  id             String      @id @default(cuid())
+  estimateNumber String      @unique // mis. "EST-2027-000001"
+  opportunityId  String
+  opportunity    Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  version        Int         @default(1)
+  description    String?
+  totalAmount    Decimal     @default(0) @db.Decimal(18, 2)
+  status         String      @default("WORKING") // WORKING | REVIEW | APPROVED | SUPERSEDED | FINAL_BID | AWARD_RECONCILED
+  createdBy      String
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  pricingScenarios  PricingScenario[]
+  tenderSubmissions TenderSubmission[]
+
+  @@index([opportunityId])
+  @@index([status])
+}
+
+// FR-COM-004: Pricing scenario — base/aggressive/target/negotiation floor/best case
+model PricingScenario {
+  id           String   @id @default(cuid())
+  estimateId   String
+  estimate     Estimate @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+  scenarioType String   @default("BASE") // BASE | AGGRESSIVE | TARGET | NEGOTIATION_FLOOR | BEST_CASE
+  amount       Decimal  @db.Decimal(18, 2)
+  marginPct    Decimal  @default(0) @db.Decimal(5, 2)
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([estimateId, scenarioType])
+  @@index([estimateId])
+}
+
+// FR-COM-006: Contract deviation — clause, requirement, AEC position, risk, owner, approval
+model ContractDeviation {
+  id                String      @id @default(cuid())
+  opportunityId     String
+  opportunity       Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  clause            String
+  clientRequirement String
+  aecPosition       String
+  risk              String      @default("LOW") // LOW | MEDIUM | HIGH
+  owner             String
+  status            String      @default("OPEN") // OPEN | APPROVED | REJECTED
+  approvedBy        String?
+  approvedAt        DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([opportunityId])
+  @@index([status])
+}
+
+// FR-COM-007: Tender submission evidence — timestamp, channel, package version, file hash
+model TenderSubmission {
+  id               String      @id @default(cuid())
+  submissionNumber String      @unique // mis. "TSB-2027-000001"
+  opportunityId    String
+  opportunity      Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  estimateId       String?
+  estimate         Estimate?   @relation(fields: [estimateId], references: [id], onDelete: SetNull)
+  channel          String      @default("ELECTRONIC") // ELECTRONIC | HARDCOPY | PORTAL
+  packageVersion   String?
+  submittedAt      DateTime    @default(now())
+  submittedBy      String
+  acknowledgement  String?
+  fileHash         String?
+  status           String      @default("SUBMITTED") // SUBMITTED | ACKNOWLEDGED | REJECTED
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([opportunityId])
+  @@index([status])
+}
+
+// FR-COM-008: Contract amendment — terpisah dari original, executed immutable
+model ContractAmendment {
+  id              String    @id @default(cuid())
+  amendmentNumber String    @unique // mis. "AMD-2027-000001"
+  contractId      String
+  contract        Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  amountChange    Decimal   @default(0) @db.Decimal(18, 2) // +/− nilai
+  signedDate      DateTime?
+  status          String    @default("DRAFT") // DRAFT | EXECUTED
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([contractId])
   @@index([status])
 }
 

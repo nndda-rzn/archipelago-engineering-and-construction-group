@@ -133,6 +133,7 @@ const permissions = [
   ['Contract.VIEW', 'Contract', 'VIEW'],
   ['Contract.CREATE', 'Contract', 'CREATE'],
   ['Contract.EXECUTE', 'Contract', 'EXECUTE'],
+  ['Contract.EDIT', 'Contract', 'EDIT'],
   ['Engineering.VIEW', 'Engineering', 'VIEW'],
   ['Engineering.CREATE', 'Engineering', 'CREATE'],
   ['Engineering.EDIT', 'Engineering', 'EDIT'],

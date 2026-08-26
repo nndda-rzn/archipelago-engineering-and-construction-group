@@ -30,6 +30,7 @@ const navGroups: NavGroup[] = [
       { label: 'Project Health', icon: DollarSign, to: '/project-health' },
       { label: 'Project Controls', icon: DollarSign, to: '/project-controls' },
       { label: 'Komersial', icon: Briefcase, to: '/commercial' },
+      { label: 'Tender & Bid', icon: Briefcase, to: '/commercial/tender' },
       { label: 'Engineering', icon: Wrench, to: '/engineering' },
       { label: 'Pengadaan', icon: Package, to: '/procurement/pr' },
       { label: 'Purchase Order', icon: Package, to: '/procurement/po' },
