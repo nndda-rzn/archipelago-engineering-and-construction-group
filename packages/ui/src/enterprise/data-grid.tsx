@@ -96,7 +96,7 @@ export function DataGrid<TData>({
     <div>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left text-body-sm">
-          <thead>
+          <thead className="sticky top-0 z-sticky bg-neutral-50">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id} className="border-b border-neutral-200 bg-neutral-50">
                 {headerGroup.headers.map((header) => {
@@ -105,7 +105,7 @@ export function DataGrid<TData>({
                   return (
                     <th
                       key={header.id}
-                      className="px-4 py-2 text-caption font-medium uppercase text-neutral-500"
+                      className="px-2 py-2 text-caption font-medium uppercase text-neutral-500"
                       style={{ width: header.getSize() }}
                     >
                       {header.isPlaceholder ? null : canSort ? (
@@ -147,7 +147,7 @@ export function DataGrid<TData>({
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-2.5">
+                    <td key={cell.id} className="px-2 py-1.5">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
