@@ -3,6 +3,7 @@ import {
   createEmployeeSchema, employeeSchema, projectAssignmentSchema, timesheetSchema, createTimesheetSchema,
   equipmentSchema, createEquipmentSchema, equipmentAssignmentSchema, equipmentUtilizationSchema,
   equipmentPmSchema, equipmentBreakdownSchema, equipmentUsageSchema, createEquipmentUsageSchema,
+  payrollAllocationSchema, createPayrollAllocationSchema,
 } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
 
@@ -15,6 +16,8 @@ export const hcmKeys = {
   equipment: ['hcm-equipment'] as const,
   equipmentList: (params: object) => [...hcmKeys.equipment, 'list', params] as const,
   equipmentDetail: (id: string, kind: string) => [...hcmKeys.equipment, 'detail', id, kind] as const,
+  payroll: ['hcm-payroll'] as const,
+  payrollList: (params: object) => [...hcmKeys.payroll, 'list', params] as const,
 };
 
 export function useEmployees(params: { page: number; pageSize: number; status?: string }) {
@@ -250,5 +253,37 @@ export function useCreateEquipmentUsage() {
       return postJson<unknown>(`/equipment/${input.equipmentId}/usages`, parsed);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: hcmKeys.equipment }),
+  });
+}
+
+export function usePayrollAllocations(params: { page: number; pageSize: number; period?: string }) {
+  return useQuery({
+    queryKey: hcmKeys.payrollList(params),
+    queryFn: async () => {
+      const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+      if (params.period) qs.set("period", params.period);
+      const data = await getJson<{ items: unknown; total: number }>(`/payroll-allocations?${qs}`);
+      return { items: payrollAllocationSchema.array().parse(data.items), total: data.total };
+    },
+  });
+}
+
+export function useCreatePayrollAllocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { employeeId: string; projectId?: string; period: string; grossAmount: number; projectAmount: number; overheadAmount: number }) => {
+      const parsed = createPayrollAllocationSchema.parse(input);
+      return postJson<unknown>("/payroll-allocations", parsed);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: hcmKeys.payroll }),
+  });
+}
+
+export function useChangeEmployeeStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status, leaveDate }: { id: string; status: string; leaveDate?: string }) =>
+      postJson<unknown>(`/employees/${id}/status`, { status, leaveDate }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: hcmKeys.employees }),
   });
 }

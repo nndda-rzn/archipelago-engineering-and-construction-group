@@ -170,6 +170,7 @@ model Project {
   equipmentAssignments EquipmentAssignment[]
   equipmentUtilizations EquipmentUtilization[]
   equipmentUsages EquipmentUsage[]
+  payrollAllocations PayrollAllocation[]
   rfqs           Rfq[]
   workPackages   ConstructionWorkPackage[]
   dailyReports   ConstructionDailyReport[]
@@ -973,6 +974,7 @@ model Employee {
 
   assignments   ProjectAssignment[]
   timesheets    Timesheet[]
+  payrollAllocations PayrollAllocation[]
 
   @@index([legalEntityId])
   @@index([managerId])
@@ -1139,6 +1141,27 @@ model EquipmentUsage {
 
   @@index([equipmentId])
   @@index([projectId])
+}
+
+// FR-HCM-005: Payroll allocation — alokasi gaji ke project + corporate overhead
+model PayrollAllocation {
+  id           String   @id @default(cuid())
+  employeeId   String
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  projectId    String?
+  project      Project? @relation(fields: [projectId], references: [id])
+  period       String // mis. "2026-08"
+  grossAmount  Decimal  @db.Decimal(18, 2) // total gaji bulan
+  projectAmount Decimal @db.Decimal(18, 2) // alokasi ke project
+  overheadAmount Decimal @db.Decimal(18, 2) // alokasi corporate overhead
+  status       String   @default("DRAFT") // DRAFT | POSTED
+  createdBy    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([projectId])
+  @@index([period])
 }
 
 // ─── Procurement: RFQ + Vendor Evaluation (FR-PRO-003/004) ───────────────────

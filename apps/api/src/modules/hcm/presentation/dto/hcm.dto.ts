@@ -165,3 +165,63 @@ export class ListTimesheetQueryDto {
   @IsString()
   status?: string;
 }
+
+export class CreatePayrollAllocationDto {
+  @IsString()
+  employeeId!: string;
+
+  @IsOptional()
+  @IsString()
+  projectId?: string;
+
+  @IsString()
+  @Length(7, 7)
+  period!: string; // "2026-08"
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  grossAmount!: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  projectAmount!: number;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  overheadAmount!: number;
+}
+
+export class ListPayrollAllocationQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  pageSize?: number;
+
+  @IsOptional()
+  @IsString()
+  @Length(7, 7)
+  period?: string;
+
+  @IsOptional()
+  @IsString()
+  employeeId?: string;
+}
+
+export class ChangeEmployeeStatusDto {
+  @IsString()
+  status!: string;
+
+  @IsOptional()
+  @IsDateString()
+  leaveDate?: string;
+}

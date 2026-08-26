@@ -5,6 +5,7 @@ import { PermissionsGuard } from '@/shared/guards/permissions.guard';
 import {
   ApproveTimesheetDto, CreateEmployeeDto, CreateProjectAssignmentDto, CreateTimesheetDto,
   EndAssignmentDto, ListEmployeeQueryDto, ListTimesheetQueryDto,
+  CreatePayrollAllocationDto, ListPayrollAllocationQueryDto, ChangeEmployeeStatusDto,
 } from '../dto/hcm.dto';
 import {
   CreateEquipmentAssignmentDto, CreateEquipmentBreakdownDto, CreateEquipmentDto, CreateEquipmentPmDto,
@@ -31,6 +32,12 @@ export class HcmController {
   @Permissions('Employee.CREATE')
   createEmployee(@Body() dto: CreateEmployeeDto, @Req() request: { user?: { sub?: string } }) {
     return this.employee.createEmployee(dto, request.user?.sub ?? 'system');
+  }
+
+  @Post('employees/:id/status')
+  @Permissions('Employee.CREATE')
+  changeEmployeeStatus(@Param('id') id: string, @Body() dto: ChangeEmployeeStatusDto, @Req() request: { user?: { sub?: string } }) {
+    return this.employee.changeEmployeeStatus(id, dto, request.user?.sub ?? 'system');
   }
 
   @Get('employees/:id/assignments')
@@ -67,6 +74,18 @@ export class HcmController {
   @Permissions('Timesheet.APPROVE')
   approveTimesheet(@Param('id') id: string, @Body() dto: ApproveTimesheetDto, @Req() request: { user?: { sub?: string } }) {
     return this.employee.approveTimesheet(id, dto, request.user?.sub ?? 'system');
+  }
+
+  @Get('payroll-allocations')
+  @Permissions('Payroll.VIEW')
+  listPayrollAllocations(@Query() query: ListPayrollAllocationQueryDto) {
+    return this.employee.listPayrollAllocations(query);
+  }
+
+  @Post('payroll-allocations')
+  @Permissions('Payroll.CREATE')
+  createPayrollAllocation(@Body() dto: CreatePayrollAllocationDto, @Req() request: { user?: { sub?: string } }) {
+    return this.employee.createPayrollAllocation(dto, request.user?.sub ?? 'system');
   }
 
   // ─── Equipment (FR-EQP-001..006) ───
