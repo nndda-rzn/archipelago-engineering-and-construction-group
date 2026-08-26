@@ -1630,6 +1630,40 @@ model Transmittal {
   @@index([projectId])
 }
 
+// FR-PRO-010: Vendor master (NPWP, kategori, kontak)
+model Vendor {
+  id            String   @id @default(cuid())
+  vendorCode    String   @unique // mis. "VND-2027-000001"
+  name          String
+  taxId         String?  // NPWP
+  category      String   @default("MATERIAL") // MATERIAL | SUBCONTRACTOR | SERVICE | EQUIPMENT | OTHER
+  contactPerson String?
+  email         String?
+  phone         String?
+  address       String?
+  status        String   @default("ACTIVE") // ACTIVE | INACTIVE
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([status])
+}
+
+// FR-FND-010: Fiscal period — FUTURE/OPEN/SOFT_CLOSED/CLOSED/LOCKED
+model FiscalPeriod {
+  id          String   @id @default(cuid())
+  periodCode  String   @unique // mis. "2026-01"
+  periodYear  Int
+  periodMonth Int
+  startDate   DateTime
+  endDate     DateTime
+  status      String   @default("FUTURE") // FUTURE | OPEN | SOFT_CLOSED | CLOSED | LOCKED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+}
+
 // ─── Procurement: RFQ + Vendor Evaluation (FR-PRO-003/004) ───────────────────
 // Request for Quotation → vendor quotes → evaluate → award (best quote)
 

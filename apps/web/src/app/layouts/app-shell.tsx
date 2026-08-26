@@ -12,6 +12,7 @@ const navGroups: NavGroup[] = [
       { label: 'Dashboard', icon: LayoutDashboard, to: '/' },
       { label: 'Executive Analytics', icon: LayoutDashboard, to: '/analytics' },
       { label: 'Legal Entities', icon: Building2, to: '/foundation/legal-entities' },
+      { label: 'Master Data', icon: Building2, to: '/master-data' },
       { label: 'User Management', icon: Users, to: '/foundation/users' },
       { label: 'Role Management', icon: Shield, to: '/foundation/roles' },
       { label: 'Audit Trail', icon: ClipboardCheck, to: '/foundation/audit-logs' },
