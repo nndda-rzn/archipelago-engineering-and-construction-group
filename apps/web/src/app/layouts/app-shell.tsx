@@ -28,6 +28,7 @@ const navGroups: NavGroup[] = [
       { label: 'WBS', icon: FolderTree, to: '/wbs' },
       { label: 'Budget', icon: DollarSign, to: '/budget' },
       { label: 'Project Health', icon: DollarSign, to: '/project-health' },
+      { label: 'Project Controls', icon: DollarSign, to: '/project-controls' },
       { label: 'Komersial', icon: Briefcase, to: '/commercial' },
       { label: 'Engineering', icon: Wrench, to: '/engineering' },
       { label: 'Pengadaan', icon: Package, to: '/procurement/pr' },

@@ -153,6 +153,12 @@ const permissions = [
   ['Handover.VIEW', 'Handover', 'VIEW'],
   ['Handover.CREATE', 'Handover', 'CREATE'],
   ['Handover.APPROVE', 'Handover', 'APPROVE'],
+  ['CostCode.VIEW', 'CostCode', 'VIEW'],
+  ['CostCode.CREATE', 'CostCode', 'CREATE'],
+  ['ControlAccount.VIEW', 'ControlAccount', 'VIEW'],
+  ['ControlAccount.CREATE', 'ControlAccount', 'CREATE'],
+  ['Forecast.VIEW', 'Forecast', 'VIEW'],
+  ['Forecast.CREATE', 'Forecast', 'CREATE'],
 ] as const;
 
 async function main() {
