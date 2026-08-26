@@ -9,3 +9,4 @@ export * from './finance';
 export * from './construction';
 export * from './hcm';
 export * from './hse';
+export * from './quality';
