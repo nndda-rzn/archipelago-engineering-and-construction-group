@@ -17,9 +17,10 @@ import { AnalyticsModule } from './modules/analytics';
 import { CommercialModule } from './modules/commercial';
 import { EngineeringModule } from './modules/engineering';
 import { MasterDataModule } from './modules/master-data';
+import { TreasuryModule } from './modules/treasury';
 
 @Module({
-  imports: [FoundationModule, ProjectModule, ProcurementModule, InventoryModule, ApprovalModule, FinanceModule, ConstructionModule, HcmModule, HseModule, QualityModule, GovernanceModule, AnalyticsModule, CommercialModule, EngineeringModule, MasterDataModule],
+  imports: [FoundationModule, ProjectModule, ProcurementModule, InventoryModule, ApprovalModule, FinanceModule, ConstructionModule, HcmModule, HseModule, QualityModule, GovernanceModule, AnalyticsModule, CommercialModule, EngineeringModule, MasterDataModule, TreasuryModule],
   controllers: [HealthController],
   providers: [
     {

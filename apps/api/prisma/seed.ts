@@ -159,6 +159,10 @@ const permissions = [
   ['ControlAccount.CREATE', 'ControlAccount', 'CREATE'],
   ['Forecast.VIEW', 'Forecast', 'VIEW'],
   ['Forecast.CREATE', 'Forecast', 'CREATE'],
+  ['Treasury.VIEW', 'Treasury', 'VIEW'],
+  ['Treasury.CREATE', 'Treasury', 'CREATE'],
+  ['Treasury.APPROVE', 'Treasury', 'APPROVE'],
+  ['Treasury.RELEASE', 'Treasury', 'RELEASE'],
 ] as const;
 
 async function main() {
