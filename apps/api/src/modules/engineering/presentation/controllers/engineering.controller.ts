@@ -52,6 +52,12 @@ export class EngineeringController {
     return this.engineering.publishDrawing(id, dto, request.user?.sub ?? 'system');
   }
 
+  @Get('engineering/drawings/ifc')
+  @Permissions('Engineering.VIEW')
+  listIfc(@Query('projectId') projectId: string) {
+    return this.engineering.listIfc(projectId);
+  }
+
   @Get('engineering/rfis')
   @Permissions('Engineering.VIEW')
   listRfis(@Query() query: ListRfiQueryDto) {

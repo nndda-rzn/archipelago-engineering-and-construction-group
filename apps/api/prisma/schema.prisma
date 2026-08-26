@@ -43,6 +43,7 @@ model LegalEntity {
   icFrom           IntercompanyTransaction[] @relation("IcFrom")
   icTo             IntercompanyTransaction[] @relation("IcTo")
   periodCloses     PeriodClose[]
+  doaRules         DoaRule[]
 }
 
 // FR-FND-002: Effective-dated Organization
@@ -206,6 +207,7 @@ model Project {
   forecasts                Forecast[]
   bankGuarantees           BankGuarantee[]
   vendorPerformanceRatings VendorPerformanceRating[]
+  doaRules                 DoaRule[]
 
   @@index([legalEntityId])
   @@index([status])
@@ -332,19 +334,19 @@ model Forecast {
 
 // FR-PRO-001: Purchase Requisition
 model PurchaseRequisition {
-  id          String   @id @default(cuid())
-  prNumber    String   @unique // mis. "PR-2027-EPC-000001"
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id])
-  wbsItemId   String?
-  wbsItem     WbsItem? @relation(fields: [wbsItemId], references: [id])
-  requestedBy String
-  requestedAt DateTime @default(now())
-  status      String   @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | REJECTED | CANCELLED
-  description String?
+  id             String   @id @default(cuid())
+  prNumber       String   @unique // mis. "PR-2027-EPC-000001"
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id])
+  wbsItemId      String?
+  wbsItem        WbsItem? @relation(fields: [wbsItemId], references: [id])
+  requestedBy    String
+  requestedAt    DateTime @default(now())
+  status         String   @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | REJECTED | CANCELLED
+  description    String?
   estimatedTotal Decimal? @db.Decimal(18, 2) // total estimasi PR (FR-PRO-002 budget check)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   items          PurchaseRequisitionItem[]
   purchaseOrders PurchaseOrder[]
@@ -1817,6 +1819,7 @@ model Drawing {
   discipline      String   @default("PIPING")
   currentRevision String   @default("0")
   status          String   @default("DRAFT") // DRAFT | PUBLISHED | SUPERSEDED
+  isIFC           Boolean  @default(false) // FR-ENG-006: issued for construction
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -2047,6 +2050,9 @@ model ConstructionWorkPackage {
   startDate   DateTime?
   endDate     DateTime?
   status      String    @default("DRAFT") // DRAFT | IN_PROGRESS | COMPLETED | CANCELLED
+  requiresIFC Boolean   @default(false) // FR-CON-002: mandatory prerequisite (current IFC)
+  readyStatus String    @default("PENDING") // PENDING | READY | BLOCKED (FR-CON-002)
+  readyNote   String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -2316,6 +2322,65 @@ model FxExposure {
   @@unique([legalEntityId, currency])
   @@index([legalEntityId])
   @@index([currency])
+}
+
+// FR-FND-006: DoA rule — delegation of authority (configurable, effective-dated)
+model DoaRule {
+  id               String       @id @default(cuid())
+  transactionType  String // PurchaseRequisition | PurchaseOrder | Journal | Payment | BudgetBaseline | Contract
+  legalEntityId    String?
+  legalEntity      LegalEntity? @relation(fields: [legalEntityId], references: [id], onDelete: SetNull)
+  businessUnit     String?
+  projectId        String?
+  project          Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  currencyCode     String?
+  amountFrom       Decimal?     @db.Decimal(18, 2)
+  amountTo         Decimal?     @db.Decimal(18, 2)
+  riskLevel        String? // LOW | MEDIUM | HIGH
+  approverLevel    String // L1 | L2 | L3 | L4 | L5 | L6
+  approverRoleCode String? // role approver (mis. PROCUREMENT_MANAGER)
+  approvalMode     String       @default("SEQUENTIAL") // SEQUENTIAL | PARALLEL
+  priority         Int          @default(0) // tie-breaker kekhususan
+  effectiveFrom    DateTime     @default(now())
+  effectiveTo      DateTime?
+  status           String       @default("ACTIVE") // ACTIVE | INACTIVE
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([transactionType])
+  @@index([status])
+}
+
+// FR-FND-011: Currency — transaction/functional/reporting + rate type + historical rate
+model Currency {
+  id        String   @id @default(cuid())
+  code      String   @unique // IDR, USD, EUR...
+  name      String
+  symbol    String   @default("")
+  decimals  Int      @default(2)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ratesFrom ExchangeRate[] @relation("RateFrom")
+  ratesTo   ExchangeRate[] @relation("RateTo")
+}
+
+// FR-FND-011: Exchange rate — historical, rate type (SPOT | MONTHLY | PERIOD_END)
+model ExchangeRate {
+  id             String   @id @default(cuid())
+  fromCurrencyId String
+  fromCurrency   Currency @relation("RateFrom", fields: [fromCurrencyId], references: [id], onDelete: Cascade)
+  toCurrencyId   String
+  toCurrency     Currency @relation("RateTo", fields: [toCurrencyId], references: [id], onDelete: Cascade)
+  rateType       String   @default("SPOT") // SPOT | MONTHLY | PERIOD_END
+  rate           Decimal  @db.Decimal(18, 6)
+  effectiveDate  DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  @@index([fromCurrencyId])
+  @@index([toCurrencyId])
+  @@index([effectiveDate])
 }
 
 // FR-FND-008: Audit Trail (PRD §28) — immutable audit record

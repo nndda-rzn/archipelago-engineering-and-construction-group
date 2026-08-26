@@ -37,6 +37,9 @@ export class CreateWorkPackageDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
+
+  @IsOptional()
+  requiresIFC?: boolean;
 }
 
 export class ListWorkPackageQueryDto {

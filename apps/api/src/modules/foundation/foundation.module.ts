@@ -9,11 +9,13 @@ import { AuditController } from './presentation/controllers/audit-log.controller
 import { UserController } from './presentation/controllers/user.controller';
 import { RoleController } from './presentation/controllers/role.controller';
 import { LegalEntityController } from './presentation/controllers/legal-entity.controller';
+import { FoundationHardeningController } from './presentation/controllers/foundation-hardening.controller';
 import { AuthService } from './application/services/auth.service';
 import { AuditService } from './application/services/audit.service';
 import { UserService } from './application/services/user.service';
 import { RoleService } from './application/services/role.service';
 import { LegalEntityService } from './application/services/legal-entity.service';
+import { FoundationHardeningService } from './application/services/foundation-hardening.service';
 
 @Global()
 @Module({
@@ -23,8 +25,8 @@ import { LegalEntityService } from './application/services/legal-entity.service'
       signOptions: { expiresIn: '15m' },
     }),
   ],
-  controllers: [AuthController, AuditController, UserController, RoleController, LegalEntityController],
-  providers: [AuthService, AuditService, UserService, RoleService, LegalEntityService, PrismaService, Reflector, AuthGuard, PermissionsGuard],
+  controllers: [AuthController, AuditController, UserController, RoleController, LegalEntityController, FoundationHardeningController],
+  providers: [AuthService, AuditService, UserService, RoleService, LegalEntityService, FoundationHardeningService, PrismaService, Reflector, AuthGuard, PermissionsGuard],
   exports: [AuthService, AuditService, JwtModule, AuthGuard, PermissionsGuard],
 })
 export class FoundationModule {}

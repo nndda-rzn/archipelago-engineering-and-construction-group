@@ -41,6 +41,12 @@ export class ConstructionController {
     return this.service.start(id, request.user?.sub ?? 'system');
   }
 
+  @Get('work-packages/:id/readiness')
+  @Permissions('WorkPackage.VIEW')
+  readiness(@Param('id') id: string) {
+    return this.service.readiness(id);
+  }
+
   @Post('work-packages/:id/complete')
   @Permissions('WorkPackage.EDIT')
   complete(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {

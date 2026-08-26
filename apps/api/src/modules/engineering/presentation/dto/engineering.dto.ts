@@ -86,6 +86,9 @@ export class PublishDrawingDto {
   @IsString()
   @MaxLength(500)
   description?: string;
+
+  @IsOptional()
+  isIFC?: boolean;
 }
 
 export class ListDrawingQueryDto {

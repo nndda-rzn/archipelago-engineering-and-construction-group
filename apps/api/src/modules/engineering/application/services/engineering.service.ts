@@ -104,11 +104,20 @@ export class EngineeringService {
     });
     const updated = await this.prisma.drawing.update({
       where: { id },
-      data: { currentRevision: revision, status: 'PUBLISHED' },
+      data: { currentRevision: revision, status: 'PUBLISHED', isIFC: dto.isIFC ?? drawing.isIFC },
       include: { revisions: { orderBy: { publishedAt: 'desc' } } },
     });
-    await this.audit.record({ userId: actorId, action: 'Drawing.PUBLISH', resource: 'Drawing', resourceId: id, newValue: { drawingNumber: drawing.drawingNumber, revision }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'Drawing.PUBLISH', resource: 'Drawing', resourceId: id, newValue: { drawingNumber: drawing.drawingNumber, revision, isIFC: dto.isIFC ?? drawing.isIFC }, source: 'api' });
     return updated;
+  }
+
+  // FR-ENG-006: IFC control — list current IFC tersedia untuk construction
+  async listIfc(projectId: string) {
+    const items = await this.prisma.drawing.findMany({
+      where: { projectId, isIFC: true },
+      orderBy: { updatedAt: 'desc' },
+    });
+    return { projectId, total: items.length, items };
   }
 
   async listDrawings(query: ListDrawingQueryDto) {
