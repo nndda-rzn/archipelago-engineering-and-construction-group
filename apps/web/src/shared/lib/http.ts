@@ -15,15 +15,25 @@ export class ApiError extends Error {
   }
 }
 
+/** Logout saat token invalid/expired (401) — hapus token, redirect ke login. */
+function handleUnauthorized() {
+  const hadToken = !!getToken();
+  clearToken();
+  if (hadToken && typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
+}
+
+const AUTH_HEADERS = (): Record<string, string> => {
+  const token = getToken();
+  return { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+};
+
 export async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      Accept: 'application/json',
-      ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
-    },
-  });
+  const res = await fetch(`${API_BASE}${path}`, { headers: AUTH_HEADERS() });
 
   if (!res.ok) {
+    if (res.status === 401) handleUnauthorized();
     const body = (await res.json().catch(() => null)) as {
       error?: { code?: string; message?: string; correlationId?: string };
     } | null;
@@ -40,11 +50,12 @@ export async function getJson<T>(path: string): Promise<T> {
 export async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
-    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    headers: { ...AUTH_HEADERS(), 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 
   if (!res.ok) {
+    if (res.status === 401) handleUnauthorized();
     const errBody = (await res.json().catch(() => null)) as {
       error?: { code?: string; message?: string; correlationId?: string };
     } | null;

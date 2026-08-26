@@ -22,7 +22,7 @@ import { FoundationHardeningService } from './application/services/foundation-ha
   imports: [
     JwtModule.register({
       secret: process.env.JWT_SECRET ?? 'dev-only-change-me',
-      signOptions: { expiresIn: '15m' },
+      signOptions: { expiresIn: '8h' },
     }),
   ],
   controllers: [AuthController, AuditController, UserController, RoleController, LegalEntityController, FoundationHardeningController],
