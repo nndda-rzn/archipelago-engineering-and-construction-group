@@ -91,3 +91,115 @@ export const createTimesheetSchema = z.object({
   description: z.string().max(500).optional(),
 });
 export type CreateTimesheet = z.infer<typeof createTimesheetSchema>;
+
+export const equipmentSchema = z.object({
+  id: z.string(),
+  equipmentNumber: z.string(),
+  name: z.string(),
+  category: z.string(),
+  serialNumber: z.string().nullable(),
+  owner: z.string(),
+  acquisitionDate: z.string().nullable(),
+  currentMeter: z.number(),
+  status: z.string(),
+  legalEntityId: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type Equipment = z.infer<typeof equipmentSchema>;
+
+export const createEquipmentSchema = z.object({
+  name: z.string().min(2).max(200),
+  category: z.string().optional(),
+  serialNumber: z.string().max(100).optional(),
+  owner: z.string().optional(),
+  acquisitionDate: z.string().optional(),
+  currentMeter: z.number().min(0).optional(),
+  legalEntityId: z.string().optional(),
+});
+export type CreateEquipment = z.infer<typeof createEquipmentSchema>;
+
+export const equipmentAssignmentSchema = z.object({
+  id: z.string(),
+  equipmentId: z.string(),
+  projectId: z.string(),
+  startDate: z.string(),
+  endDate: z.string().nullable(),
+  status: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  project: z.object({ code: z.string(), name: z.string() }).optional(),
+});
+export type EquipmentAssignment = z.infer<typeof equipmentAssignmentSchema>;
+
+export const createEquipmentAssignmentSchema = z.object({
+  projectId: z.string(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+});
+export type CreateEquipmentAssignment = z.infer<typeof createEquipmentAssignmentSchema>;
+
+export const equipmentUtilizationSchema = z.object({
+  id: z.string(),
+  equipmentId: z.string(),
+  projectId: z.string().nullable(),
+  utilizationDate: z.string(),
+  availableHours: z.number(),
+  operatingHours: z.number(),
+  description: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type EquipmentUtilization = z.infer<typeof equipmentUtilizationSchema>;
+
+export const equipmentPmSchema = z.object({
+  id: z.string(),
+  equipmentId: z.string(),
+  triggerType: z.string(),
+  dueDate: z.string().nullable(),
+  dueMeter: z.number().nullable(),
+  scheduledDate: z.string(),
+  status: z.string(),
+  completedAt: z.string().nullable(),
+  description: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type EquipmentPm = z.infer<typeof equipmentPmSchema>;
+
+export const equipmentBreakdownSchema = z.object({
+  id: z.string(),
+  equipmentId: z.string(),
+  breakdownDate: z.string(),
+  downtimeHours: z.number(),
+  costImpact: z.number(),
+  description: z.string().nullable(),
+  status: z.string(),
+  resolvedAt: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type EquipmentBreakdown = z.infer<typeof equipmentBreakdownSchema>;
+
+export const equipmentUsageSchema = z.object({
+  id: z.string(),
+  equipmentId: z.string(),
+  projectId: z.string(),
+  usageDate: z.string(),
+  hours: z.number(),
+  costAmount: z.number(),
+  description: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  project: z.object({ code: z.string(), name: z.string() }).optional(),
+});
+export type EquipmentUsage = z.infer<typeof equipmentUsageSchema>;
+
+export const createEquipmentUsageSchema = z.object({
+  projectId: z.string(),
+  usageDate: z.string().optional(),
+  hours: z.number().min(0.1),
+  costAmount: z.number().min(0),
+  description: z.string().max(500).optional(),
+});
+export type CreateEquipmentUsage = z.infer<typeof createEquipmentUsageSchema>;

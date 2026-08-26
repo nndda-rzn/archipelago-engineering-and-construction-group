@@ -53,6 +53,7 @@ const navGroups: NavGroup[] = [
       { label: 'Handover', icon: Construction, to: '/construction/handover' },
       { label: 'Employee', icon: Users, to: '/hcm/employees' },
       { label: 'Timesheet', icon: Users, to: '/hcm/timesheets' },
+      { label: 'Equipment', icon: Wrench, to: '/hcm/equipment' },
       { label: 'Keuangan', icon: DollarSign, to: '/finance' },
       { label: 'HCM', icon: Users, to: '/hcm' },
       { label: 'Peralatan', icon: Gavel, to: '/equipment' },
