@@ -1,0 +1,11 @@
+version: 2
+ignore:
+  - matches:
+      - match: "Admin123!"
+        name: Demo admin password
+      - match: "Buyer123!"
+        name: Demo buyer password
+      - match: "Demo123!"
+        name: Demo user password
+    paths:
+      - "apps/web/src/pages/auth/login.page.tsx"
