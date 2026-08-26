@@ -9,9 +9,10 @@ import { InventoryModule } from './modules/inventory';
 import { ApprovalModule } from './modules/approval';
 import { FinanceModule } from './modules/finance';
 import { ConstructionModule } from './modules/construction';
+import { HcmModule } from './modules/hcm';
 
 @Module({
-  imports: [FoundationModule, ProjectModule, ProcurementModule, InventoryModule, ApprovalModule, FinanceModule, ConstructionModule],
+  imports: [FoundationModule, ProjectModule, ProcurementModule, InventoryModule, ApprovalModule, FinanceModule, ConstructionModule, HcmModule],
   controllers: [HealthController],
   providers: [
     {

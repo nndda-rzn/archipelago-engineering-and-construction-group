@@ -34,6 +34,8 @@ import { ClientInvoicePage } from './pages/finance/client-invoice.page';
 import { CollectionPage } from './pages/finance/collection.page';
 import { VariationPage } from './pages/finance/variation.page';
 import { SubcontractPage } from './pages/finance/subcontract.page';
+import { EmployeesPage } from './pages/hcm/employees.page';
+import { TimesheetsPage } from './pages/hcm/timesheets.page';
 import { DashboardPage } from './pages/dashboard.page';
 import { requireAuth } from './app/router/require-auth';
 
@@ -224,6 +226,18 @@ const subcontractRoute = createRoute({
   component: SubcontractPage,
 });
 
+const employeesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/hcm/employees',
+  component: EmployeesPage,
+});
+
+const timesheetsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/hcm/timesheets',
+  component: TimesheetsPage,
+});
+
 const workflowRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/workflows',
@@ -262,5 +276,5 @@ const handoverRoute = createRoute({
 
 export const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, projectHealthRoute, prRoute, poRoute, rfqRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, workflowRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute, variationRoute, subcontractRoute, workPackagesRoute, dailyReportsRoute, commissioningRoute, handoverRoute]),
+  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, projectHealthRoute, prRoute, poRoute, rfqRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, workflowRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute, variationRoute, subcontractRoute, workPackagesRoute, dailyReportsRoute, commissioningRoute, handoverRoute, employeesRoute, timesheetsRoute]),
 ]);
