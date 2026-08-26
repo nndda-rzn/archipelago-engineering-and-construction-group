@@ -15,10 +15,11 @@ export class ApiError extends Error {
   }
 }
 
-/** Logout saat token invalid/expired (401) — hapus token, redirect ke login. */
+/** Logout saat token invalid/expired (401) — hapus token + session, redirect ke login. */
 function handleUnauthorized() {
   const hadToken = !!getToken();
   clearToken();
+  clearSession();
   if (hadToken && typeof window !== 'undefined') {
     window.location.href = '/login';
   }
@@ -90,6 +91,7 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
 
 /** Simpan token ke localStorage (sederhana — Keycloak menyusul). */
 const TOKEN_KEY = 'aec_token';
+const SESSION_KEY = 'aec_session';
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -101,4 +103,23 @@ export function setToken(token: string) {
 
 export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
+}
+
+export type StoredUser = { id: string; email: string; displayName: string; roles: string[] };
+
+export function getStoredUser(): StoredUser | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? (JSON.parse(raw) as StoredUser) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredUser(user: StoredUser) {
+  localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+}
+
+export function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
 }
