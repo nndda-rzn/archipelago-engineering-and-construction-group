@@ -130,3 +130,111 @@ export const createQuoteSchema = z.object({
   ).min(1),
 });
 export type CreateQuote = z.infer<typeof createQuoteSchema>;
+
+// ─── Procurement Hardening (Fase 11E, FR-PRO-002/005/006/008/010) ─────────────
+
+export const budgetStatusSchema = z.object({
+  projectId: z.string(),
+  budget: z.number(),
+  commitment: z.number(),
+  existingPr: z.number(),
+  remaining: z.number(),
+  within: z.boolean(),
+  generatedAt: z.string(),
+});
+export type BudgetStatus = z.infer<typeof budgetStatusSchema>;
+
+export const technicalReviewSchema = z.object({
+  technicalStatus: z.enum(['PASS', 'REJECT']),
+  technicalNote: z.string().max(1000).optional(),
+});
+export type TechnicalReview = z.infer<typeof technicalReviewSchema>;
+
+export const commercialEvaluationSchema = z.object({
+  rfqId: z.string(),
+  rfqNumber: z.string(),
+  items: z.array(
+    z.object({
+      quoteId: z.string(),
+      vendor: z.string(),
+      totalAmount: z.number(),
+      leadTimeDays: z.number(),
+      normalizedScore: z.number(),
+      technicalStatus: z.string(),
+      isWinner: z.boolean(),
+    }),
+  ),
+  recommended: z.object({
+    quoteId: z.string(),
+    vendor: z.string(),
+    totalAmount: z.number(),
+    leadTimeDays: z.number(),
+    normalizedScore: z.number(),
+    technicalStatus: z.string(),
+    isWinner: z.boolean(),
+  }).nullable(),
+  generatedAt: z.string(),
+});
+export type CommercialEvaluation = z.infer<typeof commercialEvaluationSchema>;
+
+export const poChangeSchema = z.object({
+  id: z.string(),
+  changeNumber: z.string(),
+  purchaseOrderId: z.string(),
+  version: z.number(),
+  previousTotal: z.number(),
+  newTotal: z.number(),
+  reason: z.string(),
+  status: z.string(),
+  createdBy: z.string(),
+  approvedBy: z.string().nullable(),
+  approvedAt: z.string().nullable(),
+});
+export type PoChange = z.infer<typeof poChangeSchema>;
+
+export const createPoChangeSchema = z.object({
+  newTotal: z.number().min(0),
+  reason: z.string().min(1).max(1000),
+});
+export type CreatePoChange = z.infer<typeof createPoChangeSchema>;
+
+export const vendorRatingSchema = z.object({
+  id: z.string(),
+  vendorId: z.string(),
+  projectId: z.string().nullable(),
+  category: z.string(),
+  score: z.number(),
+  remark: z.string().nullable(),
+  ratedBy: z.string(),
+  ratingDate: z.string(),
+  vendor: z.object({ vendorCode: z.string(), name: z.string() }),
+  project: z.object({ code: z.string() }).nullable(),
+});
+export type VendorRating = z.infer<typeof vendorRatingSchema>;
+
+export const createVendorRatingSchema = z.object({
+  vendorId: z.string(),
+  projectId: z.string().optional(),
+  category: z.enum(['DELIVERY', 'QUALITY', 'COMMERCIAL', 'HSE', 'RESPONSIVENESS']),
+  score: z.number().int().min(1).max(5),
+  remark: z.string().max(1000).optional(),
+});
+export type CreateVendorRating = z.infer<typeof createVendorRatingSchema>;
+
+export const vendorPerformanceSchema = z.object({
+  items: z.array(
+    z.object({
+      vendorCode: z.string(),
+      vendorName: z.string(),
+      DELIVERY: z.number(),
+      QUALITY: z.number(),
+      COMMERCIAL: z.number(),
+      HSE: z.number(),
+      RESPONSIVENESS: z.number(),
+      overall: z.number(),
+    }),
+  ),
+  total: z.number(),
+  generatedAt: z.string(),
+});
+export type VendorPerformance = z.infer<typeof vendorPerformanceSchema>;

@@ -127,10 +127,26 @@ export class RfqService {
       throw new ConflictException({ code: 'NO_QUOTES', message: 'Belum ada quote vendor' });
     }
 
-    const ranked = rfq.quotes.filter((q) => q.status === 'SUBMITTED').sort((a, b) => Number(a.totalAmount) - Number(b.totalAmount));
+    // FR-PRO-005: vendor teknis REJECT tidak bisa menang (tanpa exceptional governance)
+    const technicalRejected = rfq.quotes.filter((q) => q.technicalStatus === 'REJECT');
+    if (technicalRejected.length > 0) {
+      throw new ConflictException({
+        code: 'TECHNICAL_REJECTED',
+        message: `Quote vendor ${technicalRejected.map((q) => q.vendor).join(', ')} ditolak teknis — evaluasi teknis dulu (FR-PRO-005)`,
+      });
+    }
+
+    // FR-PRO-006: normalized commercial comparison — harga terendah + penalti lead time
+    const ranked = rfq.quotes
+      .filter((q) => q.status === 'SUBMITTED')
+      .map((q) => {
+        const leadPenalty = Number(q.leadTimeDays ?? 0) * 0.001; // 0.1% per hari
+        return { quote: q, normalizedScore: Number(q.totalAmount) * (1 + leadPenalty) };
+      })
+      .sort((a, b) => a.normalizedScore - b.normalizedScore);
 
     const evaluated = await this.prisma.$transaction(async (tx) => {
-      const winner = ranked[0]!;
+      const winner = ranked[0]!.quote;
       await tx.rfqQuote.updateMany({ where: { rfqId: id, id: { not: winner.id } }, data: { isWinner: false } });
       await tx.rfqQuote.update({ where: { id: winner.id }, data: { isWinner: true } });
       return tx.rfq.update({
@@ -145,11 +161,64 @@ export class RfqService {
       action: 'Rfq.EVALUATE',
       resource: 'Rfq',
       resourceId: id,
-      newValue: { rfqNumber: rfq.rfqNumber, winnerVendor: ranked[0]!.vendor, winnerAmount: Number(ranked[0]!.totalAmount) },
+      newValue: { rfqNumber: rfq.rfqNumber, winnerVendor: ranked[0]!.quote.vendor, normalizedScore: Number(ranked[0]!.normalizedScore.toFixed(2)) },
       source: 'api',
     });
 
     return evaluated;
+  }
+
+  // FR-PRO-005: technical review quote — PASS/REJECT
+  async technicalReview(quoteId: string, technicalStatus: string, technicalNote: string | null, actorId: string) {
+    const quote = await this.prisma.rfqQuote.findUnique({ where: { id: quoteId } });
+    if (!quote) throw new NotFoundException({ code: 'QUOTE_NOT_FOUND', message: 'Quote tidak ditemukan' });
+
+    const updated = await this.prisma.rfqQuote.update({
+      where: { id: quoteId },
+      data: { technicalStatus, technicalNote: technicalNote ?? null },
+    });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'Rfq.TECHNICAL_REVIEW',
+      resource: 'RfqQuote',
+      resourceId: quoteId,
+      newValue: { vendor: quote.vendor, technicalStatus },
+      source: 'api',
+    });
+
+    return updated;
+  }
+
+  // FR-PRO-006: normalized commercial comparison — tabel per quote
+  async commercialEvaluation(rfqId: string) {
+    const rfq = await this.prisma.rfq.findUnique({ where: { id: rfqId }, include: { quotes: { include: { items: true } } } });
+    if (!rfq) throw new NotFoundException({ code: 'RFQ_NOT_FOUND', message: 'RFQ tidak ditemukan' });
+
+    const items = rfq.quotes
+      .filter((q) => q.status === 'SUBMITTED')
+      .map((q) => {
+        const leadPenalty = Number(q.leadTimeDays ?? 0) * 0.001;
+        const normalizedScore = Number(q.totalAmount) * (1 + leadPenalty);
+        return {
+          quoteId: q.id,
+          vendor: q.vendor,
+          totalAmount: Number(q.totalAmount),
+          leadTimeDays: q.leadTimeDays ?? 0,
+          normalizedScore: Math.round(normalizedScore * 100) / 100,
+          technicalStatus: q.technicalStatus,
+          isWinner: q.isWinner,
+        };
+      })
+      .sort((a, b) => a.normalizedScore - b.normalizedScore);
+
+    return {
+      rfqId,
+      rfqNumber: rfq.rfqNumber,
+      items,
+      recommended: items[0] ?? null,
+      generatedAt: new Date().toISOString(),
+    };
   }
 
   async listRfqs(query: ListRfqQueryDto) {
