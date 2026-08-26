@@ -1,4 +1,4 @@
-import { Outlet } from '@tanstack/react-router';
+import { Link, Outlet } from '@tanstack/react-router';
 import { Briefcase, Building2, ClipboardCheck, Construction, DollarSign, FolderTree, Gavel, HardHat, LayoutDashboard, Package, Shield, Truck, Users, Wrench } from 'lucide-react';
 import { cn } from '@aec/ui';
 
@@ -98,9 +98,9 @@ export function AppShell() {
               {group.items.map((item) => {
                 const isActive = item.active ?? false;
                 return (
-                  <a
+                  <Link
                     key={item.to}
-                    href={item.to}
+                    to={item.to}
                     className={cn(
                       'flex items-center gap-2 rounded px-3 py-2 transition-colors duration-fast',
                       isActive
@@ -110,7 +110,7 @@ export function AppShell() {
                   >
                     <item.icon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
                     {item.label}
-                  </a>
+                  </Link>
                 );
               })}
             </div>
