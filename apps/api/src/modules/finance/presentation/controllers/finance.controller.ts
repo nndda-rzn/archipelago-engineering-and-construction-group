@@ -7,6 +7,7 @@ import {
   CreatePaymentDto, CreateProgressClaimDto, CreateVendorInvoiceDto, ListChartOfAccountQueryDto,
   ListClientInvoiceQueryDto, ListCollectionQueryDto, ListJournalQueryDto, ListPaymentQueryDto,
   ListProgressClaimQueryDto, ListVendorInvoiceQueryDto, TrialBalanceQueryDto, CertifyClaimDto,
+  CreateVariationDto, ListVariationQueryDto,
 } from '../dto/finance.dto';
 import { VendorInvoiceService } from '../../application/services/vendor-invoice.service';
 import { PaymentService } from '../../application/services/payment.service';
@@ -16,6 +17,7 @@ import { TrialBalanceService } from '../../application/services/trial-balance.se
 import { ProgressClaimService } from '../../application/services/progress-claim.service';
 import { ClientInvoiceService } from '../../application/services/client-invoice.service';
 import { CollectionService } from '../../application/services/collection.service';
+import { VariationService } from '../../application/services/variation.service';
 
 @Controller()
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -29,6 +31,7 @@ export class FinanceController {
     @Inject(ProgressClaimService) private readonly claim: ProgressClaimService,
     @Inject(ClientInvoiceService) private readonly clientInvoice: ClientInvoiceService,
     @Inject(CollectionService) private readonly collection: CollectionService,
+    @Inject(VariationService) private readonly variation: VariationService,
   ) {}
 
   @Get('vendor-invoices')
@@ -161,5 +164,29 @@ export class FinanceController {
   @Permissions('Collection.POST')
   postCollection(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.collection.postCollection(id, request.user?.sub ?? 'system');
+  }
+
+  @Get('variations')
+  @Permissions('Variation.VIEW')
+  listVariations(@Query() query: ListVariationQueryDto) {
+    return this.variation.listVariations(query);
+  }
+
+  @Post('variations')
+  @Permissions('Variation.CREATE')
+  createVariation(@Body() dto: CreateVariationDto, @Req() request: { user?: { sub?: string } }) {
+    return this.variation.createVariation(dto, request.user?.sub ?? 'system');
+  }
+
+  @Post('variations/:id/approve')
+  @Permissions('Variation.APPROVE')
+  approveVariation(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
+    return this.variation.approveVariation(id, request.user?.sub ?? 'system');
+  }
+
+  @Post('variations/:id/reject')
+  @Permissions('Variation.REJECT')
+  rejectVariation(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
+    return this.variation.rejectVariation(id, request.user?.sub ?? 'system');
   }
 }

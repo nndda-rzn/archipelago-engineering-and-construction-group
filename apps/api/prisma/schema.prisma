@@ -160,6 +160,7 @@ model Project {
   progressClaims ProgressClaim[]
   clientInvoices ClientInvoice[]
   collections    Collection[]
+  variations     ProjectVariation[]
   rfqs           Rfq[]
   workPackages   ConstructionWorkPackage[]
   dailyReports   ConstructionDailyReport[]
@@ -867,6 +868,30 @@ model CollectionItem {
 
   @@index([collectionId])
   @@index([clientInvoiceId])
+}
+
+// FR-CMR-005/006: Variation — potential change tidak ubah contract value, approved variation update
+model ProjectVariation {
+  id              String   @id @default(cuid())
+  variationNumber String   @unique // mis. "VR-2027-EPC-000001"
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id])
+  title           String
+  description     String?
+  type            String   @default("ADDITIVE") // ADDITIVE | DEDUCTIVE
+  amountChange    Decimal  @db.Decimal(18, 2) // perubahan nilai kontrak (+/-)
+  scheduleImpactDays Int?  // dampak jadwal (hari)
+  status          String   @default("POTENTIAL") // POTENTIAL | APPROVED | REJECTED
+  createdBy       String
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectedBy      String?
+  rejectedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([status])
 }
 
 // ─── Procurement: RFQ + Vendor Evaluation (FR-PRO-003/004) ───────────────────
