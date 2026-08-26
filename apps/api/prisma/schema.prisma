@@ -26,14 +26,20 @@ model LegalEntity {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  organizations   Organization[]
-  users           User[]
-  projects        Project[]
-  chartOfAccounts ChartOfAccount[]
-  journals        Journal[]
-  employees       Employee[]
-  equipment       Equipment[]
-  legalCases      LegalCase[]
+  organizations    Organization[]
+  users            User[]
+  projects         Project[]
+  chartOfAccounts  ChartOfAccount[]
+  journals         Journal[]
+  employees        Employee[]
+  equipment        Equipment[]
+  legalCases       LegalCase[]
+  bankAccounts     BankAccount[]
+  paymentProposals PaymentProposal[]
+  bankGuarantees   BankGuarantee[]
+  cashForecasts    CashForecast[]
+  fxExposures      FxExposure[]
+  cashPositions    CashPosition[]
 }
 
 // FR-FND-002: Effective-dated Organization
@@ -195,6 +201,7 @@ model Project {
   costCodes             CostCode[]
   controlAccounts       ControlAccount[]
   forecasts             Forecast[]
+  bankGuarantees        BankGuarantee[]
 
   @@index([legalEntityId])
   @@index([status])
@@ -1963,6 +1970,139 @@ model NumberSequence {
   status     String   @default("ACTIVE")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+// ─── Treasury domain (Fase 11A, FR-TRY-001..005) ─────────────────────────────
+
+// FR-TRY-001: Bank account per legal entity + currency (ownership finance/treasury)
+model BankAccount {
+  id             String      @id @default(cuid())
+  accountCode    String      @unique // mis. "BANK-000001"
+  legalEntityId  String
+  legalEntity    LegalEntity @relation(fields: [legalEntityId], references: [id])
+  bankCode       String // kode bank, mis. "BCA", "MANDIRI"
+  bankName       String
+  accountNumber  String
+  accountName    String
+  currency       String      @default("IDR")
+  openingBalance Decimal     @default(0) @db.Decimal(18, 2)
+  status         String      @default("ACTIVE") // ACTIVE | INACTIVE | BLOCKED
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  cashPositions    CashPosition[]
+  paymentProposals PaymentProposal[]
+
+  @@index([legalEntityId])
+  @@index([currency])
+  @@index([status])
+}
+
+// FR-TRY-001: Cash position per bank/entity/currency — dihitung dari opening + net movement
+model CashPosition {
+  id             String      @id @default(cuid())
+  bankAccountId  String
+  bankAccount    BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  legalEntityId  String
+  legalEntity    LegalEntity @relation(fields: [legalEntityId], references: [id])
+  currency       String      @default("IDR")
+  currentBalance Decimal     @default(0) @db.Decimal(18, 2) // balance terakhir dihitung
+  lastUpdated    DateTime    @default(now())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([bankAccountId])
+  @@index([legalEntityId])
+}
+
+// FR-TRY-002: Payment proposal — payment wajib via proposal + approval (bukan langsung dari invoice)
+model PaymentProposal {
+  id             String       @id @default(cuid())
+  proposalNumber String       @unique // mis. "PP-2027-000001"
+  legalEntityId  String
+  legalEntity    LegalEntity  @relation(fields: [legalEntityId], references: [id])
+  bankAccountId  String?
+  bankAccount    BankAccount? @relation(fields: [bankAccountId], references: [id])
+  vendor         String
+  currency       String       @default("IDR")
+  totalAmount    Decimal      @db.Decimal(18, 2)
+  status         String       @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | REJECTED | RELEASED
+  invoiceIds     Json? // daftar invoiceId yang diusulkan dibayar
+  submittedAt    DateTime?
+  approvedAt     DateTime?
+  approvedBy     String?
+  remark         String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([legalEntityId])
+  @@index([bankAccountId])
+  @@index([status])
+}
+
+// FR-TRY-003: Bank guarantee — bid/performance/advance/retention/maintenance bond
+model BankGuarantee {
+  id              String      @id @default(cuid())
+  guaranteeNumber String      @unique // mis. "BG-2027-000001"
+  legalEntityId   String
+  legalEntity     LegalEntity @relation(fields: [legalEntityId], references: [id])
+  projectId       String?
+  project         Project?    @relation(fields: [projectId], references: [id])
+  guaranteeType   String      @default("BID") // BID | PERFORMANCE | ADVANCE | RETENTION | MAINTENANCE
+  beneficiary     String
+  bankName        String
+  amount          Decimal     @db.Decimal(18, 2)
+  currency        String      @default("IDR")
+  issueDate       DateTime    @default(now())
+  expiryDate      DateTime?
+  status          String      @default("ACTIVE") // ACTIVE | EXPIRED | RETURNED | CLAIMED
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([legalEntityId])
+  @@index([projectId])
+  @@index([status])
+  @@index([expiryDate])
+}
+
+// FR-TRY-004: Cash forecast — expected receipt + AP + payroll + loan + tax + project CF
+model CashForecast {
+  id              String      @id @default(cuid())
+  forecastCode    String      @unique // mis. "CF-2027-000001"
+  legalEntityId   String
+  legalEntity     LegalEntity @relation(fields: [legalEntityId], references: [id])
+  period          String // mis. "2026-08"
+  expectedReceipt Decimal     @default(0) @db.Decimal(18, 2)
+  expectedAp      Decimal     @default(0) @db.Decimal(18, 2)
+  expectedPayroll Decimal     @default(0) @db.Decimal(18, 2)
+  expectedLoan    Decimal     @default(0) @db.Decimal(18, 2)
+  expectedTax     Decimal     @default(0) @db.Decimal(18, 2)
+  projectCashFlow Decimal     @default(0) @db.Decimal(18, 2)
+  netForecast     Decimal     @default(0) @db.Decimal(18, 2)
+  status          String      @default("DRAFT") // DRAFT | APPROVED
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([legalEntityId])
+  @@index([period])
+}
+
+// FR-TRY-005: FX exposure — transaction exposure per currency
+model FxExposure {
+  id             String      @id @default(cuid())
+  legalEntityId  String
+  legalEntity    LegalEntity @relation(fields: [legalEntityId], references: [id])
+  currency       String // mata uang asing, mis. "USD"
+  exposureAmount Decimal     @db.Decimal(18, 2) // eksposur dalam mata uang asing
+  rate           Decimal     @default(1) @db.Decimal(18, 6) // kurs saat catat
+  baseCurrency   String      @default("IDR")
+  asOfDate       DateTime    @default(now())
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([legalEntityId, currency])
+  @@index([legalEntityId])
+  @@index([currency])
 }
 
 // FR-FND-008: Audit Trail (PRD §28) — immutable audit record
