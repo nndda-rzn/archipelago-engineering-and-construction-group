@@ -31,6 +31,7 @@ model LegalEntity {
   projects      Project[]
   chartOfAccounts ChartOfAccount[]
   journals      Journal[]
+  employees     Employee[]
 }
 
 // FR-FND-002: Effective-dated Organization
@@ -69,6 +70,7 @@ model User {
   updatedAt     DateTime @updatedAt
 
   userRoles     UserRole[]
+  employee      Employee?
 }
 
 // FR-FND-004: Role-Based Access Control — Resource + Action + Scope
@@ -162,6 +164,8 @@ model Project {
   collections    Collection[]
   variations     ProjectVariation[]
   subcontracts   Subcontract[]
+  assignments    ProjectAssignment[]
+  timesheets     Timesheet[]
   rfqs           Rfq[]
   workPackages   ConstructionWorkPackage[]
   dailyReports   ConstructionDailyReport[]
@@ -199,6 +203,7 @@ model WbsItem {
   journalLines   JournalLine[]
   rfqItems       RfqItem[]
   workPackages   ConstructionWorkPackage[]
+  timesheets     Timesheet[]
 
   @@unique([projectId, code])
   @@index([projectId])
@@ -936,6 +941,82 @@ model SubcontractProgress {
   updatedAt       DateTime @updatedAt
 
   @@index([subcontractId])
+  @@index([status])
+}
+
+// FR-HCM-001: Employee master (entity, org, position, manager, grade, location, cost center)
+model Employee {
+  id            String   @id @default(cuid())
+  employeeNumber String  @unique // mis. "EMP-2027-000001"
+  userId        String?  @unique
+  user          User?    @relation(fields: [userId], references: [id])
+  legalEntityId String
+  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id])
+  name          String
+  position      String
+  grade         String?
+  department    String?
+  location      String?
+  costCenter    String?
+  managerId     String?
+  manager       Employee? @relation("EmployeeHierarchy", fields: [managerId], references: [id])
+  reports       Employee[] @relation("EmployeeHierarchy")
+  status        String   @default("ACTIVE") // ACTIVE | INACTIVE | LEAVER
+  joinDate      DateTime?
+  leaveDate     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  assignments   ProjectAssignment[]
+  timesheets    Timesheet[]
+
+  @@index([legalEntityId])
+  @@index([managerId])
+  @@index([status])
+}
+
+// FR-HCM-002: Project assignment multi-project; FR-HCM-003: allocation >100% butuh exception
+model ProjectAssignment {
+  id              String   @id @default(cuid())
+  employeeId      String
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id])
+  role            String?  // mis. "Site Engineer"
+  allocationPercent Decimal @db.Decimal(5, 2) // alokasi waktu (%)
+  startDate       DateTime
+  endDate         DateTime?
+  status          String   @default("ACTIVE") // ACTIVE | ENDED
+  exceptionApproved Boolean @default(false) // alokasi >100% butuh approval (FR-HCM-003)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([projectId])
+  @@index([status])
+}
+
+// FR-HCM-004: Timesheet — jam kerja ke project/WBS
+model Timesheet {
+  id           String   @id @default(cuid())
+  employeeId   String
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id])
+  wbsItemId    String?
+  wbsItem      WbsItem? @relation(fields: [wbsItemId], references: [id])
+  workDate     DateTime @default(now())
+  hours        Decimal  @db.Decimal(5, 2)
+  activity     String?
+  description  String?
+  status       String   @default("SUBMITTED") // SUBMITTED | APPROVED | REJECTED
+  approvedBy   String?
+  approvedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([projectId])
   @@index([status])
 }
 

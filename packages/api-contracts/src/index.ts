@@ -7,3 +7,4 @@ export * from './inventory';
 export * from './approval';
 export * from './finance';
 export * from './construction';
+export * from './hcm';
