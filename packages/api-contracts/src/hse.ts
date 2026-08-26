@@ -12,7 +12,7 @@ export const safetyObservationSchema = z.object({
   resolvedAt: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type SafetyObservation = z.infer<typeof safetyObservationSchema>;
 
@@ -63,7 +63,7 @@ export const hseIncidentSchema = z.object({
   reportedBy: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
   correctiveActions: z.array(correctiveActionSchema).optional(),
 });
 export type HseIncident = z.infer<typeof hseIncidentSchema>;
@@ -91,7 +91,7 @@ export const permitToWorkSchema = z.object({
   revokedBy: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  project: z.object({ code: z.string(), name: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
 });
 export type PermitToWork = z.infer<typeof permitToWorkSchema>;
 

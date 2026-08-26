@@ -17,7 +17,7 @@ export const riskSchema = z.object({
   status: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  project: z.object({ code: z.string() }).optional(),
+  project: z.object({ code: z.string() }).nullable().optional(),
 });
 export type Risk = z.infer<typeof riskSchema>;
 
@@ -79,7 +79,7 @@ export const legalCaseSchema = z.object({
   description: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  project: z.object({ code: z.string() }).optional(),
+  project: z.object({ code: z.string() }).nullable().optional(),
 });
 export type LegalCase = z.infer<typeof legalCaseSchema>;
 
