@@ -4,21 +4,23 @@ import { getJson, postJson } from '@/shared/lib/http';
 
 export const approvalKeys = {
   all: ['approvals'] as const,
-  tasks: () => [...approvalKeys.all, 'tasks'] as const,
+  tasks: (params?: { page: number; pageSize: number }) => [...approvalKeys.all, 'tasks', params ?? {}] as const,
   workflows: () => [...approvalKeys.all, 'workflows'] as const,
 };
 
-export function useApprovalTasks() {
+export function useApprovalTasks(params?: { page: number; pageSize: number }) {
   return useQuery({
-    queryKey: approvalKeys.tasks(),
+    queryKey: approvalKeys.tasks(params),
     queryFn: async () => {
-      const data = await getJson<{ items: unknown; total: number }>('/approvals');
+      const qs = params ? `?page=${params.page}&pageSize=${params.pageSize}` : '';
+      const data = await getJson<{ items: unknown; total: number }>(`/approvals${qs}`);
       return {
         items: approvalTaskSchema.array().parse(data.items),
         total: data.total,
       };
     },
     refetchInterval: 15000,
+    placeholderData: (prev) => prev,
   });
 }
 

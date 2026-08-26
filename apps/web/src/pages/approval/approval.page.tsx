@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid } from '@aec/ui';
 import { useApprovalTasks, useDecideApproval, type ApprovalTask } from '@/features/approval';
@@ -81,7 +82,11 @@ function DecideButtons({ task }: { task: ApprovalTask }) {
 }
 
 export function ApprovalPage() {
-  const { data, isLoading, isError, refetch } = useApprovalTasks();
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 20 });
+  const { data, isLoading, isError, refetch } = useApprovalTasks({
+    page: pagination.pageIndex + 1,
+    pageSize: pagination.pageSize,
+  });
 
   return (
     <div>
@@ -91,7 +96,7 @@ export function ApprovalPage() {
           <p className="mt-1 text-body-sm text-neutral-500">Workflow approval PR/PO — maker-checker (FR-FND-007, BR-003)</p>
         </div>
         <Badge variant={data && data.total > 0 ? 'warning' : 'success'}>
-          {data?.total ?? 0} pending
+          {data?.total ?? 0} task
         </Badge>
       </div>
 
@@ -99,7 +104,9 @@ export function ApprovalPage() {
         <DataGrid
           columns={columns}
           data={data?.items ?? []}
-          rowCount={data?.items.length ?? 0}
+          rowCount={data?.total ?? 0}
+          pagination={pagination}
+          onPaginationChange={setPagination}
           isLoading={isLoading}
           isError={isError}
           onRetry={() => refetch()}

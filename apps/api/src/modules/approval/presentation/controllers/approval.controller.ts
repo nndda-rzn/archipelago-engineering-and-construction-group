@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
@@ -16,8 +16,14 @@ export class ApprovalController {
 
   @Get()
   @Permissions('Approval.VIEW')
-  listTasks(@Req() request: { user?: { sub?: string } }) {
-    return this.task.listTasks(request.user?.sub ?? 'system');
+  listTasks(
+    @Req() request: { user?: { sub?: string } },
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    const p = Math.max(1, Number(page) || 1);
+    const ps = Math.min(200, Math.max(1, Number(pageSize) || 20));
+    return this.task.listTasks(request.user?.sub ?? 'system', p, ps);
   }
 
   @Post('submit')
