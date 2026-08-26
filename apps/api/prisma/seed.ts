@@ -124,6 +124,7 @@ const permissions = [
   ['AccessReview.VIEW', 'AccessReview', 'VIEW'],
   ['AccessReview.CREATE', 'AccessReview', 'CREATE'],
   ['AccessReview.EDIT', 'AccessReview', 'EDIT'],
+  ['Analytics.VIEW', 'Analytics', 'VIEW'],
   ['WorkPackage.VIEW', 'WorkPackage', 'VIEW'],
   ['WorkPackage.CREATE', 'WorkPackage', 'CREATE'],
   ['WorkPackage.EDIT', 'WorkPackage', 'EDIT'],

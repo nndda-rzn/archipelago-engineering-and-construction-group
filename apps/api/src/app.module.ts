@@ -13,9 +13,10 @@ import { HcmModule } from './modules/hcm';
 import { HseModule } from './modules/hse';
 import { QualityModule } from './modules/quality';
 import { GovernanceModule } from './modules/governance';
+import { AnalyticsModule } from './modules/analytics';
 
 @Module({
-  imports: [FoundationModule, ProjectModule, ProcurementModule, InventoryModule, ApprovalModule, FinanceModule, ConstructionModule, HcmModule, HseModule, QualityModule, GovernanceModule],
+  imports: [FoundationModule, ProjectModule, ProcurementModule, InventoryModule, ApprovalModule, FinanceModule, ConstructionModule, HcmModule, HseModule, QualityModule, GovernanceModule, AnalyticsModule],
   controllers: [HealthController],
   providers: [
     {
