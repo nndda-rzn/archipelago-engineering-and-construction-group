@@ -14,65 +14,65 @@ datasource db {
 
 // FR-FND-001: Multi-Legal Entity
 model LegalEntity {
-  id                String   @id @default(cuid())
-  code              String   @unique // company code, mis. "AEC-CON"
-  legalName         String
-  taxIdentifier     String   @unique
-  country           String
-  functionalCurrency String  @default("IDR")
-  reportingCurrency String   @default("IDR")
-  fiscalCalendar    String   @default("STANDARD")
-  status            String   @default("ACTIVE") // MasterDataStatus
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  code               String   @unique // company code, mis. "AEC-CON"
+  legalName          String
+  taxIdentifier      String   @unique
+  country            String
+  functionalCurrency String   @default("IDR")
+  reportingCurrency  String   @default("IDR")
+  fiscalCalendar     String   @default("STANDARD")
+  status             String   @default("ACTIVE") // MasterDataStatus
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  organizations Organization[]
-  users         User[]
-  projects      Project[]
+  organizations   Organization[]
+  users           User[]
+  projects        Project[]
   chartOfAccounts ChartOfAccount[]
-  journals      Journal[]
-  employees     Employee[]
-  equipment     Equipment[]
-  legalCases    LegalCase[]
+  journals        Journal[]
+  employees       Employee[]
+  equipment       Equipment[]
+  legalCases      LegalCase[]
 }
 
 // FR-FND-002: Effective-dated Organization
 model Organization {
-  id          String   @id @default(cuid())
+  id            String         @id @default(cuid())
   legalEntityId String
-  legalEntity LegalEntity @relation(fields: [legalEntityId], references: [id])
-  name        String
-  orgType     String // GROUP | LEGAL_ENTITY | BUSINESS_UNIT | DIVISION | REGION | BRANCH | DEPARTMENT | SECTION
-  parentId    String?
-  parent      Organization?  @relation("OrgHierarchy", fields: [parentId], references: [id])
-  children    Organization[] @relation("OrgHierarchy")
+  legalEntity   LegalEntity    @relation(fields: [legalEntityId], references: [id])
+  name          String
+  orgType       String // GROUP | LEGAL_ENTITY | BUSINESS_UNIT | DIVISION | REGION | BRANCH | DEPARTMENT | SECTION
+  parentId      String?
+  parent        Organization?  @relation("OrgHierarchy", fields: [parentId], references: [id])
+  children      Organization[] @relation("OrgHierarchy")
   effectiveFrom DateTime
   effectiveTo   DateTime?
-  status      String   @default("ACTIVE")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status        String         @default("ACTIVE")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
-  users       User[]
+  users User[]
 }
 
 // FR-FND-003: User (employee mapping disederhanakan untuk baseline)
 model User {
-  id            String   @id @default(cuid())
-  username      String   @unique
-  email         String   @unique
-  displayName   String
-  passwordHash  String
-  legalEntityId String?
-  legalEntity   LegalEntity? @relation(fields: [legalEntityId], references: [id])
+  id             String        @id @default(cuid())
+  username       String        @unique
+  email          String        @unique
+  displayName    String
+  passwordHash   String
+  legalEntityId  String?
+  legalEntity    LegalEntity?  @relation(fields: [legalEntityId], references: [id])
   organizationId String?
-  organization  Organization? @relation(fields: [organizationId], references: [id])
-  status        String   @default("ACTIVE")
-  lastLoginAt   DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  status         String        @default("ACTIVE")
+  lastLoginAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
-  userRoles     UserRole[]
-  employee      Employee?
+  userRoles UserRole[]
+  employee  Employee?
 }
 
 // FR-FND-004: Role-Based Access Control — Resource + Action + Scope
@@ -90,8 +90,8 @@ model Role {
 }
 
 model Permission {
-  id          String @id @default(cuid())
-  code        String @unique // mis. "PurchaseOrder.APPROVE"
+  id          String  @id @default(cuid())
+  code        String  @unique // mis. "PurchaseOrder.APPROVE"
   resource    String // mis. "PurchaseOrder"
   action      String // mis. "APPROVE"
   description String?
@@ -112,9 +112,9 @@ model RolePermission {
 }
 
 model UserRole {
-  userId String
-  roleId String
-  effectiveFrom DateTime @default(now())
+  userId        String
+  roleId        String
+  effectiveFrom DateTime  @default(now())
   effectiveTo   DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -127,71 +127,74 @@ model UserRole {
 
 // FR-PRJ-001: Project Master
 model Project {
-  id             String   @id @default(cuid())
-  code           String   @unique // mis. "PRJ-EPC-2027-014"
-  name           String
-  client         String
-  legalEntityId  String
-  legalEntity    LegalEntity @relation(fields: [legalEntityId], references: [id])
-  businessUnit   String?
-  location       String?
-  currency       String   @default("IDR")
-  contractValue  Decimal? @db.Decimal(18, 2)
-  advanceAmount  Decimal? @db.Decimal(18, 2) // uang muka (DP) dari klien (FR-CMR-004)
-  advanceRecoveryRate Decimal @default(0) @db.Decimal(5, 2) // % recovery DP per progress claim
-  startDate      DateTime?
-  completionDate DateTime?
-  director       String?
-  manager        String?
-  status         String   @default("PLANNING") // PLANNING | ACTIVE | ON_HOLD | COMPLETED | CLOSED
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                  String      @id @default(cuid())
+  code                String      @unique // mis. "PRJ-EPC-2027-014"
+  name                String
+  client              String
+  legalEntityId       String
+  legalEntity         LegalEntity @relation(fields: [legalEntityId], references: [id])
+  businessUnit        String?
+  location            String?
+  currency            String      @default("IDR")
+  contractValue       Decimal?    @db.Decimal(18, 2)
+  advanceAmount       Decimal?    @db.Decimal(18, 2) // uang muka (DP) dari klien (FR-CMR-004)
+  advanceRecoveryRate Decimal     @default(0) @db.Decimal(5, 2) // % recovery DP per progress claim
+  startDate           DateTime?
+  completionDate      DateTime?
+  director            String?
+  manager             String?
+  status              String      @default("PLANNING") // PLANNING | ACTIVE | ON_HOLD | COMPLETED | CLOSED
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
 
-  wbsItems       WbsItem[]
-  budgetItems    BudgetItem[]
-  purchaseRequisitions PurchaseRequisition[]
-  purchaseOrders       PurchaseOrder[]
-  warehouses     Warehouse[]
-  goodsReceipts  GoodsReceipt[]
-  stockLedgerEntries StockLedgerEntry[]
-  materialIssues MaterialIssue[]
-  adjustments   StockAdjustment[]
-  opnames       StockOpname[]
-  stockTransfers StockTransfer[]
-  vendorInvoices VendorInvoice[]
-  payments      Payment[]
-  journalLines  JournalLine[]
-  progressClaims ProgressClaim[]
-  clientInvoices ClientInvoice[]
-  collections    Collection[]
-  variations     ProjectVariation[]
-  subcontracts   Subcontract[]
-  assignments    ProjectAssignment[]
-  timesheets     Timesheet[]
-  equipmentAssignments EquipmentAssignment[]
+  wbsItems              WbsItem[]
+  budgetItems           BudgetItem[]
+  purchaseRequisitions  PurchaseRequisition[]
+  purchaseOrders        PurchaseOrder[]
+  warehouses            Warehouse[]
+  goodsReceipts         GoodsReceipt[]
+  stockLedgerEntries    StockLedgerEntry[]
+  materialIssues        MaterialIssue[]
+  adjustments           StockAdjustment[]
+  opnames               StockOpname[]
+  stockTransfers        StockTransfer[]
+  vendorInvoices        VendorInvoice[]
+  payments              Payment[]
+  journalLines          JournalLine[]
+  progressClaims        ProgressClaim[]
+  clientInvoices        ClientInvoice[]
+  collections           Collection[]
+  variations            ProjectVariation[]
+  subcontracts          Subcontract[]
+  assignments           ProjectAssignment[]
+  timesheets            Timesheet[]
+  equipmentAssignments  EquipmentAssignment[]
   equipmentUtilizations EquipmentUtilization[]
-  equipmentUsages EquipmentUsage[]
-  payrollAllocations PayrollAllocation[]
-  safetyObservations SafetyObservation[]
-  hseIncidents       HseIncident[]
-  permitsToWork      PermitToWork[]
-  itps               Itp[]
-  inspections        InspectionRequest[]
-  ncrs               Ncr[]
-  punchListItems     PunchListItem[]
-  risks              Risk[]
-  legalCases         LegalCase[]
-  contracts          Contract[]
-  deliverables       Deliverable[]
-  drawings           Drawing[]
-  rfis               Rfi[]
-  submittals         Submittal[]
-  transmittals       Transmittal[]
-  rfqs           Rfq[]
-  workPackages   ConstructionWorkPackage[]
-  dailyReports   ConstructionDailyReport[]
-  commissioningSystems CommissioningSystem[]
+  equipmentUsages       EquipmentUsage[]
+  payrollAllocations    PayrollAllocation[]
+  safetyObservations    SafetyObservation[]
+  hseIncidents          HseIncident[]
+  permitsToWork         PermitToWork[]
+  itps                  Itp[]
+  inspections           InspectionRequest[]
+  ncrs                  Ncr[]
+  punchListItems        PunchListItem[]
+  risks                 Risk[]
+  legalCases            LegalCase[]
+  contracts             Contract[]
+  deliverables          Deliverable[]
+  drawings              Drawing[]
+  rfis                  Rfi[]
+  submittals            Submittal[]
+  transmittals          Transmittal[]
+  rfqs                  Rfq[]
+  workPackages          ConstructionWorkPackage[]
+  dailyReports          ConstructionDailyReport[]
+  commissioningSystems  CommissioningSystem[]
   handoverPackages      HandoverPackage[]
+  costCodes             CostCode[]
+  controlAccounts       ControlAccount[]
+  forecasts             Forecast[]
 
   @@index([legalEntityId])
   @@index([status])
@@ -199,32 +202,34 @@ model Project {
 
 // FR-PRJ-002: WBS — hierarchical, unlimited practical depth
 model WbsItem {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   code        String // mis. "1", "1.1", "1.1.1"
   name        String
   description String?
   parentId    String?
   parent      WbsItem?  @relation("WbsHierarchy", fields: [parentId], references: [id])
   children    WbsItem[] @relation("WbsHierarchy")
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  budgetItems BudgetItem[]
-  requisitions PurchaseRequisition[]
-  poItems      PurchaseOrderItem[]
-  goodsReceiptItems GoodsReceiptItem[]
+  budgetItems        BudgetItem[]
+  requisitions       PurchaseRequisition[]
+  poItems            PurchaseOrderItem[]
+  goodsReceiptItems  GoodsReceiptItem[]
   stockLedgerEntries StockLedgerEntry[]
   materialIssueItems MaterialIssueItem[]
-  adjustmentItems StockAdjustmentItem[]
-  opnameItems   StockOpnameItem[]
-  transferItems  StockTransferItem[]
-  journalLines   JournalLine[]
-  rfqItems       RfqItem[]
-  workPackages   ConstructionWorkPackage[]
-  timesheets     Timesheet[]
+  adjustmentItems    StockAdjustmentItem[]
+  opnameItems        StockOpnameItem[]
+  transferItems      StockTransferItem[]
+  journalLines       JournalLine[]
+  rfqItems           RfqItem[]
+  workPackages       ConstructionWorkPackage[]
+  timesheets         Timesheet[]
+  costCodes          CostCode[]
+  controlAccounts    ControlAccount[]
 
   @@unique([projectId, code])
   @@index([projectId])
@@ -232,15 +237,15 @@ model WbsItem {
 
 // FR-PRJ-005/006: Budget baseline per WBS + cost type
 model BudgetItem {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   projectId String
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   wbsItemId String
-  wbsItem   WbsItem @relation(fields: [wbsItemId], references: [id], onDelete: Cascade)
-  costType  String  @default("DIRECT") // DIRECT | LABOR | MATERIAL | SUBCONTRACTOR | EQUIPMENT | INDIRECT | OVERHEAD
-  amount    Decimal @db.Decimal(18, 2) // nilai budget (baseline)
-  version   Int     @default(1)
-  status    String  @default("DRAFT") // DRAFT | PUBLISHED
+  wbsItem   WbsItem  @relation(fields: [wbsItemId], references: [id], onDelete: Cascade)
+  costType  String   @default("DIRECT") // DIRECT | LABOR | MATERIAL | SUBCONTRACTOR | EQUIPMENT | INDIRECT | OVERHEAD
+  amount    Decimal  @db.Decimal(18, 2) // nilai budget (baseline)
+  version   Int      @default(1)
+  status    String   @default("DRAFT") // DRAFT | PUBLISHED
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -248,63 +253,127 @@ model BudgetItem {
   @@index([projectId])
 }
 
+// ─── Project Controls (Fase 11B) ────────────────────────────────────────────
+
+// FR-PRJ-003: CBS & cost code — cost transaction terhubung Project/WBS/CostCode/CostType
+model CostCode {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  wbsItemId String?
+  wbsItem   WbsItem? @relation(fields: [wbsItemId], references: [id], onDelete: SetNull)
+  code      String // mis. "MAT-01", "LAB-02"
+  name      String
+  costType  String   @default("DIRECT") // DIRECT | INDIRECT | LABOR | MATERIAL | SUBCONTRACTOR | EQUIPMENT | OVERHEAD
+  status    String   @default("ACTIVE") // ACTIVE | INACTIVE
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, code])
+  @@index([projectId])
+  @@index([wbsItemId])
+}
+
+// FR-PRJ-004: Control account — WBS + responsible manager + budget + schedule + progress + EV
+model ControlAccount {
+  id                 String    @id @default(cuid())
+  projectId          String
+  project            Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  wbsItemId          String
+  wbsItem            WbsItem   @relation(fields: [wbsItemId], references: [id], onDelete: Cascade)
+  code               String // mis. "CA-1"
+  name               String
+  responsibleManager String // nama manajer penanggung jawab
+  budgetAmount       Decimal   @default(0) @db.Decimal(18, 2)
+  plannedValue       Decimal   @default(0) @db.Decimal(18, 2) // PV baseline (nilai pekerjaan dijadwalkan)
+  scheduleStart      DateTime?
+  scheduleEnd        DateTime?
+  status             String    @default("ACTIVE") // ACTIVE | CLOSED
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@unique([projectId, code])
+  @@index([projectId])
+  @@index([wbsItemId])
+}
+
+// FR-PRJ-010: Forecast — ETC, EAC, VAC, version
+model Forecast {
+  id                   String   @id @default(cuid())
+  projectId            String
+  project              Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  version              Int      @default(1)
+  period               String? // mis. "2026-08"
+  estimateAtCompletion Decimal  @db.Decimal(18, 2) // EAC
+  estimateToComplete   Decimal  @default(0) @db.Decimal(18, 2) // ETC
+  varianceAtCompletion Decimal  @default(0) @db.Decimal(18, 2) // VAC = budget - EAC
+  status               String   @default("DRAFT") // DRAFT | APPROVED
+  note                 String?
+  createdBy            String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([projectId, version])
+}
+
 // ─── Procurement domain ───────────────────────────────────────────────────────
 
 // FR-PRO-001: Purchase Requisition
 model PurchaseRequisition {
-  id        String   @id @default(cuid())
-  prNumber  String   @unique // mis. "PR-2027-EPC-000001"
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id])
-  wbsItemId String?
-  wbsItem   WbsItem? @relation(fields: [wbsItemId], references: [id])
+  id          String   @id @default(cuid())
+  prNumber    String   @unique // mis. "PR-2027-EPC-000001"
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  wbsItemId   String?
+  wbsItem     WbsItem? @relation(fields: [wbsItemId], references: [id])
   requestedBy String
   requestedAt DateTime @default(now())
-  status    String   @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | REJECTED | CANCELLED
+  status      String   @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | REJECTED | CANCELLED
   description String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  items     PurchaseRequisitionItem[]
+  items          PurchaseRequisitionItem[]
   purchaseOrders PurchaseOrder[]
-  rfqs      Rfq[]
+  rfqs           Rfq[]
 
   @@index([projectId])
   @@index([status])
 }
 
 model PurchaseRequisitionItem {
-  id          String   @id @default(cuid())
-  requisitionId String
-  requisition PurchaseRequisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
-  description String
-  quantity    Decimal  @db.Decimal(18, 2)
-  unit        String   @default("EA")
-  estimatedUnitPrice Decimal? @db.Decimal(18, 2)
-  estimatedTotal Decimal? @db.Decimal(18, 2)
+  id                 String              @id @default(cuid())
+  requisitionId      String
+  requisition        PurchaseRequisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  description        String
+  quantity           Decimal             @db.Decimal(18, 2)
+  unit               String              @default("EA")
+  estimatedUnitPrice Decimal?            @db.Decimal(18, 2)
+  estimatedTotal     Decimal?            @db.Decimal(18, 2)
 
   @@index([requisitionId])
 }
 
 // FR-PRO-007: Purchase Order → commitment
 model PurchaseOrder {
-  id        String   @id @default(cuid())
-  poNumber  String   @unique // mis. "PO-2027-EPC-000001"
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id])
+  id            String               @id @default(cuid())
+  poNumber      String               @unique // mis. "PO-2027-EPC-000001"
+  projectId     String
+  project       Project              @relation(fields: [projectId], references: [id])
   requisitionId String?
-  requisition PurchaseRequisition? @relation(fields: [requisitionId], references: [id])
-  vendor    String
-  currency  String   @default("IDR")
-  totalAmount Decimal @db.Decimal(18, 2) @default(0)
-  status    String   @default("DRAFT") // DRAFT | APPROVED | RELEASED | CANCELLED
-  issuedAt  DateTime?
-  releasedBy String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  requisition   PurchaseRequisition? @relation(fields: [requisitionId], references: [id])
+  vendor        String
+  currency      String               @default("IDR")
+  totalAmount   Decimal              @default(0) @db.Decimal(18, 2)
+  status        String               @default("DRAFT") // DRAFT | APPROVED | RELEASED | CANCELLED
+  issuedAt      DateTime?
+  releasedBy    String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
 
-  items     PurchaseOrderItem[]
-  goodsReceipts GoodsReceipt[]
+  items          PurchaseOrderItem[]
+  goodsReceipts  GoodsReceipt[]
   vendorInvoices VendorInvoice[]
 
   @@index([projectId])
@@ -312,18 +381,18 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id         String   @id @default(cuid())
+  id              String        @id @default(cuid())
   purchaseOrderId String
-  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  description String
-  quantity   Decimal  @db.Decimal(18, 2)
-  unit       String   @default("EA")
-  unitPrice  Decimal  @db.Decimal(18, 2)
-  totalPrice Decimal  @db.Decimal(18, 2)
-  wbsItemId  String?
-  wbsItem    WbsItem? @relation(fields: [wbsItemId], references: [id])
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  description     String
+  quantity        Decimal       @db.Decimal(18, 2)
+  unit            String        @default("EA")
+  unitPrice       Decimal       @db.Decimal(18, 2)
+  totalPrice      Decimal       @db.Decimal(18, 2)
+  wbsItemId       String?
+  wbsItem         WbsItem?      @relation(fields: [wbsItemId], references: [id])
 
-  goodsReceipts GoodsReceiptItem[]
+  goodsReceipts      GoodsReceiptItem[]
   vendorInvoiceItems VendorInvoiceItem[]
 
   @@index([purchaseOrderId])
@@ -333,46 +402,46 @@ model PurchaseOrderItem {
 
 // FR-INV-002: Warehouse — corporate | project | temporary | virtual
 model Warehouse {
-  id         String   @id @default(cuid())
-  code       String   @unique // mis. "WH-PROJ-014"
-  name       String
-  warehouseType String @default("PROJECT") // CORPORATE | PROJECT | TEMPORARY | VIRTUAL
-  projectId  String?
-  project    Project? @relation(fields: [projectId], references: [id])
-  location   String?
-  status     String   @default("ACTIVE")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id            String   @id @default(cuid())
+  code          String   @unique // mis. "WH-PROJ-014"
+  name          String
+  warehouseType String   @default("PROJECT") // CORPORATE | PROJECT | TEMPORARY | VIRTUAL
+  projectId     String?
+  project       Project? @relation(fields: [projectId], references: [id])
+  location      String?
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  goodsReceipts GoodsReceipt[]
+  goodsReceipts      GoodsReceipt[]
   stockLedgerEntries StockLedgerEntry[]
-  materialIssues MaterialIssue[]
-  adjustments   StockAdjustment[]
-  opnames       StockOpname[]
-  transfersFrom StockTransfer[] @relation("TransferFrom")
-  transfersTo   StockTransfer[] @relation("TransferTo")
+  materialIssues     MaterialIssue[]
+  adjustments        StockAdjustment[]
+  opnames            StockOpname[]
+  transfersFrom      StockTransfer[]    @relation("TransferFrom")
+  transfersTo        StockTransfer[]    @relation("TransferTo")
 
   @@index([projectId])
 }
 
 // FR-PRO-009 (leg Receipt): terima barang dari RELEASED PO → stock ledger
 model GoodsReceipt {
-  id         String   @id @default(cuid())
-  grNumber   String   @unique // mis. "GR-2027-EPC-000001"
-  poId       String
-  po         PurchaseOrder @relation(fields: [poId], references: [id])
-  projectId  String
-  project    Project  @relation(fields: [projectId], references: [id])
+  id          String        @id @default(cuid())
+  grNumber    String        @unique // mis. "GR-2027-EPC-000001"
+  poId        String
+  po          PurchaseOrder @relation(fields: [poId], references: [id])
+  projectId   String
+  project     Project       @relation(fields: [projectId], references: [id])
   warehouseId String
-  warehouse  Warehouse @relation(fields: [warehouseId], references: [id])
-  receivedAt DateTime @default(now())
-  receivedBy String
-  status     String   @default("POSTED") // DRAFT | POSTED | CANCELLED
-  remark     String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  warehouse   Warehouse     @relation(fields: [warehouseId], references: [id])
+  receivedAt  DateTime      @default(now())
+  receivedBy  String
+  status      String        @default("POSTED") // DRAFT | POSTED | CANCELLED
+  remark      String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
-  items      GoodsReceiptItem[]
+  items GoodsReceiptItem[]
 
   @@index([poId])
   @@index([projectId])
@@ -380,41 +449,41 @@ model GoodsReceipt {
 }
 
 model GoodsReceiptItem {
-  id          String   @id @default(cuid())
+  id             String             @id @default(cuid())
   goodsReceiptId String
-  goodsReceipt GoodsReceipt @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
-  poItemId    String?
-  poItem      PurchaseOrderItem? @relation(fields: [poItemId], references: [id])
-  description String
-  quantity    Decimal  @db.Decimal(18, 2) // qty diterima (bisa partial)
-  unit        String   @default("EA")
-  unitPrice   Decimal? @db.Decimal(18, 2)
-  wbsItemId   String?
-  wbsItem     WbsItem? @relation(fields: [wbsItemId], references: [id])
+  goodsReceipt   GoodsReceipt       @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
+  poItemId       String?
+  poItem         PurchaseOrderItem? @relation(fields: [poItemId], references: [id])
+  description    String
+  quantity       Decimal            @db.Decimal(18, 2) // qty diterima (bisa partial)
+  unit           String             @default("EA")
+  unitPrice      Decimal?           @db.Decimal(18, 2)
+  wbsItemId      String?
+  wbsItem        WbsItem?           @relation(fields: [wbsItemId], references: [id])
 
   @@index([goodsReceiptId])
 }
 
 // FR-INV-001: Stock Ledger — immutable movement records, qty current derivable
 model StockLedgerEntry {
-  id         String   @id @default(cuid())
-  projectId  String
-  project    Project  @relation(fields: [projectId], references: [id])
-  wbsItemId  String?
-  wbsItem    WbsItem? @relation(fields: [wbsItemId], references: [id])
-  warehouseId String
-  warehouse  Warehouse @relation(fields: [warehouseId], references: [id])
+  id           String    @id @default(cuid())
+  projectId    String
+  project      Project   @relation(fields: [projectId], references: [id])
+  wbsItemId    String?
+  wbsItem      WbsItem?  @relation(fields: [wbsItemId], references: [id])
+  warehouseId  String
+  warehouse    Warehouse @relation(fields: [warehouseId], references: [id])
   documentType String // GR | ISSUE | TRANSFER_IN | TRANSFER_OUT | ADJUSTMENT | RESERVATION
-  documentId String?  // id dokumen sumber (mis. GoodsReceiptItem.id)
-  reference  String?  // no. dokumen (mis. "GR-2027-EPC-000001")
-  description String?
+  documentId   String? // id dokumen sumber (mis. GoodsReceiptItem.id)
+  reference    String? // no. dokumen (mis. "GR-2027-EPC-000001")
+  description  String?
   movementType String // IN | OUT | ADJUST
-  quantity   Decimal  @db.Decimal(18, 2) // qty bertanda (positif IN / negatif OUT)
-  unit       String   @default("EA")
-  unitPrice  Decimal? @db.Decimal(18, 2)
-  totalValue Decimal? @db.Decimal(18, 2)
-  balanceAfter Decimal @db.Decimal(18, 2) // running balance (immutable snapshot)
-  createdAt  DateTime @default(now())
+  quantity     Decimal   @db.Decimal(18, 2) // qty bertanda (positif IN / negatif OUT)
+  unit         String    @default("EA")
+  unitPrice    Decimal?  @db.Decimal(18, 2)
+  totalValue   Decimal?  @db.Decimal(18, 2)
+  balanceAfter Decimal   @db.Decimal(18, 2) // running balance (immutable snapshot)
+  createdAt    DateTime  @default(now())
 
   @@index([projectId, wbsItemId, warehouseId])
   @@index([documentType, documentId])
@@ -423,22 +492,22 @@ model StockLedgerEntry {
 
 // FR-INV-004: Material Issue — kurangi stock + project consumption
 model MaterialIssue {
-  id         String   @id @default(cuid())
-  issueNumber String  @unique // mis. "MI-2027-EPC-000001"
-  projectId  String
-  project    Project  @relation(fields: [projectId], references: [id])
+  id          String    @id @default(cuid())
+  issueNumber String    @unique // mis. "MI-2027-EPC-000001"
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id])
   warehouseId String
-  warehouse  Warehouse @relation(fields: [warehouseId], references: [id])
-  issuedTo   String // mis. "Tim Konstruksi", subcon, departemen
-  issueReason String @default("CONSTRUCTION") // CONSTRUCTION | MAINTENANCE | CONSUMPTION | OTHERS
-  issuedAt   DateTime @default(now())
-  issuedBy   String
-  remark     String?
-  status     String   @default("POSTED") // DRAFT | POSTED | CANCELLED
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  issuedTo    String // mis. "Tim Konstruksi", subcon, departemen
+  issueReason String    @default("CONSTRUCTION") // CONSTRUCTION | MAINTENANCE | CONSUMPTION | OTHERS
+  issuedAt    DateTime  @default(now())
+  issuedBy    String
+  remark      String?
+  status      String    @default("POSTED") // DRAFT | POSTED | CANCELLED
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  items      MaterialIssueItem[]
+  items MaterialIssueItem[]
 
   @@index([projectId])
   @@index([warehouseId])
@@ -446,16 +515,16 @@ model MaterialIssue {
 }
 
 model MaterialIssueItem {
-  id          String   @id @default(cuid())
+  id              String        @id @default(cuid())
   materialIssueId String
-  materialIssue MaterialIssue @relation(fields: [materialIssueId], references: [id], onDelete: Cascade)
-  description String
-  quantity    Decimal  @db.Decimal(18, 2) // qty keluar (positif di dokumen, ledger OUT negatif)
-  unit        String   @default("EA")
-  unitPrice   Decimal? @db.Decimal(18, 2) // cost saat issue (dari ledger/GR)
-  totalValue  Decimal? @db.Decimal(18, 2)
-  wbsItemId   String?
-  wbsItem     WbsItem? @relation(fields: [wbsItemId], references: [id])
+  materialIssue   MaterialIssue @relation(fields: [materialIssueId], references: [id], onDelete: Cascade)
+  description     String
+  quantity        Decimal       @db.Decimal(18, 2) // qty keluar (positif di dokumen, ledger OUT negatif)
+  unit            String        @default("EA")
+  unitPrice       Decimal?      @db.Decimal(18, 2) // cost saat issue (dari ledger/GR)
+  totalValue      Decimal?      @db.Decimal(18, 2)
+  wbsItemId       String?
+  wbsItem         WbsItem?      @relation(fields: [wbsItemId], references: [id])
 
   @@index([materialIssueId])
 }
@@ -465,18 +534,18 @@ model MaterialIssueItem {
 
 // FR-FND-007: Workflow definition — versioned, conditional steps
 model WorkflowDefinition {
-  id        String   @id @default(cuid())
-  code      String   // mis. "PR_APPROVAL", "PO_APPROVAL"
-  name      String
-  description String?
-  version   Int      @default(1)
-  status    String   @default("DRAFT") // DRAFT | ACTIVE | ARCHIVED
+  id              String   @id @default(cuid())
+  code            String // mis. "PR_APPROVAL", "PO_APPROVAL"
+  name            String
+  description     String?
+  version         Int      @default(1)
+  status          String   @default("DRAFT") // DRAFT | ACTIVE | ARCHIVED
   transactionType String // "PurchaseRequisition" | "PurchaseOrder" | ...
-  createdBy String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  steps     WorkflowStep[]
+  steps WorkflowStep[]
 
   @@unique([code, version])
   @@index([transactionType])
@@ -484,16 +553,16 @@ model WorkflowDefinition {
 }
 
 model WorkflowStep {
-  id            String   @id @default(cuid())
-  definitionId  String
-  definition    WorkflowDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
-  stepOrder     Int      @default(1)
-  name          String // mis. "Approval Manager"
+  id               String             @id @default(cuid())
+  definitionId     String
+  definition       WorkflowDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+  stepOrder        Int                @default(1)
+  name             String // mis. "Approval Manager"
   approverRoleCode String // role yang boleh approve step ini
-  conditionField String? // mis. "totalAmount" — conditional routing
-  conditionOp   String? // ">" | "<" | ">=" | "<=" | "=="
-  conditionValue Decimal? @db.Decimal(18, 2)
-  createdAt     DateTime @default(now())
+  conditionField   String? // mis. "totalAmount" — conditional routing
+  conditionOp      String? // ">" | "<" | ">=" | "<=" | "=="
+  conditionValue   Decimal?           @db.Decimal(18, 2)
+  createdAt        DateTime           @default(now())
 
   @@unique([definitionId, stepOrder])
   @@index([definitionId])
@@ -501,19 +570,19 @@ model WorkflowStep {
 
 // FR-FND-007: Approval step untuk transaksi (DRAFT → SUBMITTED → APPROVED/REJECTED)
 model ApprovalTask {
-  id            String   @id @default(cuid())
-  transactionType String // "PurchaseRequisition" | "PurchaseOrder" | "Budget" | ...
-  transactionId String
-  transactionCode String? // no. dokumen (PR-..., PO-...) untuk display
-  stepName      String   @default("approval")
-  status        String   @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
-  requesterId   String // pembuat transaksi (BR-003: bukan approver)
-  approverId    String? // resolved saat claim/approve
+  id               String    @id @default(cuid())
+  transactionType  String // "PurchaseRequisition" | "PurchaseOrder" | "Budget" | ...
+  transactionId    String
+  transactionCode  String? // no. dokumen (PR-..., PO-...) untuk display
+  stepName         String    @default("approval")
+  status           String    @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
+  requesterId      String // pembuat transaksi (BR-003: bukan approver)
+  approverId       String? // resolved saat claim/approve
   approverRoleCode String // role yang boleh approve (mis. "PROCUREMENT_MANAGER")
-  comment       String?
-  decidedAt     DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  comment          String?
+  decidedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@unique([transactionType, transactionId])
   @@index([status])
@@ -522,22 +591,22 @@ model ApprovalTask {
 
 // FR-INV-006: Stock Adjustment — wajib approval + reason code
 model StockAdjustment {
-  id         String   @id @default(cuid())
-  adjustmentNumber String @unique // mis. "ADJ-2027-EPC-000001"
-  projectId  String
-  project    Project  @relation(fields: [projectId], references: [id])
-  warehouseId String
-  warehouse  Warehouse @relation(fields: [warehouseId], references: [id])
-  reasonCode String // DAMAGE | LOSS | SURPLUS | REVALUATION | OTHERS
-  reason     String?
-  status     String   @default("DRAFT") // DRAFT | APPROVED | REJECTED | CANCELLED
-  adjustedBy String
-  approvedBy String?
-  approvedAt DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id               String    @id @default(cuid())
+  adjustmentNumber String    @unique // mis. "ADJ-2027-EPC-000001"
+  projectId        String
+  project          Project   @relation(fields: [projectId], references: [id])
+  warehouseId      String
+  warehouse        Warehouse @relation(fields: [warehouseId], references: [id])
+  reasonCode       String // DAMAGE | LOSS | SURPLUS | REVALUATION | OTHERS
+  reason           String?
+  status           String    @default("DRAFT") // DRAFT | APPROVED | REJECTED | CANCELLED
+  adjustedBy       String
+  approvedBy       String?
+  approvedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  items      StockAdjustmentItem[]
+  items StockAdjustmentItem[]
 
   @@index([projectId])
   @@index([warehouseId])
@@ -545,73 +614,73 @@ model StockAdjustment {
 }
 
 model StockAdjustmentItem {
-  id            String   @id @default(cuid())
+  id                String          @id @default(cuid())
   stockAdjustmentId String
-  stockAdjustment StockAdjustment @relation(fields: [stockAdjustmentId], references: [id], onDelete: Cascade)
-  description   String
-  quantity      Decimal  @db.Decimal(18, 2) // delta: + surplus, - loss
-  unit          String   @default("EA")
-  unitPrice     Decimal? @db.Decimal(18, 2)
-  wbsItemId     String?
-  wbsItem       WbsItem? @relation(fields: [wbsItemId], references: [id])
+  stockAdjustment   StockAdjustment @relation(fields: [stockAdjustmentId], references: [id], onDelete: Cascade)
+  description       String
+  quantity          Decimal         @db.Decimal(18, 2) // delta: + surplus, - loss
+  unit              String          @default("EA")
+  unitPrice         Decimal?        @db.Decimal(18, 2)
+  wbsItemId         String?
+  wbsItem           WbsItem?        @relation(fields: [wbsItemId], references: [id])
 
   @@index([stockAdjustmentId])
 }
 
 // FR-INV-007: Stock Opname — count sheet + reconciliation
 model StockOpname {
-  id         String   @id @default(cuid())
-  opnameNumber String @unique // mis. "OPN-2027-EPC-000001"
-  projectId  String
-  project    Project  @relation(fields: [projectId], references: [id])
-  warehouseId String
-  warehouse  Warehouse @relation(fields: [warehouseId], references: [id])
-  status     String   @default("IN_PROGRESS") // DRAFT | IN_PROGRESS | RECONCILED | CLOSED
-  countedBy  String
-  countedAt  DateTime @default(now())
-  remark     String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String    @id @default(cuid())
+  opnameNumber String    @unique // mis. "OPN-2027-EPC-000001"
+  projectId    String
+  project      Project   @relation(fields: [projectId], references: [id])
+  warehouseId  String
+  warehouse    Warehouse @relation(fields: [warehouseId], references: [id])
+  status       String    @default("IN_PROGRESS") // DRAFT | IN_PROGRESS | RECONCILED | CLOSED
+  countedBy    String
+  countedAt    DateTime  @default(now())
+  remark       String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  items      StockOpnameItem[]
+  items StockOpnameItem[]
 
   @@index([projectId])
   @@index([warehouseId])
 }
 
 model StockOpnameItem {
-  id         String   @id @default(cuid())
-  stockOpnameId String
-  stockOpname StockOpname @relation(fields: [stockOpnameId], references: [id], onDelete: Cascade)
-  description String
-  bookQuantity Decimal @db.Decimal(18, 2) // stok sistem saat opname
-  actualQuantity Decimal @db.Decimal(18, 2) // hasil hitung fisik
-  difference  Decimal  @db.Decimal(18, 2) // actual - book
-  unit        String   @default("EA")
-  wbsItemId   String?
-  wbsItem     WbsItem? @relation(fields: [wbsItemId], references: [id])
+  id             String      @id @default(cuid())
+  stockOpnameId  String
+  stockOpname    StockOpname @relation(fields: [stockOpnameId], references: [id], onDelete: Cascade)
+  description    String
+  bookQuantity   Decimal     @db.Decimal(18, 2) // stok sistem saat opname
+  actualQuantity Decimal     @db.Decimal(18, 2) // hasil hitung fisik
+  difference     Decimal     @db.Decimal(18, 2) // actual - book
+  unit           String      @default("EA")
+  wbsItemId      String?
+  wbsItem        WbsItem?    @relation(fields: [wbsItemId], references: [id])
 
   @@index([stockOpnameId])
 }
 
 // FR-INV-005: Stock Transfer — dari warehouse ke warehouse, optional in-transit
 model StockTransfer {
-  id         String   @id @default(cuid())
-  transferNumber String @unique // mis. "ST-2027-EPC-000001"
-  projectId  String
-  project    Project  @relation(fields: [projectId], references: [id])
+  id              String    @id @default(cuid())
+  transferNumber  String    @unique // mis. "ST-2027-EPC-000001"
+  projectId       String
+  project         Project   @relation(fields: [projectId], references: [id])
   fromWarehouseId String
-  fromWarehouse Warehouse @relation("TransferFrom", fields: [fromWarehouseId], references: [id])
+  fromWarehouse   Warehouse @relation("TransferFrom", fields: [fromWarehouseId], references: [id])
   toWarehouseId   String
   toWarehouse     Warehouse @relation("TransferTo", fields: [toWarehouseId], references: [id])
-  transferredAt DateTime @default(now())
-  transferredBy String
-  status     String   @default("POSTED") // DRAFT | POSTED | CANCELLED
-  remark     String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  transferredAt   DateTime  @default(now())
+  transferredBy   String
+  status          String    @default("POSTED") // DRAFT | POSTED | CANCELLED
+  remark          String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  items      StockTransferItem[]
+  items StockTransferItem[]
 
   @@index([projectId])
   @@index([fromWarehouseId])
@@ -620,14 +689,14 @@ model StockTransfer {
 }
 
 model StockTransferItem {
-  id            String   @id @default(cuid())
+  id              String        @id @default(cuid())
   stockTransferId String
-  stockTransfer StockTransfer @relation(fields: [stockTransferId], references: [id], onDelete: Cascade)
-  description   String
-  quantity      Decimal  @db.Decimal(18, 2)
-  unit          String   @default("EA")
-  wbsItemId     String?
-  wbsItem       WbsItem? @relation(fields: [wbsItemId], references: [id])
+  stockTransfer   StockTransfer @relation(fields: [stockTransferId], references: [id], onDelete: Cascade)
+  description     String
+  quantity        Decimal       @db.Decimal(18, 2)
+  unit            String        @default("EA")
+  wbsItemId       String?
+  wbsItem         WbsItem?      @relation(fields: [wbsItemId], references: [id])
 
   @@index([stockTransferId])
 }
@@ -637,29 +706,29 @@ model StockTransferItem {
 
 // FR-PRO-009: Vendor Invoice berbasis PO
 model VendorInvoice {
-  id         String   @id @default(cuid())
-  invoiceNumber String @unique // mis. "INV-2027-EPC-000001"
-  poId       String
-  po         PurchaseOrder @relation(fields: [poId], references: [id])
-  projectId  String
-  project    Project  @relation(fields: [projectId], references: [id])
-  vendor     String
+  id              String        @id @default(cuid())
+  invoiceNumber   String        @unique // mis. "INV-2027-EPC-000001"
+  poId            String
+  po              PurchaseOrder @relation(fields: [poId], references: [id])
+  projectId       String
+  project         Project       @relation(fields: [projectId], references: [id])
+  vendor          String
   vendorInvoiceNo String // nomor invoice dari vendor
-  invoiceDate DateTime @default(now())
-  currency   String   @default("IDR")
-  amount     Decimal  @db.Decimal(18, 2)
-  taxAmount  Decimal? @db.Decimal(18, 2)
-  totalAmount Decimal @db.Decimal(18, 2)
-  status     String   @default("DRAFT") // DRAFT | MATCHED | POSTED | REJECTED | CANCELLED
-  matchedAt  DateTime?
-  postedAt   DateTime?
-  postedBy   String?
-  remark     String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  invoiceDate     DateTime      @default(now())
+  currency        String        @default("IDR")
+  amount          Decimal       @db.Decimal(18, 2)
+  taxAmount       Decimal?      @db.Decimal(18, 2)
+  totalAmount     Decimal       @db.Decimal(18, 2)
+  status          String        @default("DRAFT") // DRAFT | MATCHED | POSTED | REJECTED | CANCELLED
+  matchedAt       DateTime?
+  postedAt        DateTime?
+  postedBy        String?
+  remark          String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  items      VendorInvoiceItem[]
-  payments   PaymentItem[]
+  items    VendorInvoiceItem[]
+  payments PaymentItem[]
 
   @@index([poId])
   @@index([projectId])
@@ -667,55 +736,55 @@ model VendorInvoice {
 }
 
 model VendorInvoiceItem {
-  id           String   @id @default(cuid())
-  vendorInvoiceId String
-  vendorInvoice VendorInvoice @relation(fields: [vendorInvoiceId], references: [id], onDelete: Cascade)
-  poItemId     String?
-  poItem       PurchaseOrderItem? @relation(fields: [poItemId], references: [id])
-  description  String
-  quantity     Decimal  @db.Decimal(18, 2)
-  unit         String   @default("EA")
-  unitPrice    Decimal  @db.Decimal(18, 2)
-  totalPrice   Decimal  @db.Decimal(18, 2)
-  receivedQuantity Decimal? @db.Decimal(18, 2) // qty GR terkait (snapshot saat match)
-  matchStatus  String   @default("PENDING") // PENDING | MATCHED | MISMATCH
+  id               String             @id @default(cuid())
+  vendorInvoiceId  String
+  vendorInvoice    VendorInvoice      @relation(fields: [vendorInvoiceId], references: [id], onDelete: Cascade)
+  poItemId         String?
+  poItem           PurchaseOrderItem? @relation(fields: [poItemId], references: [id])
+  description      String
+  quantity         Decimal            @db.Decimal(18, 2)
+  unit             String             @default("EA")
+  unitPrice        Decimal            @db.Decimal(18, 2)
+  totalPrice       Decimal            @db.Decimal(18, 2)
+  receivedQuantity Decimal?           @db.Decimal(18, 2) // qty GR terkait (snapshot saat match)
+  matchStatus      String             @default("PENDING") // PENDING | MATCHED | MISMATCH
 
   @@index([vendorInvoiceId])
 }
 
 // FR-FIN-005/007: Payment — bayar AP dari POSTED invoice
 model Payment {
-  id         String   @id @default(cuid())
-  paymentNumber String @unique // mis. "PAY-2027-EPC-000001"
-  projectId  String
-  project    Project  @relation(fields: [projectId], references: [id])
-  vendor     String
-  bankAccount String? // rekening vendor / bank
-  currency   String   @default("IDR")
-  totalAmount Decimal  @db.Decimal(18, 2)
-  status     String   @default("DRAFT") // DRAFT | APPROVED | PAID | CANCELLED
-  paymentDate DateTime @default(now())
-  paidBy     String?
-  approvedBy String?
-  approvedAt DateTime?
-  reference  String? // no. transfer/bilyet
-  remark     String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id            String    @id @default(cuid())
+  paymentNumber String    @unique // mis. "PAY-2027-EPC-000001"
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id])
+  vendor        String
+  bankAccount   String? // rekening vendor / bank
+  currency      String    @default("IDR")
+  totalAmount   Decimal   @db.Decimal(18, 2)
+  status        String    @default("DRAFT") // DRAFT | APPROVED | PAID | CANCELLED
+  paymentDate   DateTime  @default(now())
+  paidBy        String?
+  approvedBy    String?
+  approvedAt    DateTime?
+  reference     String? // no. transfer/bilyet
+  remark        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  items      PaymentItem[]
+  items PaymentItem[]
 
   @@index([projectId])
   @@index([status])
 }
 
 model PaymentItem {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   paymentId String
-  payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  payment   Payment       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
   invoiceId String
   invoice   VendorInvoice @relation(fields: [invoiceId], references: [id])
-  amount    Decimal  @db.Decimal(18, 2) // bagian yang dibayar dari invoice ini
+  amount    Decimal       @db.Decimal(18, 2) // bagian yang dibayar dari invoice ini
 
   @@index([paymentId])
   @@index([invoiceId])
@@ -726,20 +795,20 @@ model PaymentItem {
 
 // FR-FIN-002: Chart of Accounts
 model ChartOfAccount {
-  id            String   @id @default(cuid())
+  id            String           @id @default(cuid())
   legalEntityId String
-  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id])
+  legalEntity   LegalEntity      @relation(fields: [legalEntityId], references: [id])
   code          String // mis. "1100" (Kas), "2100" (Utang Usaha)
   name          String
-  accountType   String   @default("ASSET") // ASSET | LIABILITY | EQUITY | REVENUE | EXPENSE
-  normalBalance String   @default("DEBIT") // DEBIT | CREDIT
+  accountType   String           @default("ASSET") // ASSET | LIABILITY | EQUITY | REVENUE | EXPENSE
+  normalBalance String           @default("DEBIT") // DEBIT | CREDIT
   parentId      String?
-  parent        ChartOfAccount? @relation("CoaHierarchy", fields: [parentId], references: [id])
+  parent        ChartOfAccount?  @relation("CoaHierarchy", fields: [parentId], references: [id])
   children      ChartOfAccount[] @relation("CoaHierarchy")
-  isActive      Boolean  @default(true)
+  isActive      Boolean          @default(true)
   description   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   journalLines JournalLine[]
 
@@ -749,20 +818,20 @@ model ChartOfAccount {
 
 // FR-FIN-003/004: Journal — double-entry, balanced (debit = credit)
 model Journal {
-  id            String   @id @default(cuid())
-  journalNumber String   @unique // mis. "JRN-2027-EPC-000001"
+  id            String      @id @default(cuid())
+  journalNumber String      @unique // mis. "JRN-2027-EPC-000001"
   legalEntityId String
   legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id])
-  date          DateTime @default(now())
-  source        String   @default("MANUAL") // MANUAL | INVOICE | PAYMENT
+  date          DateTime    @default(now())
+  source        String      @default("MANUAL") // MANUAL | INVOICE | PAYMENT
   sourceId      String? // id dokumen sumber (VendorInvoice.id / Payment.id)
   reference     String? // no. dokumen sumber (INV-..., PAY-...)
   description   String
-  status        String   @default("DRAFT") // DRAFT | POSTED | REVERSED
+  status        String      @default("DRAFT") // DRAFT | POSTED | REVERSED
   postedAt      DateTime?
   postedBy      String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   lines JournalLine[]
 
@@ -773,18 +842,18 @@ model Journal {
 }
 
 model JournalLine {
-  id        String   @id @default(cuid())
-  journalId String
-  journal   Journal  @relation(fields: [journalId], references: [id], onDelete: Cascade)
-  accountId String
-  account   ChartOfAccount @relation(fields: [accountId], references: [id])
+  id          String         @id @default(cuid())
+  journalId   String
+  journal     Journal        @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  accountId   String
+  account     ChartOfAccount @relation(fields: [accountId], references: [id])
   description String?
-  debit     Decimal  @db.Decimal(18, 2) @default(0)
-  credit    Decimal  @db.Decimal(18, 2) @default(0)
-  projectId String?
-  project   Project? @relation(fields: [projectId], references: [id])
-  wbsItemId String?
-  wbsItem   WbsItem? @relation(fields: [wbsItemId], references: [id])
+  debit       Decimal        @default(0) @db.Decimal(18, 2)
+  credit      Decimal        @default(0) @db.Decimal(18, 2)
+  projectId   String?
+  project     Project?       @relation(fields: [projectId], references: [id])
+  wbsItemId   String?
+  wbsItem     WbsItem?       @relation(fields: [wbsItemId], references: [id])
 
   @@index([journalId])
   @@index([accountId])
@@ -796,36 +865,36 @@ model JournalLine {
 
 // FR-FIN-008: Progress Claim — klaim progres pekerjaan ke klien
 model ProgressClaim {
-  id            String   @id @default(cuid())
-  claimNumber   String   @unique // mis. "CLM-2027-EPC-000001"
-  projectId     String
-  project       Project  @relation(fields: [projectId], references: [id])
-  claimDate     DateTime @default(now())
-  period        String? // mis. "2026-08"
-  description   String?
-  amount        Decimal  @db.Decimal(18, 2) // nilai klaim diajukan
-  claimType     String   @default("PROGRESS") // PROGRESS | COST | TIME | EOT | CONTRACTUAL (FR-CMR-007)
+  id                     String    @id @default(cuid())
+  claimNumber            String    @unique // mis. "CLM-2027-EPC-000001"
+  projectId              String
+  project                Project   @relation(fields: [projectId], references: [id])
+  claimDate              DateTime  @default(now())
+  period                 String? // mis. "2026-08"
+  description            String?
+  amount                 Decimal   @db.Decimal(18, 2) // nilai klaim diajukan
+  claimType              String    @default("PROGRESS") // PROGRESS | COST | TIME | EOT | CONTRACTUAL (FR-CMR-007)
   requestedExtensionDays Int? // untuk TIME/EOT claim — jumlah hari EOT
-  status        String   @default("DRAFT") // DRAFT | CERTIFIED | REJECTED | REVISED
-  certifiedAmount Decimal? @db.Decimal(18, 2) // nilai sertifikasi gross
-  retentionRate  Decimal  @default(0) @db.Decimal(5, 2) // % retensi kontrak (FR-CMR-003)
-  retentionAmount Decimal? @db.Decimal(18, 2) // retention = certifiedAmount x rate / 100
-  netCertifiedAmount Decimal? @db.Decimal(18, 2) // certified - retention (nilai net ditagih)
-  recoveryAmount Decimal? @db.Decimal(18, 2) // recovery DP pada claim ini (FR-CMR-004)
-  cumulativeRecovered Decimal? @db.Decimal(18, 2) // total recovery DP s/d claim ini
-  certifiedBy   String?
-  certifiedAt   DateTime?
-  remark        String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  status                 String    @default("DRAFT") // DRAFT | CERTIFIED | REJECTED | REVISED
+  certifiedAmount        Decimal?  @db.Decimal(18, 2) // nilai sertifikasi gross
+  retentionRate          Decimal   @default(0) @db.Decimal(5, 2) // % retensi kontrak (FR-CMR-003)
+  retentionAmount        Decimal?  @db.Decimal(18, 2) // retention = certifiedAmount x rate / 100
+  netCertifiedAmount     Decimal?  @db.Decimal(18, 2) // certified - retention (nilai net ditagih)
+  recoveryAmount         Decimal?  @db.Decimal(18, 2) // recovery DP pada claim ini (FR-CMR-004)
+  cumulativeRecovered    Decimal?  @db.Decimal(18, 2) // total recovery DP s/d claim ini
+  certifiedBy            String?
+  certifiedAt            DateTime?
+  remark                 String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   clientInvoice ClientInvoice?
 
   // FR-CMR-001/002: Claim berbasis work package — physical ≠ billable (BR-013)
-  workPackageId String?
-  workPackage   ConstructionWorkPackage? @relation(fields: [workPackageId], references: [id])
-  physicalProgressAtClaim Decimal? @db.Decimal(5, 2) // snapshot progress fisik saat klaim
-  billableProgress Decimal? @db.Decimal(5, 2) // progress yang ditagihkan (bisa ≠ physical)
+  workPackageId           String?
+  workPackage             ConstructionWorkPackage? @relation(fields: [workPackageId], references: [id])
+  physicalProgressAtClaim Decimal?                 @db.Decimal(5, 2) // snapshot progress fisik saat klaim
+  billableProgress        Decimal?                 @db.Decimal(5, 2) // progress yang ditagihkan (bisa ≠ physical)
 
   @@index([projectId])
   @@index([status])
@@ -835,26 +904,26 @@ model ProgressClaim {
 
 // FR-FIN-009: Client Invoice — faktur AR ke klien (dari claim CERTIFIED)
 model ClientInvoice {
-  id            String   @id @default(cuid())
-  invoiceNumber String   @unique // mis. "CINV-2027-EPC-000001"
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique // mis. "CINV-2027-EPC-000001"
   projectId     String
-  project       Project  @relation(fields: [projectId], references: [id])
-  claimId       String   @unique
+  project       Project       @relation(fields: [projectId], references: [id])
+  claimId       String        @unique
   claim         ProgressClaim @relation(fields: [claimId], references: [id])
   client        String
-  invoiceDate   DateTime @default(now())
-  currency      String   @default("IDR")
-  amount        Decimal  @db.Decimal(18, 2) // nilai tanpa pajak (certified amount)
-  taxAmount     Decimal? @db.Decimal(18, 2) // PPN keluaran
-  totalAmount   Decimal  @db.Decimal(18, 2)
-  status        String   @default("DRAFT") // DRAFT | POSTED | PAID | CANCELLED
+  invoiceDate   DateTime      @default(now())
+  currency      String        @default("IDR")
+  amount        Decimal       @db.Decimal(18, 2) // nilai tanpa pajak (certified amount)
+  taxAmount     Decimal?      @db.Decimal(18, 2) // PPN keluaran
+  totalAmount   Decimal       @db.Decimal(18, 2)
+  status        String        @default("DRAFT") // DRAFT | POSTED | PAID | CANCELLED
   postedAt      DateTime?
   postedBy      String?
   remark        String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  collections  CollectionItem[]
+  collections CollectionItem[]
 
   @@index([projectId])
   @@index([claimId])
@@ -863,35 +932,35 @@ model ClientInvoice {
 
 // FR-FIN-010: Collection — penerimaan pembayaran dari klien (AR settlement)
 model Collection {
-  id            String   @id @default(cuid())
-  collectionNumber String @unique // mis. "COL-2027-EPC-000001"
-  projectId     String
-  project       Project  @relation(fields: [projectId], references: [id])
-  client        String
-  bankAccount   String? // rekening penerima
-  reference     String? // no. transfer/bilyet
-  currency      String   @default("IDR")
-  totalAmount   Decimal  @db.Decimal(18, 2)
-  status        String   @default("DRAFT") // DRAFT | POSTED | CANCELLED
-  collectedAt   DateTime @default(now())
-  collectedBy   String?
-  remark        String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               String   @id @default(cuid())
+  collectionNumber String   @unique // mis. "COL-2027-EPC-000001"
+  projectId        String
+  project          Project  @relation(fields: [projectId], references: [id])
+  client           String
+  bankAccount      String? // rekening penerima
+  reference        String? // no. transfer/bilyet
+  currency         String   @default("IDR")
+  totalAmount      Decimal  @db.Decimal(18, 2)
+  status           String   @default("DRAFT") // DRAFT | POSTED | CANCELLED
+  collectedAt      DateTime @default(now())
+  collectedBy      String?
+  remark           String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  items        CollectionItem[]
+  items CollectionItem[]
 
   @@index([projectId])
   @@index([status])
 }
 
 model CollectionItem {
-  id            String   @id @default(cuid())
-  collectionId  String
-  collection    Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  id              String        @id @default(cuid())
+  collectionId    String
+  collection      Collection    @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   clientInvoiceId String
-  clientInvoice ClientInvoice @relation(fields: [clientInvoiceId], references: [id])
-  amount        Decimal  @db.Decimal(18, 2) // bagian yang dibayar dari invoice ini
+  clientInvoice   ClientInvoice @relation(fields: [clientInvoiceId], references: [id])
+  amount          Decimal       @db.Decimal(18, 2) // bagian yang dibayar dari invoice ini
 
   @@index([collectionId])
   @@index([clientInvoiceId])
@@ -899,23 +968,23 @@ model CollectionItem {
 
 // FR-CMR-005/006: Variation — potential change tidak ubah contract value, approved variation update
 model ProjectVariation {
-  id              String   @id @default(cuid())
-  variationNumber String   @unique // mis. "VR-2027-EPC-000001"
-  projectId       String
-  project         Project  @relation(fields: [projectId], references: [id])
-  title           String
-  description     String?
-  type            String   @default("ADDITIVE") // ADDITIVE | DEDUCTIVE
-  amountChange    Decimal  @db.Decimal(18, 2) // perubahan nilai kontrak (+/-)
-  scheduleImpactDays Int?  // dampak jadwal (hari)
-  status          String   @default("POTENTIAL") // POTENTIAL | APPROVED | REJECTED
-  createdBy       String
-  approvedBy      String?
-  approvedAt      DateTime?
-  rejectedBy      String?
-  rejectedAt      DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                 String    @id @default(cuid())
+  variationNumber    String    @unique // mis. "VR-2027-EPC-000001"
+  projectId          String
+  project            Project   @relation(fields: [projectId], references: [id])
+  title              String
+  description        String?
+  type               String    @default("ADDITIVE") // ADDITIVE | DEDUCTIVE
+  amountChange       Decimal   @db.Decimal(18, 2) // perubahan nilai kontrak (+/-)
+  scheduleImpactDays Int? // dampak jadwal (hari)
+  status             String    @default("POTENTIAL") // POTENTIAL | APPROVED | REJECTED
+  createdBy          String
+  approvedBy         String?
+  approvedAt         DateTime?
+  rejectedBy         String?
+  rejectedAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   @@index([projectId])
   @@index([status])
@@ -923,21 +992,21 @@ model ProjectVariation {
 
 // FR-CMR-008: Subcontract — subkontraktor, pembayaran berdasarkan verified progress
 model Subcontract {
-  id              String   @id @default(cuid())
-  subconNumber    String   @unique // mis. "SC-2027-EPC-000001"
-  projectId       String
-  project         Project  @relation(fields: [projectId], references: [id])
-  vendor          String
-  title           String
-  description     String?
-  contractValue   Decimal  @db.Decimal(18, 2)
-  currency        String   @default("IDR")
-  status          String   @default("ACTIVE") // DRAFT | ACTIVE | COMPLETED | TERMINATED
-  startDate       DateTime?
-  endDate         DateTime?
-  createdBy       String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String    @id @default(cuid())
+  subconNumber  String    @unique // mis. "SC-2027-EPC-000001"
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id])
+  vendor        String
+  title         String
+  description   String?
+  contractValue Decimal   @db.Decimal(18, 2)
+  currency      String    @default("IDR")
+  status        String    @default("ACTIVE") // DRAFT | ACTIVE | COMPLETED | TERMINATED
+  startDate     DateTime?
+  endDate       DateTime?
+  createdBy     String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   progressEntries SubcontractProgress[]
 
@@ -947,19 +1016,19 @@ model Subcontract {
 
 // FR-CMR-008: verified progress — pembayaran subkon mengikuti progress yang diverifikasi
 model SubcontractProgress {
-  id              String   @id @default(cuid())
+  id              String      @id @default(cuid())
   subcontractId   String
   subcontract     Subcontract @relation(fields: [subcontractId], references: [id], onDelete: Cascade)
   period          String? // mis. "2026-08"
-  progressDate    DateTime @default(now())
-  progressPercent Decimal  @db.Decimal(5, 2) // progres fisik diverifikasi (%)
-  verifiedAmount  Decimal  @db.Decimal(18, 2) // nilai bayar = contractValue x progress (FR-CMR-008)
-  status          String   @default("SUBMITTED") // SUBMITTED | VERIFIED | REJECTED
+  progressDate    DateTime    @default(now())
+  progressPercent Decimal     @db.Decimal(5, 2) // progres fisik diverifikasi (%)
+  verifiedAmount  Decimal     @db.Decimal(18, 2) // nilai bayar = contractValue x progress (FR-CMR-008)
+  status          String      @default("SUBMITTED") // SUBMITTED | VERIFIED | REJECTED
   verifiedBy      String?
   verifiedAt      DateTime?
   remark          String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   @@index([subcontractId])
   @@index([status])
@@ -967,29 +1036,29 @@ model SubcontractProgress {
 
 // FR-HCM-001: Employee master (entity, org, position, manager, grade, location, cost center)
 model Employee {
-  id            String   @id @default(cuid())
-  employeeNumber String  @unique // mis. "EMP-2027-000001"
-  userId        String?  @unique
-  user          User?    @relation(fields: [userId], references: [id])
-  legalEntityId String
-  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id])
-  name          String
-  position      String
-  grade         String?
-  department    String?
-  location      String?
-  costCenter    String?
-  managerId     String?
-  manager       Employee? @relation("EmployeeHierarchy", fields: [managerId], references: [id])
-  reports       Employee[] @relation("EmployeeHierarchy")
-  status        String   @default("ACTIVE") // ACTIVE | INACTIVE | LEAVER
-  joinDate      DateTime?
-  leaveDate     DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String      @id @default(cuid())
+  employeeNumber String      @unique // mis. "EMP-2027-000001"
+  userId         String?     @unique
+  user           User?       @relation(fields: [userId], references: [id])
+  legalEntityId  String
+  legalEntity    LegalEntity @relation(fields: [legalEntityId], references: [id])
+  name           String
+  position       String
+  grade          String?
+  department     String?
+  location       String?
+  costCenter     String?
+  managerId      String?
+  manager        Employee?   @relation("EmployeeHierarchy", fields: [managerId], references: [id])
+  reports        Employee[]  @relation("EmployeeHierarchy")
+  status         String      @default("ACTIVE") // ACTIVE | INACTIVE | LEAVER
+  joinDate       DateTime?
+  leaveDate      DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
-  assignments   ProjectAssignment[]
-  timesheets    Timesheet[]
+  assignments        ProjectAssignment[]
+  timesheets         Timesheet[]
   payrollAllocations PayrollAllocation[]
 
   @@index([legalEntityId])
@@ -999,19 +1068,19 @@ model Employee {
 
 // FR-HCM-002: Project assignment multi-project; FR-HCM-003: allocation >100% butuh exception
 model ProjectAssignment {
-  id              String   @id @default(cuid())
-  employeeId      String
-  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  projectId       String
-  project         Project  @relation(fields: [projectId], references: [id])
-  role            String?  // mis. "Site Engineer"
-  allocationPercent Decimal @db.Decimal(5, 2) // alokasi waktu (%)
-  startDate       DateTime
-  endDate         DateTime?
-  status          String   @default("ACTIVE") // ACTIVE | ENDED
-  exceptionApproved Boolean @default(false) // alokasi >100% butuh approval (FR-HCM-003)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                String    @id @default(cuid())
+  employeeId        String
+  employee          Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  projectId         String
+  project           Project   @relation(fields: [projectId], references: [id])
+  role              String? // mis. "Site Engineer"
+  allocationPercent Decimal   @db.Decimal(5, 2) // alokasi waktu (%)
+  startDate         DateTime
+  endDate           DateTime?
+  status            String    @default("ACTIVE") // ACTIVE | ENDED
+  exceptionApproved Boolean   @default(false) // alokasi >100% butuh approval (FR-HCM-003)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([employeeId])
   @@index([projectId])
@@ -1020,22 +1089,22 @@ model ProjectAssignment {
 
 // FR-HCM-004: Timesheet — jam kerja ke project/WBS
 model Timesheet {
-  id           String   @id @default(cuid())
-  employeeId   String
-  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  projectId    String
-  project      Project  @relation(fields: [projectId], references: [id])
-  wbsItemId    String?
-  wbsItem      WbsItem? @relation(fields: [wbsItemId], references: [id])
-  workDate     DateTime @default(now())
-  hours        Decimal  @db.Decimal(5, 2)
-  activity     String?
-  description  String?
-  status       String   @default("SUBMITTED") // SUBMITTED | APPROVED | REJECTED
-  approvedBy   String?
-  approvedAt   DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String    @id @default(cuid())
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id])
+  wbsItemId   String?
+  wbsItem     WbsItem?  @relation(fields: [wbsItemId], references: [id])
+  workDate    DateTime  @default(now())
+  hours       Decimal   @db.Decimal(5, 2)
+  activity    String?
+  description String?
+  status      String    @default("SUBMITTED") // SUBMITTED | APPROVED | REJECTED
+  approvedBy  String?
+  approvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([employeeId])
   @@index([projectId])
@@ -1044,25 +1113,25 @@ model Timesheet {
 
 // FR-EQP-001: Equipment master (code, category, serial, owner, status, meter)
 model Equipment {
-  id              String   @id @default(cuid())
-  equipmentNumber String   @unique // mis. "EQ-2027-000001"
+  id              String       @id @default(cuid())
+  equipmentNumber String       @unique // mis. "EQ-2027-000001"
   name            String
-  category        String   @default("HEAVY") // HEAVY | LIGHT | VEHICLE | TOOL | OTHER
+  category        String       @default("HEAVY") // HEAVY | LIGHT | VEHICLE | TOOL | OTHER
   serialNumber    String?
-  owner           String   @default("COMPANY") // COMPANY | RENTED | LEASED
+  owner           String       @default("COMPANY") // COMPANY | RENTED | LEASED
   acquisitionDate DateTime?
-  currentMeter    Decimal  @default(0) @db.Decimal(12, 2) // jam/satuan meter terakhir
-  status          String   @default("AVAILABLE") // AVAILABLE | ASSIGNED | MAINTENANCE | BREAKDOWN | RETIRED
+  currentMeter    Decimal      @default(0) @db.Decimal(12, 2) // jam/satuan meter terakhir
+  status          String       @default("AVAILABLE") // AVAILABLE | ASSIGNED | MAINTENANCE | BREAKDOWN | RETIRED
   legalEntityId   String?
   legalEntity     LegalEntity? @relation(fields: [legalEntityId], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
-  assignments     EquipmentAssignment[]
-  utilizations    EquipmentUtilization[]
-  pmSchedules     EquipmentPm[]
-  breakdowns      EquipmentBreakdown[]
-  usages          EquipmentUsage[]
+  assignments  EquipmentAssignment[]
+  utilizations EquipmentUtilization[]
+  pmSchedules  EquipmentPm[]
+  breakdowns   EquipmentBreakdown[]
+  usages       EquipmentUsage[]
 
   @@index([category])
   @@index([status])
@@ -1070,16 +1139,16 @@ model Equipment {
 
 // FR-EQP-002: Assignment effective-dated ke project
 model EquipmentAssignment {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   equipmentId String
   equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
   projectId   String
-  project     Project  @relation(fields: [projectId], references: [id])
+  project     Project   @relation(fields: [projectId], references: [id])
   startDate   DateTime
   endDate     DateTime?
-  status      String   @default("ACTIVE") // ACTIVE | ENDED
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status      String    @default("ACTIVE") // ACTIVE | ENDED
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([equipmentId])
   @@index([projectId])
@@ -1088,17 +1157,17 @@ model EquipmentAssignment {
 
 // FR-EQP-003: Utilization — available time vs operating time
 model EquipmentUtilization {
-  id            String   @id @default(cuid())
-  equipmentId   String
-  equipment     Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
-  projectId     String?
-  project       Project? @relation(fields: [projectId], references: [id])
-  utilizationDate DateTime @default(now())
-  availableHours Decimal @db.Decimal(6, 2) // jam tersedia (mis. 10)
-  operatingHours Decimal @db.Decimal(6, 2) // jam operasi
-  description   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String    @id @default(cuid())
+  equipmentId     String
+  equipment       Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  projectId       String?
+  project         Project?  @relation(fields: [projectId], references: [id])
+  utilizationDate DateTime  @default(now())
+  availableHours  Decimal   @db.Decimal(6, 2) // jam tersedia (mis. 10)
+  operatingHours  Decimal   @db.Decimal(6, 2) // jam operasi
+  description     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([equipmentId])
   @@index([utilizationDate])
@@ -1106,18 +1175,18 @@ model EquipmentUtilization {
 
 // FR-EQP-004: Preventive maintenance — dipicu tanggal / jam / meter
 model EquipmentPm {
-  id           String   @id @default(cuid())
-  equipmentId  String
-  equipment    Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
-  triggerType  String   @default("DATE") // DATE | HOURS | METER
-  dueDate      DateTime? // untuk trigger DATE
-  dueMeter     Decimal? @db.Decimal(12, 2) // untuk trigger HOURS/METER
-  scheduledDate DateTime @default(now())
-  status       String   @default("SCHEDULED") // SCHEDULED | DONE | OVERDUE
-  completedAt  DateTime?
-  description  String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String    @id @default(cuid())
+  equipmentId   String
+  equipment     Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  triggerType   String    @default("DATE") // DATE | HOURS | METER
+  dueDate       DateTime? // untuk trigger DATE
+  dueMeter      Decimal?  @db.Decimal(12, 2) // untuk trigger HOURS/METER
+  scheduledDate DateTime  @default(now())
+  status        String    @default("SCHEDULED") // SCHEDULED | DONE | OVERDUE
+  completedAt   DateTime?
+  description   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([equipmentId])
   @@index([status])
@@ -1125,17 +1194,17 @@ model EquipmentPm {
 
 // FR-EQP-005: Breakdown — downtime + cost impact
 model EquipmentBreakdown {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   equipmentId   String
   equipment     Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
-  breakdownDate DateTime @default(now())
-  downtimeHours Decimal @db.Decimal(6, 2)
-  costImpact    Decimal  @default(0) @db.Decimal(18, 2)
+  breakdownDate DateTime  @default(now())
+  downtimeHours Decimal   @db.Decimal(6, 2)
+  costImpact    Decimal   @default(0) @db.Decimal(18, 2)
   description   String?
-  status        String   @default("OPEN") // OPEN | RESOLVED
+  status        String    @default("OPEN") // OPEN | RESOLVED
   resolvedAt    DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([equipmentId])
   @@index([status])
@@ -1143,17 +1212,17 @@ model EquipmentBreakdown {
 
 // FR-EQP-006: Equipment usage → project cost
 model EquipmentUsage {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   equipmentId String
   equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
   projectId   String
-  project     Project  @relation(fields: [projectId], references: [id])
-  usageDate   DateTime @default(now())
-  hours       Decimal  @db.Decimal(6, 2)
-  costAmount  Decimal  @db.Decimal(18, 2) // biaya ke project
+  project     Project   @relation(fields: [projectId], references: [id])
+  usageDate   DateTime  @default(now())
+  hours       Decimal   @db.Decimal(6, 2)
+  costAmount  Decimal   @db.Decimal(18, 2) // biaya ke project
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([equipmentId])
   @@index([projectId])
@@ -1161,19 +1230,19 @@ model EquipmentUsage {
 
 // FR-HCM-005: Payroll allocation — alokasi gaji ke project + corporate overhead
 model PayrollAllocation {
-  id           String   @id @default(cuid())
-  employeeId   String
-  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  projectId    String?
-  project      Project? @relation(fields: [projectId], references: [id])
-  period       String // mis. "2026-08"
-  grossAmount  Decimal  @db.Decimal(18, 2) // total gaji bulan
-  projectAmount Decimal @db.Decimal(18, 2) // alokasi ke project
-  overheadAmount Decimal @db.Decimal(18, 2) // alokasi corporate overhead
-  status       String   @default("DRAFT") // DRAFT | POSTED
-  createdBy    String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(cuid())
+  employeeId     String
+  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  projectId      String?
+  project        Project? @relation(fields: [projectId], references: [id])
+  period         String // mis. "2026-08"
+  grossAmount    Decimal  @db.Decimal(18, 2) // total gaji bulan
+  projectAmount  Decimal  @db.Decimal(18, 2) // alokasi ke project
+  overheadAmount Decimal  @db.Decimal(18, 2) // alokasi corporate overhead
+  status         String   @default("DRAFT") // DRAFT | POSTED
+  createdBy      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([employeeId])
   @@index([projectId])
@@ -1182,18 +1251,18 @@ model PayrollAllocation {
 
 // FR-HSE-001: Safety observation — safe/unsafe
 model SafetyObservation {
-  id                String   @id @default(cuid())
-  observationNumber String   @unique // mis. "OBS-2027-000001"
+  id                String    @id @default(cuid())
+  observationNumber String    @unique // mis. "OBS-2027-000001"
   projectId         String?
-  project           Project? @relation(fields: [projectId], references: [id])
-  observationDate   DateTime @default(now())
-  type              String   @default("UNSAFE") // SAFE | UNSAFE
+  project           Project?  @relation(fields: [projectId], references: [id])
+  observationDate   DateTime  @default(now())
+  type              String    @default("UNSAFE") // SAFE | UNSAFE
   description       String
   observedBy        String
-  status            String   @default("OPEN") // OPEN | RESOLVED
+  status            String    @default("OPEN") // OPEN | RESOLVED
   resolvedAt        DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([projectId])
   @@index([type])
@@ -1202,20 +1271,20 @@ model SafetyObservation {
 
 // FR-HSE-002: Incident — severity + escalation; FR-HSE-003: investigation root cause
 model HseIncident {
-  id            String   @id @default(cuid())
-  incidentNumber String   @unique // mis. "INC-2027-000001"
-  projectId     String?
-  project       Project? @relation(fields: [projectId], references: [id])
-  incidentDate  DateTime @default(now())
-  type          String   @default("NEAR_MISS") // INJURY | NEAR_MISS | PROPERTY | ENVIRONMENT | OTHER
-  severity      String   @default("MEDIUM") // LOW | MEDIUM | HIGH | CRITICAL
-  description   String
-  rootCause     String?  // FR-HSE-003: hasil investigasi
-  status        String   @default("OPEN") // OPEN | INVESTIGATING | RESOLVED
-  resolvedAt    DateTime?
-  reportedBy    String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String    @id @default(cuid())
+  incidentNumber String    @unique // mis. "INC-2027-000001"
+  projectId      String?
+  project        Project?  @relation(fields: [projectId], references: [id])
+  incidentDate   DateTime  @default(now())
+  type           String    @default("NEAR_MISS") // INJURY | NEAR_MISS | PROPERTY | ENVIRONMENT | OTHER
+  severity       String    @default("MEDIUM") // LOW | MEDIUM | HIGH | CRITICAL
+  description    String
+  rootCause      String? // FR-HSE-003: hasil investigasi
+  status         String    @default("OPEN") // OPEN | INVESTIGATING | RESOLVED
+  resolvedAt     DateTime?
+  reportedBy     String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   correctiveActions CorrectiveAction[] @relation("IncidentActions")
 
@@ -1226,20 +1295,20 @@ model HseIncident {
 
 // FR-HSE-004: Permit to Work — validity + area
 model PermitToWork {
-  id           String   @id @default(cuid())
-  permitNumber String   @unique // mis. "PTW-2027-000001"
+  id           String    @id @default(cuid())
+  permitNumber String    @unique // mis. "PTW-2027-000001"
   projectId    String?
-  project      Project? @relation(fields: [projectId], references: [id])
+  project      Project?  @relation(fields: [projectId], references: [id])
   area         String
   description  String?
   validFrom    DateTime
   validTo      DateTime
-  status       String   @default("ACTIVE") // ACTIVE | EXPIRED | REVOKED
+  status       String    @default("ACTIVE") // ACTIVE | EXPIRED | REVOKED
   issuedTo     String
   revokedAt    DateTime?
   revokedBy    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([projectId])
   @@index([status])
@@ -1247,20 +1316,20 @@ model PermitToWork {
 
 // FR-HSE-005: Corrective action — owner, due date, evidence, verification
 model CorrectiveAction {
-  id          String   @id @default(cuid())
-  sourceType  String // OBSERVATION | INCIDENT
-  sourceId    String
-  incidentId  String?
-  incident    HseIncident? @relation("IncidentActions", fields: [incidentId], references: [id], onDelete: Cascade)
-  action      String
-  owner       String
-  dueDate     DateTime
-  evidence    String?
-  status      String   @default("OPEN") // OPEN | IN_PROGRESS | VERIFIED | CLOSED
-  verifiedBy  String?
-  verifiedAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String       @id @default(cuid())
+  sourceType String // OBSERVATION | INCIDENT
+  sourceId   String
+  incidentId String?
+  incident   HseIncident? @relation("IncidentActions", fields: [incidentId], references: [id], onDelete: Cascade)
+  action     String
+  owner      String
+  dueDate    DateTime
+  evidence   String?
+  status     String       @default("OPEN") // OPEN | IN_PROGRESS | VERIFIED | CLOSED
+  verifiedBy String?
+  verifiedAt DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 
   @@index([sourceType, sourceId])
   @@index([status])
@@ -1268,19 +1337,19 @@ model CorrectiveAction {
 
 // FR-QA-001: ITP — Inspection and Test Plan terkait work package
 model Itp {
-  id            String   @id @default(cuid())
-  itpNumber     String   @unique // mis. "ITP-2027-000001"
+  id            String                   @id @default(cuid())
+  itpNumber     String                   @unique // mis. "ITP-2027-000001"
   projectId     String?
-  project       Project? @relation(fields: [projectId], references: [id])
+  project       Project?                 @relation(fields: [projectId], references: [id])
   workPackageId String?
   workPackage   ConstructionWorkPackage? @relation(fields: [workPackageId], references: [id])
   title         String
   description   String?
-  status        String   @default("DRAFT") // DRAFT | APPROVED | SUPERSEDED
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  status        String                   @default("DRAFT") // DRAFT | APPROVED | SUPERSEDED
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
 
-  inspections   InspectionRequest[]
+  inspections InspectionRequest[]
 
   @@index([projectId])
   @@index([status])
@@ -1288,21 +1357,21 @@ model Itp {
 
 // FR-QA-002: Inspection request — status + result
 model InspectionRequest {
-  id               String   @id @default(cuid())
-  inspectionNumber String   @unique // mis. "INS-2027-000001"
+  id               String                   @id @default(cuid())
+  inspectionNumber String                   @unique // mis. "INS-2027-000001"
   projectId        String?
-  project          Project? @relation(fields: [projectId], references: [id])
+  project          Project?                 @relation(fields: [projectId], references: [id])
   workPackageId    String?
   workPackage      ConstructionWorkPackage? @relation(fields: [workPackageId], references: [id])
   itpId            String?
-  itp              Itp?     @relation(fields: [itpId], references: [id])
+  itp              Itp?                     @relation(fields: [itpId], references: [id])
   description      String
-  result           String   @default("PENDING") // PENDING | PASS | FAIL
-  status           String   @default("OPEN") // OPEN | CLOSED
+  result           String                   @default("PENDING") // PENDING | PASS | FAIL
+  status           String                   @default("OPEN") // OPEN | CLOSED
   inspectedAt      DateTime?
   inspectedBy      String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
 
   @@index([projectId])
   @@index([status])
@@ -1311,23 +1380,23 @@ model InspectionRequest {
 
 // FR-QA-003: NCR — Non-Conformance Report + corrective action + reinspection
 model Ncr {
-  id                  String   @id @default(cuid())
-  ncrNumber           String   @unique // mis. "NCR-2027-000001"
-  projectId           String?
-  project             Project? @relation(fields: [projectId], references: [id])
-  workPackageId       String?
-  workPackage         ConstructionWorkPackage? @relation(fields: [workPackageId], references: [id])
-  category            String   @default("WORKMANSHIP") // MATERIAL | WORKMANSHIP | DESIGN | DOCUMENT | OTHER
-  severity            String   @default("MINOR") // MINOR | MAJOR | CRITICAL
-  description         String
-  rootCause           String?  // hasil analisis
-  correctiveAction    String?  // rencana perbaikan
-  status              String   @default("OPEN") // OPEN | UNDER_REVIEW | DISPOSED | CLOSED
-  reinspectionRequired Boolean @default(true)
-  reinspectionResult  String?  // PASS | FAIL setelah reinspection
-  closedAt            DateTime?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                   String                   @id @default(cuid())
+  ncrNumber            String                   @unique // mis. "NCR-2027-000001"
+  projectId            String?
+  project              Project?                 @relation(fields: [projectId], references: [id])
+  workPackageId        String?
+  workPackage          ConstructionWorkPackage? @relation(fields: [workPackageId], references: [id])
+  category             String                   @default("WORKMANSHIP") // MATERIAL | WORKMANSHIP | DESIGN | DOCUMENT | OTHER
+  severity             String                   @default("MINOR") // MINOR | MAJOR | CRITICAL
+  description          String
+  rootCause            String? // hasil analisis
+  correctiveAction     String? // rencana perbaikan
+  status               String                   @default("OPEN") // OPEN | UNDER_REVIEW | DISPOSED | CLOSED
+  reinspectionRequired Boolean                  @default(true)
+  reinspectionResult   String? // PASS | FAIL setelah reinspection
+  closedAt             DateTime?
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
 
   @@index([projectId])
   @@index([severity])
@@ -1336,20 +1405,20 @@ model Ncr {
 
 // FR-QA-004: Punch list — ditutup sebelum handover gate
 model PunchListItem {
-  id            String   @id @default(cuid())
-  punchNumber   String   @unique // mis. "PUN-2027-000001"
-  projectId     String?
-  project       Project? @relation(fields: [projectId], references: [id])
-  workPackageId String?
-  workPackage   ConstructionWorkPackage? @relation(fields: [workPackageId], references: [id])
+  id                String                   @id @default(cuid())
+  punchNumber       String                   @unique // mis. "PUN-2027-000001"
+  projectId         String?
+  project           Project?                 @relation(fields: [projectId], references: [id])
+  workPackageId     String?
+  workPackage       ConstructionWorkPackage? @relation(fields: [workPackageId], references: [id])
   handoverPackageId String?
-  handoverPackage   HandoverPackage? @relation(fields: [handoverPackageId], references: [id])
-  description   String
-  status        String   @default("OPEN") // OPEN | CLOSED
-  closedAt      DateTime?
-  closedBy      String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  handoverPackage   HandoverPackage?         @relation(fields: [handoverPackageId], references: [id])
+  description       String
+  status            String                   @default("OPEN") // OPEN | CLOSED
+  closedAt          DateTime?
+  closedBy          String?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
 
   @@index([projectId])
   @@index([status])
@@ -1357,23 +1426,23 @@ model PunchListItem {
 
 // FR-GOV-001: Risk register — likelihood, impact, score, mitigation, residual
 model Risk {
-  id             String   @id @default(cuid())
-  riskNumber     String   @unique // mis. "RSK-2027-000001"
-  projectId      String?
-  project        Project? @relation(fields: [projectId], references: [id])
-  title          String
-  category       String   @default("TECHNICAL") // FINANCIAL | TECHNICAL | SCHEDULE | HSE | COMMERCIAL | OTHER
-  likelihood     Int      @default(3) // 1-5
-  impact         Int      @default(3) // 1-5
-  score          Int      // = likelihood x impact (auto)
-  owner          String
-  mitigation     String?
+  id                 String   @id @default(cuid())
+  riskNumber         String   @unique // mis. "RSK-2027-000001"
+  projectId          String?
+  project            Project? @relation(fields: [projectId], references: [id])
+  title              String
+  category           String   @default("TECHNICAL") // FINANCIAL | TECHNICAL | SCHEDULE | HSE | COMMERCIAL | OTHER
+  likelihood         Int      @default(3) // 1-5
+  impact             Int      @default(3) // 1-5
+  score              Int // = likelihood x impact (auto)
+  owner              String
+  mitigation         String?
   residualLikelihood Int? // setelah mitigasi
-  residualImpact Int?
-  residualScore  Int?
-  status         String   @default("OPEN") // OPEN | MITIGATED | CLOSED
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  residualImpact     Int?
+  residualScore      Int?
+  status             String   @default("OPEN") // OPEN | MITIGATED | CLOSED
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@index([projectId])
   @@index([category])
@@ -1382,34 +1451,34 @@ model Risk {
 
 // FR-GOV-002: Internal audit — Plan → Engagement → Fieldwork → Finding → Response → CA → Follow-up → Closure
 model AuditEngagement {
-  id          String   @id @default(cuid())
-  auditNumber String   @unique // mis. "AUD-2027-000001"
+  id          String    @id @default(cuid())
+  auditNumber String    @unique // mis. "AUD-2027-000001"
   title       String
   scope       String?
-  status      String   @default("PLANNED") // PLANNED | FIELDWORK | FINDINGS | CLOSED
+  status      String    @default("PLANNED") // PLANNED | FIELDWORK | FINDINGS | CLOSED
   plannedAt   DateTime?
   completedAt DateTime?
   auditor     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  findings     AuditFinding[]
+  findings AuditFinding[]
 
   @@index([status])
 }
 
 model AuditFinding {
-  id             String   @id @default(cuid())
-  auditId        String
-  audit          AuditEngagement @relation(fields: [auditId], references: [id], onDelete: Cascade)
-  title          String
-  severity       String   @default("MEDIUM") // LOW | MEDIUM | HIGH
-  response       String?  // tanggapan auditee
+  id               String          @id @default(cuid())
+  auditId          String
+  audit            AuditEngagement @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  title            String
+  severity         String          @default("MEDIUM") // LOW | MEDIUM | HIGH
+  response         String? // tanggapan auditee
   correctiveAction String?
-  followUpDate   DateTime?
-  status         String   @default("OPEN") // OPEN | ACCEPTED | RESOLVED | VERIFIED
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  followUpDate     DateTime?
+  status           String          @default("OPEN") // OPEN | ACCEPTED | RESOLVED | VERIFIED
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   @@index([auditId])
   @@index([status])
@@ -1417,19 +1486,19 @@ model AuditFinding {
 
 // FR-GOV-003: Legal case — terhubung company/project/contract
 model LegalCase {
-  id          String   @id @default(cuid())
-  caseNumber  String   @unique // mis. "LGL-2027-000001"
-  projectId   String?
-  project     Project? @relation(fields: [projectId], references: [id])
+  id            String       @id @default(cuid())
+  caseNumber    String       @unique // mis. "LGL-2027-000001"
+  projectId     String?
+  project       Project?     @relation(fields: [projectId], references: [id])
   legalEntityId String?
-  legalEntity LegalEntity? @relation(fields: [legalEntityId], references: [id])
-  title       String
-  caseType    String   @default("CONTRACT") // CONTRACT | LABOR | REGULATORY | TAX | OTHER
-  counterpart String?  // pihak lawan
-  status      String   @default("OPEN") // OPEN | IN_PROGRESS | WON | LOST | SETTLED
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  legalEntity   LegalEntity? @relation(fields: [legalEntityId], references: [id])
+  title         String
+  caseType      String       @default("CONTRACT") // CONTRACT | LABOR | REGULATORY | TAX | OTHER
+  counterpart   String? // pihak lawan
+  status        String       @default("OPEN") // OPEN | IN_PROGRESS | WON | LOST | SETTLED
+  description   String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   @@index([projectId])
   @@index([status])
@@ -1437,15 +1506,15 @@ model LegalCase {
 
 // FR-GOV-004: Access review berkala — high-risk access
 model AccessReview {
-  id           String   @id @default(cuid())
-  reviewNumber String   @unique // mis. "ACR-2027-000001"
-  period       String   // mis. "2026-Q3"
-  status       String   @default("SCHEDULED") // SCHEDULED | IN_PROGRESS | COMPLETED
+  id           String    @id @default(cuid())
+  reviewNumber String    @unique // mis. "ACR-2027-000001"
+  period       String // mis. "2026-Q3"
+  status       String    @default("SCHEDULED") // SCHEDULED | IN_PROGRESS | COMPLETED
   notes        String?
   reviewedBy   String?
   reviewedAt   DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([status])
 }
@@ -1472,22 +1541,22 @@ model Client {
 
 // FR-COM-001: Opportunity pipeline — gross, weighted, stage, owner
 model Opportunity {
-  id            String   @id @default(cuid())
-  oppNumber     String   @unique // mis. "OPP-2027-000001"
+  id            String    @id @default(cuid())
+  oppNumber     String    @unique // mis. "OPP-2027-000001"
   clientId      String
-  client        Client   @relation(fields: [clientId], references: [id])
+  client        Client    @relation(fields: [clientId], references: [id])
   title         String
-  stage         String   @default("LEAD") // LEAD | QUALIFIED | PROPOSAL | NEGOTIATION | WON | LOST
-  probability   Int      @default(10) // 0-100
-  expectedValue Decimal  @db.Decimal(18, 2)
+  stage         String    @default("LEAD") // LEAD | QUALIFIED | PROPOSAL | NEGOTIATION | WON | LOST
+  probability   Int       @default(10) // 0-100
+  expectedValue Decimal   @db.Decimal(18, 2)
   expectedDate  DateTime?
   owner         String
-  currency      String   @default("IDR")
-  status        String   @default("OPEN") // OPEN | CLOSED_WON | CLOSED_LOST
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  currency      String    @default("IDR")
+  status        String    @default("OPEN") // OPEN | CLOSED_WON | CLOSED_LOST
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  contracts     Contract[]
+  contracts Contract[]
 
   @@index([clientId])
   @@index([stage])
@@ -1495,25 +1564,25 @@ model Opportunity {
 
 // FR-COM-008: Contract — executed immutable, amendment terpisah
 model Contract {
-  id            String   @id @default(cuid())
-  contractNumber String  @unique // mis. "CTR-2027-000001"
-  projectId     String?
-  project       Project? @relation(fields: [projectId], references: [id])
-  clientId      String
-  client        Client   @relation(fields: [clientId], references: [id])
-  opportunityId String?
-  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id])
-  contractType  String   @default("LUMP_SUM") // LUMP_SUM | UNIT_PRICE | COST_PLUS | TIME_MATERIAL
-  title         String
-  value         Decimal  @db.Decimal(18, 2)
-  advanceTerm   Decimal  @default(0) @db.Decimal(5, 2) // % uang muka kontrak
-  retentionTerm Decimal  @default(0) @db.Decimal(5, 2) // % retensi kontrak
-  signedDate    DateTime?
-  startDate     DateTime?
-  endDate       DateTime?
-  status        String   @default("DRAFT") // DRAFT | EXECUTED | AMENDED | COMPLETED | TERMINATED
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String       @id @default(cuid())
+  contractNumber String       @unique // mis. "CTR-2027-000001"
+  projectId      String?
+  project        Project?     @relation(fields: [projectId], references: [id])
+  clientId       String
+  client         Client       @relation(fields: [clientId], references: [id])
+  opportunityId  String?
+  opportunity    Opportunity? @relation(fields: [opportunityId], references: [id])
+  contractType   String       @default("LUMP_SUM") // LUMP_SUM | UNIT_PRICE | COST_PLUS | TIME_MATERIAL
+  title          String
+  value          Decimal      @db.Decimal(18, 2)
+  advanceTerm    Decimal      @default(0) @db.Decimal(5, 2) // % uang muka kontrak
+  retentionTerm  Decimal      @default(0) @db.Decimal(5, 2) // % retensi kontrak
+  signedDate     DateTime?
+  startDate      DateTime?
+  endDate        DateTime?
+  status         String       @default("DRAFT") // DRAFT | EXECUTED | AMENDED | COMPLETED | TERMINATED
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   @@index([projectId])
   @@index([clientId])
@@ -1522,19 +1591,19 @@ model Contract {
 
 // FR-ENG-001: Deliverable register (discipline, engineer, planned/forecast/actual date, status)
 model Deliverable {
-  id               String   @id @default(cuid())
-  deliverableNumber String  @unique // mis. "DLV-2027-000001"
-  projectId        String?
-  project          Project? @relation(fields: [projectId], references: [id])
-  title            String
-  discipline       String   @default("PIPING") // CIVIL | STRUCTURAL | PIPING | ELECTRICAL | INSTRUMENT | MECHANICAL | OTHER
-  engineer         String
-  plannedDate      DateTime?
-  forecastDate     DateTime?
-  actualDate       DateTime?
-  status           String   @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | SUBMITTED | APPROVED | ISSUED
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                String    @id @default(cuid())
+  deliverableNumber String    @unique // mis. "DLV-2027-000001"
+  projectId         String?
+  project           Project?  @relation(fields: [projectId], references: [id])
+  title             String
+  discipline        String    @default("PIPING") // CIVIL | STRUCTURAL | PIPING | ELECTRICAL | INSTRUMENT | MECHANICAL | OTHER
+  engineer          String
+  plannedDate       DateTime?
+  forecastDate      DateTime?
+  actualDate        DateTime?
+  status            String    @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | SUBMITTED | APPROVED | ISSUED
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([projectId])
   @@index([discipline])
@@ -1543,18 +1612,18 @@ model Deliverable {
 
 // FR-ENG-002: Drawing revision — satu current revision (published immutable)
 model Drawing {
-  id             String   @id @default(cuid())
-  drawingNumber  String   @unique // mis. "DRW-2027-000001"
-  projectId      String?
-  project        Project? @relation(fields: [projectId], references: [id])
-  title          String
-  discipline     String   @default("PIPING")
-  currentRevision String  @default("0")
-  status         String   @default("DRAFT") // DRAFT | PUBLISHED | SUPERSEDED
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(cuid())
+  drawingNumber   String   @unique // mis. "DRW-2027-000001"
+  projectId       String?
+  project         Project? @relation(fields: [projectId], references: [id])
+  title           String
+  discipline      String   @default("PIPING")
+  currentRevision String   @default("0")
+  status          String   @default("DRAFT") // DRAFT | PUBLISHED | SUPERSEDED
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  revisions      DrawingRevision[]
+  revisions DrawingRevision[]
 
   @@index([projectId])
 }
@@ -1564,7 +1633,7 @@ model DrawingRevision {
   id          String   @id @default(cuid())
   drawingId   String
   drawing     Drawing  @relation(fields: [drawingId], references: [id], onDelete: Cascade)
-  revision    String   // "0", "1", "2"...
+  revision    String // "0", "1", "2"...
   description String?
   publishedAt DateTime @default(now())
   publishedBy String
@@ -1574,21 +1643,21 @@ model DrawingRevision {
 
 // FR-ENG-003: RFI — impact cost/schedule/design
 model Rfi {
-  id           String   @id @default(cuid())
-  rfiNumber    String   @unique // mis. "RFI-2027-000001"
-  projectId    String?
-  project      Project? @relation(fields: [projectId], references: [id])
-  title        String
-  question     String
-  answer       String?
-  impactCost   Decimal? @db.Decimal(18, 2)
+  id                 String    @id @default(cuid())
+  rfiNumber          String    @unique // mis. "RFI-2027-000001"
+  projectId          String?
+  project            Project?  @relation(fields: [projectId], references: [id])
+  title              String
+  question           String
+  answer             String?
+  impactCost         Decimal?  @db.Decimal(18, 2)
   impactScheduleDays Int?
-  status       String   @default("OPEN") // OPEN | ANSWERED | CLOSED
-  createdBy    String
-  answeredBy   String?
-  answeredAt   DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  status             String    @default("OPEN") // OPEN | ANSWERED | CLOSED
+  createdBy          String
+  answeredBy         String?
+  answeredAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   @@index([projectId])
   @@index([status])
@@ -1596,18 +1665,18 @@ model Rfi {
 
 // FR-ENG-004: Submittal review cycle + response due date
 model Submittal {
-  id            String   @id @default(cuid())
-  submittalNumber String  @unique // mis. "SUB-2027-000001"
-  projectId     String?
-  project       Project? @relation(fields: [projectId], references: [id])
-  title         String
-  dueDate       DateTime?
-  status        String   @default("SUBMITTED") // SUBMITTED | UNDER_REVIEW | APPROVED | REJECTED
-  responseNote  String?
-  reviewedBy    String?
-  reviewedAt    DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String    @id @default(cuid())
+  submittalNumber String    @unique // mis. "SUB-2027-000001"
+  projectId       String?
+  project         Project?  @relation(fields: [projectId], references: [id])
+  title           String
+  dueDate         DateTime?
+  status          String    @default("SUBMITTED") // SUBMITTED | UNDER_REVIEW | APPROVED | REJECTED
+  responseNote    String?
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([projectId])
   @@index([status])
@@ -1615,17 +1684,17 @@ model Submittal {
 
 // FR-ENG-005: Transmittal — dokumen eksternal
 model Transmittal {
-  id               String   @id @default(cuid())
-  transmittalNumber String  @unique // mis. "TRM-2027-000001"
-  projectId        String?
-  project          Project? @relation(fields: [projectId], references: [id])
-  recipient        String
-  subject          String
-  documentList     String? // ringkasan dokumen
-  sentAt           DateTime @default(now())
-  sentBy           String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                String   @id @default(cuid())
+  transmittalNumber String   @unique // mis. "TRM-2027-000001"
+  projectId         String?
+  project           Project? @relation(fields: [projectId], references: [id])
+  recipient         String
+  subject           String
+  documentList      String? // ringkasan dokumen
+  sentAt            DateTime @default(now())
+  sentBy            String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@index([projectId])
 }
@@ -1635,7 +1704,7 @@ model Vendor {
   id            String   @id @default(cuid())
   vendorCode    String   @unique // mis. "VND-2027-000001"
   name          String
-  taxId         String?  // NPWP
+  taxId         String? // NPWP
   category      String   @default("MATERIAL") // MATERIAL | SUBCONTRACTOR | SERVICE | EQUIPMENT | OTHER
   contactPerson String?
   email         String?
@@ -1669,38 +1738,38 @@ model FiscalPeriod {
 
 // FR-PRO-003: RFQ — minta penawaran vendor untuk PO
 model Rfq {
-  id         String   @id @default(cuid())
-  rfqNumber  String   @unique // mis. "RFQ-2027-EPC-000001"
-  projectId  String
-  project    Project  @relation(fields: [projectId], references: [id])
-  requisitionId String?
-  requisition PurchaseRequisition? @relation(fields: [requisitionId], references: [id])
-  title      String
-  description String?
-  dueDate    DateTime?
-  status     String   @default("DRAFT") // DRAFT | SENT | QUOTED | EVALUATED | AWARDED | CANCELLED
-  awardedVendor String? // vendor pemenang (dari quote terbaik)
+  id             String               @id @default(cuid())
+  rfqNumber      String               @unique // mis. "RFQ-2027-EPC-000001"
+  projectId      String
+  project        Project              @relation(fields: [projectId], references: [id])
+  requisitionId  String?
+  requisition    PurchaseRequisition? @relation(fields: [requisitionId], references: [id])
+  title          String
+  description    String?
+  dueDate        DateTime?
+  status         String               @default("DRAFT") // DRAFT | SENT | QUOTED | EVALUATED | AWARDED | CANCELLED
+  awardedVendor  String? // vendor pemenang (dari quote terbaik)
   awardedQuoteId String?
-  createdBy  String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdBy      String
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
 
-  items      RfqItem[]
-  quotes     RfqQuote[]
+  items  RfqItem[]
+  quotes RfqQuote[]
 
   @@index([projectId])
   @@index([status])
 }
 
 model RfqItem {
-  id         String   @id @default(cuid())
-  rfqId      String
-  rfq        Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  rfqId       String
+  rfq         Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
   description String
-  quantity   Decimal  @db.Decimal(18, 2)
-  unit       String   @default("EA")
-  wbsItemId  String?
-  wbsItem    WbsItem? @relation(fields: [wbsItemId], references: [id])
+  quantity    Decimal  @db.Decimal(18, 2)
+  unit        String   @default("EA")
+  wbsItemId   String?
+  wbsItem     WbsItem? @relation(fields: [wbsItemId], references: [id])
 
   quoteItems RfqQuoteItem[]
 
@@ -1709,23 +1778,23 @@ model RfqItem {
 
 // FR-PRO-004: Quote vendor per RFQ item + total
 model RfqQuote {
-  id         String   @id @default(cuid())
-  rfqId      String
-  rfq        Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
-  vendor     String
-  quoteDate  DateTime @default(now())
-  totalAmount Decimal @db.Decimal(18, 2) // total penawaran (dihitung dari items)
-  currency   String   @default("IDR")
-  leadTimeDays Int?   // estimasi pengiriman
-  remark     String?
-  isWinner   Boolean  @default(false)
-  status     String   @default("SUBMITTED") // SUBMITTED | WITHDRAWN
-  createdAt  DateTime @default(now())
+  id           String   @id @default(cuid())
+  rfqId        String
+  rfq          Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  vendor       String
+  quoteDate    DateTime @default(now())
+  totalAmount  Decimal  @db.Decimal(18, 2) // total penawaran (dihitung dari items)
+  currency     String   @default("IDR")
+  leadTimeDays Int? // estimasi pengiriman
+  remark       String?
+  isWinner     Boolean  @default(false)
+  status       String   @default("SUBMITTED") // SUBMITTED | WITHDRAWN
+  createdAt    DateTime @default(now())
 
-  items      RfqQuoteItem[]
+  items RfqQuoteItem[]
 
-  @@index([rfqId])
   @@unique([rfqId, vendor])
+  @@index([rfqId])
 }
 
 model RfqQuoteItem {
@@ -1744,28 +1813,28 @@ model RfqQuoteItem {
 
 // FR-CON-001: Work package — unit kerja konstruksi terhubung WBS
 model ConstructionWorkPackage {
-  id          String   @id @default(cuid())
-  wpNumber    String   @unique // mis. "WP-2027-EPC-000001"
+  id          String    @id @default(cuid())
+  wpNumber    String    @unique // mis. "WP-2027-EPC-000001"
   projectId   String
-  project     Project  @relation(fields: [projectId], references: [id])
+  project     Project   @relation(fields: [projectId], references: [id])
   wbsItemId   String
-  wbsItem     WbsItem  @relation(fields: [wbsItemId], references: [id])
+  wbsItem     WbsItem   @relation(fields: [wbsItemId], references: [id])
   title       String
   description String?
   scope       String? // ruang lingkup kerja
-  plannedQty  Decimal  @db.Decimal(18, 2) // qty rencana (m2, ton, unit sesuai WBS)
-  unit        String   @default("EA")
+  plannedQty  Decimal   @db.Decimal(18, 2) // qty rencana (m2, ton, unit sesuai WBS)
+  unit        String    @default("EA")
   startDate   DateTime?
   endDate     DateTime?
-  status      String   @default("DRAFT") // DRAFT | IN_PROGRESS | COMPLETED | CANCELLED
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status      String    @default("DRAFT") // DRAFT | IN_PROGRESS | COMPLETED | CANCELLED
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  progress    WorkPackageProgress[]
-  claims      ProgressClaim[]
-  itps        Itp[]
-  inspections InspectionRequest[]
-  ncrs        Ncr[]
+  progress       WorkPackageProgress[]
+  claims         ProgressClaim[]
+  itps           Itp[]
+  inspections    InspectionRequest[]
+  ncrs           Ncr[]
   punchListItems PunchListItem[]
 
   @@index([projectId])
@@ -1775,15 +1844,15 @@ model ConstructionWorkPackage {
 
 // FR-CON-004: Progress fisik per work package dari defined measurement method
 model WorkPackageProgress {
-  id             String   @id @default(cuid())
-  workPackageId  String
-  workPackage    ConstructionWorkPackage @relation(fields: [workPackageId], references: [id], onDelete: Cascade)
-  progressDate   DateTime @default(now())
-  physicalProgress Decimal @db.Decimal(5, 2) // % kumulatif 0-100
-  achievedQty    Decimal  @db.Decimal(18, 2) // qty terukur (measurement method)
-  note           String?
-  measuredBy     String // nama/role surveyor
-  createdAt      DateTime @default(now())
+  id               String                  @id @default(cuid())
+  workPackageId    String
+  workPackage      ConstructionWorkPackage @relation(fields: [workPackageId], references: [id], onDelete: Cascade)
+  progressDate     DateTime                @default(now())
+  physicalProgress Decimal                 @db.Decimal(5, 2) // % kumulatif 0-100
+  achievedQty      Decimal                 @db.Decimal(18, 2) // qty terukur (measurement method)
+  note             String?
+  measuredBy       String // nama/role surveyor
+  createdAt        DateTime                @default(now())
 
   @@index([workPackageId])
 }
@@ -1816,12 +1885,12 @@ model ConstructionDailyReport {
 }
 
 model DailyReportManpower {
-  id             String   @id @default(cuid())
-  dailyReportId  String
-  dailyReport    ConstructionDailyReport @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
+  id            String                  @id @default(cuid())
+  dailyReportId String
+  dailyReport   ConstructionDailyReport @relation(fields: [dailyReportId], references: [id], onDelete: Cascade)
   trade         String // mis. "KONSTRUKSI", "BESI", "MEKANIKAL", "LISTRIK"
   manpowerCount Int
-  hoursWorked   Decimal  @db.Decimal(5, 2)
+  hoursWorked   Decimal                 @db.Decimal(5, 2)
   note          String?
 
   @@index([dailyReportId])
@@ -1829,19 +1898,19 @@ model DailyReportManpower {
 
 // FR-CON-005: Commissioning hierarchy — Plant → System → Subsystem → Equipment
 model CommissioningSystem {
-  id          String   @id @default(cuid())
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id])
-  parentId    String?
-  parent      CommissioningSystem? @relation("CommissioningHierarchy", fields: [parentId], references: [id])
-  children    CommissioningSystem[] @relation("CommissioningHierarchy")
-  code        String // mis. "PLANT-01", "SYS-01", "SUB-01", "EQ-01"
-  name        String
-  level       String // PLANT | SYSTEM | SUBSYSTEM | EQUIPMENT
-  status      String   @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | COMPLETED
-  remark      String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String                @id @default(cuid())
+  projectId String
+  project   Project               @relation(fields: [projectId], references: [id])
+  parentId  String?
+  parent    CommissioningSystem?  @relation("CommissioningHierarchy", fields: [parentId], references: [id])
+  children  CommissioningSystem[] @relation("CommissioningHierarchy")
+  code      String // mis. "PLANT-01", "SYS-01", "SUB-01", "EQ-01"
+  name      String
+  level     String // PLANT | SYSTEM | SUBSYSTEM | EQUIPMENT
+  status    String                @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | COMPLETED
+  remark    String?
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
 
   @@unique([projectId, code])
   @@index([projectId])
@@ -1850,21 +1919,21 @@ model CommissioningSystem {
 
 // FR-CON-006: Handover/closeout — cek dokumen mandatory sebelum serah terima
 model HandoverPackage {
-  id            String   @id @default(cuid())
-  hoNumber      String   @unique // mis. "HO-2026-EPC-000001"
-  projectId     String
-  project       Project  @relation(fields: [projectId], references: [id])
-  title         String
-  handoverDate  DateTime?
-  status        String   @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | COMPLETED
-  checklist     String? // ringkasan dokumen mandatory (as-built, test record, manual)
-  approvedBy    String?
-  approvedAt    DateTime?
-  note          String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String    @id @default(cuid())
+  hoNumber     String    @unique // mis. "HO-2026-EPC-000001"
+  projectId    String
+  project      Project   @relation(fields: [projectId], references: [id])
+  title        String
+  handoverDate DateTime?
+  status       String    @default("DRAFT") // DRAFT | SUBMITTED | APPROVED | COMPLETED
+  checklist    String? // ringkasan dokumen mandatory (as-built, test record, manual)
+  approvedBy   String?
+  approvedAt   DateTime?
+  note         String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  items         HandoverItem[]
+  items          HandoverItem[]
   punchListItems PunchListItem[]
 
   @@index([projectId])
@@ -1872,26 +1941,26 @@ model HandoverPackage {
 }
 
 model HandoverItem {
-  id             String   @id @default(cuid())
-  handoverId     String
-  handover       HandoverPackage @relation(fields: [handoverId], references: [id], onDelete: Cascade)
-  documentName   String // mis. "As-Built Drawing", "Test Certificate"
-  isMandatory    Boolean  @default(true)
-  status         String   @default("PENDING") // PENDING | SUBMITTED | VERIFIED
-  verifiedBy     String?
-  verifiedAt     DateTime?
+  id           String          @id @default(cuid())
+  handoverId   String
+  handover     HandoverPackage @relation(fields: [handoverId], references: [id], onDelete: Cascade)
+  documentName String // mis. "As-Built Drawing", "Test Certificate"
+  isMandatory  Boolean         @default(true)
+  status       String          @default("PENDING") // PENDING | SUBMITTED | VERIFIED
+  verifiedBy   String?
+  verifiedAt   DateTime?
 
   @@index([handoverId])
 }
 
 // FR-FND-009: Number Sequence (configurable)
 model NumberSequence {
-  id         String  @id @default(cuid())
-  code       String  @unique // mis. "PR", "PO", "PRJ"
+  id         String   @id @default(cuid())
+  code       String   @unique // mis. "PR", "PO", "PRJ"
   prefix     String // mis. "PR-2027-EPC-"
-  nextNumber Int     @default(1)
-  padding    Int     @default(6)
-  status     String  @default("ACTIVE")
+  nextNumber Int      @default(1)
+  padding    Int      @default(6)
+  status     String   @default("ACTIVE")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }

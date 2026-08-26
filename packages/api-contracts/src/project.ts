@@ -158,3 +158,120 @@ export const upsertBudgetSchema = z.object({
   amount: z.number().min(0),
 });
 export type UpsertBudget = z.infer<typeof upsertBudgetSchema>;
+
+// ─── Project Controls (Fase 11B) ─────────────────────────────────────────────
+
+export const costCodeSchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  wbsItemId: z.string().nullable(),
+  code: z.string(),
+  name: z.string(),
+  costType: z.string(),
+  status: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  wbsItem: z.object({ code: z.string(), name: z.string() }).nullable(),
+});
+export type CostCode = z.infer<typeof costCodeSchema>;
+
+export const costCodeListResponseSchema = paginatedResponseSchema(costCodeSchema);
+export type CostCodeListResponse = z.infer<typeof costCodeListResponseSchema>;
+
+export const createCostCodeSchema = z.object({
+  code: z.string().min(1).max(30),
+  name: z.string().min(1).max(200),
+  wbsItemId: z.string().optional(),
+  costType: z.enum(['DIRECT', 'INDIRECT', 'LABOR', 'MATERIAL', 'SUBCONTRACTOR', 'EQUIPMENT', 'OVERHEAD']).optional(),
+});
+export type CreateCostCode = z.infer<typeof createCostCodeSchema>;
+
+export const controlAccountSchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  wbsItemId: z.string(),
+  code: z.string(),
+  name: z.string(),
+  responsibleManager: z.string(),
+  budgetAmount: z.number(),
+  plannedValue: z.number(),
+  scheduleStart: z.string().nullable(),
+  scheduleEnd: z.string().nullable(),
+  status: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  wbsItem: z.object({ code: z.string(), name: z.string() }),
+});
+export type ControlAccount = z.infer<typeof controlAccountSchema>;
+
+export const controlAccountListResponseSchema = paginatedResponseSchema(controlAccountSchema);
+export type ControlAccountListResponse = z.infer<typeof controlAccountListResponseSchema>;
+
+export const createControlAccountSchema = z.object({
+  code: z.string().min(1).max(30),
+  name: z.string().min(1).max(200),
+  wbsItemId: z.string(),
+  responsibleManager: z.string().min(1).max(200),
+  budgetAmount: z.number().optional(),
+  plannedValue: z.number().optional(),
+  scheduleStart: z.string().optional(),
+  scheduleEnd: z.string().optional(),
+});
+export type CreateControlAccount = z.infer<typeof createControlAccountSchema>;
+
+export const commitmentSchema = z.object({
+  projectId: z.string(),
+  poCommitment: z.number(),
+  subcontractCommitment: z.number(),
+  totalCommitment: z.number(),
+  totalBudget: z.number(),
+  remainingBudget: z.number(),
+  generatedAt: z.string(),
+});
+export type Commitment = z.infer<typeof commitmentSchema>;
+
+export const forecastSchema = z.object({
+  id: z.string(),
+  projectId: z.string(),
+  version: z.number(),
+  period: z.string().nullable(),
+  estimateAtCompletion: z.number(),
+  estimateToComplete: z.number(),
+  varianceAtCompletion: z.number(),
+  status: z.string(),
+  note: z.string().nullable(),
+  createdBy: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type Forecast = z.infer<typeof forecastSchema>;
+
+export const createForecastSchema = z.object({
+  period: z.string().min(1),
+  estimateAtCompletion: z.number().min(0),
+  estimateToComplete: z.number().min(0).optional(),
+  note: z.string().max(500).optional(),
+});
+export type CreateForecast = z.infer<typeof createForecastSchema>;
+
+export const evmSchema = z.object({
+  projectId: z.string(),
+  projectCode: z.string(),
+  metrics: z.object({
+    pv: z.number(),
+    ev: z.number(),
+    ac: z.number(),
+    bac: z.number(),
+    progressPercent: z.number(),
+    cpi: z.number().nullable(),
+    spi: z.number().nullable(),
+    cv: z.number(),
+    sv: z.number(),
+  }),
+  interpretation: z.object({
+    cpi: z.string(),
+    spi: z.string(),
+  }),
+  generatedAt: z.string(),
+});
+export type Evm = z.infer<typeof evmSchema>;

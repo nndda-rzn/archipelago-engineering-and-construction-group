@@ -9,6 +9,7 @@ import { ProjectListPage } from './pages/project/project-list.page';
 import { WbsPage } from './pages/project/wbs.page';
 import { BudgetPage } from './pages/project/budget.page';
 import { ProjectHealthPage } from './pages/project/project-health.page';
+import { ProjectControlsPage } from './pages/project/project-controls.page';
 import { PurchaseRequisitionPage } from './pages/procurement/purchase-requisition.page';
 import { PurchaseOrderPage } from './pages/procurement/purchase-order.page';
 import { RfqPage } from './pages/procurement/rfq.page';
@@ -206,6 +207,12 @@ const projectHealthRoute = createRoute({
   component: ProjectHealthPage,
 });
 
+const projectControlsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/project-controls',
+  component: ProjectControlsPage,
+});
+
 const progressClaimRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/finance/progress-claims',
@@ -346,5 +353,5 @@ const handoverRoute = createRoute({
 
 export const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, projectHealthRoute, prRoute, poRoute, rfqRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, workflowRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute, variationRoute, subcontractRoute, workPackagesRoute, dailyReportsRoute, commissioningRoute, handoverRoute, employeesRoute, timesheetsRoute, equipmentRoute, payrollRoute, hseRoute, qualityRoute, governanceRoute, analyticsRoute, reportingRoute, commercialRoute, engineeringRoute, masterDataRoute]),
+  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, projectHealthRoute, projectControlsRoute, prRoute, poRoute, rfqRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, workflowRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute, variationRoute, subcontractRoute, workPackagesRoute, dailyReportsRoute, commissioningRoute, handoverRoute, employeesRoute, timesheetsRoute, equipmentRoute, payrollRoute, hseRoute, qualityRoute, governanceRoute, analyticsRoute, reportingRoute, commercialRoute, engineeringRoute, masterDataRoute]),
 ]);
