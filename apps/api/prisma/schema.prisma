@@ -174,6 +174,10 @@ model Project {
   safetyObservations SafetyObservation[]
   hseIncidents       HseIncident[]
   permitsToWork      PermitToWork[]
+  itps               Itp[]
+  inspections        InspectionRequest[]
+  ncrs               Ncr[]
+  punchListItems     PunchListItem[]
   rfqs           Rfq[]
   workPackages   ConstructionWorkPackage[]
   dailyReports   ConstructionDailyReport[]
@@ -1253,6 +1257,95 @@ model CorrectiveAction {
   @@index([status])
 }
 
+// FR-QA-001: ITP — Inspection and Test Plan terkait work package
+model Itp {
+  id            String   @id @default(cuid())
+  itpNumber     String   @unique // mis. "ITP-2027-000001"
+  projectId     String?
+  project       Project? @relation(fields: [projectId], references: [id])
+  workPackageId String?
+  workPackage   ConstructionWorkPackage? @relation(fields: [workPackageId], references: [id])
+  title         String
+  description   String?
+  status        String   @default("DRAFT") // DRAFT | APPROVED | SUPERSEDED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  inspections   InspectionRequest[]
+
+  @@index([projectId])
+  @@index([status])
+}
+
+// FR-QA-002: Inspection request — status + result
+model InspectionRequest {
+  id               String   @id @default(cuid())
+  inspectionNumber String   @unique // mis. "INS-2027-000001"
+  projectId        String?
+  project          Project? @relation(fields: [projectId], references: [id])
+  workPackageId    String?
+  workPackage      ConstructionWorkPackage? @relation(fields: [workPackageId], references: [id])
+  itpId            String?
+  itp              Itp?     @relation(fields: [itpId], references: [id])
+  description      String
+  result           String   @default("PENDING") // PENDING | PASS | FAIL
+  status           String   @default("OPEN") // OPEN | CLOSED
+  inspectedAt      DateTime?
+  inspectedBy      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+  @@index([result])
+}
+
+// FR-QA-003: NCR — Non-Conformance Report + corrective action + reinspection
+model Ncr {
+  id                  String   @id @default(cuid())
+  ncrNumber           String   @unique // mis. "NCR-2027-000001"
+  projectId           String?
+  project             Project? @relation(fields: [projectId], references: [id])
+  workPackageId       String?
+  workPackage         ConstructionWorkPackage? @relation(fields: [workPackageId], references: [id])
+  category            String   @default("WORKMANSHIP") // MATERIAL | WORKMANSHIP | DESIGN | DOCUMENT | OTHER
+  severity            String   @default("MINOR") // MINOR | MAJOR | CRITICAL
+  description         String
+  rootCause           String?  // hasil analisis
+  correctiveAction    String?  // rencana perbaikan
+  status              String   @default("OPEN") // OPEN | UNDER_REVIEW | DISPOSED | CLOSED
+  reinspectionRequired Boolean @default(true)
+  reinspectionResult  String?  // PASS | FAIL setelah reinspection
+  closedAt            DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([severity])
+  @@index([status])
+}
+
+// FR-QA-004: Punch list — ditutup sebelum handover gate
+model PunchListItem {
+  id            String   @id @default(cuid())
+  punchNumber   String   @unique // mis. "PUN-2027-000001"
+  projectId     String?
+  project       Project? @relation(fields: [projectId], references: [id])
+  workPackageId String?
+  workPackage   ConstructionWorkPackage? @relation(fields: [workPackageId], references: [id])
+  handoverPackageId String?
+  handoverPackage   HandoverPackage? @relation(fields: [handoverPackageId], references: [id])
+  description   String
+  status        String   @default("OPEN") // OPEN | CLOSED
+  closedAt      DateTime?
+  closedBy      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
 // ─── Procurement: RFQ + Vendor Evaluation (FR-PRO-003/004) ───────────────────
 // Request for Quotation → vendor quotes → evaluate → award (best quote)
 
@@ -1352,6 +1445,10 @@ model ConstructionWorkPackage {
 
   progress    WorkPackageProgress[]
   claims      ProgressClaim[]
+  itps        Itp[]
+  inspections InspectionRequest[]
+  ncrs        Ncr[]
+  punchListItems PunchListItem[]
 
   @@index([projectId])
   @@index([wbsItemId])
@@ -1450,6 +1547,7 @@ model HandoverPackage {
   updatedAt     DateTime @updatedAt
 
   items         HandoverItem[]
+  punchListItems PunchListItem[]
 
   @@index([projectId])
   @@index([status])

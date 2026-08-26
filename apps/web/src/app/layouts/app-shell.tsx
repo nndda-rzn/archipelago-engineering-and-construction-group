@@ -60,6 +60,7 @@ const navGroups: NavGroup[] = [
       { label: 'Peralatan', icon: Gavel, to: '/equipment' },
       { label: 'HSE', icon: Shield, to: '/hse' },
       { label: 'Kualitas', icon: ClipboardCheck, to: '/quality' },
+      { label: 'Kualitas', icon: ClipboardCheck, to: '/quality' },
       { label: 'Tata Kelola', icon: Building2, to: '/governance' },
     ],
   },

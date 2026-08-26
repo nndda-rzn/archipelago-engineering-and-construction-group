@@ -39,6 +39,7 @@ import { TimesheetsPage } from './pages/hcm/timesheets.page';
 import { EquipmentPage } from './pages/hcm/equipment.page';
 import { PayrollPage } from './pages/hcm/payroll.page';
 import { HsePage } from './pages/hse/hse.page';
+import { QualityPage } from './pages/quality/quality.page';
 import { DashboardPage } from './pages/dashboard.page';
 import { requireAuth } from './app/router/require-auth';
 
@@ -259,6 +260,12 @@ const hseRoute = createRoute({
   component: HsePage,
 });
 
+const qualityRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/quality',
+  component: QualityPage,
+});
+
 const workflowRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/workflows',
@@ -297,5 +304,5 @@ const handoverRoute = createRoute({
 
 export const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, projectHealthRoute, prRoute, poRoute, rfqRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, workflowRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute, variationRoute, subcontractRoute, workPackagesRoute, dailyReportsRoute, commissioningRoute, handoverRoute, employeesRoute, timesheetsRoute, equipmentRoute, payrollRoute, hseRoute]),
+  appRoute.addChildren([indexRoute, legalEntitiesRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, wbsRoute, budgetRoute, projectHealthRoute, prRoute, poRoute, rfqRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, workflowRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute, variationRoute, subcontractRoute, workPackagesRoute, dailyReportsRoute, commissioningRoute, handoverRoute, employeesRoute, timesheetsRoute, equipmentRoute, payrollRoute, hseRoute, qualityRoute]),
 ]);
