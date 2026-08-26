@@ -3,6 +3,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, DataGrid } from '@aec/ui';
 import { useAuditLogs } from '@/features/audit';
 import type { AuditLog } from '@aec/api-contracts';
+import { formatDateTime } from '@/shared/lib/format';
 
 const PAGE_SIZE = 20;
 
@@ -11,14 +12,7 @@ const columnHelper = createColumnHelper<AuditLog>();
 const columns = [
   columnHelper.accessor('createdAt', {
     header: 'Waktu',
-    cell: (info) => {
-      const d = new Date(info.getValue());
-      return (
-        <span className="font-mono text-body-sm text-neutral-600">
-          {d.toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-        </span>
-      );
-    },
+    cell: (info) => <span className="font-mono text-body-sm text-neutral-600">{formatDateTime(info.getValue())}</span>,
   }),
   columnHelper.accessor('action', {
     header: 'Aksi',

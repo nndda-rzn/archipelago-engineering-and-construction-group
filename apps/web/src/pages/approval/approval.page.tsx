@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, useToast } from '@aec/ui';
 import { useApprovalTasks, useDecideApproval, type ApprovalTask } from '@/features/approval';
+import { formatDateTime } from '@/shared/lib/format';
 
 const columnHelper = createColumnHelper<ApprovalTask>();
 
@@ -40,7 +41,7 @@ const columns = [
   }),
   columnHelper.accessor('createdAt', {
     header: 'Diajukan',
-    cell: (info) => <span className="tabular-nums text-neutral-500">{new Date(info.getValue()).toLocaleString('id-ID')}</span>,
+    cell: (info) => <span className="tabular-nums text-neutral-500">{formatDateTime(info.getValue())}</span>,
   }),
   columnHelper.display({
     id: 'actions',
