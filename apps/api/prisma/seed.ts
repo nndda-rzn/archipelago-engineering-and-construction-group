@@ -95,6 +95,8 @@ const permissions = [
   ['Equipment.OPERATE', 'Equipment', 'OPERATE'],
   ['Equipment.PM', 'Equipment', 'PM'],
   ['EquipmentAssignment.CREATE', 'EquipmentAssignment', 'CREATE'],
+  ['Payroll.VIEW', 'Payroll', 'VIEW'],
+  ['Payroll.CREATE', 'Payroll', 'CREATE'],
   ['WorkPackage.VIEW', 'WorkPackage', 'VIEW'],
   ['WorkPackage.CREATE', 'WorkPackage', 'CREATE'],
   ['WorkPackage.EDIT', 'WorkPackage', 'EDIT'],

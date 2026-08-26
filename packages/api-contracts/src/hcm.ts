@@ -203,3 +203,30 @@ export const createEquipmentUsageSchema = z.object({
   description: z.string().max(500).optional(),
 });
 export type CreateEquipmentUsage = z.infer<typeof createEquipmentUsageSchema>;
+
+export const payrollAllocationSchema = z.object({
+  id: z.string(),
+  employeeId: z.string(),
+  projectId: z.string().nullable(),
+  period: z.string(),
+  grossAmount: z.number(),
+  projectAmount: z.number(),
+  overheadAmount: z.number(),
+  status: z.string(),
+  createdBy: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  employee: z.object({ name: z.string(), employeeNumber: z.string() }).optional(),
+  project: z.object({ code: z.string(), name: z.string() }).nullable().optional(),
+});
+export type PayrollAllocation = z.infer<typeof payrollAllocationSchema>;
+
+export const createPayrollAllocationSchema = z.object({
+  employeeId: z.string(),
+  projectId: z.string().optional(),
+  period: z.string().length(7),
+  grossAmount: z.number().min(0),
+  projectAmount: z.number().min(0),
+  overheadAmount: z.number().min(0),
+});
+export type CreatePayrollAllocation = z.infer<typeof createPayrollAllocationSchema>;

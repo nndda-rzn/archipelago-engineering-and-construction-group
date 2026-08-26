@@ -3,7 +3,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
 import { useLegalEntities } from '@/entities/legal-entity';
 import { useProjects } from '@/entities/project';
-import { useEmployees, useCreateEmployee, useCreateAssignment, useAssignments, type Employee, type ProjectAssignment } from '@/features/hcm';
+import { useEmployees, useCreateEmployee, useCreateAssignment, useAssignments, useChangeEmployeeStatus, type Employee, type ProjectAssignment } from '@/features/hcm';
 
 const PAGE_SIZE = 20;
 
@@ -41,7 +41,33 @@ const columns = [
     header: 'Status',
     cell: (info) => <Badge variant={statusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge>,
   }),
+  columnHelper.display({
+    id: 'actions',
+    header: '',
+    cell: ({ row }) => <StatusButtons employee={row.original} />,
+  }),
 ];
+
+function StatusButtons({ employee }: { employee: Employee }) {
+  const change = useChangeEmployeeStatus();
+  if (employee.status === 'LEAVER') return null;
+  return (
+    <div className="flex items-center gap-1">
+      {employee.status === 'INACTIVE' ? (
+        <Button size="sm" variant="ghost" loading={change.isPending} onClick={() => change.mutate({ id: employee.id, status: 'ACTIVE' })}>
+          Aktifkan
+        </Button>
+      ) : (
+        <Button size="sm" variant="ghost" loading={change.isPending} onClick={() => change.mutate({ id: employee.id, status: 'INACTIVE' })}>
+          Nonaktifkan
+        </Button>
+      )}
+      <Button size="sm" variant="ghost" className="text-destructive-600" loading={change.isPending} onClick={() => change.mutate({ id: employee.id, status: 'LEAVER' })}>
+        Leaver
+      </Button>
+    </div>
+  );
+}
 
 const assignmentColumns = [
   assignHelper.accessor('project', {
