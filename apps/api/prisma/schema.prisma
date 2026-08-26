@@ -182,6 +182,11 @@ model Project {
   risks              Risk[]
   legalCases         LegalCase[]
   contracts          Contract[]
+  deliverables       Deliverable[]
+  drawings           Drawing[]
+  rfis               Rfi[]
+  submittals         Submittal[]
+  transmittals       Transmittal[]
   rfqs           Rfq[]
   workPackages   ConstructionWorkPackage[]
   dailyReports   ConstructionDailyReport[]
@@ -1513,6 +1518,116 @@ model Contract {
   @@index([projectId])
   @@index([clientId])
   @@index([status])
+}
+
+// FR-ENG-001: Deliverable register (discipline, engineer, planned/forecast/actual date, status)
+model Deliverable {
+  id               String   @id @default(cuid())
+  deliverableNumber String  @unique // mis. "DLV-2027-000001"
+  projectId        String?
+  project          Project? @relation(fields: [projectId], references: [id])
+  title            String
+  discipline       String   @default("PIPING") // CIVIL | STRUCTURAL | PIPING | ELECTRICAL | INSTRUMENT | MECHANICAL | OTHER
+  engineer         String
+  plannedDate      DateTime?
+  forecastDate     DateTime?
+  actualDate       DateTime?
+  status           String   @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | SUBMITTED | APPROVED | ISSUED
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([discipline])
+  @@index([status])
+}
+
+// FR-ENG-002: Drawing revision — satu current revision (published immutable)
+model Drawing {
+  id             String   @id @default(cuid())
+  drawingNumber  String   @unique // mis. "DRW-2027-000001"
+  projectId      String?
+  project        Project? @relation(fields: [projectId], references: [id])
+  title          String
+  discipline     String   @default("PIPING")
+  currentRevision String  @default("0")
+  status         String   @default("DRAFT") // DRAFT | PUBLISHED | SUPERSEDED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  revisions      DrawingRevision[]
+
+  @@index([projectId])
+}
+
+// FR-ENG-002: published revision immutable — revision baru = row baru
+model DrawingRevision {
+  id          String   @id @default(cuid())
+  drawingId   String
+  drawing     Drawing  @relation(fields: [drawingId], references: [id], onDelete: Cascade)
+  revision    String   // "0", "1", "2"...
+  description String?
+  publishedAt DateTime @default(now())
+  publishedBy String
+
+  @@unique([drawingId, revision])
+}
+
+// FR-ENG-003: RFI — impact cost/schedule/design
+model Rfi {
+  id           String   @id @default(cuid())
+  rfiNumber    String   @unique // mis. "RFI-2027-000001"
+  projectId    String?
+  project      Project? @relation(fields: [projectId], references: [id])
+  title        String
+  question     String
+  answer       String?
+  impactCost   Decimal? @db.Decimal(18, 2)
+  impactScheduleDays Int?
+  status       String   @default("OPEN") // OPEN | ANSWERED | CLOSED
+  createdBy    String
+  answeredBy   String?
+  answeredAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
+// FR-ENG-004: Submittal review cycle + response due date
+model Submittal {
+  id            String   @id @default(cuid())
+  submittalNumber String  @unique // mis. "SUB-2027-000001"
+  projectId     String?
+  project       Project? @relation(fields: [projectId], references: [id])
+  title         String
+  dueDate       DateTime?
+  status        String   @default("SUBMITTED") // SUBMITTED | UNDER_REVIEW | APPROVED | REJECTED
+  responseNote  String?
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
+// FR-ENG-005: Transmittal — dokumen eksternal
+model Transmittal {
+  id               String   @id @default(cuid())
+  transmittalNumber String  @unique // mis. "TRM-2027-000001"
+  projectId        String?
+  project          Project? @relation(fields: [projectId], references: [id])
+  recipient        String
+  subject          String
+  documentList     String? // ringkasan dokumen
+  sentAt           DateTime @default(now())
+  sentBy           String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([projectId])
 }
 
 // ─── Procurement: RFQ + Vendor Evaluation (FR-PRO-003/004) ───────────────────
