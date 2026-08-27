@@ -1,20 +1,8 @@
 import { useState } from 'react';
-import { Badge, Button } from '@aec/ui';
+import { Button } from '@aec/ui';
 import { useWorkflowDefinitions } from '@/features/approval';
 import { WorkflowCard } from '@/features/approval';
 import { CreateWorkflowForm } from '@/features/approval';
-import { formatNumber } from '@/shared/lib/format';
-
-const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
-  DRAFT: 'default', ACTIVE: 'success', ARCHIVED: 'warning',
-};
-
-const opLabel: Record<string, string> = { '>': '>', '<': '<', '>=': '≥', '<=': '≤', '==': '=', };
-
-function StepBadge({ conditionField, conditionOp, conditionValue }: { conditionField: string | null; conditionOp: string | null; conditionValue: number | null }) {
-  if (!conditionField || !conditionOp || conditionValue == null) return null;
-  return <Badge variant="default">{conditionField} {opLabel[conditionOp] ?? conditionOp} {formatNumber(conditionValue)}</Badge>;
-}
 
 export function WorkflowDefinitionPage() {
   const [showForm, setShowForm] = useState(false);

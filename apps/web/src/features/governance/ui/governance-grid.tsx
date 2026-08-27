@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Badge, Button, Input } from '@aec/ui';
+import { Badge, Button } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useAdvanceAudit, useCompleteAccessReview, useMitigateRisk, useRespondFinding, useUpdateLegalCaseStatus } from '../model/governance.api';
 import type { AccessReview, AuditEngagement, AuditFinding, LegalCase, Risk } from '@aec/api-contracts';
@@ -57,17 +56,15 @@ export const riskColumns = [
   riskHelper.display({
     id: 'actions',
     header: '',
-    cell: ({ row }) => {
-      const mitigate = useMitigateRisk();
-      if (row.original.status === 'CLOSED' || row.original.status === 'MITIGATED') return null;
-      return (
-        <Button size="sm" variant="secondary" loading={mitigate.isPending} onClick={() => mitigate.mutate({ id: row.original.id, residualLikelihood: 2, residualImpact: 2 })}>
-          Mitigasi
-        </Button>
-      );
-    },
+    cell: ({ row }) => <MitigateRiskCell risk={row.original} />,
   }),
 ];
+
+function MitigateRiskCell({ risk }: { risk: Risk }) {
+  const mitigate = useMitigateRisk();
+  if (risk.status === 'CLOSED' || risk.status === 'MITIGATED') return null;
+  return <Button size="sm" variant="secondary" loading={mitigate.isPending} onClick={() => mitigate.mutate({ id: risk.id, residualLikelihood: 2, residualImpact: 2 })}>Mitigasi</Button>;
+}
 
 export const auditColumns = [
   auditHelper.accessor('auditNumber', {
@@ -85,19 +82,17 @@ export const auditColumns = [
   auditHelper.display({
     id: 'actions',
     header: '',
-    cell: ({ row }) => {
-      const advance = useAdvanceAudit();
-      const next: Record<string, string> = { PLANNED: 'FIELDWORK', FIELDWORK: 'FINDINGS', FINDINGS: 'CLOSED' };
-      const to = next[row.original.status];
-      if (!to) return null;
-      return (
-        <Button size="sm" variant="secondary" loading={advance.isPending} onClick={() => advance.mutate({ id: row.original.id, status: to })}>
-          → {to}
-        </Button>
-      );
-    },
+    cell: ({ row }) => <AdvanceAuditCell audit={row.original} />,
   }),
 ];
+
+function AdvanceAuditCell({ audit }: { audit: AuditEngagement }) {
+  const advance = useAdvanceAudit();
+  const next: Record<string, string> = { PLANNED: 'FIELDWORK', FIELDWORK: 'FINDINGS', FINDINGS: 'CLOSED' };
+  const to = next[audit.status];
+  if (!to) return null;
+  return <Button size="sm" variant="secondary" loading={advance.isPending} onClick={() => advance.mutate({ id: audit.id, status: to })}>→ {to}</Button>;
+}
 
 export const findingColumns = [
   findingHelper.accessor('title', {
@@ -119,22 +114,20 @@ export const findingColumns = [
   findingHelper.display({
     id: 'actions',
     header: '',
-    cell: ({ row }) => {
-      const respond = useRespondFinding();
-      if (row.original.status === 'VERIFIED') return null;
-      return (
-        <div className="flex items-center gap-1">
-          <Button size="sm" variant="secondary" loading={respond.isPending} onClick={() => respond.mutate({ id: row.original.id, response: 'diterima', status: 'ACCEPTED' })}>
-            Terima
-          </Button>
-          <Button size="sm" variant="ghost" loading={respond.isPending} onClick={() => respond.mutate({ id: row.original.id, status: 'VERIFIED' })}>
-            Verified
-          </Button>
-        </div>
-      );
-    },
+    cell: ({ row }) => <RespondFindingCell finding={row.original} />,
   }),
 ];
+
+function RespondFindingCell({ finding }: { finding: AuditFinding }) {
+  const respond = useRespondFinding();
+  if (finding.status === 'VERIFIED') return null;
+  return (
+    <div className="flex items-center gap-1">
+      <Button size="sm" variant="secondary" loading={respond.isPending} onClick={() => respond.mutate({ id: finding.id, response: 'diterima', status: 'ACCEPTED' })}>Terima</Button>
+      <Button size="sm" variant="ghost" loading={respond.isPending} onClick={() => respond.mutate({ id: finding.id, status: 'VERIFIED' })}>Verified</Button>
+    </div>
+  );
+}
 
 export const legalColumns = [
   legalHelper.accessor('caseNumber', {
@@ -160,22 +153,20 @@ export const legalColumns = [
   legalHelper.display({
     id: 'actions',
     header: '',
-    cell: ({ row }) => {
-      const update = useUpdateLegalCaseStatus();
-      if (['WON', 'LOST', 'SETTLED'].includes(row.original.status)) return null;
-      return (
-        <div className="flex items-center gap-1">
-          <Button size="sm" variant="secondary" loading={update.isPending} onClick={() => update.mutate({ id: row.original.id, status: 'IN_PROGRESS' })}>
-            Proses
-          </Button>
-          <Button size="sm" variant="ghost" loading={update.isPending} onClick={() => update.mutate({ id: row.original.id, status: 'SETTLED' })}>
-            Selesai
-          </Button>
-        </div>
-      );
-    },
+    cell: ({ row }) => <LegalCaseActions legal={row.original} />,
   }),
 ];
+
+function LegalCaseActions({ legal }: { legal: LegalCase }) {
+  const update = useUpdateLegalCaseStatus();
+  if (['WON', 'LOST', 'SETTLED'].includes(legal.status)) return null;
+  return (
+    <div className="flex items-center gap-1">
+      <Button size="sm" variant="secondary" loading={update.isPending} onClick={() => update.mutate({ id: legal.id, status: 'IN_PROGRESS' })}>Proses</Button>
+      <Button size="sm" variant="ghost" loading={update.isPending} onClick={() => update.mutate({ id: legal.id, status: 'SETTLED' })}>Selesai</Button>
+    </div>
+  );
+}
 
 export const reviewColumns = [
   reviewHelper.accessor('reviewNumber', {
@@ -193,14 +184,12 @@ export const reviewColumns = [
   reviewHelper.display({
     id: 'actions',
     header: '',
-    cell: ({ row }) => {
-      const complete = useCompleteAccessReview();
-      if (row.original.status === 'COMPLETED') return null;
-      return (
-        <Button size="sm" variant="secondary" loading={complete.isPending} onClick={() => complete.mutate({ id: row.original.id })}>
-          Selesaikan
-        </Button>
-      );
-    },
+    cell: ({ row }) => <CompleteReviewCell review={row.original} />,
   }),
 ];
+
+function CompleteReviewCell({ review }: { review: AccessReview }) {
+  const complete = useCompleteAccessReview();
+  if (review.status === 'COMPLETED') return null;
+  return <Button size="sm" variant="secondary" loading={complete.isPending} onClick={() => complete.mutate({ id: review.id })}>Selesaikan</Button>;
+}

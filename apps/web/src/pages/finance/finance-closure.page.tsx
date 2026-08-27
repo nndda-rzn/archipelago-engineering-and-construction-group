@@ -3,7 +3,6 @@ import { DataGrid } from '@aec/ui';
 import {
   useBalanceSheet, useConsolidation, useIncomeStatement,
   useIntercompany, useIntercompanyReconciliation, usePeriodCloses,
-  type BalanceSheet, type Consolidation, type IncomeStatement,
 } from '@/features/finance';
 import {
   EntitySelector, IntercompanyForm, PeriodCloseForm,
@@ -22,8 +21,6 @@ export function FinanceClosurePage() {
   const incomeStatement = useIncomeStatement({ legalEntityId: entityId });
   const balanceSheet = useBalanceSheet({ legalEntityId: entityId });
   const consolidation = useConsolidation();
-
-  const gridProps = { rowCount: 0, isLoading: false, isError: false };
 
   return (
     <div className="space-y-8 p-6">

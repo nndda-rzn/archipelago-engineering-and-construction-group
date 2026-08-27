@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, DataGrid } from '@aec/ui';
+import { Button, DataGrid } from '@aec/ui';
 import { useEquipment, type Equipment } from '@/features/hcm';
 import { EquipmentForm, EquipmentDetail, equipmentColumns } from '@/features/hcm/ui';
 

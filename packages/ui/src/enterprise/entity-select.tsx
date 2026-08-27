@@ -2,7 +2,6 @@ import * as React from 'react';
 import { Search } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../primitives/select';
 import { Input } from '../primitives/input';
-import { cn } from '../lib/cn';
 
 /**
  * EntitySelect — dropdown dengan pencarian client-side.

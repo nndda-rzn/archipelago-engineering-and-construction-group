@@ -10,10 +10,10 @@ import {
   type PaginationState,
 } from '@tanstack/react-table';
 import { ChevronDown, ChevronUp, ChevronsUpDown, Download } from 'lucide-react';
-import { cn } from '../lib/cn';
 import { Button } from '../primitives/button';
 
 export interface DataGridProps<TData> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TanStack ColumnDef memakai any untuk value generic.
   columns: ColumnDef<TData, any>[];
   data: TData[];
   isLoading?: boolean;

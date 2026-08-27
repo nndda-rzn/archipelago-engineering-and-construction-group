@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createObservationSchema, safetyObservationSchema, createIncidentSchema, hseIncidentSchema,
-  createPermitSchema, permitToWorkSchema, createCorrectiveActionSchema, correctiveActionSchema,
+  createPermitSchema, permitToWorkSchema, createCorrectiveActionSchema,
 } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
 

@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { paginatedResponseSchema } from './core';
 
 // ─── Foundation/Domain Hardening (Fase 11F) ──────────────────────────────────
 

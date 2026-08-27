@@ -36,17 +36,15 @@ export const observationColumns = [
   obsHelper.display({
     id: 'actions',
     header: '',
-    cell: ({ row }) => {
-      const resolve = useResolveObservation();
-      if (row.original.status !== 'OPEN') return null;
-      return (
-        <Button size="sm" variant="secondary" loading={resolve.isPending} onClick={() => resolve.mutate({ id: row.original.id })}>
-          Resolve
-        </Button>
-      );
-    },
+    cell: ({ row }) => <ResolveObservationCell observation={row.original} />,
   }),
 ];
+
+function ResolveObservationCell({ observation }: { observation: SafetyObservation }) {
+  const resolve = useResolveObservation();
+  if (observation.status !== 'OPEN') return null;
+  return <Button size="sm" variant="secondary" loading={resolve.isPending} onClick={() => resolve.mutate({ id: observation.id })}>Resolve</Button>;
+}
 
 export const incidentColumns = [
   incHelper.accessor('incidentNumber', {
@@ -100,17 +98,15 @@ export const caColumns = [
   caHelper.display({
     id: 'actions',
     header: '',
-    cell: ({ row }) => {
-      const verify = useVerifyCorrectiveAction();
-      if (row.original.status === 'VERIFIED') return null;
-      return (
-        <Button size="sm" variant="secondary" loading={verify.isPending} onClick={() => verify.mutate({ id: row.original.id, evidence: 'done' })}>
-          Verifikasi
-        </Button>
-      );
-    },
+    cell: ({ row }) => <VerifyCaCell ca={row.original} />,
   }),
 ];
+
+function VerifyCaCell({ ca }: { ca: CorrectiveAction }) {
+  const verify = useVerifyCorrectiveAction();
+  if (ca.status === 'VERIFIED') return null;
+  return <Button size="sm" variant="secondary" loading={verify.isPending} onClick={() => verify.mutate({ id: ca.id, evidence: 'done' })}>Verifikasi</Button>;
+}
 
 export const permitColumns = [
   permitHelper.accessor('permitNumber', {
@@ -140,17 +136,15 @@ export const permitColumns = [
   permitHelper.display({
     id: 'actions',
     header: '',
-    cell: ({ row }) => {
-      const revoke = useRevokePermit();
-      if (row.original.status !== 'ACTIVE') return null;
-      return (
-        <Button size="sm" variant="ghost" loading={revoke.isPending} onClick={() => revoke.mutate({ id: row.original.id })}>
-          Cabut
-        </Button>
-      );
-    },
+    cell: ({ row }) => <RevokePermitCell permit={row.original} />,
   }),
 ];
+
+function RevokePermitCell({ permit }: { permit: PermitToWork }) {
+  const revoke = useRevokePermit();
+  if (permit.status !== 'ACTIVE') return null;
+  return <Button size="sm" variant="ghost" loading={revoke.isPending} onClick={() => revoke.mutate({ id: permit.id })}>Cabut</Button>;
+}
 
 function IncidentActions({ incident }: { incident: HseIncident }) {
   const investigate = useInvestigateIncident();
@@ -179,3 +173,4 @@ function IncidentActions({ incident }: { incident: HseIncident }) {
     </div>
   );
 }
+ 

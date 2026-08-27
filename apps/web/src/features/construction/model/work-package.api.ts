@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { commissioningSystemSchema, createCommissioningSchema, createDailyReportSchema, createHandoverSchema, createWorkPackageSchema, dailyReportListResponseSchema, handoverListResponseSchema, workPackageListResponseSchema, type CommissioningSystem, type DailyReport, type HandoverPackage, type WorkPackage } from '@aec/api-contracts';
+import { commissioningSystemSchema, createCommissioningSchema, createDailyReportSchema, createHandoverSchema, createWorkPackageSchema, dailyReportListResponseSchema, handoverListResponseSchema, workPackageListResponseSchema, type CommissioningSystem, type HandoverPackage, type WorkPackage } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
 
 export const workPackageKeys = {

@@ -101,7 +101,7 @@ export function useCreateDeviation(opportunityId: string) {
   });
 }
 
-function deviationAction(action: 'approve' | 'reject') {
+function useDeviationAction(action: 'approve' | 'reject') {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => postJson<unknown>(`/deviations/${id}/${action}`, {}),
@@ -109,8 +109,8 @@ function deviationAction(action: 'approve' | 'reject') {
   });
 }
 
-export const useApproveDeviation = () => deviationAction('approve');
-export const useRejectDeviation = () => deviationAction('reject');
+export const useApproveDeviation = () => useDeviationAction('approve');
+export const useRejectDeviation = () => useDeviationAction('reject');
 
 export function useTenderSubmissions(params: { page: number; pageSize: number }) {
   return useQuery({

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid } from '@aec/ui';
-import { useWarehouses, useMaterialIssues, type MaterialIssue } from '@/features/inventory';
+import { useMaterialIssues, type MaterialIssue } from '@/features/inventory';
 import { IssueForm } from '@/features/inventory';
 
 const PAGE_SIZE = 20;

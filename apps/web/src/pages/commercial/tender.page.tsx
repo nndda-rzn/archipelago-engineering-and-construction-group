@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { DataGrid } from '@aec/ui';
 import {
   useBidDecisions, useContracts, useDeviations, useEstimates, useOpportunities,
-  useTenderSubmissions, type ContractAmendment, useAmendments,
+  useTenderSubmissions, useAmendments,
 } from '@/features/commercial';
 import {
   BidForm, EstimatePanel, DeviationPanel, SubmissionForm, AmendmentPanel,

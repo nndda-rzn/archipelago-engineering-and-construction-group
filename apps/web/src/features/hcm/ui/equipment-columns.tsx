@@ -62,17 +62,15 @@ export const assignmentColumns = [
   assignHelper.display({
     id: 'actions',
     header: '',
-    cell: ({ row }) => {
-      const end = useEndEquipmentAssignment();
-      if (row.original.status !== 'ACTIVE') return null;
-      return (
-        <Button size="sm" variant="ghost" loading={end.isPending} onClick={() => end.mutate({ equipmentId: row.original.equipmentId, assignmentId: row.original.id })}>
-          Akhiri
-        </Button>
-      );
-    },
+    cell: ({ row }) => <EndAssignmentCell assignment={row.original} />,
   }),
 ];
+
+function EndAssignmentCell({ assignment }: { assignment: EquipmentAssignment }) {
+  const end = useEndEquipmentAssignment();
+  if (assignment.status !== 'ACTIVE') return null;
+  return <Button size="sm" variant="ghost" loading={end.isPending} onClick={() => end.mutate({ equipmentId: assignment.equipmentId, assignmentId: assignment.id })}>Akhiri</Button>;
+}
 
 export const pmColumns = [
   pmHelper.accessor('triggerType', {
@@ -97,17 +95,15 @@ export const pmColumns = [
   pmHelper.display({
     id: 'actions',
     header: '',
-    cell: ({ row }) => {
-      const complete = useCompleteEquipmentPm();
-      if (row.original.status !== 'SCHEDULED') return null;
-      return (
-        <Button size="sm" variant="secondary" loading={complete.isPending} onClick={() => complete.mutate({ equipmentId: row.original.equipmentId, pmId: row.original.id })}>
-          Selesai
-        </Button>
-      );
-    },
+    cell: ({ row }) => <CompletePmCell pm={row.original} />,
   }),
 ];
+
+function CompletePmCell({ pm }: { pm: EquipmentPm }) {
+  const complete = useCompleteEquipmentPm();
+  if (pm.status !== 'SCHEDULED') return null;
+  return <Button size="sm" variant="secondary" loading={complete.isPending} onClick={() => complete.mutate({ equipmentId: pm.equipmentId, pmId: pm.id })}>Selesai</Button>;
+}
 
 export const breakdownColumns = [
   bdHelper.accessor('breakdownDate', {
@@ -129,14 +125,12 @@ export const breakdownColumns = [
   bdHelper.display({
     id: 'actions',
     header: '',
-    cell: ({ row }) => {
-      const resolve = useResolveEquipmentBreakdown();
-      if (row.original.status !== 'OPEN') return null;
-      return (
-        <Button size="sm" variant="secondary" loading={resolve.isPending} onClick={() => resolve.mutate({ equipmentId: row.original.equipmentId, breakdownId: row.original.id })}>
-          Resolve
-        </Button>
-      );
-    },
+    cell: ({ row }) => <ResolveBreakdownCell breakdown={row.original} />,
   }),
 ];
+
+function ResolveBreakdownCell({ breakdown }: { breakdown: EquipmentBreakdown }) {
+  const resolve = useResolveEquipmentBreakdown();
+  if (breakdown.status !== 'OPEN') return null;
+  return <Button size="sm" variant="secondary" loading={resolve.isPending} onClick={() => resolve.mutate({ equipmentId: breakdown.equipmentId, breakdownId: breakdown.id })}>Resolve</Button>;
+}
