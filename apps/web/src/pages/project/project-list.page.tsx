@@ -172,6 +172,7 @@ export function ProjectListPage() {
           isError={isError}
           onRetry={() => refetch()}
           emptyMessage="Belum ada project"
+          exportFilename="projects"
         />
       </div>
     </div>

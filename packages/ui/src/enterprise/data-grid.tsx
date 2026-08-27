@@ -2,13 +2,14 @@ import * as React from 'react';
 import {
   flexRender,
   getCoreRowModel,
+  getSortedRowModel,
   useReactTable,
   type ColumnDef,
   type Row,
   type SortingState,
   type PaginationState,
 } from '@tanstack/react-table';
-import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronsUpDown, Download } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { Button } from '../primitives/button';
 
@@ -27,6 +28,29 @@ export interface DataGridProps<TData> {
   onSortingChange?: (sorting: SortingState) => void;
   /** Click row handler — untuk detail drill-down. */
   onRowClick?: (row: Row<TData>) => void;
+  /** Judul file saat export CSV. */
+  exportFilename?: string;
+  /** Mode kepadatan baris. Default compact. */
+  density?: 'compact' | 'comfortable';
+  /** Sembunyikan toolbar (export). */
+  hideToolbar?: boolean;
+}
+
+function escapeCsv(value: unknown): string {
+  const s = value == null ? '' : String(value);
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function downloadCsv(filename: string, rows: string[][]) {
+  const csv = rows.map((r) => r.join(',')).join('\n');
+  const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename.endsWith('.csv') ? filename : `${filename}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export function DataGrid<TData>({
@@ -42,18 +66,21 @@ export function DataGrid<TData>({
   sorting,
   onSortingChange,
   onRowClick,
+  exportFilename,
+  density = 'compact',
+  hideToolbar,
 }: DataGridProps<TData>) {
   const isServer = pagination !== undefined && onPaginationChange !== undefined;
 
   // Client mode: internal pagination state agar TanStack tak crash (getPageCount butuh state.pagination).
   const [internalPagination, setInternalPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
   const effectivePagination = pagination ?? internalPagination;
-  const handlePaginationChange = onPaginationChange ?? setInternalPagination;
 
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: sorting !== undefined ? getSortedRowModel() : undefined,
     manualPagination: isServer,
     manualSorting: sorting !== undefined && onSortingChange !== undefined,
     rowCount: rowCount ?? data.length,
@@ -70,6 +97,22 @@ export function DataGrid<TData>({
       onSortingChange(next);
     } : undefined,
   });
+
+  const handlePaginationChange = onPaginationChange ?? setInternalPagination;
+
+  const exportCsv = () => {
+    if (!exportFilename || data.length === 0) return;
+    const visibleCols = table.getVisibleFlatColumns().filter((c) => c.id !== 'actions' && c.id !== 'select');
+    const header = visibleCols.map((c) => escapeCsv(typeof c.columnDef.header === 'string' ? c.columnDef.header : c.id));
+    const rows = data.map((item) =>
+      visibleCols.map((c) => {
+        const value = (item as Record<string, unknown>)[c.id];
+        if (value && typeof value === 'object') return escapeCsv(JSON.stringify(value));
+        return escapeCsv(value);
+      }),
+    );
+    downloadCsv(exportFilename, [header, ...rows]);
+  };
 
   if (isLoading) {
     return <p className="p-6 text-body-sm text-neutral-500">Memuat…</p>;
@@ -94,6 +137,17 @@ export function DataGrid<TData>({
 
   return (
     <div>
+      {!hideToolbar && (
+        <div className="flex items-center justify-between border-b border-neutral-200 px-3 py-2">
+          <span className="text-caption text-neutral-500">{data.length} baris</span>
+          {exportFilename && (
+            <Button size="sm" variant="secondary" onClick={exportCsv} disabled={data.length === 0}>
+              <Download className="h-3.5 w-3.5" aria-hidden="true" />
+              Export CSV
+            </Button>
+          )}
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left text-body-sm">
           <thead className="sticky top-0 z-sticky bg-neutral-50">
@@ -147,7 +201,7 @@ export function DataGrid<TData>({
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-2 py-1.5">
+                    <td key={cell.id} className={density === 'compact' ? 'px-2 py-1.5' : 'px-4 py-3'}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
