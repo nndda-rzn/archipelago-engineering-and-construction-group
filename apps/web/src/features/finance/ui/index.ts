@@ -12,3 +12,5 @@ export { subcontractColumns, progressColumns } from './subcontract-grid';
 export { VariationForm } from './variation-form';
 export { variationColumns } from './variation-grid';
 export { ReconciliationSummary, IncomeStatementSection, BalanceSheetSection, ConsolidationSection } from './finance-closure-sections';
+export { ChartOfAccountTable } from './chart-of-account-table';
+export { CoaForm } from './chart-of-account-form';
