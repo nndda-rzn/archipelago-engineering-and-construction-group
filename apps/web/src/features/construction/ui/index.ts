@@ -4,3 +4,5 @@ export { handoverColumns, statusVariant as handoverStatusVariant, statusLabel as
 export { HandoverForm, HandoverDetail } from './handover-forms';
 export { dailyReportColumns } from './daily-reports-grid';
 export { CreateDailyReportForm } from './daily-reports-form';
+export { CommissioningTree } from './commissioning-tree';
+export { CommissioningForm } from './commissioning-form';
