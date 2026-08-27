@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid, EmptyCell, Input, Label } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, DataGrid, EmptyCell, Input, Label } from '@aec/ui';
 import { Plus, Trash2 } from 'lucide-react';
 import { useCreatePr, usePrs, type PurchaseRequisition } from '@/features/procurement';
 import { useProjects } from '@/entities/project';
@@ -52,23 +52,24 @@ function SubmitButton({ pr }: { pr: PurchaseRequisition }) {
   const submit = useSubmitForApproval();
   if (pr.status !== 'DRAFT') return null;
   return (
-    <Button
+    <ConfirmActionButton
       size="sm"
       variant="secondary"
-      onClick={() => {
-        if (window.confirm(`Ajukan ${pr.prNumber} untuk approval?`)) {
-          submit.mutate({
-            transactionType: 'PurchaseRequisition',
-            transactionId: pr.id,
-            transactionCode: pr.prNumber,
-            approverRoleCode: 'PROCUREMENT_MANAGER',
-          });
-        }
-      }}
+      confirmTitle="Ajukan approval"
+      confirmDescription={`Ajukan ${pr.prNumber} untuk approval?`}
+      confirmLabel="Ajukan"
+      onConfirm={() =>
+        submit.mutate({
+          transactionType: 'PurchaseRequisition',
+          transactionId: pr.id,
+          transactionCode: pr.prNumber,
+          approverRoleCode: 'PROCUREMENT_MANAGER',
+        })
+      }
       loading={submit.isPending}
     >
       Ajukan Approval
-    </Button>
+    </ConfirmActionButton>
   );
 }
 

@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { createUserSchema, type User } from '@aec/api-contracts';
 import { z } from 'zod';
 import { createColumnHelper, type SortingState } from '@tanstack/react-table';
-import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, DataGrid, Input, Label } from '@aec/ui';
 import { useBlockUser, useCreateUser, useUsers } from '@/entities/user';
 
 const PAGE_SIZE = 20;
@@ -61,16 +61,17 @@ const columns = [
 function BlockButton({ id, disabled }: { id: string; disabled: boolean }) {
   const block = useBlockUser();
   return (
-    <Button
+    <ConfirmActionButton
       variant="secondary"
       size="sm"
       disabled={disabled}
-      onClick={() => {
-        if (window.confirm('Blokir user ini?')) block.mutate(id);
-      }}
+      confirmTitle="Blokir user"
+      confirmDescription="User ini tidak akan bisa login."
+      confirmLabel="Blokir"
+      onConfirm={() => block.mutate(id)}
     >
       Blokir
-    </Button>
+    </ConfirmActionButton>
   );
 }
 

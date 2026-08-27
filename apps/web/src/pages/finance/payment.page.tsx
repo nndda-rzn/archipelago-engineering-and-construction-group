@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid, EmptyCell } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, DataGrid, EmptyCell } from '@aec/ui';
 import { useApprovePayment, usePayPayment, usePayments, type Payment } from '@/features/finance';
 import { PaymentForm } from '@/features/finance';
 import { formatIdr } from '@/shared/lib/format';
@@ -60,16 +60,17 @@ function ActionButtons({ payment }: { payment: Payment }) {
         </Button>
       )}
       {payment.status === 'APPROVED' && (
-        <Button
+        <ConfirmActionButton
           size="sm"
           variant="secondary"
-          onClick={() => {
-            if (window.confirm(`Bayar ${payment.paymentNumber}? AP terkurangi.`)) pay.mutate(payment.id);
-          }}
+          confirmTitle="Bayar"
+          confirmDescription={`Bayar ${payment.paymentNumber}? AP terkurangi.`}
+          confirmLabel="Bayar"
+          onConfirm={() => pay.mutate(payment.id)}
           loading={pay.isPending}
         >
           Bayar
-        </Button>
+        </ConfirmActionButton>
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, DataGrid, Input, Label } from '@aec/ui';
 import { useClientInvoices, useCreateClientInvoice, usePostClientInvoice, useProgressClaims, type ClientInvoice } from '@/features/finance';
 import { formatIdr as fmt } from '@/shared/lib/format';
 
@@ -47,16 +47,17 @@ function PostButton({ invoice }: { invoice: ClientInvoice }) {
   const post = usePostClientInvoice();
   if (invoice.status !== 'DRAFT') return null;
   return (
-    <Button
+    <ConfirmActionButton
       size="sm"
       variant="secondary"
-      onClick={() => {
-        if (window.confirm(`Posting ${invoice.invoiceNumber}? Auto-GL: Dr Piutang, Cr Pendapatan.`)) post.mutate(invoice.id);
-      }}
+      confirmTitle="Posting invoice"
+      confirmDescription={`Posting ${invoice.invoiceNumber}? Auto-GL: Dr Piutang, Cr Pendapatan.`}
+      confirmLabel="Posting"
+      onConfirm={() => post.mutate(invoice.id)}
       loading={post.isPending}
     >
       Posting
-    </Button>
+    </ConfirmActionButton>
   );
 }
 
