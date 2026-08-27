@@ -10,4 +10,5 @@ export { ToastProvider, ToastPrimitive, useToast } from './primitives/toast';
 export { Skeleton, TableSkeleton, KpiSkeleton } from './primitives/skeleton';
 export { EmptyState, ErrorState, GridState } from './enterprise/state';
 export { StatusBadge, statusMeta } from './enterprise/status-badge';
+export { EntitySelect, type EntitySelectOption } from './enterprise/entity-select';
 export { DataGrid, type DataGridProps } from './enterprise/data-grid';
