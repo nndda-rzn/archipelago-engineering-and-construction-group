@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
+import { Badge, Button, DataGrid, EmptyCell, Input, Label } from '@aec/ui';
 import { Plus, Trash2 } from 'lucide-react';
 import { useCreatePr, usePrs, type PurchaseRequisition } from '@/features/procurement';
 import { useProjects } from '@/entities/project';
@@ -26,7 +26,7 @@ const columns = [
   }),
   columnHelper.accessor('project', {
     header: 'Project',
-    cell: (info) => <span className="text-neutral-700">{info.getValue()?.code ?? '-'}</span>,
+    cell: (info) => <span className="text-neutral-700">{info.getValue()?.code ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('requestedBy', {
     header: 'Diminta Oleh',

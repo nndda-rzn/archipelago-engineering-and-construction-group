@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid, ConfirmDialog, useToast } from '@aec/ui';
+import { Badge, Button, DataGrid, ConfirmDialog, EmptyCell, useToast } from '@aec/ui';
 import { useApprovalTasks, useDecideApproval, type ApprovalTask } from '@/features/approval';
 import { formatDateTime } from '@/shared/lib/format';
 
@@ -21,7 +21,7 @@ const typeLabel: Record<string, string> = {
 const columns = [
   columnHelper.accessor('transactionCode', {
     header: 'Dokumen',
-    cell: (info) => <span className="font-mono text-neutral-800">{info.getValue() ?? '-'}</span>,
+    cell: (info) => <span className="font-mono text-neutral-800">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('transactionType', {
     header: 'Tipe',
@@ -37,7 +37,7 @@ const columns = [
   }),
   columnHelper.accessor('comment', {
     header: 'Komentar',
-    cell: (info) => <span className="max-w-[240px] truncate text-neutral-600">{info.getValue() ?? '-'}</span>,
+    cell: (info) => <span className="max-w-[240px] truncate text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('createdAt', {
     header: 'Diajukan',

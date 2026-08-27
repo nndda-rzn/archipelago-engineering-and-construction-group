@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { createProjectSchema, projectSchema, type Project } from '@aec/api-contracts';
 import { z } from 'zod';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
+import { Badge, Button, DataGrid, EmptyCell, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateProject, useProjects } from '@/entities/project';
 import { useLegalEntities } from '@/entities/legal-entity';
 import { formatIdr } from '@/shared/lib/format';
@@ -36,7 +36,7 @@ const columns = [
   }),
   columnHelper.accessor('location', {
     header: 'Lokasi',
-    cell: (info) => <span className="text-neutral-600">{info.getValue() ?? '-'}</span>,
+    cell: (info) => <span className="text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('contractValue', {
     header: 'Nilai Kontrak',
@@ -44,7 +44,7 @@ const columns = [
       const v = info.getValue();
       return (
         <span className="font-mono tabular-nums text-neutral-700">
-          {v != null ? formatIdr(v) : '-'}
+          {v != null ? formatIdr(v) : <EmptyCell />}
         </span>
       );
     },
