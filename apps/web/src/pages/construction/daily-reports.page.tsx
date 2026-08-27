@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, DataGrid } from '@aec/ui';
+import { Button, DataGrid, EntitySelect } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useDailyReports } from '@/features/construction';
 import { CreateDailyReportForm, dailyReportColumns } from '@/features/construction/ui';
@@ -21,10 +21,14 @@ export function DailyReportsPage() {
           <p className="mt-1 text-body-sm text-neutral-500">Laporan harian lapangan konstruksi (FR-CON-003)</p>
         </div>
         <div className="flex items-center gap-2">
-          <select value={projectId} onChange={(e) => { setProjectId(e.target.value); setPagination({ pageIndex: 0, pageSize: PAGE_SIZE }); }} className="rounded-md border border-neutral-300 px-3 py-2 text-body-sm">
-            <option value="">Pilih Project...</option>
-            {projects?.items.map((p) => <option key={p.id} value={p.id}>{p.code} - {p.name}</option>)}
-          </select>
+          <EntitySelect
+            value={projectId}
+            onValueChange={(v) => { setProjectId(v); setPagination({ pageIndex: 0, pageSize: PAGE_SIZE }); }}
+            options={(projects?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }))}
+            placeholder="Pilih Project…"
+            searchPlaceholder="Cari project…"
+            className="w-64"
+          />
           {projectId && <Button size="sm" onClick={() => setShowForm(true)} disabled={showForm}>+ Daily Report</Button>}
         </div>
       </div>

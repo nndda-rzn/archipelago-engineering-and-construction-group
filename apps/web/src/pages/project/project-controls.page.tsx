@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DataGrid } from '@aec/ui';
+import { DataGrid, EntitySelect } from '@aec/ui';
 import {
   useCommitment, useControlAccounts, useCostCodes, useEvm, useForecasts,
 } from '@/features/project';
@@ -42,14 +42,14 @@ export function ProjectControlsPage() {
           <p className="mt-1 text-body-sm text-neutral-500">Cost code, control account, forecast, EVM, commitment (Fase 11B)</p>
         </div>
         <div className="flex items-center gap-2">
-          <select
+          <EntitySelect
             value={projectId}
-            onChange={(e) => { setProjectId(e.target.value); setShowForm(false); }}
-            className="flex h-9 w-64 rounded-md border border-neutral-200 bg-white px-3 text-body"
-          >
-            <option value="">Pilih project…</option>
-            {(projects.data?.items ?? []).map((p) => <option key={p.id} value={p.id}>{p.code} — {p.name}</option>)}
-          </select>
+            onValueChange={(v) => { setProjectId(v); setShowForm(false); }}
+            options={(projects.data?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }))}
+            placeholder="Pilih project…"
+            searchPlaceholder="Cari project…"
+            className="w-64"
+          />
           {projectId && (
             <button
               onClick={() => setShowForm((s) => !s)}
