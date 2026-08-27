@@ -123,9 +123,14 @@ export function LoginPage() {
             </div>
 
             {login.isError && (
-              <p className="rounded-md border border-destructive-200 bg-destructive-50 px-3 py-2 text-body-sm text-destructive-700">
-                Login gagal. Periksa email dan password Anda.
-              </p>
+              <div className="rounded-md border border-destructive-200 bg-destructive-50 px-3 py-2">
+                <p className="text-body-sm text-destructive-700">Login gagal. Periksa email dan password Anda.</p>
+                {login.error instanceof Error && 'code' in login.error && (
+                  <p className="mt-1 font-mono text-caption text-destructive-500">
+                    Kode: {String((login.error as { code?: string }).code ?? '')}
+                  </p>
+                )}
+              </div>
             )}
 
             <Button type="submit" className="mt-2 w-full" loading={login.isPending}>
