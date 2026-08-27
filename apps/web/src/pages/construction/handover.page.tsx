@@ -10,7 +10,7 @@ export function HandoverPage() {
   const [projectId, setProjectId] = useState('');
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
   const [showForm, setShowForm] = useState(false);
-  const [selected, setSelected] = useState<any>(null);
+  const [selected, setSelected] = useState<import('@aec/api-contracts').HandoverPackage | null>(null);
   const { data: projects } = useProjects({ page: 1, pageSize: 100 });
   const { data, isLoading, isError, refetch } = useHandovers(projectId, { page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
 

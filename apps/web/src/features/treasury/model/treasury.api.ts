@@ -73,7 +73,7 @@ export function useCreatePaymentProposal() {
   });
 }
 
-function proposalAction(action: 'submit' | 'approve' | 'release') {
+function useProposalAction(action: 'submit' | 'approve' | 'release') {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => postJson<unknown>(`/treasury/payment-proposals/${id}/${action}`, {}),
@@ -81,9 +81,9 @@ function proposalAction(action: 'submit' | 'approve' | 'release') {
   });
 }
 
-export const useSubmitProposal = () => proposalAction('submit');
-export const useApproveProposal = () => proposalAction('approve');
-export const useReleaseProposal = () => proposalAction('release');
+export const useSubmitProposal = () => useProposalAction('submit');
+export const useApproveProposal = () => useProposalAction('approve');
+export const useReleaseProposal = () => useProposalAction('release');
 
 export function useBankGuarantees(params: { page: number; pageSize: number }) {
   return useQuery({

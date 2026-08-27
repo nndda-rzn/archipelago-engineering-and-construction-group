@@ -31,7 +31,7 @@ export class PurchaseOrderService {
     });
 
     const totalAmount = pr.items.reduce(
-      (sum, i) => sum + Number(i.estimatedTotal ?? (Number(i.estimatedUnitPrice) ?? 0) * Number(i.quantity)),
+      (sum, i) => sum + Number(i.estimatedTotal ?? (Number(i.estimatedUnitPrice ?? 0) * Number(i.quantity))),
       0,
     );
 
@@ -48,8 +48,8 @@ export class PurchaseOrderService {
             description: i.description,
             quantity: i.quantity,
             unit: i.unit,
-            unitPrice: Number(i.estimatedUnitPrice) ?? 0,
-            totalPrice: Number(i.estimatedTotal) ?? (Number(i.estimatedUnitPrice) ?? 0) * Number(i.quantity),
+            unitPrice: Number(i.estimatedUnitPrice ?? 0),
+            totalPrice: Number(i.estimatedTotal ?? (Number(i.estimatedUnitPrice ?? 0) * Number(i.quantity))),
           })),
         },
       },

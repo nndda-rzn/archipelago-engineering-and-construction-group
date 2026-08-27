@@ -69,13 +69,15 @@ export const amendmentColumns = [
   amendmentHelper.display({
     id: 'actions',
     header: '',
-    cell: ({ row }) => {
-      const execute = useExecuteAmendment();
-      if (row.original.status !== 'DRAFT') return null;
-      return <Button size="sm" variant="secondary" loading={execute.isPending} onClick={() => execute.mutate(row.original.id)}>Eksekusi</Button>;
-    },
+    cell: ({ row }) => <ExecuteAmendmentCell amendment={row.original} />,
   }),
 ];
+
+function ExecuteAmendmentCell({ amendment }: { amendment: ContractAmendment }) {
+  const execute = useExecuteAmendment();
+  if (amendment.status !== 'DRAFT') return null;
+  return <Button size="sm" variant="secondary" loading={execute.isPending} onClick={() => execute.mutate(amendment.id)}>Eksekusi</Button>;
+}
 
 export function ApproveDeviationBtn({ id }: { id: string }) {
   const approve = useApproveDeviation();

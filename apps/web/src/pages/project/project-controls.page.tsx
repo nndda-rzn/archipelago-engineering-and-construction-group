@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, DataGrid } from '@aec/ui';
+import { DataGrid } from '@aec/ui';
 import {
   useCommitment, useControlAccounts, useCostCodes, useEvm, useForecasts,
 } from '@/features/project';

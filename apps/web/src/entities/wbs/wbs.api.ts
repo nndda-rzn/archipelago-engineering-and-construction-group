@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { wbsItemSchema, createWbsItemSchema, type CreateWbsItem, type WbsItem } from '@aec/api-contracts';
+import { wbsItemSchema, createWbsItemSchema, type CreateWbsItem } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
 
 export const wbsKeys = {

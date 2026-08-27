@@ -77,7 +77,7 @@ export function useStartPeriodClose() {
   });
 }
 
-function periodAction(action: 'step' | 'close' | 'lock') {
+function usePeriodAction(action: 'step' | 'close' | 'lock') {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: { id: string; step?: string }) => {
@@ -88,9 +88,9 @@ function periodAction(action: 'step' | 'close' | 'lock') {
   });
 }
 
-export const useCompleteStep = () => periodAction('step');
-export const useClosePeriod = () => periodAction('close');
-export const useLockPeriod = () => periodAction('lock');
+export const useCompleteStep = () => usePeriodAction('step');
+export const useClosePeriod = () => usePeriodAction('close');
+export const useLockPeriod = () => usePeriodAction('lock');
 
 export function useIncomeStatement(params: { legalEntityId: string; from?: string; to?: string }) {
   return useQuery({

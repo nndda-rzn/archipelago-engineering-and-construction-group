@@ -42,24 +42,25 @@ export const proposalColumns = [
   proposalHelper.display({
     id: 'actions',
     header: '',
-    cell: ({ row }) => {
-      const submit = useSubmitProposal();
-      const approve = useApproveProposal();
-      const release = useReleaseProposal();
-      const p = row.original;
-      if (p.status === 'DRAFT') {
-        return <Button size="sm" variant="secondary" loading={submit.isPending} onClick={() => submit.mutate(p.id)}>Submit</Button>;
-      }
-      if (p.status === 'SUBMITTED') {
-        return <Button size="sm" variant="secondary" loading={approve.isPending} onClick={() => approve.mutate(p.id)}>Approve</Button>;
-      }
-      if (p.status === 'APPROVED') {
-        return <Button size="sm" variant="secondary" loading={release.isPending} onClick={() => release.mutate(p.id)}>Release</Button>;
-      }
-      return null;
-    },
+    cell: ({ row }) => <ProposalActions proposal={row.original} />,
   }),
 ];
+
+function ProposalActions({ proposal }: { proposal: PaymentProposal }) {
+  const submit = useSubmitProposal();
+  const approve = useApproveProposal();
+  const release = useReleaseProposal();
+  if (proposal.status === 'DRAFT') {
+    return <Button size="sm" variant="secondary" loading={submit.isPending} onClick={() => submit.mutate(proposal.id)}>Submit</Button>;
+  }
+  if (proposal.status === 'SUBMITTED') {
+    return <Button size="sm" variant="secondary" loading={approve.isPending} onClick={() => approve.mutate(proposal.id)}>Approve</Button>;
+  }
+  if (proposal.status === 'APPROVED') {
+    return <Button size="sm" variant="secondary" loading={release.isPending} onClick={() => release.mutate(proposal.id)}>Release</Button>;
+  }
+  return null;
+}
 
 export const bgColumns = [
   bgHelper.accessor('guaranteeNumber', { header: 'No.', cell: (i) => <span className="font-mono text-neutral-800">{i.getValue()}</span> }),

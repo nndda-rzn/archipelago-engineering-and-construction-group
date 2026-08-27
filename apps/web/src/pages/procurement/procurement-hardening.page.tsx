@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, DataGrid, Label } from '@aec/ui';
+import { Button, DataGrid, Label } from '@aec/ui';
 import {
   useBudgetStatus, useCommercialEvaluation, usePoChanges,
   useVendorPerformanceSummary, useVendorRatings,
@@ -15,7 +15,6 @@ import {
   VendorPerformanceSummaryTable,
   VendorRatingForm,
   VendorRatingGrid,
-  statusVariant,
 } from '@/features/procurement/ui';
 
 const PAGE_SIZE = 20;

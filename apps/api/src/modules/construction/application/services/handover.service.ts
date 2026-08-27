@@ -118,7 +118,7 @@ export class HandoverService {
     });
   }
 
-  async submit(id: string, _actorId: string) {
+  async submit(id: string) {
     const ho = await this.prisma.handoverPackage.findUnique({ where: { id } });
     if (!ho) throw new NotFoundException({ code: 'HO_NOT_FOUND', message: 'Handover tidak ditemukan' });
     if (ho.status !== 'DRAFT') {

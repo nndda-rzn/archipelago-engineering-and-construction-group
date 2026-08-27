@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, DataGrid } from '@aec/ui';
+import { Button, DataGrid } from '@aec/ui';
 import { useProgressClaims } from '@/features/finance';
 import { ClaimForm, progressClaimColumns, claimTypeLabel } from '@/features/finance/ui';
 

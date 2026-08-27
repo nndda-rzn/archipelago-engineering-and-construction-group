@@ -109,17 +109,15 @@ export const punchColumns = [
   punchHelper.display({
     id: 'actions',
     header: '',
-    cell: ({ row }) => {
-      const close = useClosePunchItem();
-      if (row.original.status === 'CLOSED') return null;
-      return (
-        <Button size="sm" variant="secondary" loading={close.isPending} onClick={() => close.mutate({ id: row.original.id })}>
-          Tutup
-        </Button>
-      );
-    },
+    cell: ({ row }) => <ClosePunchCell punch={row.original} />,
   }),
 ];
+
+function ClosePunchCell({ punch }: { punch: PunchListItem }) {
+  const close = useClosePunchItem();
+  if (punch.status === 'CLOSED') return null;
+  return <Button size="sm" variant="secondary" loading={close.isPending} onClick={() => close.mutate({ id: punch.id })}>Tutup</Button>;
+}
 
 function InspectButtons({ inspection }: { inspection: InspectionRequest }) {
   const inspect = useInspect();

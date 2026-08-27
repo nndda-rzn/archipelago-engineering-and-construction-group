@@ -123,8 +123,8 @@ export class ConstructionController {
 
   @Post('handovers/:id/submit')
   @Permissions('Handover.EDIT')
-  submitHandover(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
-    return this.handover.submit(id, request.user?.sub ?? 'system');
+  submitHandover(@Param('id') id: string) {
+    return this.handover.submit(id);
   }
 
   @Post('handovers/:id/items/:itemId/verify')

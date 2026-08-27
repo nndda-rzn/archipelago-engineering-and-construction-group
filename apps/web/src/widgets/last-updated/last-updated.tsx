@@ -1,7 +1,10 @@
+import { useEffect, useState } from 'react';
 import { useIsFetching, useQueryClient } from '@tanstack/react-query';
 import { Clock } from 'lucide-react';
 import { cn } from '@aec/ui';
 import { formatRelativeTime } from '@/shared/lib/format';
+
+const STALE_MS = 30_000;
 
 /**
  * LastUpdated — tampilkan kapan query terakhir diperbarui + indikator stale.
@@ -10,11 +13,16 @@ import { formatRelativeTime } from '@/shared/lib/format';
 export function LastUpdated({ queryKey, className }: { queryKey: readonly unknown[]; className?: string }) {
   const qc = useQueryClient();
   const isFetching = useIsFetching({ queryKey: [...queryKey] });
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), STALE_MS);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const state = qc.getQueryState([...queryKey]);
   const updatedAt = state?.dataUpdatedAt;
-  const staleMs = 30_000; // default staleTime di query-client
-  const isStale = updatedAt ? Date.now() - updatedAt > staleMs : true;
+  const isStale = updatedAt ? now - updatedAt > STALE_MS : true;
 
   return (
     <span

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
+import { Button, DataGrid, Input, Label } from '@aec/ui';
 import {
   useCreateEquipment, useCreateEquipmentAssignment, useCreateEquipmentBreakdown,
   useCreateEquipmentPm, useCreateEquipmentUsage, useCreateEquipmentUtilization,
@@ -56,7 +56,6 @@ export function EquipmentDetail({ equipment }: { equipment: Equipment }) {
   const createUsage = useCreateEquipmentUsage();
   const createUtil = useCreateEquipmentUtilization();
 
-  const [projectId, setProjectId] = useState('');
   const [assignProject, setAssignProject] = useState('');
   const [pmTrigger, setPmTrigger] = useState('METER_BASED');
   const [pmMeter, setPmMeter] = useState('');

@@ -4,7 +4,6 @@ import {
   legalEntitySchema,
   legalEntityListResponseSchema,
   type CreateLegalEntity,
-  type LegalEntity,
   type LegalEntityListParams,
 } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
