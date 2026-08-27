@@ -8,3 +8,5 @@ export {
   VendorRatingGrid,
 } from './procurement-hardening-grid';
 export { PoChangeForm, VendorRatingForm } from './procurement-hardening-forms';
+export { purchaseRequisitionColumns } from './purchase-requisition-grid';
+export { PurchaseRequisitionForm } from './purchase-requisition-form';
