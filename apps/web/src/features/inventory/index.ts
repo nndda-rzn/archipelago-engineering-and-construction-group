@@ -8,3 +8,5 @@ export { goodsReceiptColumns } from './ui/goods-receipt-grid';
 export { ReceiptForm } from './ui/goods-receipt-form';
 export { stockTransferColumns } from './ui/stock-transfer-grid';
 export { TransferForm } from './ui/stock-transfer-form';
+export { opnameColumns } from './ui/stock-opname-grid';
+export { OpnameForm } from './ui/stock-opname-form';
