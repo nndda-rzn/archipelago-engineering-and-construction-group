@@ -5,3 +5,5 @@ export { IntercompanyForm, PeriodCloseForm, EntitySelector, StatementTable } fro
 export { icColumns, pcColumns, statusVariant } from './finance-closure-grid';
 export { ClaimForm } from './progress-claim-form';
 export { progressClaimColumns, claimTypeLabel } from './progress-claim-grid';
+export { CollectionForm } from './collection-form';
+export { collectionColumns } from './collection-grid';
