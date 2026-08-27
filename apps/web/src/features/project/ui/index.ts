@@ -6,3 +6,5 @@ export { WbsTree } from './wbs-tree';
 export { WbsForm } from './wbs-form';
 export { BudgetRow } from './budget-row';
 export { BudgetStatusBadge, BudgetTotalBar } from './budget-status';
+export { HealthSummary, healthLabel, healthVariant } from './health-summary';
+export { HealthTable } from './health-table';
