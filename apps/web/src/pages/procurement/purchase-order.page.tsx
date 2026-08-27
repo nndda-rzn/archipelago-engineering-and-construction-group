@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid, EmptyCell, Input, Label } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, DataGrid, EmptyCell, Input, Label } from '@aec/ui';
 import { useCreatePo, usePos, usePrs, useReleasePo, type PurchaseOrder } from '@/features/procurement';
 import { formatIdr } from '@/shared/lib/format';
 
@@ -51,16 +51,17 @@ function ReleaseButton({ id, status }: { id: string; status: string }) {
   const release = useReleasePo();
   if (status !== 'APPROVED') return null;
   return (
-    <Button
+    <ConfirmActionButton
       size="sm"
       variant="secondary"
-      onClick={() => {
-        if (window.confirm('Release PO? Commitment akan tercatat.')) release.mutate(id);
-      }}
+      confirmTitle="Release PO"
+      confirmDescription="Commitment akan tercatat."
+      confirmLabel="Release"
+      onConfirm={() => release.mutate(id)}
       loading={release.isPending}
     >
       Release
-    </Button>
+    </ConfirmActionButton>
   );
 }
 

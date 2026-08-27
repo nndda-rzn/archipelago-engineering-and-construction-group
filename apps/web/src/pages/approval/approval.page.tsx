@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid, ConfirmDialog, EmptyCell, useToast } from '@aec/ui';
+import { Badge, Button, ConfirmDialog, DataGrid, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyCell, Input, useToast } from '@aec/ui';
 import { useApprovalTasks, useDecideApproval, type ApprovalTask } from '@/features/approval';
 import { formatDateTime } from '@/shared/lib/format';
 
@@ -54,6 +54,8 @@ function DecideButtons({ task }: { task: ApprovalTask }) {
   const decide = useDecideApproval();
   const toast = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [comment, setComment] = useState('');
   if (!task.canApprove) return null;
 
   return (
@@ -69,16 +71,7 @@ function DecideButtons({ task }: { task: ApprovalTask }) {
       <Button
         size="sm"
         variant="ghost"
-        onClick={() => {
-          const comment = window.prompt('Alasan reject (opsional)') ?? undefined;
-          decide.mutate(
-            { taskId: task.id, decision: 'REJECT', comment },
-            {
-              onSuccess: () => toast({ title: 'Ditolak', description: task.transactionCode ?? undefined, variant: 'info' }),
-              onError: () => toast({ title: 'Gagal menolak', description: 'Periksa kembali dokumen terkait.', variant: 'error' }),
-            },
-          );
-        }}
+        onClick={() => setRejectOpen(true)}
       >
         Reject
       </Button>
@@ -99,6 +92,40 @@ function DecideButtons({ task }: { task: ApprovalTask }) {
           )
         }
       />
+      <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Tolak dokumen</DialogTitle>
+            <DialogDescription>Alasan reject (opsional)</DialogDescription>
+          </DialogHeader>
+          <Input
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Alasan penolakan…"
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRejectOpen(false)}>Batal</Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setRejectOpen(false);
+                setComment('');
+                decide.mutate(
+                  { taskId: task.id, decision: 'REJECT', comment: comment || undefined },
+                  {
+                    onSuccess: () => toast({ title: 'Ditolak', description: task.transactionCode ?? undefined, variant: 'info' }),
+                    onError: () => toast({ title: 'Gagal menolak', description: 'Periksa kembali dokumen terkait.', variant: 'error' }),
+                  },
+                );
+              }}
+              loading={decide.isPending}
+            >
+              Tolak
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

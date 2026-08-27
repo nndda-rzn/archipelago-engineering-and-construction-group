@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, EntitySelect } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, EntitySelect } from '@aec/ui';
 import { CheckCircle2, Lock } from 'lucide-react';
 import { useBudget, usePublishBudget, useUpsertBudget } from '@/features/project';
 import { useProjects } from '@/entities/project';
@@ -68,9 +68,7 @@ export function BudgetPage() {
   const published = data?.status === 'PUBLISHED';
 
   const handlePublish = () => {
-    if (window.confirm('Publish budget baseline? Setelah publish tidak bisa diedit.')) {
-      publish.mutate();
-    }
+    publish.mutate();
   };
 
   return (
@@ -87,9 +85,16 @@ export function BudgetPage() {
               {published ? 'PUBLISHED' : 'DRAFT'}
             </Badge>
             {!published && (
-              <Button size="sm" onClick={handlePublish} loading={publish.isPending}>
+              <ConfirmActionButton
+                size="sm"
+                confirmTitle="Publish baseline"
+                confirmDescription="Setelah publish tidak bisa diedit."
+                confirmLabel="Publish"
+                onConfirm={handlePublish}
+                loading={publish.isPending}
+              >
                 Publish Baseline
-              </Button>
+              </ConfirmActionButton>
             )}
           </div>
         )}

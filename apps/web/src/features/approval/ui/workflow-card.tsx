@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, Input, Label } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, Input, Label } from '@aec/ui';
 import { useAddWorkflowStep, usePublishWorkflow, useNewWorkflowVersion, type WorkflowDefinition } from '../model/approval.api';
 import { formatNumber } from '@/shared/lib/format';
 
@@ -55,7 +55,17 @@ export function WorkflowCard({ workflow }: { workflow: WorkflowDefinition }) {
         </div>
         <div className="flex gap-2">
           {isDraft && (
-            <Button size="sm" variant="secondary" onClick={() => { if (window.confirm(`Publish ${workflow.code} v${workflow.version}? Versi lain akan di-archive.`)) publish.mutate({ id: workflow.id, input: { newVersionName: workflow.name } }); }} loading={publish.isPending}>Publish</Button>
+            <ConfirmActionButton
+              size="sm"
+              variant="secondary"
+              confirmTitle="Publish workflow"
+              confirmDescription={`Publish ${workflow.code} v${workflow.version}? Versi lain akan di-archive.`}
+              confirmLabel="Publish"
+              onConfirm={() => publish.mutate({ id: workflow.id, input: { newVersionName: workflow.name } })}
+              loading={publish.isPending}
+            >
+              Publish
+            </ConfirmActionButton>
           )}
           {workflow.status === 'ACTIVE' && (
             <Button size="sm" variant="secondary" onClick={() => newVersion.mutate(workflow.code)} loading={newVersion.isPending}>+ Versi Baru</Button>

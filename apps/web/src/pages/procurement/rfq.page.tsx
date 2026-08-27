@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, Input } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, Input } from '@aec/ui';
 import { useCreateQuote, useEvaluateRfq, useRfqs, useSendRfq, type Rfq } from '@/features/procurement';
 import { RfqForm } from '@/features/procurement';
 import { formatIdr as fmt } from '@/shared/lib/format';
@@ -17,14 +17,14 @@ function RfqActions({ rfq }: { rfq: Rfq }) {
   const createQuote = useCreateQuote();
 
   if (rfq.status === 'DRAFT') {
-    return <Button size="sm" variant="secondary" onClick={() => { if (window.confirm(`Kirim ${rfq.rfqNumber} ke vendor?`)) send.mutate(rfq.id); }} loading={send.isPending}>Kirim</Button>;
+    return <ConfirmActionButton size="sm" variant="secondary" confirmTitle="Kirim RFQ" confirmDescription={`Kirim ${rfq.rfqNumber} ke vendor?`} confirmLabel="Kirim" onConfirm={() => send.mutate(rfq.id)} loading={send.isPending}>Kirim</ConfirmActionButton>;
   }
   if (rfq.status === 'SENT' || rfq.status === 'QUOTED') {
     return (
       <div className="flex flex-col items-end gap-2">
         <div className="flex gap-2">
           <Button size="sm" variant="secondary" onClick={() => setQuoteOpen((o) => !o)}>{quoteOpen ? 'Tutup' : '+ Quote'}</Button>
-          {rfq.quotes.length > 0 && <Button size="sm" onClick={() => { if (window.confirm('Evaluasi quote? Pemenang = harga terendah.')) evaluate.mutate(rfq.id); }} loading={evaluate.isPending}>Evaluasi</Button>}
+          {rfq.quotes.length > 0 && <ConfirmActionButton size="sm" confirmTitle="Evaluasi quote" confirmDescription="Pemenang = harga terendah." confirmLabel="Evaluasi" onConfirm={() => evaluate.mutate(rfq.id)} loading={evaluate.isPending}>Evaluasi</ConfirmActionButton>}
         </div>
         {quoteOpen && (
           <div className="w-80 rounded-md border border-neutral-200 bg-white p-3">

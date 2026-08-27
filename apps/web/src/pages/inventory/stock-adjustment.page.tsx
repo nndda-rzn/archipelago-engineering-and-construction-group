@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, DataGrid, Input, Label } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useWarehouses, useCreateStockAdjustment, useApproveStockAdjustment, useStockAdjustments, type StockAdjustment } from '@/features/inventory';
 
@@ -47,16 +47,17 @@ function ApproveButton({ adj }: { adj: StockAdjustment }) {
   const approve = useApproveStockAdjustment();
   if (adj.status !== 'DRAFT') return null;
   return (
-    <Button
+    <ConfirmActionButton
       size="sm"
       variant="secondary"
-      onClick={() => {
-        if (window.confirm(`Approve adjustment ${adj.adjustmentNumber}? Stok akan ter-update.`)) approve.mutate(adj.id);
-      }}
+      confirmTitle="Approve adjustment"
+      confirmDescription={`Approve ${adj.adjustmentNumber}? Stok akan ter-update.`}
+      confirmLabel="Approve"
+      onConfirm={() => approve.mutate(adj.id)}
       loading={approve.isPending}
     >
       Approve
-    </Button>
+    </ConfirmActionButton>
   );
 }
 

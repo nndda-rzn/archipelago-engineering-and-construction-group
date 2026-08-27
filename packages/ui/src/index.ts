@@ -12,4 +12,5 @@ export { EmptyState, ErrorState, GridState } from './enterprise/state';
 export { EmptyCell } from './enterprise/empty-cell';
 export { StatusBadge, statusMeta } from './enterprise/status-badge';
 export { EntitySelect, type EntitySelectOption } from './enterprise/entity-select';
+export { ConfirmActionButton, type ConfirmActionButtonProps } from './enterprise/confirm-action-button';
 export { DataGrid, type DataGridProps } from './enterprise/data-grid';

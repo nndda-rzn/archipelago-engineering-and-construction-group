@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, DataGrid } from '@aec/ui';
 import { usePostVendorInvoice, useVendorInvoices, type VendorInvoice } from '@/features/finance';
 import { InvoiceForm } from '@/features/finance';
 import { formatIdr } from '@/shared/lib/format';
@@ -53,16 +53,17 @@ function PostButton({ inv }: { inv: VendorInvoice }) {
   const post = usePostVendorInvoice();
   if (inv.status !== 'MATCHED') return null;
   return (
-    <Button
+    <ConfirmActionButton
       size="sm"
       variant="secondary"
-      onClick={() => {
-        if (window.confirm(`Post ${inv.invoiceNumber}? Terkunci (BR-001), tidak bisa diedit.`)) post.mutate(inv.id);
-      }}
+      confirmTitle="Post AP"
+      confirmDescription={`Post ${inv.invoiceNumber}? Terkunci (BR-001), tidak bisa diedit.`}
+      confirmLabel="Post AP"
+      onConfirm={() => post.mutate(inv.id)}
       loading={post.isPending}
     >
       Post AP
-    </Button>
+    </ConfirmActionButton>
   );
 }
 

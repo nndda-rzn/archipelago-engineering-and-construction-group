@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, DataGrid, Input, Label } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useClientInvoices, useCollections, useCreateCollection, usePostCollection, type Collection } from '@/features/finance';
 import { formatIdr as fmt } from '@/shared/lib/format';
@@ -47,16 +47,17 @@ function PostButton({ collection }: { collection: Collection }) {
   const post = usePostCollection();
   if (collection.status !== 'DRAFT') return null;
   return (
-    <Button
+    <ConfirmActionButton
       size="sm"
       variant="secondary"
-      onClick={() => {
-        if (window.confirm(`Posting ${collection.collectionNumber}? Auto-GL: Dr Kas, Cr Piutang.`)) post.mutate(collection.id);
-      }}
+      confirmTitle="Posting collection"
+      confirmDescription={`Posting ${collection.collectionNumber}? Auto-GL: Dr Kas, Cr Piutang.`}
+      confirmLabel="Posting"
+      onConfirm={() => post.mutate(collection.id)}
       loading={post.isPending}
     >
       Posting
-    </Button>
+    </ConfirmActionButton>
   );
 }
 
