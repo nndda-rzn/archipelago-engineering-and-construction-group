@@ -1,5 +1,6 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, DataGrid } from '@aec/ui';
+import { Badge, Button, DataGrid } from '@aec/ui';
+import { Printer } from 'lucide-react';
 import { useCashFlow, useAging, useProjectCostSummary, type AgingBucket, type ProjectCostSummaryItem } from '@/features/analytics';
 import { CashFlowChart } from '@/widgets/dashboard-charts';
 import { formatIdr as fmt } from '@/shared/lib/format';
@@ -73,9 +74,15 @@ export function ReportingPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-h1 text-neutral-950">Advanced Reporting</h1>
-        <p className="mt-1 text-body-sm text-neutral-500">Cash flow, aging AP/AR, project cost summary (Fase 10)</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-h1 text-neutral-950">Advanced Reporting</h1>
+          <p className="mt-1 text-body-sm text-neutral-500">Cash flow, aging AP/AR, project cost summary (Fase 10)</p>
+        </div>
+        <Button size="sm" variant="secondary" className="no-print" onClick={() => window.print()}>
+          <Printer className="h-3.5 w-3.5" aria-hidden="true" />
+          Cetak
+        </Button>
       </div>
 
       <div className="space-y-6">
