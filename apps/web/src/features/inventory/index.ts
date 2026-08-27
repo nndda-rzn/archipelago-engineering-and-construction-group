@@ -6,3 +6,5 @@ export { ledgerColumns } from './ui/stock-ledger-grid';
 export { WarehouseForm } from './ui/warehouse-form';
 export { goodsReceiptColumns } from './ui/goods-receipt-grid';
 export { ReceiptForm } from './ui/goods-receipt-form';
+export { stockTransferColumns } from './ui/stock-transfer-grid';
+export { TransferForm } from './ui/stock-transfer-form';

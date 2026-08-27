@@ -1,0 +1,14 @@
+import { Badge } from '@aec/ui';
+import { createColumnHelper } from '@tanstack/react-table';
+import type { StockTransfer } from '@aec/api-contracts';
+
+const columnHelper = createColumnHelper<StockTransfer>();
+
+export const stockTransferColumns = [
+  columnHelper.accessor('transferNumber', { header: 'Nomor', cell: (i) => <span className="font-mono text-neutral-800">{i.getValue()}</span> }),
+  columnHelper.accessor('fromWarehouse', { header: 'Dari', cell: (i) => <span className="text-neutral-700">{i.getValue()?.code ?? '-'}</span> }),
+  columnHelper.accessor('toWarehouse', { header: 'Ke', cell: (i) => <span className="text-neutral-700">{i.getValue()?.code ?? '-'}</span> }),
+  columnHelper.accessor('items', { header: 'Item', cell: (i) => <span className="tabular-nums text-neutral-600">{i.getValue().length} baris</span> }),
+  columnHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={i.getValue() === 'POSTED' ? 'success' : 'default'}>{i.getValue()}</Badge> }),
+  columnHelper.accessor('createdAt', { header: 'Tanggal', cell: (i) => <span className="tabular-nums text-neutral-500">{new Date(i.getValue()).toLocaleString('id-ID')}</span> }),
+];
