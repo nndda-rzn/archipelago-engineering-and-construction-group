@@ -37,6 +37,12 @@ jobs:
       - name: Generate Prisma client
         run: pnpm --filter @aec/api exec prisma generate
 
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
       - name: Typecheck
         run: pnpm typecheck
 
