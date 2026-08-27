@@ -126,6 +126,7 @@ export function JournalPage() {
           isError={isError}
           onRetry={() => refetch()}
           emptyMessage="Belum ada journal"
+          exportFilename="journals"
         />
       </div>
     </div>
