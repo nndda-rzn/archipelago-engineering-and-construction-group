@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Badge, DataGrid } from '@aec/ui';
+import { DataGrid } from '@aec/ui';
 import { useBankAccounts, useBankGuarantees, useCashForecasts, useCashPosition, useFxExposures, usePaymentProposals } from '@/features/treasury';
-import { BankAccountForm, ProposalForm, GuaranteeForm, ForecastForm, FxForm, bankColumns, proposalColumns, bgColumns } from '@/features/treasury/ui';
-import { formatIdr as fmt } from '@/shared/lib/format';
+import { BankAccountForm, ProposalForm, GuaranteeForm, ForecastForm, FxForm, bankColumns, proposalColumns, bgColumns, CashPositionSection, CashForecastSection, FxExposureSection } from '@/features/treasury/ui';
 
 const PAGE_SIZE = 20;
 
@@ -61,41 +60,10 @@ export function TreasuryPage() {
       )}
 
       {tab === 'cash-position' && (
-        <div className="rounded-md border border-neutral-200 bg-white p-6 shadow-xs">
+        <>
           {cashPosition.isLoading && <p className="text-body-sm text-neutral-500">Menghitung posisi kas…</p>}
-          {cashPosition.data && (
-            <>
-              <div className="mb-4 flex items-center gap-4">
-                <span className="text-body-sm text-neutral-500">Total saldo:</span>
-                <span className="font-mono tabular-nums text-h3 text-neutral-800">{fmt(cashPosition.data.totalBalance)}</span>
-              </div>
-              <table className="w-full text-left text-body">
-                <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
-                  <tr>
-                    <th className="px-4 py-2">Rekening</th>
-                    <th className="px-4 py-2">Bank</th>
-                    <th className="px-4 py-2">Entity</th>
-                    <th className="px-4 py-2 text-right">Saldo Awal</th>
-                    <th className="px-4 py-2 text-right">Keluar</th>
-                    <th className="px-4 py-2 text-right">Saldo Kini</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cashPosition.data.items.map((r) => (
-                    <tr key={r.bankAccountId} className="border-t border-neutral-100 hover:bg-neutral-50">
-                      <td className="px-4 py-2 font-mono text-neutral-800">{r.accountCode}</td>
-                      <td className="px-4 py-2 text-neutral-700">{r.bankName}</td>
-                      <td className="px-4 py-2 font-mono text-neutral-600">{r.legalEntityCode}</td>
-                      <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-700">{fmt(r.openingBalance)}</td>
-                      <td className="px-4 py-2 text-right font-mono tabular-nums text-destructive-600">{fmt(r.outflow)}</td>
-                      <td className="px-4 py-2 text-right font-mono tabular-nums font-medium text-neutral-800">{fmt(r.currentBalance)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
-          )}
-        </div>
+          {cashPosition.data && <CashPositionSection data={cashPosition.data} />}
+        </>
       )}
 
       {tab === 'proposals' && (
@@ -119,70 +87,14 @@ export function TreasuryPage() {
       {tab === 'forecasts' && (
         <>
           <ForecastForm />
-          <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-            <table className="w-full text-left text-body">
-              <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
-                <tr>
-                  <th className="px-4 py-2">Periode</th>
-                  <th className="px-4 py-2">Entity</th>
-                  <th className="px-4 py-2 text-right">Receipt</th>
-                  <th className="px-4 py-2 text-right">AP</th>
-                  <th className="px-4 py-2 text-right">Payroll</th>
-                  <th className="px-4 py-2 text-right">Net</th>
-                  <th className="px-4 py-2">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(forecasts.data?.items ?? []).map((f) => (
-                  <tr key={f.id} className="border-t border-neutral-100 hover:bg-neutral-50">
-                    <td className="px-4 py-2 font-mono text-neutral-800">{f.period}</td>
-                    <td className="px-4 py-2 font-mono text-neutral-600">{f.legalEntity.code}</td>
-                    <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-700">{fmt(f.expectedReceipt)}</td>
-                    <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-700">{fmt(f.expectedAp)}</td>
-                    <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-700">{fmt(f.expectedPayroll)}</td>
-                    <td className={`px-4 py-2 text-right font-mono tabular-nums ${f.netForecast >= 0 ? 'text-financial-positive-500' : 'text-destructive-600'}`}>{fmt(f.netForecast)}</td>
-                    <td className="px-4 py-2"><Badge variant="default">{f.status}</Badge></td>
-                  </tr>
-                ))}
-                {(forecasts.data?.items ?? []).length === 0 && (
-                  <tr><td colSpan={7} className="px-4 py-4 text-caption text-neutral-500">Belum ada forecast kas.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <CashForecastSection items={forecasts.data?.items ?? []} />
         </>
       )}
 
       {tab === 'fx' && (
         <>
           <FxForm />
-          <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-            <table className="w-full text-left text-body">
-              <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
-                <tr>
-                  <th className="px-4 py-2">Mata Uang</th>
-                  <th className="px-4 py-2">Entity</th>
-                  <th className="px-4 py-2 text-right">Eksposur</th>
-                  <th className="px-4 py-2 text-right">Rate</th>
-                  <th className="px-4 py-2 text-right">Setara Base</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(fx.data?.items ?? []).map((f) => (
-                  <tr key={f.id} className="border-t border-neutral-100 hover:bg-neutral-50">
-                    <td className="px-4 py-2"><Badge variant="default">{f.currency}</Badge></td>
-                    <td className="px-4 py-2 font-mono text-neutral-600">{f.legalEntity.code}</td>
-                    <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-800">{f.exposureAmount.toLocaleString('id-ID')}</td>
-                    <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-600">{f.rate}</td>
-                    <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-700">{fmt(Number(f.exposureAmount) * Number(f.rate))}</td>
-                  </tr>
-                ))}
-                {(fx.data?.items ?? []).length === 0 && (
-                  <tr><td colSpan={5} className="px-4 py-4 text-caption text-neutral-500">Belum ada FX exposure.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <FxExposureSection items={fx.data?.items ?? []} />
         </>
       )}
     </div>
