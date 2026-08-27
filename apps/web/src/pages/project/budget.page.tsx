@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
+import { Badge, Button, EntitySelect } from '@aec/ui';
 import { CheckCircle2, Lock } from 'lucide-react';
 import { useBudget, usePublishBudget, useUpsertBudget } from '@/features/project';
 import { useProjects } from '@/entities/project';
@@ -99,16 +99,13 @@ export function BudgetPage() {
         <label htmlFor="project-budget" className="mb-1.5 block text-body-sm font-medium text-neutral-700">
           Project
         </label>
-        <Select value={projectId} onValueChange={setProjectId}>
-          <SelectTrigger id="project-budget">
-            <SelectValue placeholder="Pilih project…" />
-          </SelectTrigger>
-          <SelectContent>
-            {(projects.data?.items ?? []).map((p) => (
-              <SelectItem key={p.id} value={p.id}>{p.code} — {p.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <EntitySelect
+          value={projectId}
+          onValueChange={setProjectId}
+          options={(projects.data?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }))}
+          placeholder="Pilih project…"
+          searchPlaceholder="Cari project…"
+        />
       </div>
 
       {isLoading && <p className="text-body-sm text-neutral-500">Memuat…</p>}
