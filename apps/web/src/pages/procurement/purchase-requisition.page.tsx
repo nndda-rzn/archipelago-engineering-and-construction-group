@@ -6,6 +6,7 @@ import { useCreatePr, usePrs, type PurchaseRequisition } from '@/features/procur
 import { useProjects } from '@/entities/project';
 import { useWbsTree } from '@/entities/wbs';
 import { useSubmitForApproval } from '@/features/approval';
+import { useUnsavedGuard } from '@/shared/lib/unsaved-guard';
 
 const PAGE_SIZE = 20;
 
@@ -85,6 +86,9 @@ export function PurchaseRequisitionPage() {
   const create = useCreatePr();
   const projects = useProjects({ page: 1, pageSize: 100 });
   const { data: wbsTree } = useWbsTree(projectId);
+
+  const formDirty = showForm && (projectId !== '' || requestedBy !== '' || items.some((i) => i.description.trim() !== ''));
+  useUnsavedGuard(formDirty);
 
   const updateItem = (idx: number, field: keyof FormItem, value: string) => {
     setItems((prev) => prev.map((item, i) => (i === idx ? { ...item, [field]: value } : item)));
