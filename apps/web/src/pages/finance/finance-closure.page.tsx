@@ -3,8 +3,9 @@ import { DataGrid } from '@aec/ui';
 import {
   useBalanceSheet, useConsolidation, useIncomeStatement,
   useIntercompany, useIntercompanyReconciliation, usePeriodCloses,
-  type BalanceSheet, type Consolidation, type IncomeStatement, type IntercompanyReconciliation,
+  type BalanceSheet, type Consolidation, type IncomeStatement,
 } from '@/features/finance';
+import type { IntercompanyReconciliation } from '@aec/api-contracts';
 import {
   EntitySelector, IntercompanyForm, PeriodCloseForm, StatementTable,
   icColumns, pcColumns,
@@ -126,7 +127,7 @@ function ReconciliationSummary({ data }: { data: IntercompanyReconciliation }) {
           </tr>
         </thead>
         <tbody>
-          {data.items.map((item, idx) => (
+          {data.items.map((item: { fromCode: string; toCode: string; count: number; amount: number; reciprocalAmount: number; reconciled: boolean }, idx: number) => (
             <tr key={idx} className="border-t border-neutral-100">
               <td className="px-2 py-1.5 font-mono text-neutral-700">{item.fromCode}</td>
               <td className="px-2 py-1.5 font-mono text-neutral-700">{item.toCode}</td>
