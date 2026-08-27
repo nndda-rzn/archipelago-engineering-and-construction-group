@@ -1,34 +1,11 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, DataGrid } from '@aec/ui';
-import { useCashFlow, useAging, useProjectCostSummary, type CashFlowSeries, type AgingBucket, type ProjectCostSummaryItem } from '@/features/analytics';
+import { useCashFlow, useAging, useProjectCostSummary, type AgingBucket, type ProjectCostSummaryItem } from '@/features/analytics';
+import { CashFlowChart } from '@/widgets/dashboard-charts';
 import { formatIdr as fmt } from '@/shared/lib/format';
 
-const cfHelper = createColumnHelper<CashFlowSeries>();
 const bucketHelper = createColumnHelper<AgingBucket>();
 const pcsHelper = createColumnHelper<ProjectCostSummaryItem>();
-
-const cfColumns = [
-  cfHelper.accessor('month', {
-    header: 'Bulan',
-    cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span>,
-  }),
-  cfHelper.accessor('cashIn', {
-    header: 'Cash In',
-    cell: (info) => <span className="font-mono tabular-nums text-emerald-700">{fmt(info.getValue())}</span>,
-  }),
-  cfHelper.accessor('cashOut', {
-    header: 'Cash Out',
-    cell: (info) => <span className="font-mono tabular-nums text-destructive-600">{fmt(info.getValue())}</span>,
-  }),
-  cfHelper.accessor('net', {
-    header: 'Net',
-    cell: (info) => (
-      <span className={`font-mono tabular-nums font-medium ${info.getValue() >= 0 ? 'text-emerald-700' : 'text-destructive-600'}`}>
-        {fmt(info.getValue())}
-      </span>
-    ),
-  }),
-];
 
 function bucketColumns(label: string) {
   return [
@@ -107,7 +84,7 @@ export function ReportingPage() {
             <p className="text-body text-neutral-500">Memuat…</p>
           ) : cashFlow.data ? (
             <>
-              <DataGrid columns={cfColumns} data={cashFlow.data.series} emptyMessage="Belum ada transaksi" />
+              <CashFlowChart data={cashFlow.data.series} />
               <div className="mt-3 flex gap-6 text-body-sm text-neutral-600">
                 <span>Total In: <span className="font-mono text-emerald-700">{fmt(cashFlow.data.totalCashIn)}</span></span>
                 <span>Total Out: <span className="font-mono text-destructive-600">{fmt(cashFlow.data.totalCashOut)}</span></span>
