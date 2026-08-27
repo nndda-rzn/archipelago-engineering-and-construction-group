@@ -9,5 +9,6 @@ export { Select, SelectGroup, SelectValue, SelectTrigger, SelectContent, SelectI
 export { ToastProvider, ToastPrimitive, useToast } from './primitives/toast';
 export { Skeleton, TableSkeleton, KpiSkeleton } from './primitives/skeleton';
 export { EmptyState, ErrorState, GridState } from './enterprise/state';
+export { EmptyCell } from './enterprise/empty-cell';
 export { StatusBadge, statusMeta } from './enterprise/status-badge';
 export { DataGrid, type DataGridProps } from './enterprise/data-grid';

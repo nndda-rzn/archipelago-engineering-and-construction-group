@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
+import { Badge, Button, DataGrid, EmptyCell, Input, Label } from '@aec/ui';
 import { useCreatePo, usePos, usePrs, useReleasePo, type PurchaseOrder } from '@/features/procurement';
 import { formatIdr } from '@/shared/lib/format';
 
@@ -26,7 +26,7 @@ const columns = [
   }),
   columnHelper.accessor('project', {
     header: 'Project',
-    cell: (info) => <span className="text-neutral-600">{info.getValue()?.code ?? '-'}</span>,
+    cell: (info) => <span className="text-neutral-600">{info.getValue()?.code ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('totalAmount', {
     header: 'Total',

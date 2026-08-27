@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid } from '@aec/ui';
+import { Badge, Button, DataGrid, EmptyCell } from '@aec/ui';
 import { useApprovePayment, usePayPayment, usePayments, type Payment } from '@/features/finance';
 import { PaymentForm } from '@/features/finance';
 import { formatIdr } from '@/shared/lib/format';
@@ -35,7 +35,7 @@ const columns = [
   }),
   columnHelper.accessor('reference', {
     header: 'Referensi',
-    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? '-'}</span>,
+    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('status', {
     header: 'Status',

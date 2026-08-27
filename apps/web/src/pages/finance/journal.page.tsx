@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, ConfirmDialog, DataGrid, useToast } from '@aec/ui';
+import { Badge, Button, ConfirmDialog, DataGrid, EmptyCell, useToast } from '@aec/ui';
 import { useLegalEntities } from '@/entities/legal-entity';
 import { useJournals, usePostJournal, type Journal } from '@/features/finance';
 import { JournalForm } from '@/features/finance';
@@ -36,7 +36,7 @@ const columns = [
   }),
   columnHelper.accessor('reference', {
     header: 'Referensi',
-    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? '-'}</span>,
+    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('description', {
     header: 'Deskripsi',

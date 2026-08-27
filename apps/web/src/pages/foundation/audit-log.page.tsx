@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, DataGrid } from '@aec/ui';
+import { Badge, DataGrid, EmptyCell } from '@aec/ui';
 import { useAuditLogs } from '@/features/audit';
 import type { AuditLog } from '@aec/api-contracts';
 import { formatDateTime } from '@/shared/lib/format';
@@ -24,7 +24,7 @@ const columns = [
   }),
   columnHelper.accessor('resourceId', {
     header: 'Resource ID',
-    cell: (info) => <span className="font-mono text-neutral-500">{info.getValue() ?? '-'}</span>,
+    cell: (info) => <span className="font-mono text-neutral-500">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('userId', {
     header: 'Aktor',
@@ -32,7 +32,7 @@ const columns = [
   }),
   columnHelper.accessor('correlationId', {
     header: 'Correlation',
-    cell: (info) => <span className="font-mono text-neutral-400">{info.getValue()?.slice(0, 8) ?? '-'}</span>,
+    cell: (info) => <span className="font-mono text-neutral-400">{info.getValue()?.slice(0, 8) ?? <EmptyCell />}</span>,
   }),
 ];
 
