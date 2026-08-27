@@ -4,3 +4,5 @@ export { projectColumns } from './project-list-grid';
 export { ProjectForm } from './project-list-form';
 export { WbsTree } from './wbs-tree';
 export { WbsForm } from './wbs-form';
+export { BudgetRow } from './budget-row';
+export { BudgetStatusBadge, BudgetTotalBar } from './budget-status';
