@@ -1,0 +1,175 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Brand Racing Red — PRD §20.2. Shade lebih dalam (UI/UX-05) — sinkron dgn tailwind preset. */
+  --racing-red-50: #fef2f2;
+  --racing-red-100: #fee2e2;
+  --racing-red-200: #fecaca;
+  --racing-red-300: #fca5a5;
+  --racing-red-400: #f87171;
+  --racing-red-500: #ef4444;
+  --racing-red-600: #dc2626;
+  --racing-red-700: #b91c1c;
+  --racing-red-800: #991b1b;
+  --racing-red-900: #7f1d1d;
+  --racing-red-950: #450a0a;
+
+  /* Neutral — zinc (UI/UX-05) */
+  --neutral-0: #ffffff;
+  --neutral-50: #fafafa;
+  --neutral-100: #f4f4f5;
+  --neutral-200: #e4e4e7;
+  --neutral-300: #d4d4d8;
+  --neutral-400: #a1a1aa;
+  --neutral-500: #71717a;
+  --neutral-600: #52525b;
+  --neutral-700: #3f3f46;
+  --neutral-800: #27272a;
+  --neutral-900: #18181b;
+  --neutral-950: #09090b;
+
+  /* Semantic — Success */
+  --success-50: #f0fdf4;
+  --success-100: #dcfce7;
+  --success-200: #bbf7d0;
+  --success-300: #86efac;
+  --success-400: #4ade80;
+  --success-500: #22c55e;
+  --success-600: #16a34a;
+  --success-700: #15803d;
+  --success-800: #166534;
+  --success-900: #14532d;
+
+  /* Semantic — Warning */
+  --warning-50: #fffbeb;
+  --warning-100: #fef3c7;
+  --warning-200: #fde68a;
+  --warning-300: #fcd34d;
+  --warning-400: #fbbf24;
+  --warning-500: #f59e0b;
+  --warning-600: #d97706;
+  --warning-700: #b45309;
+  --warning-800: #92400e;
+  --warning-900: #78350f;
+
+  /* Semantic — Destructive */
+  --destructive-50: #fef2f2;
+  --destructive-100: #fee2e2;
+  --destructive-200: #fecaca;
+  --destructive-300: #fca5a5;
+  --destructive-400: #f87171;
+  --destructive-500: #ef4444;
+  --destructive-600: #dc2626;
+  --destructive-700: #b91c1c;
+  --destructive-800: #991b1b;
+  --destructive-900: #7f1d1d;
+
+  /* Semantic — Info */
+  --info-50: #eff6ff;
+  --info-100: #dbeafe;
+  --info-200: #bfdbfe;
+  --info-300: #93c5fd;
+  --info-400: #60a5fa;
+  --info-500: #3b82f6;
+  --info-600: #2563eb;
+  --info-700: #1d4ed8;
+  --info-800: #1e40af;
+  --info-900: #1e3a8a;
+
+  /* Project Health — ERP khusus */
+  --project-on-track-50: #f0fdf4;
+  --project-on-track-500: #22c55e;
+  --project-on-track-600: #16a34a;
+  --project-on-track-700: #15803d;
+
+  --project-at-risk-50: #fffbeb;
+  --project-at-risk-500: #f59e0b;
+  --project-at-risk-600: #d97706;
+  --project-at-risk-700: #b45309;
+
+  --project-critical-50: #fef2f2;
+  --project-critical-500: #ef4444;
+  --project-critical-600: #dc2626;
+  --project-critical-700: #b91c1c;
+
+  /* Financial */
+  --financial-positive-50: #ecfdf5;
+  --financial-positive-500: #10b981;
+  --financial-positive-600: #059669;
+  --financial-positive-700: #047857;
+
+  --financial-negative-50: #fef2f2;
+  --financial-negative-500: #ef4444;
+  --financial-negative-600: #dc2626;
+  --financial-negative-700: #b91c1c;
+}
+
+body {
+  background-color: var(--neutral-50);
+  color: var(--neutral-900);
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus ring universal */
+*:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--racing-red-400);
+}
+
+/* Selection */
+::selection {
+  background: var(--racing-red-100);
+  color: var(--neutral-900);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--neutral-300);
+  border-radius: 3px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print — laporan (trial balance, neraca, dsb) */
+@media print {
+  aside,
+  header,
+  .no-print {
+    display: none !important;
+  }
+  main {
+    overflow: visible !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+  body {
+    background: #ffffff !important;
+  }
+  table {
+    font-size: 11px !important;
+  }
+  .print-break-before {
+    break-before: page;
+  }
+}

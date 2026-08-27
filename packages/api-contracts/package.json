@@ -1,0 +1,24 @@
+{
+  "name": "@aec/api-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@aec/shared-types": "workspace:*"
+  },
+  "devDependencies": {
+    "@aec/config": "workspace:*",
+    "typescript": "^5.7.2",
+    "zod": "^3.24.1"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts"
+}
