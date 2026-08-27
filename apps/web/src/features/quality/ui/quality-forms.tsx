@@ -12,7 +12,7 @@ export function useProjectOptions() {
 }
 
 export function ProjectSelect({ projectId, setProjectId }: { projectId: string; setProjectId: (v: string) => void }) {
-  const { projects } = useProjectOptions();
+  const projects = useProjects({ page: 1, pageSize: 100 });
   return (
     <div>
       <Label htmlFor="qp-project">Project</Label>
