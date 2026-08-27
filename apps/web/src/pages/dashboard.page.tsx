@@ -2,7 +2,10 @@ import { Badge, Button, EmptyState, ErrorState, KpiSkeleton } from '@aec/ui';
 import { usePortfolio } from '@/features/project';
 import { DashboardGrid, healthMeta, type HealthKey } from '@/widgets/dashboard-grid';
 import { HealthDonut } from '@/widgets/dashboard-charts';
+import { LastUpdated } from '@/widgets/last-updated';
 import { formatIdr as fmt } from '@/shared/lib/format';
+
+const PORTFOLIO_KEY = ['projects', 'analytics', 'portfolio'] as const;
 
 export function DashboardPage() {
   const { data, isLoading, isError, refetch } = usePortfolio();
@@ -14,7 +17,10 @@ export function DashboardPage() {
           <h1 className="text-h1 text-neutral-950">Dashboard Eksekutif</h1>
           <p className="mt-1 text-body-sm text-neutral-500">Portfolio project — cost, revenue &amp; health</p>
         </div>
-        <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={isLoading}>Muat Ulang</Button>
+        <div className="flex flex-col items-end gap-1">
+          <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={isLoading}>Muat Ulang</Button>
+          <LastUpdated queryKey={PORTFOLIO_KEY} />
+        </div>
       </div>
 
       {isLoading && <KpiSkeleton count={4} />}
