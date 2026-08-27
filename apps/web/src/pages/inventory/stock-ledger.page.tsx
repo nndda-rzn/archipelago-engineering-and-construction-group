@@ -1,105 +1,10 @@
 import { useState } from 'react';
-import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid, Input, Label } from '@aec/ui';
-import { useStockLedger, useStockSummary, useCreateWarehouse, useWarehouses } from '@/features/inventory';
+import { Button, DataGrid } from '@aec/ui';
+import { useStockLedger, useStockSummary, useWarehouses } from '@/features/inventory';
+import { WarehouseForm, ledgerColumns } from '@/features/inventory';
 import { formatIdr } from '@/shared/lib/format';
 
 const PAGE_SIZE = 20;
-
-const movementVariant: Record<string, 'success' | 'warning' | 'default'> = {
-  IN: 'success',
-  OUT: 'warning',
-  ADJUST: 'default',
-};
-
-const columnHelper = createColumnHelper<import('@/features/inventory').StockLedgerEntry>();
-
-const columns = [
-  columnHelper.accessor('createdAt', {
-    header: 'Tanggal',
-    cell: (info) => <span className="tabular-nums text-neutral-500">{new Date(info.getValue()).toLocaleString('id-ID')}</span>,
-  }),
-  columnHelper.accessor('documentType', {
-    header: 'Dokumen',
-    cell: (info) => <Badge variant="default">{info.getValue()}</Badge>,
-  }),
-  columnHelper.accessor('reference', {
-    header: 'Referensi',
-    cell: (info) => <span className="font-mono text-neutral-700">{info.getValue() ?? '-'}</span>,
-  }),
-  columnHelper.accessor('wbsItem', {
-    header: 'WBS',
-    cell: (info) => <span className="text-neutral-600">{info.getValue() ? `${info.getValue()?.code} — ${info.getValue()?.name}` : '-'}</span>,
-  }),
-  columnHelper.accessor('movementType', {
-    header: 'Jenis',
-    cell: (info) => <Badge variant={movementVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge>,
-  }),
-  columnHelper.accessor('quantity', {
-    header: 'Qty',
-    cell: (info) => (
-      <span className={`font-mono tabular-nums ${info.getValue() >= 0 ? 'text-emerald-700' : 'text-destructive-600'}`}>
-        {info.getValue() >= 0 ? '+' : ''}{info.getValue()}
-      </span>
-    ),
-  }),
-  columnHelper.accessor('unit', {
-    header: 'Unit',
-    cell: (info) => <span className="text-neutral-600">{info.getValue()}</span>,
-  }),
-  columnHelper.accessor('balanceAfter', {
-    header: 'Saldo',
-    cell: (info) => <span className="font-mono tabular-nums text-neutral-800">{info.getValue()}</span>,
-  }),
-];
-
-function WarehouseForm({ onDone }: { onDone: () => void }) {
-  const [code, setCode] = useState('');
-  const [name, setName] = useState('');
-  const [type, setType] = useState('PROJECT');
-  const [location, setLocation] = useState('');
-  const create = useCreateWarehouse();
-
-  const onSubmit = () => {
-    if (!code || !name) return;
-    create.mutate(
-      { code, name, warehouseType: type, location: location || undefined },
-      { onSuccess: () => { setCode(''); setName(''); setLocation(''); onDone(); } },
-    );
-  };
-
-  return (
-    <div className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="wh-code">Kode</Label>
-          <Input id="wh-code" placeholder="WH-PROJ-014" value={code} onChange={(e) => setCode(e.target.value)} />
-        </div>
-        <div>
-          <Label htmlFor="wh-name">Nama</Label>
-          <Input id="wh-name" placeholder="Warehouse Proyek" value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div>
-          <Label htmlFor="wh-type">Tipe</Label>
-          <select id="wh-type" value={type} onChange={(e) => setType(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20">
-            <option value="PROJECT">PROJECT</option>
-            <option value="CORPORATE">CORPORATE</option>
-            <option value="TEMPORARY">TEMPORARY</option>
-            <option value="VIRTUAL">VIRTUAL</option>
-          </select>
-        </div>
-        <div>
-          <Label htmlFor="wh-location">Lokasi</Label>
-          <Input id="wh-location" placeholder="Karawang" value={location} onChange={(e) => setLocation(e.target.value)} />
-        </div>
-      </div>
-      <div className="mt-4 flex justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={onDone}>Batal</Button>
-        <Button type="button" onClick={onSubmit} loading={create.isPending}>Simpan</Button>
-      </div>
-    </div>
-  );
-}
 
 export function StockLedgerPage() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
@@ -151,9 +56,7 @@ export function StockLedgerPage() {
                     <td className="px-3 py-2 text-neutral-700">{item.wbsItem ? `${item.wbsItem.code} — ${item.wbsItem.name}` : '-'}</td>
                     <td className="px-3 py-2 text-neutral-600">{item.warehouse.code}</td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums text-neutral-800">{item.quantity}</td>
-                    <td className="px-3 py-2 text-right font-mono tabular-nums text-neutral-700">
-                      {formatIdr(item.totalValue)}
-                    </td>
+                    <td className="px-3 py-2 text-right font-mono tabular-nums text-neutral-700">{formatIdr(item.totalValue)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -164,7 +67,7 @@ export function StockLedgerPage() {
 
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
         <DataGrid
-          columns={columns}
+          columns={ledgerColumns}
           data={data?.items ?? []}
           rowCount={data?.total ?? 0}
           pagination={pagination}
@@ -173,6 +76,7 @@ export function StockLedgerPage() {
           isError={isError}
           onRetry={() => refetch()}
           emptyMessage="Belum ada stock movement"
+          exportFilename="stock-ledger"
         />
       </div>
     </div>
