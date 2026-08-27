@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button, DataGrid, Input, Label } from '@aec/ui';
 import { useCreateAccessReview, useCreateAudit, useCreateFinding, useCreateLegalCase, useCreateRisk } from '../model/governance.api';
 import type { AuditEngagement } from '@aec/api-contracts';
-import { findingColumns } from './governance-grid';
+import { findingColumns } from './finding-grid';
 
 export function RiskForm({ onDone }: { onDone: () => void }) {
   const [title, setTitle] = useState('');
