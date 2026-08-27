@@ -9,3 +9,5 @@ export { CollectionForm } from './collection-form';
 export { collectionColumns } from './collection-grid';
 export { SubconForm, ProgressForm } from './subcontract-forms';
 export { subcontractColumns, progressColumns } from './subcontract-grid';
+export { VariationForm } from './variation-form';
+export { variationColumns } from './variation-grid';
