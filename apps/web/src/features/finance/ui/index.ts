@@ -3,3 +3,5 @@ export { PaymentForm } from './payment-form';
 export { InvoiceForm } from './vendor-invoice-form';
 export { IntercompanyForm, PeriodCloseForm, EntitySelector, StatementTable } from './finance-closure-forms';
 export { icColumns, pcColumns, statusVariant } from './finance-closure-grid';
+export { ClaimForm } from './progress-claim-form';
+export { progressClaimColumns, claimTypeLabel } from './progress-claim-grid';
