@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid, useToast } from '@aec/ui';
+import { Badge, Button, ConfirmDialog, DataGrid, useToast } from '@aec/ui';
 import { useLegalEntities } from '@/entities/legal-entity';
 import { useJournals, usePostJournal, type Journal } from '@/features/finance';
 import { JournalForm } from '@/features/finance';
@@ -56,22 +56,28 @@ const columns = [
 function PostButton({ journal }: { journal: Journal }) {
   const post = usePostJournal();
   const toast = useToast();
+  const [confirmOpen, setConfirmOpen] = useState(false);
   if (journal.status !== 'DRAFT') return null;
   return (
-    <Button
-      size="sm"
-      variant="secondary"
-      onClick={() => {
-        if (window.confirm(`Posting ${journal.journalNumber}? Journal terkunci (BR-001).`))
+    <>
+      <Button size="sm" variant="secondary" onClick={() => setConfirmOpen(true)} loading={post.isPending}>
+        Posting
+      </Button>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Posting journal"
+        description={`Posting ${journal.journalNumber}? Journal terkunci (BR-001).`}
+        confirmLabel="Posting"
+        loading={post.isPending}
+        onConfirm={() =>
           post.mutate(journal.id, {
             onSuccess: () => toast({ title: 'Journal diposting', description: journal.journalNumber, variant: 'success' }),
             onError: () => toast({ title: 'Gagal posting', description: 'Pastikan debit sama dengan kredit.', variant: 'error' }),
-          });
-      }}
-      loading={post.isPending}
-    >
-      Posting
-    </Button>
+          })
+        }
+      />
+    </>
   );
 }
 
