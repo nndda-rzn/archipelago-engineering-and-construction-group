@@ -1,6 +1,7 @@
 import { Badge, Button, EmptyState, ErrorState, KpiSkeleton } from '@aec/ui';
 import { usePortfolio } from '@/features/project';
 import { DashboardGrid, healthMeta, type HealthKey } from '@/widgets/dashboard-grid';
+import { HealthDonut } from '@/widgets/dashboard-charts';
 import { formatIdr as fmt } from '@/shared/lib/format';
 
 export function DashboardPage() {
@@ -29,7 +30,15 @@ export function DashboardPage() {
         <>
           <DashboardGrid totals={data.totals} healthCounts={data.healthCounts} projectCount={data.totals.projectCount} />
 
-          <div className="mt-6 rounded-md border border-neutral-200 bg-white shadow-xs">
+          <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
+            <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs xl:col-span-1">
+              <h2 className="mb-2 text-h2 text-neutral-950">Distribusi Health</h2>
+              <HealthDonut
+                data={Object.entries(data.healthCounts).map(([k, v]) => ({ name: k, value: v }))}
+              />
+            </div>
+            <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs xl:col-span-2">
+              <h2 className="mb-3 text-h2 text-neutral-950">Portfolio Project</h2>
             {data.items.length === 0 ? (
               <EmptyState title="Belum ada project" description="Buat project pertama untuk mulai mengelola portfolio." />
             ) : (
@@ -82,6 +91,7 @@ export function DashboardPage() {
               </tfoot>
             </table>
             )}
+            </div>
           </div>
         </>
       )}
