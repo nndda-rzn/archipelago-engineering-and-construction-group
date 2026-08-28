@@ -5,17 +5,18 @@ import {
   type Commitment, type ControlAccount, type CostCode, type Evm, type Forecast,
 } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
 export const projectControlsKeys = {
   all: (projectId: string) => ['projects', projectId, 'controls'] as const,
-  costCodes: (projectId: string, params: object) => [...projectControlsKeys.all(projectId), 'cost-codes', params] as const,
-  controlAccounts: (projectId: string, params: object) => [...projectControlsKeys.all(projectId), 'control-accounts', params] as const,
+  costCodes: (projectId: string, params: PaginationParams) => [...projectControlsKeys.all(projectId), 'cost-codes', params] as const,
+  controlAccounts: (projectId: string, params: PaginationParams) => [...projectControlsKeys.all(projectId), 'control-accounts', params] as const,
   commitment: (projectId: string) => [...projectControlsKeys.all(projectId), 'commitment'] as const,
   forecasts: (projectId: string) => [...projectControlsKeys.all(projectId), 'forecasts'] as const,
   evm: (projectId: string) => [...projectControlsKeys.all(projectId), 'evm'] as const,
 };
 
-export function useCostCodes(projectId: string, params: { page: number; pageSize: number }) {
+export function useCostCodes(projectId: string, params: PaginationParams) {
   return useQuery({
     queryKey: projectControlsKeys.costCodes(projectId, params),
     queryFn: async () => {
@@ -38,7 +39,7 @@ export function useCreateCostCode(projectId: string) {
   });
 }
 
-export function useControlAccounts(projectId: string, params: { page: number; pageSize: number }) {
+export function useControlAccounts(projectId: string, params: PaginationParams) {
   return useQuery({
     queryKey: projectControlsKeys.controlAccounts(projectId, params),
     queryFn: async () => {

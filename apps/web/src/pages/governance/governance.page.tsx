@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Button, DataGrid } from '@aec/ui';
 import { useAccessReviews, useAudits, useLegalCases, useRisks, type AuditEngagement } from '@/features/governance';
 import { RiskForm, AuditForm, LegalForm, ReviewForm, AuditDetail, riskColumns, auditColumns, legalColumns, reviewColumns } from '@/features/governance/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 type Tab = 'risks' | 'audits' | 'legal' | 'reviews';
 

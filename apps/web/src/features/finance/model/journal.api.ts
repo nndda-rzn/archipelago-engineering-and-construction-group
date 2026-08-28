@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createJournalSchema, journalSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
-export const jrnKeys = { all: ['journals'] as const, list: (params: object) => [...jrnKeys.all, 'list', params] as const };
+export const jrnKeys = { all: ['journals'] as const, list: (params: PaginationParams & { source?: string; status?: string }) => [...jrnKeys.all, 'list', params] as const };
 
-export function useJournals(params: { page: number; pageSize: number; source?: string; status?: string }) {
+export function useJournals(params: PaginationParams & { source?: string; status?: string }) {
   return useQuery({
     queryKey: jrnKeys.list(params),
     queryFn: async () => {

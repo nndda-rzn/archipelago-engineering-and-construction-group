@@ -6,21 +6,22 @@ import {
   payrollAllocationSchema, createPayrollAllocationSchema,
 } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
 export const hcmKeys = {
   employees: ['hcm-employees'] as const,
-  employeeList: (params: object) => [...hcmKeys.employees, 'list', params] as const,
+  employeeList: (params: PaginationParams & { status?: string }) => [...hcmKeys.employees, 'list', params] as const,
   assignments: (id: string) => [...hcmKeys.employees, 'assignments', id] as const,
   timesheets: ['hcm-timesheets'] as const,
-  timesheetList: (params: object) => [...hcmKeys.timesheets, 'list', params] as const,
+  timesheetList: (params: PaginationParams & { status?: string }) => [...hcmKeys.timesheets, 'list', params] as const,
   equipment: ['hcm-equipment'] as const,
-  equipmentList: (params: object) => [...hcmKeys.equipment, 'list', params] as const,
+  equipmentList: (params: PaginationParams & { status?: string }) => [...hcmKeys.equipment, 'list', params] as const,
   equipmentDetail: (id: string, kind: string) => [...hcmKeys.equipment, 'detail', id, kind] as const,
   payroll: ['hcm-payroll'] as const,
-  payrollList: (params: object) => [...hcmKeys.payroll, 'list', params] as const,
+  payrollList: (params: PaginationParams & { period?: string }) => [...hcmKeys.payroll, 'list', params] as const,
 };
 
-export function useEmployees(params: { page: number; pageSize: number; status?: string }) {
+export function useEmployees(params: PaginationParams & { status?: string }) {
   return useQuery({
     queryKey: hcmKeys.employeeList(params),
     queryFn: async () => {
@@ -73,7 +74,7 @@ export function useCreateAssignment() {
   });
 }
 
-export function useTimesheets(params: { page: number; pageSize: number; status?: string }) {
+export function useTimesheets(params: PaginationParams & { status?: string }) {
   return useQuery({
     queryKey: hcmKeys.timesheetList(params),
     queryFn: async () => {
@@ -104,7 +105,7 @@ export function useApproveTimesheet() {
   });
 }
 
-export function useEquipment(params: { page: number; pageSize: number; status?: string }) {
+export function useEquipment(params: PaginationParams & { status?: string }) {
   return useQuery({
     queryKey: hcmKeys.equipmentList(params),
     queryFn: async () => {
@@ -256,7 +257,7 @@ export function useCreateEquipmentUsage() {
   });
 }
 
-export function usePayrollAllocations(params: { page: number; pageSize: number; period?: string }) {
+export function usePayrollAllocations(params: PaginationParams & { period?: string }) {
   return useQuery({
     queryKey: hcmKeys.payrollList(params),
     queryFn: async () => {

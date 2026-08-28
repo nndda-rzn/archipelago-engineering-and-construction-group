@@ -1,14 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createVendorSchema, vendorSchema, createFiscalPeriodSchema, fiscalPeriodSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
 export const mdKeys = {
   all: ['master-data'] as const,
-  vendors: (params: object) => [...mdKeys.all, 'vendors', params] as const,
-  periods: (params: object) => [...mdKeys.all, 'periods', params] as const,
+  vendors: (params: PaginationParams) => [...mdKeys.all, 'vendors', params] as const,
+  periods: (params: PaginationParams) => [...mdKeys.all, 'periods', params] as const,
 };
 
-export function useVendors(params: { page: number; pageSize: number }) {
+export function useVendors(params: PaginationParams) {
   return useQuery({
     queryKey: mdKeys.vendors(params),
     queryFn: async () => {
@@ -30,7 +31,7 @@ export function useCreateVendor() {
   });
 }
 
-export function useFiscalPeriods(params: { page: number; pageSize: number }) {
+export function useFiscalPeriods(params: PaginationParams) {
   return useQuery({
     queryKey: mdKeys.periods(params),
     queryFn: async () => {

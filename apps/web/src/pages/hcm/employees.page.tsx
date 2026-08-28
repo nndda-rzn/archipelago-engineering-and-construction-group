@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Button, DataGrid } from '@aec/ui';
 import { useAssignments, useEmployees } from '@/features/hcm';
 import { EmployeeForm, AssignmentForm, employeeColumns, assignmentColumns } from '@/features/hcm/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 export function EmployeesPage() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });

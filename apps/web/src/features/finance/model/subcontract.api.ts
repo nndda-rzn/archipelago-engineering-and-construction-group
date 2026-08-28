@@ -1,14 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createSubcontractProgressSchema, createSubcontractSchema, subcontractProgressSchema, subcontractSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
 export const subcontractKeys = {
   all: ['subcontracts'] as const,
-  list: (params: object) => [...subcontractKeys.all, 'list', params] as const,
-  progress: (id: string, params: object) => [...subcontractKeys.all, 'progress', id, params] as const,
+  list: (params: PaginationParams & { status?: string }) => [...subcontractKeys.all, 'list', params] as const,
+  progress: (id: string, params: PaginationParams) => [...subcontractKeys.all, 'progress', id, params] as const,
 };
 
-export function useSubcontracts(params: { page: number; pageSize: number; status?: string }) {
+export function useSubcontracts(params: PaginationParams & { status?: string }) {
   return useQuery({
     queryKey: subcontractKeys.list(params),
     queryFn: async () => {
@@ -40,7 +41,7 @@ export function useCreateSubcontract() {
   });
 }
 
-export function useSubcontractProgress(id: string, params: { page: number; pageSize: number }) {
+export function useSubcontractProgress(id: string, params: PaginationParams) {
   return useQuery({
     queryKey: subcontractKeys.progress(id, params),
     queryFn: async () => {

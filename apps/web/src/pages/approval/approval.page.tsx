@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Badge, DataGrid } from '@aec/ui';
 import { useApprovalTasks } from '@/features/approval';
 import { approvalColumns } from '@/features/approval/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 export function ApprovalPage() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });

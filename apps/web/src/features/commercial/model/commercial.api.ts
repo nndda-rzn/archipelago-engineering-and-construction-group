@@ -1,15 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createClientSchema, clientSchema, createOpportunitySchema, opportunitySchema, createContractSchema, contractSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
 export const commercialKeys = {
   all: ['commercial'] as const,
-  clients: (params: object) => [...commercialKeys.all, 'clients', params] as const,
-  opportunities: (params: object) => [...commercialKeys.all, 'opportunities', params] as const,
-  contracts: (params: object) => [...commercialKeys.all, 'contracts', params] as const,
+  clients: (params: PaginationParams) => [...commercialKeys.all, 'clients', params] as const,
+  opportunities: (params: PaginationParams) => [...commercialKeys.all, 'opportunities', params] as const,
+  contracts: (params: PaginationParams) => [...commercialKeys.all, 'contracts', params] as const,
 };
 
-export function useClients(params: { page: number; pageSize: number }) {
+export function useClients(params: PaginationParams) {
   return useQuery({
     queryKey: commercialKeys.clients(params),
     queryFn: async () => {
@@ -31,7 +32,7 @@ export function useCreateClient() {
   });
 }
 
-export function useOpportunities(params: { page: number; pageSize: number }) {
+export function useOpportunities(params: PaginationParams) {
   return useQuery({
     queryKey: commercialKeys.opportunities(params),
     queryFn: async () => {
@@ -62,7 +63,7 @@ export function useUpdateOpportunityStage() {
   });
 }
 
-export function useContracts(params: { page: number; pageSize: number }) {
+export function useContracts(params: PaginationParams) {
   return useQuery({
     queryKey: commercialKeys.contracts(params),
     queryFn: async () => {

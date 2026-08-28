@@ -6,17 +6,18 @@ import {
   type BidDecision, type ContractAmendment, type ContractDeviation, type Estimate, type TenderSubmission,
 } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
 export const tenderKeys = {
   all: ['tender'] as const,
-  bidDecisions: (params: object) => [...tenderKeys.all, 'bid-decisions', params] as const,
+  bidDecisions: (params: PaginationParams) => [...tenderKeys.all, 'bid-decisions', params] as const,
   estimates: (opportunityId: string) => [...tenderKeys.all, 'estimates', opportunityId] as const,
   deviations: (opportunityId: string) => [...tenderKeys.all, 'deviations', opportunityId] as const,
-  submissions: (params: object) => [...tenderKeys.all, 'submissions', params] as const,
+  submissions: (params: PaginationParams) => [...tenderKeys.all, 'submissions', params] as const,
   amendments: (contractId: string) => [...tenderKeys.all, 'amendments', contractId] as const,
 };
 
-export function useBidDecisions(params: { page: number; pageSize: number }) {
+export function useBidDecisions(params: PaginationParams) {
   return useQuery({
     queryKey: tenderKeys.bidDecisions(params),
     queryFn: async () => {
@@ -112,7 +113,7 @@ function useDeviationAction(action: 'approve' | 'reject') {
 export const useApproveDeviation = () => useDeviationAction('approve');
 export const useRejectDeviation = () => useDeviationAction('reject');
 
-export function useTenderSubmissions(params: { page: number; pageSize: number }) {
+export function useTenderSubmissions(params: PaginationParams) {
   return useQuery({
     queryKey: tenderKeys.submissions(params),
     queryFn: async () => {

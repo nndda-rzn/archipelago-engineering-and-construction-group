@@ -3,8 +3,7 @@ import { Button, DataGrid } from '@aec/ui';
 import { useSubcontractProgress, useSubcontracts } from '@/features/finance';
 import { SubconForm, ProgressForm, subcontractColumns, progressColumns } from '@/features/finance/ui';
 import { formatIdr as fmt } from '@/shared/lib/format';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 export function SubcontractPage() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });

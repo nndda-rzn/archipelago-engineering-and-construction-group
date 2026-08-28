@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Button, DataGrid } from '@aec/ui';
 import { useFiscalPeriods, useVendors } from '@/features/master-data';
 import { PeriodForm, VendorForm, periodColumns, vendorColumns } from '@/features/master-data/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 type Tab = 'vendors' | 'periods';
 

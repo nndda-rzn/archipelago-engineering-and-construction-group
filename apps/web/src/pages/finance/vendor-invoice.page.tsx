@@ -4,8 +4,7 @@ import { Badge, Button, ConfirmActionButton, DataGrid } from '@aec/ui';
 import { usePostVendorInvoice, useVendorInvoices, type VendorInvoice } from '@/features/finance';
 import { InvoiceForm } from '@/features/finance';
 import { formatIdr } from '@/shared/lib/format';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
   DRAFT: 'default',

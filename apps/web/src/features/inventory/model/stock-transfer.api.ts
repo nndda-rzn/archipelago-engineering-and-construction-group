@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createStockTransferSchema, stockTransferSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
-export const stKeys = { all: ['stock-transfers'] as const, list: (params: object) => [...stKeys.all, 'list', params] as const };
+export const stKeys = { all: ['stock-transfers'] as const, list: (params: PaginationParams) => [...stKeys.all, 'list', params] as const };
 
-export function useStockTransfers(params: { page: number; pageSize: number }) {
+export function useStockTransfers(params: PaginationParams) {
   return useQuery({
     queryKey: stKeys.list(params),
     queryFn: async () => {

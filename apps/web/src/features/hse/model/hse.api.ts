@@ -4,15 +4,16 @@ import {
   createPermitSchema, permitToWorkSchema, createCorrectiveActionSchema,
 } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
 export const hseKeys = {
   all: ['hse'] as const,
-  observations: (params: object) => [...hseKeys.all, 'observations', params] as const,
-  incidents: (params: object) => [...hseKeys.all, 'incidents', params] as const,
-  permits: (params: object) => [...hseKeys.all, 'permits', params] as const,
+  observations: (params: PaginationParams & { status?: string }) => [...hseKeys.all, 'observations', params] as const,
+  incidents: (params: PaginationParams & { status?: string; severity?: string }) => [...hseKeys.all, 'incidents', params] as const,
+  permits: (params: PaginationParams & { status?: string }) => [...hseKeys.all, 'permits', params] as const,
 };
 
-export function useObservations(params: { page: number; pageSize: number; status?: string }) {
+export function useObservations(params: PaginationParams & { status?: string }) {
   return useQuery({
     queryKey: hseKeys.observations(params),
     queryFn: async () => {
@@ -43,7 +44,7 @@ export function useResolveObservation() {
   });
 }
 
-export function useIncidents(params: { page: number; pageSize: number; status?: string; severity?: string }) {
+export function useIncidents(params: PaginationParams & { status?: string; severity?: string }) {
   return useQuery({
     queryKey: hseKeys.incidents(params),
     queryFn: async () => {
@@ -102,7 +103,7 @@ export function useVerifyCorrectiveAction() {
   });
 }
 
-export function usePermits(params: { page: number; pageSize: number; status?: string }) {
+export function usePermits(params: PaginationParams & { status?: string }) {
   return useQuery({
     queryKey: hseKeys.permits(params),
     queryFn: async () => {

@@ -8,8 +8,7 @@ import {
   EntitySelector, IntercompanyForm, PeriodCloseForm,
   icColumns, pcColumns, ReconciliationSummary, IncomeStatementSection, BalanceSheetSection, ConsolidationSection,
 } from '@/features/finance/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 export function FinanceClosurePage() {
   const [icPage, setIcPage] = useState(1);

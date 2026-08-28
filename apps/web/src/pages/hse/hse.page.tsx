@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Button, DataGrid, Input, Label } from '@aec/ui';
 import { useCreateCorrectiveAction, useIncidents, useObservations, usePermits, type HseIncident } from '@/features/hse';
 import { ObservationForm, IncidentForm, PermitForm, observationColumns, incidentColumns, permitColumns, caColumns } from '@/features/hse/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 type Tab = 'observations' | 'incidents' | 'permits';
 

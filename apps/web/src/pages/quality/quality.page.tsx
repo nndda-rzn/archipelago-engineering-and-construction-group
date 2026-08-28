@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Button, DataGrid } from '@aec/ui';
 import { useItps, useInspections, useNcrs, usePunchItems } from '@/features/quality';
 import { ItpForm, InspectionForm, NcrForm, PunchForm, itpColumns, insColumns, ncrColumns, punchColumns } from '@/features/quality/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 type Tab = 'itp' | 'inspections' | 'ncrs' | 'punch';
 

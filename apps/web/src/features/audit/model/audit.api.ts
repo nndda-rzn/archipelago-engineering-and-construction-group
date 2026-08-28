@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { auditLogListResponseSchema } from '@aec/api-contracts';
 import { getJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
 export const auditKeys = {
   all: ['audit-logs'] as const,
-  list: (params: { page: number; pageSize: number }) => [...auditKeys.all, 'list', params] as const,
+  list: (params: PaginationParams) => [...auditKeys.all, 'list', params] as const,
 };
 
-export function useAuditLogs(params: { page: number; pageSize: number }) {
+export function useAuditLogs(params: PaginationParams) {
   return useQuery({
     queryKey: auditKeys.list(params),
     queryFn: async () => {

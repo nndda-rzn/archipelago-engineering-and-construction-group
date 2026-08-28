@@ -4,8 +4,7 @@ import { Badge, Button, ConfirmDialog, DataGrid, EmptyCell, useToast } from '@ae
 import { useLegalEntities } from '@/entities/legal-entity';
 import { useJournals, usePostJournal, type Journal } from '@/features/finance';
 import { JournalForm } from '@/features/finance';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
   DRAFT: 'default',

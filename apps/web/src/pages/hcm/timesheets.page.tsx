@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Button, DataGrid } from '@aec/ui';
 import { useTimesheets } from '@/features/hcm';
 import { TimesheetForm, timesheetColumns } from '@/features/hcm/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 export function TimesheetsPage() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });

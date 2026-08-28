@@ -5,9 +5,8 @@ import {
 } from '@/features/project';
 import { useProjects } from '@/entities/project';
 import { formatIdr as fmt } from '@/shared/lib/format';
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 import { costCodeColumns, caColumns, forecastColumns, CostCodeForm, ControlAccountForm, ForecastForm } from '@/features/project/ui';
-
-const PAGE_SIZE = 20;
 
 type Tab = 'costcodes' | 'control-accounts' | 'forecasts' | 'evm' | 'commitment';
 

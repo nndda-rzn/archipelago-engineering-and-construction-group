@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { collectionSchema, createCollectionSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
-export const colKeys = { all: ['collections'] as const, list: (params: object) => [...colKeys.all, 'list', params] as const };
+export const colKeys = { all: ['collections'] as const, list: (params: PaginationParams) => [...colKeys.all, 'list', params] as const };
 
-export function useCollections(params: { page: number; pageSize: number }) {
+export function useCollections(params: PaginationParams) {
   return useQuery({
     queryKey: colKeys.list(params),
     queryFn: async () => {

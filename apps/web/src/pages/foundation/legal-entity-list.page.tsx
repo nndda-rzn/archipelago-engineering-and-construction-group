@@ -4,8 +4,7 @@ import type { LegalEntityListParams } from '@aec/api-contracts';
 import { Button, DataGrid } from '@aec/ui';
 import { useLegalEntities } from '@/entities/legal-entity';
 import { LegalEntityForm, legalEntityColumns } from '@/features/foundation/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 export function LegalEntityListPage() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });

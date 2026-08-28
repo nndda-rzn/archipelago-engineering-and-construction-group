@@ -3,8 +3,7 @@ import { Button, DataGrid, EntitySelect } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useHandovers } from '@/features/construction';
 import { HandoverForm, HandoverDetail, handoverColumns } from '@/features/construction/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 export function HandoverPage() {
   const [projectId, setProjectId] = useState('');

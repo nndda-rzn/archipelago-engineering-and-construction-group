@@ -4,8 +4,7 @@ import { Badge, DataGrid, EmptyCell } from '@aec/ui';
 import { useAuditLogs } from '@/features/audit';
 import type { AuditLog } from '@aec/api-contracts';
 import { formatDateTime } from '@/shared/lib/format';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 const columnHelper = createColumnHelper<AuditLog>();
 

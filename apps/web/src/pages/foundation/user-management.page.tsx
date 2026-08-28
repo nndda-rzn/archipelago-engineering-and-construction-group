@@ -3,8 +3,7 @@ import type { SortingState } from '@tanstack/react-table';
 import { Button, DataGrid, Input } from '@aec/ui';
 import { useUsers } from '@/entities/user';
 import { UserForm, userColumns } from '@/features/foundation/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 export function UserManagementPage() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });

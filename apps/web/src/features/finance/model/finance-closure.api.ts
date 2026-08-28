@@ -5,18 +5,19 @@ import {
   type BalanceSheet, type Consolidation, type IncomeStatement, type Intercompany, type PeriodClose,
 } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
 export const financeClosureKeys = {
   all: ['finance-closure'] as const,
-  intercompany: (params: object) => [...financeClosureKeys.all, 'intercompany', params] as const,
+  intercompany: (params: PaginationParams) => [...financeClosureKeys.all, 'intercompany', params] as const,
   reconciliation: () => [...financeClosureKeys.all, 'reconciliation'] as const,
   periodCloses: () => [...financeClosureKeys.all, 'period-closes'] as const,
-  incomeStatement: (params: object) => [...financeClosureKeys.all, 'income-statement', params] as const,
-  balanceSheet: (params: object) => [...financeClosureKeys.all, 'balance-sheet', params] as const,
+  incomeStatement: (params: { legalEntityId: string; from?: string; to?: string }) => [...financeClosureKeys.all, 'income-statement', params] as const,
+  balanceSheet: (params: { legalEntityId: string; from?: string; to?: string }) => [...financeClosureKeys.all, 'balance-sheet', params] as const,
   consolidation: () => [...financeClosureKeys.all, 'consolidation'] as const,
 };
 
-export function useIntercompany(params: { page: number; pageSize: number }) {
+export function useIntercompany(params: PaginationParams) {
   return useQuery({
     queryKey: financeClosureKeys.intercompany(params),
     queryFn: async () => {

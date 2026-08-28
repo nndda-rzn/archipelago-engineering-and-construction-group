@@ -3,8 +3,7 @@ import { Button, DataGrid, EntitySelect } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useDailyReports } from '@/features/construction';
 import { CreateDailyReportForm, dailyReportColumns } from '@/features/construction/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 export function DailyReportsPage() {
   const [projectId, setProjectId] = useState('');

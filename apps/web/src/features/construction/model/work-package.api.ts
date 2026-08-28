@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { commissioningSystemSchema, createCommissioningSchema, createDailyReportSchema, createHandoverSchema, createWorkPackageSchema, dailyReportListResponseSchema, handoverListResponseSchema, workPackageListResponseSchema, type CommissioningSystem, type HandoverPackage, type WorkPackage } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
 export const workPackageKeys = {
   all: (projectId: string) => ['projects', projectId, 'work-packages'] as const,
-  list: (projectId: string, params: object) => [...workPackageKeys.all(projectId), 'list', params] as const,
+  list: (projectId: string, params: PaginationParams) => [...workPackageKeys.all(projectId), 'list', params] as const,
 };
 
-export function useWorkPackages(projectId: string, params: { page: number; pageSize: number }) {
+export function useWorkPackages(projectId: string, params: PaginationParams) {
   return useQuery({
     queryKey: workPackageKeys.list(projectId, params),
     queryFn: async () => {
@@ -111,10 +112,10 @@ export function useUpdateCommissioningStatus(projectId: string) {
 // FR-CON-006: Handover
 export const handoverKeys = {
   all: (projectId: string) => ['projects', projectId, 'handovers'] as const,
-  list: (projectId: string, params: object) => [...handoverKeys.all(projectId), 'list', params] as const,
+  list: (projectId: string, params: PaginationParams) => [...handoverKeys.all(projectId), 'list', params] as const,
 };
 
-export function useHandovers(projectId: string, params: { page: number; pageSize: number }) {
+export function useHandovers(projectId: string, params: PaginationParams) {
   return useQuery({
     queryKey: handoverKeys.list(projectId, params),
     queryFn: async () => {
@@ -165,10 +166,10 @@ export function useApproveHandover(projectId: string) {
 // FR-CON-003: Daily report
 export const dailyReportKeys = {
   all: (projectId: string) => ['projects', projectId, 'daily-reports'] as const,
-  list: (projectId: string, params: object) => [...dailyReportKeys.all(projectId), 'list', params] as const,
+  list: (projectId: string, params: PaginationParams) => [...dailyReportKeys.all(projectId), 'list', params] as const,
 };
 
-export function useDailyReports(projectId: string, params: { page: number; pageSize: number }) {
+export function useDailyReports(projectId: string, params: PaginationParams) {
   return useQuery({
     queryKey: dailyReportKeys.list(projectId, params),
     queryFn: async () => {
