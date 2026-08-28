@@ -4,7 +4,7 @@ import {
   useApproveProposal, useReleaseProposal, useSubmitProposal,
   type BankAccount, type BankGuarantee, type PaymentProposal,
 } from '../model/treasury.api';
-import { formatIdr as fmt } from '@/shared/lib/format';
+import { formatDate, formatIdr as fmt } from '@/shared/lib/format';
 
 type TreasuryStatus = 'ACTIVE' | 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'RELEASED' | 'EXPIRED' | 'RETURNED' | 'CLAIMED' | 'INACTIVE' | 'BLOCKED';
 
@@ -70,6 +70,6 @@ export const bgColumns = [
   bgHelper.accessor('beneficiary', { header: 'Beneficiary', cell: (i) => <span className="text-neutral-700">{i.getValue()}</span> }),
   bgHelper.accessor('bankName', { header: 'Bank', cell: (i) => <span className="text-neutral-600">{i.getValue()}</span> }),
   bgHelper.accessor('amount', { header: 'Nilai', cell: (i) => <span className="font-mono tabular-nums text-neutral-800">{fmt(i.getValue())}</span> }),
-  bgHelper.accessor('expiryDate', { header: 'Expiry', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue() ? new Date(i.getValue()!).toLocaleDateString('id-ID') : '-'}</span> }),
+  bgHelper.accessor('expiryDate', { header: 'Expiry', cell: (i) => <span className="font-mono text-neutral-600">{formatDate(i.getValue())}</span> }),
   bgHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={statusVariant[i.getValue() as TreasuryStatus]}>{i.getValue()}</Badge> }),
 ];

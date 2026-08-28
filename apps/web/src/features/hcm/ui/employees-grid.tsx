@@ -2,6 +2,7 @@ import { Badge, Button, type BadgeVariant } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useChangeEmployeeStatus } from '../model/hcm.api';
 import type { Employee, ProjectAssignment } from '@aec/api-contracts';
+import { formatDate } from '@/shared/lib/format';
 
 type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'LEAVER';
 
@@ -82,7 +83,7 @@ export const assignmentColumns = [
   }),
   assignHelper.accessor('startDate', {
     header: 'Mulai',
-    cell: (info) => <span className="font-mono text-neutral-600">{new Date(info.getValue()).toLocaleDateString('id-ID')}</span>,
+    cell: (info) => <span className="font-mono text-neutral-600">{formatDate(info.getValue())}</span>,
   }),
   assignHelper.accessor('status', {
     header: 'Status',

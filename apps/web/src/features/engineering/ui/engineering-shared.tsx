@@ -1,4 +1,5 @@
 import type { BadgeVariant } from '@aec/ui';
+import { formatDate } from '@/shared/lib/format';
 
 export type EngStatus = 'ISSUED' | 'APPROVED' | 'PUBLISHED' | 'ANSWERED' | 'CLOSED' | 'REJECTED' | 'OPEN' | 'SUBMITTED';
 
@@ -14,5 +15,5 @@ export const engStatusVariant: Record<EngStatus, BadgeVariant> = {
 };
 
 export function EngDateCell({ value }: { value?: string | null }) {
-  return <span className="font-mono text-neutral-600">{value ? new Date(value).toLocaleDateString('id-ID') : '—'}</span>;
+  return <span className="font-mono text-neutral-600">{formatDate(value)}</span>;
 }

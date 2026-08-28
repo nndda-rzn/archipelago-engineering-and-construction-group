@@ -2,7 +2,7 @@ import { Badge, Button, type BadgeVariant } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useRejectSubcontractProgress, useVerifySubcontractProgress } from '../model/subcontract.api';
 import type { Subcontract, SubcontractProgress } from '@aec/api-contracts';
-import { formatIdr as fmt } from '@/shared/lib/format';
+import { formatDate, formatIdr as fmt } from '@/shared/lib/format';
 
 export type SubcontractStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'TERMINATED';
 
@@ -58,7 +58,7 @@ export const progressColumns = [
   }),
   progColumnHelper.accessor('progressDate', {
     header: 'Tanggal',
-    cell: (info) => <span className="font-mono text-neutral-600">{new Date(info.getValue()).toLocaleDateString('id-ID')}</span>,
+    cell: (info) => <span className="font-mono text-neutral-600">{formatDate(info.getValue())}</span>,
   }),
   progColumnHelper.accessor('progressPercent', {
     header: 'Progress',

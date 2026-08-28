@@ -1,4 +1,5 @@
 import type { BadgeVariant } from '@aec/ui';
+import { formatDate } from '@/shared/lib/format';
 
 export type HseSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
@@ -10,5 +11,5 @@ export const severityVariant: Record<HseSeverity, BadgeVariant> = {
 };
 
 export function HseDateCell({ value }: { value: string }) {
-  return <span className="font-mono text-neutral-600">{new Date(value).toLocaleDateString('id-ID')}</span>;
+  return <span className="font-mono text-neutral-600">{formatDate(value)}</span>;
 }

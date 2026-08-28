@@ -4,7 +4,7 @@ import {
   useCompleteEquipmentPm, useEndEquipmentAssignment, useResolveEquipmentBreakdown,
 } from '../model/hcm.api';
 import type { Equipment, EquipmentAssignment, EquipmentBreakdown, EquipmentPm } from '@aec/api-contracts';
-import { formatIdr as fmt } from '@/shared/lib/format';
+import { formatDate, formatIdr as fmt } from '@/shared/lib/format';
 
 type EquipmentStatus = 'AVAILABLE' | 'ASSIGNED' | 'MAINTENANCE' | 'BREAKDOWN' | 'RETIRED';
 
@@ -55,7 +55,7 @@ export const assignmentColumns = [
   }),
   assignHelper.accessor('startDate', {
     header: 'Mulai',
-    cell: (info) => <span className="font-mono text-neutral-600">{new Date(info.getValue()).toLocaleDateString('id-ID')}</span>,
+    cell: (info) => <span className="font-mono text-neutral-600">{formatDate(info.getValue())}</span>,
   }),
   assignHelper.accessor('status', {
     header: 'Status',
@@ -83,7 +83,7 @@ export const pmColumns = [
     header: 'Jatuh Tempo',
     cell: (info) => {
       const due = info.getValue();
-      return <span className="font-mono text-neutral-600">{due ? new Date(due).toLocaleDateString('id-ID') : '-'}</span>;
+      return <span className="font-mono text-neutral-600">{formatDate(due)}</span>;
     },
   }),
   pmHelper.accessor('dueMeter', {
@@ -110,7 +110,7 @@ function CompletePmCell({ pm }: { pm: EquipmentPm }) {
 export const breakdownColumns = [
   bdHelper.accessor('breakdownDate', {
     header: 'Tanggal',
-    cell: (info) => <span className="font-mono text-neutral-600">{new Date(info.getValue()).toLocaleDateString('id-ID')}</span>,
+    cell: (info) => <span className="font-mono text-neutral-600">{formatDate(info.getValue())}</span>,
   }),
   bdHelper.accessor('downtimeHours', {
     header: 'Downtime (jam)',
