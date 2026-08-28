@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } fro
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
+import { Permission } from '@/shared/permissions/permissions';
 import {
   ClosePunchItemDto, CreateInspectionDto, CreateItpDto, CreateNcrDto, CreatePunchItemDto,
   DisposeNcrDto, InspectDto, ListInspectionQueryDto, ListItpQueryDto, ListNcrQueryDto, ListPunchItemQueryDto,
@@ -17,73 +18,73 @@ export class QualityController {
   ) {}
 
   @Get('quality/itps')
-  @Permissions('Quality.VIEW')
+  @Permissions(Permission.QualityView)
   listItps(@Query() query: ListItpQueryDto) {
     return this.quality.listItps(query);
   }
 
   @Post('quality/itps')
-  @Permissions('Quality.CREATE')
+  @Permissions(Permission.QualityCreate)
   createItp(@Body() dto: CreateItpDto, @Req() request: { user?: { sub?: string } }) {
     return this.quality.createItp(dto, request.user?.sub ?? 'system');
   }
 
   @Get('quality/inspections')
-  @Permissions('Quality.VIEW')
+  @Permissions(Permission.QualityView)
   listInspections(@Query() query: ListInspectionQueryDto) {
     return this.quality.listInspections(query);
   }
 
   @Post('quality/inspections')
-  @Permissions('Quality.CREATE')
+  @Permissions(Permission.QualityCreate)
   createInspection(@Body() dto: CreateInspectionDto, @Req() request: { user?: { sub?: string } }) {
     return this.quality.createInspection(dto, request.user?.sub ?? 'system');
   }
 
   @Post('quality/inspections/:id/inspect')
-  @Permissions('Quality.INSPECT')
+  @Permissions(Permission.QualityInspect)
   inspect(@Param('id') id: string, @Body() dto: InspectDto, @Req() request: { user?: { sub?: string } }) {
     return this.quality.inspect(id, dto, request.user?.sub ?? 'system');
   }
 
   @Get('quality/ncrs')
-  @Permissions('Quality.VIEW')
+  @Permissions(Permission.QualityView)
   listNcrs(@Query() query: ListNcrQueryDto) {
     return this.quality.listNcrs(query);
   }
 
   @Post('quality/ncrs')
-  @Permissions('Quality.CREATE')
+  @Permissions(Permission.QualityCreate)
   createNcr(@Body() dto: CreateNcrDto, @Req() request: { user?: { sub?: string } }) {
     return this.quality.createNcr(dto, request.user?.sub ?? 'system');
   }
 
   @Post('quality/ncrs/:id/dispose')
-  @Permissions('Quality.INSPECT')
+  @Permissions(Permission.QualityInspect)
   disposeNcr(@Param('id') id: string, @Body() dto: DisposeNcrDto, @Req() request: { user?: { sub?: string } }) {
     return this.quality.disposeNcr(id, dto, request.user?.sub ?? 'system');
   }
 
   @Post('quality/ncrs/:id/reinspect')
-  @Permissions('Quality.INSPECT')
+  @Permissions(Permission.QualityInspect)
   reinspectNcr(@Param('id') id: string, @Body() dto: ReinspectNcrDto, @Req() request: { user?: { sub?: string } }) {
     return this.quality.reinspectNcr(id, dto, request.user?.sub ?? 'system');
   }
 
   @Get('quality/punch-items')
-  @Permissions('Quality.VIEW')
+  @Permissions(Permission.QualityView)
   listPunchItems(@Query() query: ListPunchItemQueryDto) {
     return this.quality.listPunchItems(query);
   }
 
   @Post('quality/punch-items')
-  @Permissions('Quality.CREATE')
+  @Permissions(Permission.QualityCreate)
   createPunchItem(@Body() dto: CreatePunchItemDto, @Req() request: { user?: { sub?: string } }) {
     return this.quality.createPunchItem(dto, request.user?.sub ?? 'system');
   }
 
   @Post('quality/punch-items/:id/close')
-  @Permissions('Quality.CLOSE')
+  @Permissions(Permission.QualityClose)
   closePunchItem(@Param('id') id: string, @Body() dto: ClosePunchItemDto, @Req() request: { user?: { sub?: string } }) {
     return this.quality.closePunchItem(id, dto, request.user?.sub ?? 'system');
   }

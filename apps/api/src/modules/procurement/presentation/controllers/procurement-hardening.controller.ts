@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } fro
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
+import { Permission } from '@/shared/permissions/permissions';
 import { RfqService } from '../../application/services/rfq.service';
 import { PurchaseRequisitionService } from '../../application/services/purchase-requisition.service';
 import { ProcurementHardeningService } from '../../application/services/procurement-hardening.service';
@@ -17,55 +18,55 @@ export class ProcurementHardeningController {
   ) {}
 
   @Get('projects/:projectId/budget-status')
-  @Permissions('Project.VIEW')
+  @Permissions(Permission.ProjectView)
   budgetStatus(@Param('projectId') projectId: string) {
     return this.pr.budgetStatus(projectId);
   }
 
   @Post('rfq-quotes/:id/technical-review')
-  @Permissions('Rfq.EVALUATE')
+  @Permissions(Permission.RfqEvaluate)
   technicalReview(@Param('id') id: string, @Body() dto: TechnicalReviewDto, @Req() request: { user?: { sub?: string } }) {
     return this.rfq.technicalReview(id, dto.technicalStatus, dto.technicalNote ?? null, request.user?.sub ?? 'system');
   }
 
   @Get('rfqs/:id/commercial-evaluation')
-  @Permissions('Rfq.EVALUATE')
+  @Permissions(Permission.RfqEvaluate)
   commercialEvaluation(@Param('id') id: string) {
     return this.rfq.commercialEvaluation(id);
   }
 
   @Post('purchase-orders/:id/po-changes')
-  @Permissions('PurchaseOrder.CREATE')
+  @Permissions(Permission.PurchaseOrderCreate)
   createPoChange(@Param('id') id: string, @Body() dto: CreatePoChangeDto, @Req() request: { user?: { sub?: string } }) {
     return this.hardening.createPoChange(id, dto, request.user?.sub ?? 'system');
   }
 
   @Get('purchase-orders/:id/po-changes')
-  @Permissions('PurchaseOrder.VIEW')
+  @Permissions(Permission.PurchaseOrderView)
   listPoChanges(@Param('id') id: string) {
     return this.hardening.listPoChanges(id);
   }
 
   @Post('po-changes/:id/approve')
-  @Permissions('PurchaseOrder.APPROVE')
+  @Permissions(Permission.PurchaseOrderApprove)
   approvePoChange(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.hardening.approvePoChange(id, request.user?.sub ?? 'system');
   }
 
   @Get('vendor-performance')
-  @Permissions('Vendor.VIEW')
+  @Permissions(Permission.VendorView)
   listRatings(@Query() query: ListRatingQueryDto) {
     return this.hardening.listRatings(query);
   }
 
   @Post('vendor-performance')
-  @Permissions('Vendor.CREATE')
+  @Permissions(Permission.VendorCreate)
   createRating(@Body() dto: CreateVendorRatingDto, @Req() request: { user?: { sub?: string } }) {
     return this.hardening.createRating(dto, request.user?.sub ?? 'system');
   }
 
   @Get('vendor-performance/summary')
-  @Permissions('Vendor.VIEW')
+  @Permissions(Permission.VendorView)
   vendorPerformanceSummary() {
     return this.hardening.vendorPerformanceSummary();
   }

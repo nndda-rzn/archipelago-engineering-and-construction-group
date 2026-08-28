@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } fro
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
+import { Permission } from '@/shared/permissions/permissions';
 import {
   CreateFiscalPeriodDto, CreateVendorDto, ListFiscalPeriodQueryDto, ListVendorQueryDto, UpdateFiscalPeriodStatusDto,
 } from '../dto/master-data.dto';
@@ -15,31 +16,31 @@ export class MasterDataController {
   ) {}
 
   @Get('vendors')
-  @Permissions('Vendor.VIEW')
+  @Permissions(Permission.VendorView)
   listVendors(@Query() query: ListVendorQueryDto) {
     return this.masterData.listVendors(query);
   }
 
   @Post('vendors')
-  @Permissions('Vendor.CREATE')
+  @Permissions(Permission.VendorCreate)
   createVendor(@Body() dto: CreateVendorDto, @Req() request: { user?: { sub?: string } }) {
     return this.masterData.createVendor(dto, request.user?.sub ?? 'system');
   }
 
   @Get('fiscal-periods')
-  @Permissions('FiscalPeriod.VIEW')
+  @Permissions(Permission.FiscalPeriodView)
   listFiscalPeriods(@Query() query: ListFiscalPeriodQueryDto) {
     return this.masterData.listFiscalPeriods(query);
   }
 
   @Post('fiscal-periods')
-  @Permissions('FiscalPeriod.CREATE')
+  @Permissions(Permission.FiscalPeriodCreate)
   createFiscalPeriod(@Body() dto: CreateFiscalPeriodDto, @Req() request: { user?: { sub?: string } }) {
     return this.masterData.createFiscalPeriod(dto, request.user?.sub ?? 'system');
   }
 
   @Post('fiscal-periods/:id/status')
-  @Permissions('FiscalPeriod.EDIT')
+  @Permissions(Permission.FiscalPeriodEdit)
   updateFiscalPeriodStatus(@Param('id') id: string, @Body() dto: UpdateFiscalPeriodStatusDto, @Req() request: { user?: { sub?: string } }) {
     return this.masterData.updateFiscalPeriodStatus(id, dto, request.user?.sub ?? 'system');
   }

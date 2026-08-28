@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } fro
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
+import { Permission } from '@/shared/permissions/permissions';
 import {
   CreateClientDto, ListClientQueryDto, CreateContractDto, CreateOpportunityDto, ExecuteContractDto,
   ListContractQueryDto, ListOpportunityQueryDto, UpdateOpportunityStageDto,
@@ -16,49 +17,49 @@ export class CommercialController {
   ) {}
 
   @Get('clients')
-  @Permissions('Client.VIEW')
+  @Permissions(Permission.ClientView)
   listClients(@Query() query: ListClientQueryDto) {
     return this.commercial.listClients(query);
   }
 
   @Post('clients')
-  @Permissions('Client.CREATE')
+  @Permissions(Permission.ClientCreate)
   createClient(@Body() dto: CreateClientDto, @Req() request: { user?: { sub?: string } }) {
     return this.commercial.createClient(dto, request.user?.sub ?? 'system');
   }
 
   @Get('opportunities')
-  @Permissions('Opportunity.VIEW')
+  @Permissions(Permission.OpportunityView)
   listOpportunities(@Query() query: ListOpportunityQueryDto) {
     return this.commercial.listOpportunities(query);
   }
 
   @Post('opportunities')
-  @Permissions('Opportunity.CREATE')
+  @Permissions(Permission.OpportunityCreate)
   createOpportunity(@Body() dto: CreateOpportunityDto, @Req() request: { user?: { sub?: string } }) {
     return this.commercial.createOpportunity(dto, request.user?.sub ?? 'system');
   }
 
   @Post('opportunities/:id/stage')
-  @Permissions('Opportunity.EDIT')
+  @Permissions(Permission.OpportunityEdit)
   updateOpportunityStage(@Param('id') id: string, @Body() dto: UpdateOpportunityStageDto, @Req() request: { user?: { sub?: string } }) {
     return this.commercial.updateOpportunityStage(id, dto, request.user?.sub ?? 'system');
   }
 
   @Get('contracts')
-  @Permissions('Contract.VIEW')
+  @Permissions(Permission.ContractView)
   listContracts(@Query() query: ListContractQueryDto) {
     return this.commercial.listContracts(query);
   }
 
   @Post('contracts')
-  @Permissions('Contract.CREATE')
+  @Permissions(Permission.ContractCreate)
   createContract(@Body() dto: CreateContractDto, @Req() request: { user?: { sub?: string } }) {
     return this.commercial.createContract(dto, request.user?.sub ?? 'system');
   }
 
   @Post('contracts/:id/execute')
-  @Permissions('Contract.EXECUTE')
+  @Permissions(Permission.ContractExecute)
   executeContract(@Param('id') id: string, @Body() dto: ExecuteContractDto, @Req() request: { user?: { sub?: string } }) {
     return this.commercial.executeContract(id, dto, request.user?.sub ?? 'system');
   }

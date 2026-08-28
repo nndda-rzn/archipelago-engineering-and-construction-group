@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } fro
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
+import { Permission } from '@/shared/permissions/permissions';
 import {
   CreateGoodsReceiptDto,
   CreateMaterialIssueDto,
@@ -37,91 +38,91 @@ export class InventoryController {
   ) {}
 
   @Get('warehouses')
-  @Permissions('Warehouse.VIEW')
+  @Permissions(Permission.WarehouseView)
   listWarehouses(@Query() query: ListWarehouseQueryDto) {
     return this.warehouse.listWarehouses(query);
   }
 
   @Post('warehouses')
-  @Permissions('Warehouse.CREATE')
+  @Permissions(Permission.WarehouseCreate)
   createWarehouse(@Body() dto: CreateWarehouseDto, @Req() request: { user?: { sub?: string } }) {
     return this.warehouse.createWarehouse(dto, request.user?.sub ?? 'system');
   }
 
   @Get('goods-receipts')
-  @Permissions('GoodsReceipt.VIEW')
+  @Permissions(Permission.GoodsReceiptView)
   listGoodsReceipts(@Query() query: ListGoodsReceiptQueryDto) {
     return this.gr.listGoodsReceipts(query);
   }
 
   @Post('goods-receipts')
-  @Permissions('GoodsReceipt.CREATE')
+  @Permissions(Permission.GoodsReceiptCreate)
   createGoodsReceipt(@Body() dto: CreateGoodsReceiptDto, @Req() request: { user?: { sub?: string } }) {
     return this.gr.createGoodsReceipt(dto, request.user?.sub ?? 'system');
   }
 
   @Get('material-issues')
-  @Permissions('MaterialIssue.VIEW')
+  @Permissions(Permission.MaterialIssueView)
   listMaterialIssues(@Query() query: ListMaterialIssueQueryDto) {
     return this.issue.listMaterialIssues(query);
   }
 
   @Post('material-issues')
-  @Permissions('MaterialIssue.CREATE')
+  @Permissions(Permission.MaterialIssueCreate)
   createMaterialIssue(@Body() dto: CreateMaterialIssueDto, @Req() request: { user?: { sub?: string } }) {
     return this.issue.createMaterialIssue(dto, request.user?.sub ?? 'system');
   }
 
   @Get('stock-adjustments')
-  @Permissions('StockAdjustment.VIEW')
+  @Permissions(Permission.StockAdjustmentView)
   listStockAdjustments(@Query() query: { page?: number; pageSize?: number; projectId?: string }) {
     return this.adjustment.listStockAdjustments(query);
   }
 
   @Post('stock-adjustments')
-  @Permissions('StockAdjustment.CREATE')
+  @Permissions(Permission.StockAdjustmentCreate)
   createStockAdjustment(@Body() dto: CreateStockAdjustmentDto, @Req() request: { user?: { sub?: string } }) {
     return this.adjustment.createStockAdjustment(dto, request.user?.sub ?? 'system');
   }
 
   @Post('stock-adjustments/:id/approve')
-  @Permissions('StockAdjustment.APPROVE')
+  @Permissions(Permission.StockAdjustmentApprove)
   approveStockAdjustment(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.adjustment.approveStockAdjustment(id, request.user?.sub ?? 'system');
   }
 
   @Get('stock-opnames')
-  @Permissions('StockOpname.VIEW')
+  @Permissions(Permission.StockOpnameView)
   listStockOpnames(@Query() query: { page?: number; pageSize?: number; projectId?: string }) {
     return this.opname.listStockOpnames(query);
   }
 
   @Post('stock-opnames')
-  @Permissions('StockOpname.CREATE')
+  @Permissions(Permission.StockOpnameCreate)
   createStockOpname(@Body() dto: CreateStockOpnameDto, @Req() request: { user?: { sub?: string } }) {
     return this.opname.createStockOpname(dto, request.user?.sub ?? 'system');
   }
 
   @Get('stock-transfers')
-  @Permissions('StockTransfer.VIEW')
+  @Permissions(Permission.StockTransferView)
   listStockTransfers(@Query() query: ListStockTransferQueryDto) {
     return this.transfer.listStockTransfers(query);
   }
 
   @Post('stock-transfers')
-  @Permissions('StockTransfer.CREATE')
+  @Permissions(Permission.StockTransferCreate)
   createStockTransfer(@Body() dto: CreateStockTransferDto, @Req() request: { user?: { sub?: string } }) {
     return this.transfer.createStockTransfer(dto, request.user?.sub ?? 'system');
   }
 
   @Get('stock-ledger')
-  @Permissions('StockLedger.VIEW')
+  @Permissions(Permission.StockLedgerView)
   listStockLedger(@Query() query: ListStockLedgerQueryDto) {
     return this.ledger.listStockLedger(query);
   }
 
   @Get('projects/:projectId/stock-summary')
-  @Permissions('StockLedger.VIEW')
+  @Permissions(Permission.StockLedgerView)
   stockSummary(@Param('projectId') projectId: string) {
     return this.ledger.stockSummary(projectId);
   }

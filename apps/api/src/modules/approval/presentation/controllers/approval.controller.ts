@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } fro
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
+import { Permission } from '@/shared/permissions/permissions';
 import { AddWorkflowStepDto, ApproveTaskDto, CreateWorkflowDefinitionDto, PublishWorkflowDto, SubmitForApprovalDto } from '../dto/approval.dto';
 import { ApprovalTaskService } from '../../application/services/approval-task.service';
 import { WorkflowDefinitionService } from '../../application/services/workflow-definition.service';
@@ -15,7 +16,7 @@ export class ApprovalController {
   ) {}
 
   @Get()
-  @Permissions('Approval.VIEW')
+  @Permissions(Permission.ApprovalView)
   listTasks(
     @Req() request: { user?: { sub?: string } },
     @Query('page') page?: string,
@@ -27,43 +28,43 @@ export class ApprovalController {
   }
 
   @Post('submit')
-  @Permissions('Approval.SUBMIT')
+  @Permissions(Permission.ApprovalSubmit)
   submit(@Body() dto: SubmitForApprovalDto, @Req() request: { user?: { sub?: string } }) {
     return this.task.submitForApproval(dto, request.user?.sub ?? 'system');
   }
 
   @Post('decide')
-  @Permissions('Approval.APPROVE')
+  @Permissions(Permission.ApprovalApprove)
   decide(@Body() dto: ApproveTaskDto, @Req() request: { user?: { sub?: string } }) {
     return this.task.decide(dto, request.user?.sub ?? 'system');
   }
 
   @Get('workflows')
-  @Permissions('Workflow.VIEW')
+  @Permissions(Permission.WorkflowView)
   listDefinitions() {
     return this.workflow.listDefinitions();
   }
 
   @Post('workflows')
-  @Permissions('Workflow.CREATE')
+  @Permissions(Permission.WorkflowCreate)
   createDefinition(@Body() dto: CreateWorkflowDefinitionDto, @Req() request: { user?: { sub?: string } }) {
     return this.workflow.createDefinition(dto, request.user?.sub ?? 'system');
   }
 
   @Post('workflows/:id/steps')
-  @Permissions('Workflow.EDIT')
+  @Permissions(Permission.WorkflowEdit)
   addStep(@Param('id') id: string, @Body() dto: AddWorkflowStepDto, @Req() request: { user?: { sub?: string } }) {
     return this.workflow.addStep(id, dto, request.user?.sub ?? 'system');
   }
 
   @Post('workflows/:id/publish')
-  @Permissions('Workflow.EDIT')
+  @Permissions(Permission.WorkflowEdit)
   publish(@Param('id') id: string, @Body() dto: PublishWorkflowDto, @Req() request: { user?: { sub?: string } }) {
     return this.workflow.publishWorkflow(id, dto, request.user?.sub ?? 'system');
   }
 
   @Post('workflows/:code/version')
-  @Permissions('Workflow.EDIT')
+  @Permissions(Permission.WorkflowEdit)
   newVersion(@Param('code') code: string, @Req() request: { user?: { sub?: string } }) {
     return this.workflow.createNewVersion(code, request.user?.sub ?? 'system');
   }
