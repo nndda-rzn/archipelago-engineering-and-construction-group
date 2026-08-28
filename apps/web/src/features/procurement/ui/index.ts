@@ -1,10 +1,7 @@
 export { RfqForm } from './rfq-form';
-export {
-  ratingColumns,
-  CommercialEvalTable,
-  VendorPerformanceSummaryTable,
-  VendorRatingGrid,
-} from './procurement-hardening-grid';
+export { ratingColumns, VendorRatingGrid } from './vendor-rating-grid';
+export { CommercialEvalTable } from './commercial-eval-table';
+export { VendorPerformanceSummaryTable } from './vendor-performance-table';
 export { pcColumns } from './po-change-grid';
 export { statusVariant } from './procurement-status';
 export { PoChangeForm } from './po-change-form';
