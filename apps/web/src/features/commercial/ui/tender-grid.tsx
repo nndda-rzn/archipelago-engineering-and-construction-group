@@ -1,10 +1,12 @@
-import { Badge, Button } from '@aec/ui';
+import { Badge, Button, type BadgeVariant } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useApproveDeviation, useExecuteAmendment, useRejectDeviation } from '../model/tender.api';
 import type { BidDecision, ContractAmendment, ContractDeviation, TenderSubmission } from '@aec/api-contracts';
 import { formatIdr as fmt } from '@/shared/lib/format';
 
-export const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
+export type TenderStatus = 'BID' | 'NO_BID' | 'APPROVED' | 'REJECTED' | 'EXECUTED' | 'WORKING' | 'REVIEW' | 'FINAL_BID' | 'AWARD_RECONCILED' | 'OPEN';
+
+export const statusVariant: Record<TenderStatus, BadgeVariant> = {
   BID: 'success',
   NO_BID: 'warning',
   APPROVED: 'success',
@@ -24,7 +26,7 @@ const amendmentHelper = createColumnHelper<ContractAmendment>();
 
 export const bidColumns = [
   bidHelper.accessor('opportunity', { header: 'Opportunity', cell: (i) => <span className="text-neutral-800">{i.getValue()?.title}</span> }),
-  bidHelper.accessor('decision', { header: 'Keputusan', cell: (i) => <Badge variant={statusVariant[i.getValue()] ?? 'default'}>{i.getValue()}</Badge> }),
+  bidHelper.accessor('decision', { header: 'Keputusan', cell: (i) => <Badge variant={statusVariant[i.getValue() as TenderStatus]}>{i.getValue()}</Badge> }),
   bidHelper.accessor('rationale', { header: 'Alasan', cell: (i) => <span className="max-w-xs truncate text-neutral-600">{i.getValue() ?? '-'}</span> }),
   bidHelper.accessor('decidedBy', { header: 'Pembuat', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue()}</span> }),
 ];
@@ -45,7 +47,7 @@ export const deviationColumns = [
   deviationHelper.accessor('aecPosition', { header: 'Posisi AEC', cell: (i) => <span className="max-w-[200px] truncate text-neutral-600">{i.getValue()}</span> }),
   deviationHelper.accessor('risk', { header: 'Risiko', cell: (i) => <Badge variant={i.getValue() === 'HIGH' ? 'warning' : 'default'}>{i.getValue()}</Badge> }),
   deviationHelper.accessor('owner', { header: 'Owner', cell: (i) => <span className="text-neutral-600">{i.getValue()}</span> }),
-  deviationHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={statusVariant[i.getValue()] ?? 'default'}>{i.getValue()}</Badge> }),
+  deviationHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={statusVariant[i.getValue() as TenderStatus]}>{i.getValue()}</Badge> }),
   deviationHelper.display({
     id: 'actions',
     header: '',
@@ -65,7 +67,7 @@ export const amendmentColumns = [
   amendmentHelper.accessor('amendmentNumber', { header: 'No.', cell: (i) => <span className="font-mono text-neutral-800">{i.getValue()}</span> }),
   amendmentHelper.accessor('title', { header: 'Judul', cell: (i) => <span className="text-neutral-800">{i.getValue()}</span> }),
   amendmentHelper.accessor('amountChange', { header: 'Perubahan', cell: (i) => <span className={`font-mono tabular-nums ${i.getValue() >= 0 ? 'text-financial-positive-500' : 'text-destructive-600'}`}>{fmt(i.getValue())}</span> }),
-  amendmentHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={statusVariant[i.getValue()] ?? 'default'}>{i.getValue()}</Badge> }),
+  amendmentHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={statusVariant[i.getValue() as TenderStatus]}>{i.getValue()}</Badge> }),
   amendmentHelper.display({
     id: 'actions',
     header: '',

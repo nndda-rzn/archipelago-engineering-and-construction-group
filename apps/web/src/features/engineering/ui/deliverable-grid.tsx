@@ -2,7 +2,7 @@ import { Badge, Button } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useUpdateDeliverableStatus } from '../model/engineering.api';
 import type { Deliverable } from '@aec/api-contracts';
-import { engStatusVariant, EngDateCell } from './engineering-shared';
+import { engStatusVariant, EngDateCell, type EngStatus } from './engineering-shared';
 
 const dlvHelper = createColumnHelper<Deliverable>();
 
@@ -29,6 +29,6 @@ export const dlvColumns = [
   dlvHelper.accessor('discipline', { header: 'Disiplin', cell: (info) => <Badge variant="default">{info.getValue()}</Badge> }),
   dlvHelper.accessor('engineer', { header: 'Engineer', cell: (info) => <span className="text-neutral-600">{info.getValue()}</span> }),
   dlvHelper.accessor('forecastDate', { header: 'Forecast', cell: (info) => <EngDateCell value={info.getValue()} /> }),
-  dlvHelper.accessor('status', { header: 'Status', cell: (info) => <Badge variant={engStatusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge> }),
+  dlvHelper.accessor('status', { header: 'Status', cell: ({ row }) => <Badge variant={engStatusVariant[row.original.status as EngStatus]}>{row.original.status}</Badge> }),
   dlvHelper.display({ id: 'actions', header: '', cell: ({ row }) => <DlvAdvanceBtn row={row.original} /> }),
 ];

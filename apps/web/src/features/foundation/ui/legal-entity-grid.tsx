@@ -1,8 +1,10 @@
-import { Badge } from '@aec/ui';
+import { Badge, type BadgeVariant } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import type { LegalEntity } from '@aec/api-contracts';
 
-export const legalEntityStatusVariant: Record<string, 'success' | 'warning' | 'muted' | 'default'> = {
+type LegalEntityStatus = 'ACTIVE' | 'BLOCKED' | 'INACTIVE' | 'ARCHIVED';
+
+export const legalEntityStatusVariant: Record<LegalEntityStatus, BadgeVariant> = {
   ACTIVE: 'success', BLOCKED: 'warning', INACTIVE: 'muted', ARCHIVED: 'muted',
 };
 
@@ -14,5 +16,5 @@ export const legalEntityColumns = [
   columnHelper.accessor('taxIdentifier', { header: 'NPWP', enableSorting: true, cell: (i) => <span className="font-mono text-neutral-600">{i.getValue()}</span> }),
   columnHelper.accessor('country', { header: 'Negara', enableSorting: true, cell: (i) => <span className="text-neutral-600">{i.getValue()}</span> }),
   columnHelper.accessor('functionalCurrency', { header: 'Mata Uang', enableSorting: true, cell: (i) => <span className="font-mono text-neutral-600">{i.getValue()}</span> }),
-  columnHelper.accessor('status', { header: 'Status', enableSorting: true, cell: (i) => <Badge variant={legalEntityStatusVariant[i.getValue()] ?? 'default'}>{i.getValue()}</Badge> }),
+  columnHelper.accessor('status', { header: 'Status', enableSorting: true, cell: (i) => <Badge variant={legalEntityStatusVariant[i.getValue() as LegalEntityStatus]}>{i.getValue()}</Badge> }),
 ];

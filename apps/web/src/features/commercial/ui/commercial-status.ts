@@ -1,4 +1,8 @@
-export const commercialStatusVariant: Record<string, 'default' | 'success' | 'warning'> = {
+import type { BadgeVariant } from '@aec/ui';
+
+export type CommercialStatus = 'ACTIVE' | 'OPEN' | 'DRAFT' | 'EXECUTED' | 'WON' | 'LOST' | 'COMPLETED' | 'TERMINATED';
+
+export const commercialStatusVariant: Record<CommercialStatus, BadgeVariant> = {
   ACTIVE: 'success',
   OPEN: 'success',
   DRAFT: 'default',

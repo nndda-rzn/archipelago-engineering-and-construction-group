@@ -1,8 +1,10 @@
-import { Badge } from '@aec/ui';
+import { Badge, type BadgeVariant } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import type { StockLedgerEntry } from '@aec/api-contracts';
 
-export const movementVariant: Record<string, 'success' | 'warning' | 'default'> = {
+type MovementType = 'IN' | 'OUT' | 'ADJUST';
+
+export const movementVariant: Record<MovementType, BadgeVariant> = {
   IN: 'success',
   OUT: 'warning',
   ADJUST: 'default',
@@ -29,7 +31,7 @@ export const ledgerColumns = [
   }),
   columnHelper.accessor('movementType', {
     header: 'Jenis',
-    cell: (info) => <Badge variant={movementVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge>,
+    cell: (info) => <Badge variant={movementVariant[info.getValue() as MovementType]}>{info.getValue()}</Badge>,
   }),
   columnHelper.accessor('quantity', {
     header: 'Qty',

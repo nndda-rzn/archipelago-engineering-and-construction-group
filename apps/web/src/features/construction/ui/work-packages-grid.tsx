@@ -1,15 +1,17 @@
-import { Badge } from '@aec/ui';
+import { Badge, type BadgeVariant } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import type { WorkPackage } from '@aec/api-contracts';
 
-export const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
+type WorkPackageStatus = 'DRAFT' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+
+export const statusVariant: Record<WorkPackageStatus, BadgeVariant> = {
   DRAFT: 'default',
   IN_PROGRESS: 'warning',
   COMPLETED: 'success',
   CANCELLED: 'default',
 };
 
-export const statusLabel: Record<string, string> = {
+export const statusLabel: Record<WorkPackageStatus, string> = {
   DRAFT: 'Draft',
   IN_PROGRESS: 'Berjalan',
   COMPLETED: 'Selesai',
@@ -45,6 +47,6 @@ export const workPackageColumns = [
   }),
   columnHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={statusVariant[info.getValue()] ?? 'default'}>{statusLabel[info.getValue()] ?? info.getValue()}</Badge>,
+    cell: ({ row }) => <Badge variant={statusVariant[row.original.status as WorkPackageStatus]}>{statusLabel[row.original.status as WorkPackageStatus]}</Badge>,
   }),
 ];

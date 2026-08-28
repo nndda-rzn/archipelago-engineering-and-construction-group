@@ -3,7 +3,7 @@ import { Badge, Button, Input } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useInvestigateIncident, useResolveIncident } from '../model/hse.api';
 import type { HseIncident } from '@aec/api-contracts';
-import { severityVariant } from './hse-shared';
+import { severityVariant, type HseSeverity } from './hse-shared';
 
 const incHelper = createColumnHelper<HseIncident>();
 
@@ -37,7 +37,7 @@ function IncidentActions({ incident }: { incident: HseIncident }) {
 
 export const incidentColumns = [
   incHelper.accessor('incidentNumber', { header: 'No. Insiden', cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span> }),
-  incHelper.accessor('severity', { header: 'Severity', cell: (info) => <Badge variant={severityVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge> }),
+  incHelper.accessor('severity', { header: 'Severity', cell: ({ row }) => <Badge variant={severityVariant[row.original.severity as HseSeverity]}>{row.original.severity}</Badge> }),
   incHelper.accessor('type', { header: 'Tipe', cell: (info) => <Badge variant="default">{info.getValue()}</Badge> }),
   incHelper.accessor('description', { header: 'Deskripsi', cell: (info) => <span className="max-w-xs truncate text-neutral-700">{info.getValue()}</span> }),
   incHelper.accessor('rootCause', { header: 'Root Cause', cell: (info) => <span className="max-w-xs truncate text-neutral-600">{info.getValue() ?? '-'}</span> }),

@@ -1,9 +1,11 @@
-import { Badge, ConfirmActionButton, EmptyCell } from '@aec/ui';
+import { Badge, ConfirmActionButton, EmptyCell, type BadgeVariant } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useSubmitForApproval } from '@/features/approval';
 import type { PurchaseRequisition } from '@aec/api-contracts';
 
-const statusVariant: Record<string, 'default' | 'info' | 'success' | 'destructive' | 'muted'> = {
+type PrStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+const statusVariant: Record<PrStatus, BadgeVariant> = {
   DRAFT: 'default', SUBMITTED: 'info', APPROVED: 'success', REJECTED: 'destructive', CANCELLED: 'muted',
 };
 const columnHelper = createColumnHelper<PurchaseRequisition>();
@@ -13,7 +15,7 @@ export const purchaseRequisitionColumns = [
   columnHelper.accessor('project', { header: 'Project', cell: (i) => <span className="text-neutral-700">{i.getValue()?.code ?? <EmptyCell />}</span> }),
   columnHelper.accessor('requestedBy', { header: 'Diminta Oleh', cell: (i) => <span className="text-neutral-600">{i.getValue()}</span> }),
   columnHelper.accessor('items', { header: 'Item', cell: (i) => <span className="text-neutral-600">{i.getValue().length} item</span> }),
-  columnHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={statusVariant[i.getValue()] ?? 'default'}>{i.getValue()}</Badge> }),
+  columnHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={statusVariant[i.getValue() as PrStatus]}>{i.getValue()}</Badge> }),
   columnHelper.display({ id: 'actions', header: '', cell: ({ row }) => <SubmitButton pr={row.original} /> }),
 ];
 

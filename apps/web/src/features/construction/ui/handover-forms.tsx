@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Badge, Button, Input, Label } from '@aec/ui';
 import { useCreateHandover, useSubmitHandover, useVerifyHandoverItem, useApproveHandover } from '../model/work-package.api';
-import { statusLabel } from './handover-grid';
+import { statusLabel, type HandoverStatus } from './handover-grid';
 export function HandoverForm({ projectId, onDone }: { projectId: string; onDone: () => void }) {
   const create = useCreateHandover(projectId);
   const [title, setTitle] = useState('');
@@ -31,7 +31,7 @@ export function HandoverDetail({ selected, projectId }: { selected: { id: string
   const approve = useApproveHandover(projectId);
   return (
     <div className="mt-6 rounded-md border border-neutral-200 bg-white p-4">
-      <div className="flex items-center justify-between"><div><h2 className="text-h3 text-neutral-800">{selected.title}</h2><p className="font-mono text-caption text-neutral-500">{selected.hoNumber} · {statusLabel[selected.status] ?? selected.status}</p></div><div className="flex gap-2">{selected.status === 'DRAFT' && <Button size="sm" onClick={() => submit.mutate(selected.id)} disabled={submit.isPending}>Submit</Button>}{selected.status === 'SUBMITTED' && <Button size="sm" onClick={() => approve.mutate(selected.id)} disabled={approve.isPending || selected.items.some((i) => i.status !== 'VERIFIED')}>Approve</Button>}</div></div>
+      <div className="flex items-center justify-between"><div><h2 className="text-h3 text-neutral-800">{selected.title}</h2><p className="font-mono text-caption text-neutral-500">{selected.hoNumber} · {statusLabel[selected.status as HandoverStatus]}</p></div><div className="flex gap-2">{selected.status === 'DRAFT' && <Button size="sm" onClick={() => submit.mutate(selected.id)} disabled={submit.isPending}>Submit</Button>}{selected.status === 'SUBMITTED' && <Button size="sm" onClick={() => approve.mutate(selected.id)} disabled={approve.isPending || selected.items.some((i) => i.status !== 'VERIFIED')}>Approve</Button>}</div></div>
       <div className="mt-4 space-y-2">{selected.items.map((item) => <div key={item.id} className="flex items-center justify-between gap-2 rounded-md border border-neutral-100 px-3 py-2"><div><span className="text-body-sm text-neutral-800">{item.documentName}</span>{item.isMandatory && <Badge variant="warning" className="ml-2">Mandatory</Badge>}<Badge variant={item.status === 'VERIFIED' ? 'success' : 'default'} className="ml-2">{item.status}</Badge></div>{item.status !== 'VERIFIED' && <Button size="sm" variant="secondary" onClick={() => verify.mutate({ id: selected.id, itemId: item.id })} disabled={verify.isPending}>Verifikasi</Button>}</div>)}</div>
       {approve.isError && <p className="mt-2 text-body-sm text-destructive-600">Semua dokumen harus VERIFIED sebelum approve.</p>}
     </div>

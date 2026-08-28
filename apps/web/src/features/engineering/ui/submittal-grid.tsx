@@ -2,7 +2,7 @@ import { Badge, Button } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useReviewSubmittal } from '../model/engineering.api';
 import type { Submittal } from '@aec/api-contracts';
-import { engStatusVariant, EngDateCell } from './engineering-shared';
+import { engStatusVariant, EngDateCell, type EngStatus } from './engineering-shared';
 
 const subHelper = createColumnHelper<Submittal>();
 
@@ -21,6 +21,6 @@ export const subColumns = [
   subHelper.accessor('title', { header: 'Submittal', cell: (info) => <span className="max-w-xs truncate text-neutral-800">{info.getValue()}</span> }),
   subHelper.accessor('reviewedBy', { header: 'Reviewer', cell: (info) => <span className="text-neutral-600">{info.getValue() ?? '—'}</span> }),
   subHelper.accessor('dueDate', { header: 'Due', cell: (info) => <EngDateCell value={info.getValue()} /> }),
-  subHelper.accessor('status', { header: 'Status', cell: (info) => <Badge variant={engStatusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge> }),
+  subHelper.accessor('status', { header: 'Status', cell: ({ row }) => <Badge variant={engStatusVariant[row.original.status as EngStatus]}>{row.original.status}</Badge> }),
   subHelper.display({ id: 'actions', header: '', cell: ({ row }) => <SubReviewBtn row={row.original} /> }),
 ];

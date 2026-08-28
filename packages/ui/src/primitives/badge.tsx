@@ -5,8 +5,10 @@ import { cn } from '../lib/cn';
  * Badge — compact. Satu ukuran default. Full radius (pill).
  * Aksesibilitas: teks + warna + icon wajib (NFR-A11Y-001).
  */
+export type BadgeVariant = 'default' | 'outline' | 'success' | 'warning' | 'destructive' | 'info' | 'muted' | 'success-filled';
+
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'outline' | 'success' | 'warning' | 'destructive' | 'info' | 'muted' | 'success-filled';
+  variant?: BadgeVariant;
 }
 
 const variantClasses: Record<NonNullable<BadgeProps['variant']>, string> = {

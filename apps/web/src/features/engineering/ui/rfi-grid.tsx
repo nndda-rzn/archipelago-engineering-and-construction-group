@@ -2,7 +2,7 @@ import { Badge, Button } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useAnswerRfi } from '../model/engineering.api';
 import type { Rfi } from '@aec/api-contracts';
-import { engStatusVariant, EngDateCell } from './engineering-shared';
+import { engStatusVariant, EngDateCell, type EngStatus } from './engineering-shared';
 
 const rfiHelper = createColumnHelper<Rfi>();
 
@@ -21,6 +21,6 @@ export const rfiColumns = [
   rfiHelper.accessor('title', { header: 'Subjek', cell: (info) => <span className="max-w-xs truncate text-neutral-800">{info.getValue()}</span> }),
   rfiHelper.accessor('createdBy', { header: 'Dari', cell: (info) => <span className="text-neutral-600">{info.getValue()}</span> }),
   rfiHelper.accessor('createdAt', { header: 'Tanggal', cell: (info) => <EngDateCell value={info.getValue()} /> }),
-  rfiHelper.accessor('status', { header: 'Status', cell: (info) => <Badge variant={engStatusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge> }),
+  rfiHelper.accessor('status', { header: 'Status', cell: ({ row }) => <Badge variant={engStatusVariant[row.original.status as EngStatus]}>{row.original.status}</Badge> }),
   rfiHelper.display({ id: 'actions', header: '', cell: ({ row }) => <RfiAnswerBtn row={row.original} /> }),
 ];

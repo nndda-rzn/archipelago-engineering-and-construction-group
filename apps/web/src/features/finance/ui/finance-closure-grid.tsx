@@ -1,10 +1,12 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button } from '@aec/ui';
+import { Badge, Button, type BadgeVariant } from '@aec/ui';
 import { usePostIntercompany, useCompleteStep, useLockPeriod, useClosePeriod } from '../model/finance-closure.api';
 import { formatIdr as fmt } from '@/shared/lib/format';
 import type { Intercompany, PeriodClose } from '../model/finance-closure.api';
 
-export const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
+export type FinanceClosureStatus = 'POSTED' | 'DRAFT' | 'OPEN' | 'IN_PROGRESS' | 'CLOSED' | 'LOCKED' | 'REVERSED';
+
+export const statusVariant: Record<FinanceClosureStatus, BadgeVariant> = {
   POSTED: 'success',
   DRAFT: 'default',
   OPEN: 'default',
@@ -87,7 +89,7 @@ export const icColumns = [
   }),
   icHelper.accessor('status', {
     header: 'Status',
-    cell: (i) => <Badge variant={statusVariant[i.getValue()] ?? 'default'}>{i.getValue()}</Badge>,
+    cell: (i) => <Badge variant={statusVariant[i.getValue() as FinanceClosureStatus]}>{i.getValue()}</Badge>,
   }),
   icHelper.display({
     id: 'actions',
@@ -111,7 +113,7 @@ export const pcColumns = [
   }),
   pcHelper.accessor('status', {
     header: 'Status',
-    cell: (i) => <Badge variant={statusVariant[i.getValue()] ?? 'default'}>{i.getValue()}</Badge>,
+    cell: (i) => <Badge variant={statusVariant[i.getValue() as FinanceClosureStatus]}>{i.getValue()}</Badge>,
   }),
   pcHelper.display({
     id: 'actions',

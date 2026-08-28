@@ -1,9 +1,11 @@
-import { Badge, Button } from '@aec/ui';
+import { Badge, Button, type BadgeVariant } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useChangeEmployeeStatus } from '../model/hcm.api';
 import type { Employee, ProjectAssignment } from '@aec/api-contracts';
 
-export const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
+type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'LEAVER';
+
+export const statusVariant: Record<EmployeeStatus, BadgeVariant> = {
   ACTIVE: 'success',
   INACTIVE: 'warning',
   LEAVER: 'warning',
@@ -35,7 +37,7 @@ export const employeeColumns = [
   }),
   columnHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={statusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge>,
+    cell: ({ row }) => <Badge variant={statusVariant[row.original.status as EmployeeStatus]}>{row.original.status}</Badge>,
   }),
   columnHelper.display({
     id: 'actions',

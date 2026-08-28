@@ -1,8 +1,10 @@
-import { Badge } from '@aec/ui';
+import { Badge, type BadgeVariant } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import type { StockOpname } from '@aec/api-contracts';
 
-const statusVariant: Record<string, 'default' | 'info' | 'success'> = {
+type OpnameStatus = 'DRAFT' | 'IN_PROGRESS' | 'RECONCILED' | 'CLOSED';
+
+const statusVariant: Record<OpnameStatus, BadgeVariant> = {
   DRAFT: 'default', IN_PROGRESS: 'info', RECONCILED: 'success', CLOSED: 'success',
 };
 
@@ -13,7 +15,7 @@ export const opnameColumns = [
   columnHelper.accessor('warehouse', { header: 'Warehouse', cell: (i) => <span className="text-neutral-700">{i.getValue()?.code ?? '-'}</span> }),
   columnHelper.accessor('countedBy', { header: 'Pencatat', cell: (i) => <span className="text-neutral-600">{i.getValue()}</span> }),
   columnHelper.accessor('items', { header: 'Item', cell: (i) => <span className="tabular-nums text-neutral-600">{i.getValue().length} baris</span> }),
-  columnHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={statusVariant[i.getValue()] ?? 'default'}>{i.getValue()}</Badge> }),
+  columnHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={statusVariant[i.getValue() as OpnameStatus]}>{i.getValue()}</Badge> }),
   columnHelper.accessor('items', {
     id: 'diff',
     header: 'Selisih',
