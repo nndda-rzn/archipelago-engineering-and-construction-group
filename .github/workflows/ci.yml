@@ -14,7 +14,25 @@ jobs:
   quality:
     name: Lint, Typecheck & Build
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: aec
+          POSTGRES_PASSWORD: aec_dev_password
+          POSTGRES_DB: aec_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aec"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: postgresql://aec:aec_dev_password@localhost:5432/aec_test?schema=public
 
     steps:
       - name: Checkout
