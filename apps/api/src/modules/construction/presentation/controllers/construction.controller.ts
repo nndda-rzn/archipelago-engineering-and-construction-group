@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } fro
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
+import { Permission } from '@/shared/permissions/permissions';
 import { CreateDailyReportDto, CreateProgressDto, CreateWorkPackageDto, ListDailyReportQueryDto, ListWorkPackageQueryDto } from '../dto/construction.dto';
 import { CreateCommissioningDto, CreateHandoverDto, ListHandoverQueryDto, UpdateCommissioningStatusDto } from '../dto/commissioning.dto';
 import { WorkPackageService } from '../../application/services/work-package.service';
@@ -20,13 +21,13 @@ export class ConstructionController {
   ) {}
 
   @Get('work-packages')
-  @Permissions('WorkPackage.VIEW')
+  @Permissions(Permission.WorkPackageView)
   findAll(@Param('projectId') projectId: string, @Query() query: ListWorkPackageQueryDto) {
     return this.service.findAll(projectId, query);
   }
 
   @Post('work-packages')
-  @Permissions('WorkPackage.CREATE')
+  @Permissions(Permission.WorkPackageCreate)
   create(
     @Param('projectId') projectId: string,
     @Body() dto: CreateWorkPackageDto,
@@ -36,25 +37,25 @@ export class ConstructionController {
   }
 
   @Post('work-packages/:id/start')
-  @Permissions('WorkPackage.EDIT')
+  @Permissions(Permission.WorkPackageEdit)
   start(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.service.start(id, request.user?.sub ?? 'system');
   }
 
   @Get('work-packages/:id/readiness')
-  @Permissions('WorkPackage.VIEW')
+  @Permissions(Permission.WorkPackageView)
   readiness(@Param('id') id: string) {
     return this.service.readiness(id);
   }
 
   @Post('work-packages/:id/complete')
-  @Permissions('WorkPackage.EDIT')
+  @Permissions(Permission.WorkPackageEdit)
   complete(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.service.complete(id, request.user?.sub ?? 'system');
   }
 
   @Post('work-packages/:id/progress')
-  @Permissions('WorkPackage.EDIT')
+  @Permissions(Permission.WorkPackageEdit)
   addProgress(
     @Param('id') id: string,
     @Body() dto: CreateProgressDto,
@@ -64,13 +65,13 @@ export class ConstructionController {
   }
 
   @Get('daily-reports')
-  @Permissions('DailyReport.VIEW')
+  @Permissions(Permission.DailyReportView)
   listDailyReports(@Param('projectId') projectId: string, @Query() query: ListDailyReportQueryDto) {
     return this.dailyReport.findAll(projectId, query);
   }
 
   @Post('daily-reports')
-  @Permissions('DailyReport.CREATE')
+  @Permissions(Permission.DailyReportCreate)
   createDailyReport(
     @Param('projectId') projectId: string,
     @Body() dto: CreateDailyReportDto,
@@ -80,13 +81,13 @@ export class ConstructionController {
   }
 
   @Get('commissioning')
-  @Permissions('Commissioning.VIEW')
+  @Permissions(Permission.CommissioningView)
   commissioningTree(@Param('projectId') projectId: string) {
     return this.commissioning.getTree(projectId);
   }
 
   @Post('commissioning')
-  @Permissions('Commissioning.CREATE')
+  @Permissions(Permission.CommissioningCreate)
   createCommissioning(
     @Param('projectId') projectId: string,
     @Body() dto: CreateCommissioningDto,
@@ -96,7 +97,7 @@ export class ConstructionController {
   }
 
   @Post('commissioning/:id/status')
-  @Permissions('Commissioning.EDIT')
+  @Permissions(Permission.CommissioningEdit)
   updateCommissioningStatus(
     @Param('id') id: string,
     @Body() dto: UpdateCommissioningStatusDto,
@@ -106,13 +107,13 @@ export class ConstructionController {
   }
 
   @Get('handovers')
-  @Permissions('Handover.VIEW')
+  @Permissions(Permission.HandoverView)
   listHandovers(@Param('projectId') projectId: string, @Query() query: ListHandoverQueryDto) {
     return this.handover.findAll(projectId, query);
   }
 
   @Post('handovers')
-  @Permissions('Handover.CREATE')
+  @Permissions(Permission.HandoverCreate)
   createHandover(
     @Param('projectId') projectId: string,
     @Body() dto: CreateHandoverDto,
@@ -122,13 +123,13 @@ export class ConstructionController {
   }
 
   @Post('handovers/:id/submit')
-  @Permissions('Handover.EDIT')
+  @Permissions(Permission.HandoverEdit)
   submitHandover(@Param('id') id: string) {
     return this.handover.submit(id);
   }
 
   @Post('handovers/:id/items/:itemId/verify')
-  @Permissions('Handover.EDIT')
+  @Permissions(Permission.HandoverEdit)
   verifyHandoverItem(
     @Param('id') id: string,
     @Param('itemId') itemId: string,
@@ -138,7 +139,7 @@ export class ConstructionController {
   }
 
   @Post('handovers/:id/approve')
-  @Permissions('Handover.APPROVE')
+  @Permissions(Permission.HandoverApprove)
   approveHandover(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.handover.approve(id, request.user?.sub ?? 'system');
   }

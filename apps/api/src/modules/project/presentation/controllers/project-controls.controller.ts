@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } fro
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
+import { Permission } from '@/shared/permissions/permissions';
 import { ProjectControlsService } from '../../application/services/project-controls.service';
 import {
   CreateControlAccountDto, CreateCostCodeDto, CreateForecastDto,
@@ -14,49 +15,49 @@ export class ProjectControlsController {
   constructor(@Inject(ProjectControlsService) private readonly service: ProjectControlsService) {}
 
   @Get('cost-codes')
-  @Permissions('CostCode.VIEW')
+  @Permissions(Permission.CostCodeView)
   listCostCodes(@Param('projectId') projectId: string, @Query() query: ListCostCodeQueryDto) {
     return this.service.listCostCodes(projectId, query);
   }
 
   @Post('cost-codes')
-  @Permissions('CostCode.CREATE')
+  @Permissions(Permission.CostCodeCreate)
   createCostCode(@Param('projectId') projectId: string, @Body() dto: CreateCostCodeDto, @Req() request: { user?: { sub?: string } }) {
     return this.service.createCostCode(projectId, dto, request.user?.sub ?? 'system');
   }
 
   @Get('control-accounts')
-  @Permissions('ControlAccount.VIEW')
+  @Permissions(Permission.ControlAccountView)
   listControlAccounts(@Param('projectId') projectId: string, @Query() query: ListControlAccountQueryDto) {
     return this.service.listControlAccounts(projectId, query);
   }
 
   @Post('control-accounts')
-  @Permissions('ControlAccount.CREATE')
+  @Permissions(Permission.ControlAccountCreate)
   createControlAccount(@Param('projectId') projectId: string, @Body() dto: CreateControlAccountDto, @Req() request: { user?: { sub?: string } }) {
     return this.service.createControlAccount(projectId, dto, request.user?.sub ?? 'system');
   }
 
   @Get('commitment')
-  @Permissions('Project.VIEW')
+  @Permissions(Permission.ProjectView)
   commitment(@Param('projectId') projectId: string) {
     return this.service.commitment(projectId);
   }
 
   @Get('forecasts')
-  @Permissions('Forecast.VIEW')
+  @Permissions(Permission.ForecastView)
   listForecasts(@Param('projectId') projectId: string) {
     return this.service.listForecasts(projectId);
   }
 
   @Post('forecasts')
-  @Permissions('Forecast.CREATE')
+  @Permissions(Permission.ForecastCreate)
   createForecast(@Param('projectId') projectId: string, @Body() dto: CreateForecastDto, @Req() request: { user?: { sub?: string } }) {
     return this.service.createForecast(projectId, dto, request.user?.sub ?? 'system');
   }
 
   @Get('evm')
-  @Permissions('Project.VIEW')
+  @Permissions(Permission.ProjectView)
   earnedValue(@Param('projectId') projectId: string) {
     return this.service.earnedValue(projectId);
   }

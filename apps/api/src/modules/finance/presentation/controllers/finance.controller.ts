@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } fro
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
+import { Permission } from '@/shared/permissions/permissions';
 import {
   CreateChartOfAccountDto, CreateClientInvoiceDto, CreateCollectionDto, CreateJournalDto,
   CreatePaymentDto, CreateProgressClaimDto, CreateVendorInvoiceDto, ListChartOfAccountQueryDto,
@@ -38,193 +39,193 @@ export class FinanceController {
   ) {}
 
   @Get('vendor-invoices')
-  @Permissions('VendorInvoice.VIEW')
+  @Permissions(Permission.VendorInvoiceView)
   listVendorInvoices(@Query() query: ListVendorInvoiceQueryDto) {
     return this.vendorInvoice.listVendorInvoices(query);
   }
 
   @Post('vendor-invoices')
-  @Permissions('VendorInvoice.CREATE')
+  @Permissions(Permission.VendorInvoiceCreate)
   createVendorInvoice(@Body() dto: CreateVendorInvoiceDto, @Req() request: { user?: { sub?: string } }) {
     return this.vendorInvoice.createVendorInvoice(dto, request.user?.sub ?? 'system');
   }
 
   @Post('vendor-invoices/:id/post')
-  @Permissions('VendorInvoice.POST')
+  @Permissions(Permission.VendorInvoicePost)
   postVendorInvoice(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.vendorInvoice.postVendorInvoice(id, request.user?.sub ?? 'system');
   }
 
   @Get('payments')
-  @Permissions('Payment.VIEW')
+  @Permissions(Permission.PaymentView)
   listPayments(@Query() query: ListPaymentQueryDto) {
     return this.payment.listPayments(query);
   }
 
   @Post('payments')
-  @Permissions('Payment.CREATE')
+  @Permissions(Permission.PaymentCreate)
   createPayment(@Body() dto: CreatePaymentDto, @Req() request: { user?: { sub?: string } }) {
     return this.payment.createPayment(dto, request.user?.sub ?? 'system');
   }
 
   @Post('payments/:id/approve')
-  @Permissions('Payment.APPROVE')
+  @Permissions(Permission.PaymentApprove)
   approvePayment(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.payment.approvePayment(id, request.user?.sub ?? 'system');
   }
 
   @Post('payments/:id/pay')
-  @Permissions('Payment.PAY')
+  @Permissions(Permission.PaymentPay)
   payPayment(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.payment.payPayment(id, request.user?.sub ?? 'system');
   }
 
   @Get('chart-of-accounts')
-  @Permissions('ChartOfAccount.VIEW')
+  @Permissions(Permission.ChartOfAccountView)
   listChartOfAccounts(@Query() query: ListChartOfAccountQueryDto) {
     return this.coa.listChartOfAccounts(query);
   }
 
   @Get('gl/trial-balance')
-  @Permissions('Journal.VIEW')
+  @Permissions(Permission.JournalView)
   trialBalance(@Query() query: TrialBalanceQueryDto) {
     return this.tb.trialBalance(query.legalEntityId, query.from, query.to);
   }
 
   @Post('chart-of-accounts')
-  @Permissions('ChartOfAccount.CREATE')
+  @Permissions(Permission.ChartOfAccountCreate)
   createChartOfAccount(@Body() dto: CreateChartOfAccountDto, @Req() request: { user?: { sub?: string } }) {
     return this.coa.createChartOfAccount(dto, request.user?.sub ?? 'system');
   }
 
   @Get('journals')
-  @Permissions('Journal.VIEW')
+  @Permissions(Permission.JournalView)
   listJournals(@Query() query: ListJournalQueryDto) {
     return this.journal.listJournals(query);
   }
 
   @Post('journals')
-  @Permissions('Journal.CREATE')
+  @Permissions(Permission.JournalCreate)
   createJournal(@Body() dto: CreateJournalDto, @Req() request: { user?: { sub?: string } }) {
     return this.journal.createJournal(dto, request.user?.sub ?? 'system');
   }
 
   @Post('journals/:id/post')
-  @Permissions('Journal.POST')
+  @Permissions(Permission.JournalPost)
   postJournal(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.journal.postJournal(id, request.user?.sub ?? 'system');
   }
 
   @Get('progress-claims')
-  @Permissions('ProgressClaim.VIEW')
+  @Permissions(Permission.ProgressClaimView)
   listProgressClaims(@Query() query: ListProgressClaimQueryDto) {
     return this.claim.listProgressClaims(query);
   }
 
   @Post('progress-claims')
-  @Permissions('ProgressClaim.CREATE')
+  @Permissions(Permission.ProgressClaimCreate)
   createProgressClaim(@Body() dto: CreateProgressClaimDto, @Req() request: { user?: { sub?: string } }) {
     return this.claim.createProgressClaim(dto, request.user?.sub ?? 'system');
   }
 
   @Post('progress-claims/:id/certify')
-  @Permissions('ProgressClaim.CERTIFY')
+  @Permissions(Permission.ProgressClaimCertify)
   certifyClaim(@Param('id') id: string, @Body() dto: CertifyClaimDto, @Req() request: { user?: { sub?: string } }) {
     return this.claim.certifyClaim(id, dto, request.user?.sub ?? 'system');
   }
 
   @Get('client-invoices')
-  @Permissions('ClientInvoice.VIEW')
+  @Permissions(Permission.ClientInvoiceView)
   listClientInvoices(@Query() query: ListClientInvoiceQueryDto) {
     return this.clientInvoice.listClientInvoices(query);
   }
 
   @Post('client-invoices')
-  @Permissions('ClientInvoice.CREATE')
+  @Permissions(Permission.ClientInvoiceCreate)
   createClientInvoice(@Body() dto: CreateClientInvoiceDto, @Req() request: { user?: { sub?: string } }) {
     return this.clientInvoice.createClientInvoice(dto, request.user?.sub ?? 'system');
   }
 
   @Post('client-invoices/:id/post')
-  @Permissions('ClientInvoice.POST')
+  @Permissions(Permission.ClientInvoicePost)
   postClientInvoice(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.clientInvoice.postClientInvoice(id, request.user?.sub ?? 'system');
   }
 
   @Get('collections')
-  @Permissions('Collection.VIEW')
+  @Permissions(Permission.CollectionView)
   listCollections(@Query() query: ListCollectionQueryDto) {
     return this.collection.listCollections(query);
   }
 
   @Post('collections')
-  @Permissions('Collection.CREATE')
+  @Permissions(Permission.CollectionCreate)
   createCollection(@Body() dto: CreateCollectionDto, @Req() request: { user?: { sub?: string } }) {
     return this.collection.createCollection(dto, request.user?.sub ?? 'system');
   }
 
   @Post('collections/:id/post')
-  @Permissions('Collection.POST')
+  @Permissions(Permission.CollectionPost)
   postCollection(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.collection.postCollection(id, request.user?.sub ?? 'system');
   }
 
   @Get('variations')
-  @Permissions('Variation.VIEW')
+  @Permissions(Permission.VariationView)
   listVariations(@Query() query: ListVariationQueryDto) {
     return this.variation.listVariations(query);
   }
 
   @Post('variations')
-  @Permissions('Variation.CREATE')
+  @Permissions(Permission.VariationCreate)
   createVariation(@Body() dto: CreateVariationDto, @Req() request: { user?: { sub?: string } }) {
     return this.variation.createVariation(dto, request.user?.sub ?? 'system');
   }
 
   @Post('variations/:id/approve')
-  @Permissions('Variation.APPROVE')
+  @Permissions(Permission.VariationApprove)
   approveVariation(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.variation.approveVariation(id, request.user?.sub ?? 'system');
   }
 
   @Post('variations/:id/reject')
-  @Permissions('Variation.REJECT')
+  @Permissions(Permission.VariationReject)
   rejectVariation(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.variation.rejectVariation(id, request.user?.sub ?? 'system');
   }
 
   @Get('subcontracts')
-  @Permissions('Subcontract.VIEW')
+  @Permissions(Permission.SubcontractView)
   listSubcontracts(@Query() query: ListSubcontractQueryDto) {
     return this.subcon.listSubcontracts(query);
   }
 
   @Post('subcontracts')
-  @Permissions('Subcontract.CREATE')
+  @Permissions(Permission.SubcontractCreate)
   createSubcontract(@Body() dto: CreateSubcontractDto, @Req() request: { user?: { sub?: string } }) {
     return this.subcon.createSubcontract(dto, request.user?.sub ?? 'system');
   }
 
   @Get('subcontracts/:id/progress')
-  @Permissions('Subcontract.VIEW')
+  @Permissions(Permission.SubcontractView)
   listSubcontractProgress(@Param('id') id: string, @Query() query: ListSubcontractProgressQueryDto) {
     return this.subcon.listProgress(id, query);
   }
 
   @Post('subcontracts/:id/progress')
-  @Permissions('SubcontractProgress.CREATE')
+  @Permissions(Permission.SubcontractProgressCreate)
   createSubcontractProgress(@Param('id') id: string, @Body() dto: CreateSubcontractProgressDto, @Req() request: { user?: { sub?: string } }) {
     return this.subcon.createProgress({ ...dto, subcontractId: id }, request.user?.sub ?? 'system');
   }
 
   @Post('subcontracts/:id/progress/:progressId/verify')
-  @Permissions('SubcontractProgress.VERIFY')
+  @Permissions(Permission.SubcontractProgressVerify)
   verifySubcontractProgress(@Param('id') id: string, @Param('progressId') progressId: string, @Req() request: { user?: { sub?: string } }) {
     return this.subcon.verifyProgress(id, progressId, request.user?.sub ?? 'system');
   }
 
   @Post('subcontracts/:id/progress/:progressId/reject')
-  @Permissions('SubcontractProgress.REJECT')
+  @Permissions(Permission.SubcontractProgressReject)
   rejectSubcontractProgress(@Param('id') id: string, @Param('progressId') progressId: string, @Req() request: { user?: { sub?: string } }) {
     return this.subcon.rejectProgress(id, progressId, request.user?.sub ?? 'system');
   }

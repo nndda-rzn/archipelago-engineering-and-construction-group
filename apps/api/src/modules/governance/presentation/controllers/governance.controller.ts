@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } fro
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
+import { Permission } from '@/shared/permissions/permissions';
 import {
   AdvanceAuditDto, CompleteAccessReviewDto, CreateAccessReviewDto, CreateAuditDto, CreateFindingDto,
   CreateLegalCaseDto, CreateRiskDto, LegalCaseStatusDto, ListAccessReviewQueryDto, ListAuditQueryDto,
@@ -17,85 +18,85 @@ export class GovernanceController {
   ) {}
 
   @Get('governance/risks')
-  @Permissions('Risk.VIEW')
+  @Permissions(Permission.RiskView)
   listRisks(@Query() query: ListRiskQueryDto) {
     return this.governance.listRisks(query);
   }
 
   @Post('governance/risks')
-  @Permissions('Risk.CREATE')
+  @Permissions(Permission.RiskCreate)
   createRisk(@Body() dto: CreateRiskDto, @Req() request: { user?: { sub?: string } }) {
     return this.governance.createRisk(dto, request.user?.sub ?? 'system');
   }
 
   @Post('governance/risks/:id/mitigate')
-  @Permissions('Risk.EDIT')
+  @Permissions(Permission.RiskEdit)
   mitigateRisk(@Param('id') id: string, @Body() dto: MitigateRiskDto, @Req() request: { user?: { sub?: string } }) {
     return this.governance.mitigateRisk(id, dto, request.user?.sub ?? 'system');
   }
 
   @Get('governance/audits')
-  @Permissions('Audit.VIEW')
+  @Permissions(Permission.AuditView)
   listAudits(@Query() query: ListAuditQueryDto) {
     return this.governance.listAudits(query);
   }
 
   @Post('governance/audits')
-  @Permissions('Audit.CREATE')
+  @Permissions(Permission.AuditCreate)
   createAudit(@Body() dto: CreateAuditDto, @Req() request: { user?: { sub?: string } }) {
     return this.governance.createAudit(dto, request.user?.sub ?? 'system');
   }
 
   @Post('governance/audits/:id/status')
-  @Permissions('Audit.EDIT')
+  @Permissions(Permission.AuditEdit)
   advanceAudit(@Param('id') id: string, @Body() dto: AdvanceAuditDto, @Req() request: { user?: { sub?: string } }) {
     return this.governance.advanceAudit(id, dto, request.user?.sub ?? 'system');
   }
 
   @Post('governance/audits/:id/findings')
-  @Permissions('Audit.CREATE')
+  @Permissions(Permission.AuditCreate)
   createFinding(@Param('id') id: string, @Body() dto: CreateFindingDto, @Req() request: { user?: { sub?: string } }) {
     return this.governance.createFinding(id, dto, request.user?.sub ?? 'system');
   }
 
   @Post('governance/findings/:id/respond')
-  @Permissions('Audit.EDIT')
+  @Permissions(Permission.AuditEdit)
   respondFinding(@Param('id') id: string, @Body() dto: RespondFindingDto, @Req() request: { user?: { sub?: string } }) {
     return this.governance.respondFinding(id, dto, request.user?.sub ?? 'system');
   }
 
   @Get('governance/legal-cases')
-  @Permissions('LegalCase.VIEW')
+  @Permissions(Permission.LegalCaseView)
   listLegalCases(@Query() query: ListLegalCaseQueryDto) {
     return this.governance.listLegalCases(query);
   }
 
   @Post('governance/legal-cases')
-  @Permissions('LegalCase.CREATE')
+  @Permissions(Permission.LegalCaseCreate)
   createLegalCase(@Body() dto: CreateLegalCaseDto, @Req() request: { user?: { sub?: string } }) {
     return this.governance.createLegalCase(dto, request.user?.sub ?? 'system');
   }
 
   @Post('governance/legal-cases/:id/status')
-  @Permissions('LegalCase.EDIT')
+  @Permissions(Permission.LegalCaseEdit)
   updateLegalCaseStatus(@Param('id') id: string, @Body() dto: LegalCaseStatusDto, @Req() request: { user?: { sub?: string } }) {
     return this.governance.updateLegalCaseStatus(id, dto, request.user?.sub ?? 'system');
   }
 
   @Get('governance/access-reviews')
-  @Permissions('AccessReview.VIEW')
+  @Permissions(Permission.AccessReviewView)
   listAccessReviews(@Query() query: ListAccessReviewQueryDto) {
     return this.governance.listAccessReviews(query);
   }
 
   @Post('governance/access-reviews')
-  @Permissions('AccessReview.CREATE')
+  @Permissions(Permission.AccessReviewCreate)
   createAccessReview(@Body() dto: CreateAccessReviewDto, @Req() request: { user?: { sub?: string } }) {
     return this.governance.createAccessReview(dto, request.user?.sub ?? 'system');
   }
 
   @Post('governance/access-reviews/:id/complete')
-  @Permissions('AccessReview.EDIT')
+  @Permissions(Permission.AccessReviewEdit)
   completeAccessReview(@Param('id') id: string, @Body() dto: CompleteAccessReviewDto, @Req() request: { user?: { sub?: string } }) {
     return this.governance.completeAccessReview(id, dto, request.user?.sub ?? 'system');
   }

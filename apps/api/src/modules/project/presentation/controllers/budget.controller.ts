@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Req, UseGuards } from '@nes
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
+import { Permission } from '@/shared/permissions/permissions';
 import { BudgetService } from '../../application/services/budget.service';
 import { PublishBudgetDto, UpsertBudgetItemDto } from '../dto/budget.dto';
 
@@ -11,13 +12,13 @@ export class BudgetController {
   constructor(@Inject(BudgetService) private readonly service: BudgetService) {}
 
   @Get()
-  @Permissions('Budget.VIEW')
+  @Permissions(Permission.BudgetView)
   findAll(@Param('projectId') projectId: string) {
     return this.service.findAll(projectId);
   }
 
   @Post('items')
-  @Permissions('Budget.CREATE')
+  @Permissions(Permission.BudgetCreate)
   upsert(
     @Param('projectId') projectId: string,
     @Body() dto: UpsertBudgetItemDto,
@@ -27,7 +28,7 @@ export class BudgetController {
   }
 
   @Post('publish')
-  @Permissions('Budget.APPROVE')
+  @Permissions(Permission.BudgetApprove)
   publish(
     @Param('projectId') projectId: string,
     @Body() dto: PublishBudgetDto,

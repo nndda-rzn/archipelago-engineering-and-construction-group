@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, UseGuards } from '@nestjs/c
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
+import { Permission } from '@/shared/permissions/permissions';
 import { AssignPermissionsDto, CreateRoleDto } from '../dto/role.dto';
 import { RoleService } from '../../application/services/role.service';
 
@@ -11,19 +12,19 @@ export class RoleController {
   constructor(@Inject(RoleService) private readonly service: RoleService) {}
 
   @Get()
-  @Permissions('Role.VIEW')
+  @Permissions(Permission.RoleView)
   findAll() {
     return this.service.findAll();
   }
 
   @Post()
-  @Permissions('Role.CREATE')
+  @Permissions(Permission.RoleCreate)
   create(@Body() dto: CreateRoleDto) {
     return this.service.create(dto);
   }
 
   @Post(':id/permissions')
-  @Permissions('Role.EDIT')
+  @Permissions(Permission.RoleEdit)
   assignPermissions(@Param('id') id: string, @Body() dto: AssignPermissionsDto) {
     return this.service.assignPermissions(id, dto);
   }

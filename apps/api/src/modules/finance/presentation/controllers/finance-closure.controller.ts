@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } fro
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
+import { Permission } from '@/shared/permissions/permissions';
 import { FinanceClosureService } from '../../application/services/finance-closure.service';
 import {
   CompletePeriodStepDto, CreateIntercompanyDto, CreatePeriodCloseDto, FinancialStatementQueryDto, ListIntercompanyQueryDto,
@@ -13,73 +14,73 @@ export class FinanceClosureController {
   constructor(@Inject(FinanceClosureService) private readonly closure: FinanceClosureService) {}
 
   @Get('intercompany')
-  @Permissions('Journal.VIEW')
+  @Permissions(Permission.JournalView)
   listIntercompany(@Query() query: ListIntercompanyQueryDto) {
     return this.closure.listIntercompany(query);
   }
 
   @Post('intercompany')
-  @Permissions('Journal.CREATE')
+  @Permissions(Permission.JournalCreate)
   createIntercompany(@Body() dto: CreateIntercompanyDto, @Req() request: { user?: { sub?: string } }) {
     return this.closure.createIntercompany(dto, request.user?.sub ?? 'system');
   }
 
   @Post('intercompany/:id/post')
-  @Permissions('Journal.POST')
+  @Permissions(Permission.JournalPost)
   postIntercompany(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.closure.postIntercompany(id, request.user?.sub ?? 'system');
   }
 
   @Get('intercompany/reconciliation')
-  @Permissions('Journal.VIEW')
+  @Permissions(Permission.JournalView)
   intercompanyReconciliation() {
     return this.closure.intercompanyReconciliation();
   }
 
   @Get('period-closes')
-  @Permissions('Journal.VIEW')
+  @Permissions(Permission.JournalView)
   listPeriodCloses() {
     return this.closure.listPeriodCloses();
   }
 
   @Post('period-closes')
-  @Permissions('Journal.POST')
+  @Permissions(Permission.JournalPost)
   startPeriodClose(@Body() dto: CreatePeriodCloseDto, @Req() request: { user?: { sub?: string } }) {
     return this.closure.startPeriodClose(dto, request.user?.sub ?? 'system');
   }
 
   @Post('period-closes/:id/step')
-  @Permissions('Journal.POST')
+  @Permissions(Permission.JournalPost)
   completeStep(@Param('id') id: string, @Body() dto: CompletePeriodStepDto, @Req() request: { user?: { sub?: string } }) {
     return this.closure.completeStep(id, dto, request.user?.sub ?? 'system');
   }
 
   @Post('period-closes/:id/close')
-  @Permissions('Journal.POST')
+  @Permissions(Permission.JournalPost)
   closePeriod(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.closure.closePeriod(id, request.user?.sub ?? 'system');
   }
 
   @Post('period-closes/:id/lock')
-  @Permissions('Journal.POST')
+  @Permissions(Permission.JournalPost)
   lockPeriod(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.closure.lockPeriod(id, request.user?.sub ?? 'system');
   }
 
   @Get('gl/income-statement')
-  @Permissions('Journal.VIEW')
+  @Permissions(Permission.JournalView)
   incomeStatement(@Query() query: FinancialStatementQueryDto) {
     return this.closure.incomeStatement(query);
   }
 
   @Get('gl/balance-sheet')
-  @Permissions('Journal.VIEW')
+  @Permissions(Permission.JournalView)
   balanceSheet(@Query() query: FinancialStatementQueryDto) {
     return this.closure.balanceSheet(query);
   }
 
   @Get('gl/consolidation')
-  @Permissions('Journal.VIEW')
+  @Permissions(Permission.JournalView)
   consolidation() {
     return this.closure.consolidation();
   }

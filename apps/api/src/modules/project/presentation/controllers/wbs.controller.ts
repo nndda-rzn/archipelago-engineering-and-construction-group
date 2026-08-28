@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Req, UseGuards } from '@nes
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
+import { Permission } from '@/shared/permissions/permissions';
 import { CreateWbsItemDto } from '../dto/wbs.dto';
 import { WbsService } from '../../application/services/wbs.service';
 
@@ -11,13 +12,13 @@ export class WbsController {
   constructor(@Inject(WbsService) private readonly service: WbsService) {}
 
   @Get()
-  @Permissions('WBS.VIEW')
+  @Permissions(Permission.WbsView)
   getTree(@Param('projectId') projectId: string) {
     return this.service.getTree(projectId);
   }
 
   @Post()
-  @Permissions('WBS.CREATE')
+  @Permissions(Permission.WbsCreate)
   create(
     @Param('projectId') projectId: string,
     @Body() dto: CreateWbsItemDto,

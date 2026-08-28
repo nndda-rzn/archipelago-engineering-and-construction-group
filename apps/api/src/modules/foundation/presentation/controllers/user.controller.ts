@@ -2,6 +2,7 @@ import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } fro
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
+import { Permission } from '@/shared/permissions/permissions';
 import { CreateUserDto, ListUserQueryDto } from '../dto/user.dto';
 import { UserService } from '../../application/services/user.service';
 
@@ -11,19 +12,19 @@ export class UserController {
   constructor(@Inject(UserService) private readonly service: UserService) {}
 
   @Get()
-  @Permissions('User.VIEW')
+  @Permissions(Permission.UserView)
   findAll(@Query() query: ListUserQueryDto) {
     return this.service.findAll(query);
   }
 
   @Post()
-  @Permissions('User.CREATE')
+  @Permissions(Permission.UserCreate)
   create(@Body() dto: CreateUserDto, @Req() request: { user?: { sub?: string } }) {
     return this.service.create(dto, request.user?.sub ?? 'system');
   }
 
   @Post(':id/block')
-  @Permissions('User.BLOCK')
+  @Permissions(Permission.UserBlock)
   block(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.service.block(id, request.user?.sub ?? 'system');
   }
