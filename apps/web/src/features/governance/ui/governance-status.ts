@@ -1,4 +1,8 @@
-export const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
+import { type BadgeVariant } from '@aec/ui';
+
+export type GovernanceStatus = 'OPEN' | 'MITIGATED' | 'CLOSED' | 'PLANNED' | 'FIELDWORK' | 'FINDINGS' | 'COMPLETED' | 'SETTLED' | 'WON' | 'LOST' | 'IN_PROGRESS' | 'SCHEDULED';
+
+export const statusVariant: Record<GovernanceStatus, BadgeVariant> = {
   OPEN: 'warning',
   MITIGATED: 'default',
   CLOSED: 'success',

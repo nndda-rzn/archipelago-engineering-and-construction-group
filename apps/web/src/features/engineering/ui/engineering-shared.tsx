@@ -1,4 +1,8 @@
-export const engStatusVariant: Record<string, 'default' | 'success' | 'warning'> = {
+import type { BadgeVariant } from '@aec/ui';
+
+export type EngStatus = 'ISSUED' | 'APPROVED' | 'PUBLISHED' | 'ANSWERED' | 'CLOSED' | 'REJECTED' | 'OPEN' | 'SUBMITTED';
+
+export const engStatusVariant: Record<EngStatus, BadgeVariant> = {
   ISSUED: 'success',
   APPROVED: 'success',
   PUBLISHED: 'success',

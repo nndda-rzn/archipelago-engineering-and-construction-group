@@ -1,4 +1,8 @@
-export const severityVariant: Record<string, 'default' | 'success' | 'warning'> = {
+import type { BadgeVariant } from '@aec/ui';
+
+export type HseSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+export const severityVariant: Record<HseSeverity, BadgeVariant> = {
   LOW: 'success',
   MEDIUM: 'default',
   HIGH: 'warning',

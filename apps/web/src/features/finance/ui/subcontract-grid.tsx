@@ -1,17 +1,21 @@
-import { Badge, Button } from '@aec/ui';
+import { Badge, Button, type BadgeVariant } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useRejectSubcontractProgress, useVerifySubcontractProgress } from '../model/subcontract.api';
 import type { Subcontract, SubcontractProgress } from '@aec/api-contracts';
 import { formatIdr as fmt } from '@/shared/lib/format';
 
-export const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
+export type SubcontractStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'TERMINATED';
+
+export const statusVariant: Record<SubcontractStatus, BadgeVariant> = {
   DRAFT: 'default',
   ACTIVE: 'success',
   COMPLETED: 'success',
   TERMINATED: 'warning',
 };
 
-export const progressVariant: Record<string, 'default' | 'success' | 'warning'> = {
+export type SubcontractProgressStatus = 'SUBMITTED' | 'VERIFIED' | 'REJECTED';
+
+export const progressVariant: Record<SubcontractProgressStatus, BadgeVariant> = {
   SUBMITTED: 'default',
   VERIFIED: 'success',
   REJECTED: 'warning',
@@ -43,7 +47,7 @@ export const subcontractColumns = [
   }),
   columnHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={statusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge>,
+    cell: (info) => <Badge variant={statusVariant[info.getValue() as SubcontractStatus]}>{info.getValue()}</Badge>,
   }),
 ];
 
@@ -66,7 +70,7 @@ export const progressColumns = [
   }),
   progColumnHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={progressVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge>,
+    cell: (info) => <Badge variant={progressVariant[info.getValue() as SubcontractProgressStatus]}>{info.getValue()}</Badge>,
   }),
   progColumnHelper.display({
     id: 'actions',

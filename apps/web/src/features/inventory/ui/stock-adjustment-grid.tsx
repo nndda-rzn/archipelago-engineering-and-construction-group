@@ -1,9 +1,11 @@
-import { Badge, ConfirmActionButton } from '@aec/ui';
+import { Badge, type BadgeVariant, ConfirmActionButton } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useApproveStockAdjustment } from '../model/stock-adjustment.api';
 import type { StockAdjustment } from '@aec/api-contracts';
 
-export const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
+type AdjustmentStatus = 'DRAFT' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+export const statusVariant: Record<AdjustmentStatus, BadgeVariant> = {
   DRAFT: 'warning',
   APPROVED: 'success',
   REJECTED: 'default',
@@ -31,7 +33,7 @@ export const adjustmentColumns = [
   }),
   columnHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={statusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge>,
+    cell: (info) => <Badge variant={statusVariant[info.getValue() as AdjustmentStatus]}>{info.getValue()}</Badge>,
   }),
   columnHelper.display({
     id: 'actions',

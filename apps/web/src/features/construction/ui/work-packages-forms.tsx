@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, Input, Label } from '@aec/ui';
+import { Badge, Button, Input, Label, type BadgeVariant } from '@aec/ui';
 import { useWbsTree } from '@/entities/wbs';
 import { useCreateWorkPackage, useStartWorkPackage, useCompleteWorkPackage, useAddProgress } from '../model/work-package.api';
 
@@ -59,14 +59,16 @@ interface ActionsPanelProps {
 
 type ProgressState = { id: string; open: boolean; value: string; qty: string };
 
-export const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
+type WorkPackageStatus = 'DRAFT' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+
+export const statusVariant: Record<WorkPackageStatus, BadgeVariant> = {
   DRAFT: 'default',
   IN_PROGRESS: 'warning',
   COMPLETED: 'success',
   CANCELLED: 'default',
 };
 
-export const statusLabel: Record<string, string> = {
+export const statusLabel: Record<WorkPackageStatus, string> = {
   DRAFT: 'Draft',
   IN_PROGRESS: 'Berjalan',
   COMPLETED: 'Selesai',
@@ -98,7 +100,7 @@ export function WorkPackageActionsPanel({ projectId, items }: ActionsPanelProps)
             <div>
               <span className="font-mono text-sm text-neutral-600">{wp.wpNumber}</span>
               <span className="ml-2 text-body-sm text-neutral-800">{wp.title}</span>
-              <Badge variant={statusVariant[wp.status] ?? 'default'} className="ml-2">{statusLabel[wp.status] ?? wp.status}</Badge>
+              <Badge variant={statusVariant[wp.status as WorkPackageStatus]} className="ml-2">{statusLabel[wp.status as WorkPackageStatus]}</Badge>
             </div>
             <div className="flex items-center gap-2">
               {wp.status === 'DRAFT' && (

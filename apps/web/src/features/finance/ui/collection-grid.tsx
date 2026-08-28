@@ -1,10 +1,12 @@
-import { Badge, ConfirmActionButton } from '@aec/ui';
+import { Badge, ConfirmActionButton, type BadgeVariant } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { usePostCollection } from '../model/collection.api';
 import type { Collection } from '@aec/api-contracts';
 import { formatIdr as fmt } from '@/shared/lib/format';
 
-export const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
+export type CollectionStatus = 'DRAFT' | 'POSTED' | 'CANCELLED';
+
+export const statusVariant: Record<CollectionStatus, BadgeVariant> = {
   DRAFT: 'default',
   POSTED: 'success',
   CANCELLED: 'warning',
@@ -31,7 +33,7 @@ export const collectionColumns = [
   }),
   columnHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={statusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge>,
+    cell: (info) => <Badge variant={statusVariant[info.getValue() as CollectionStatus]}>{info.getValue()}</Badge>,
   }),
   columnHelper.display({
     id: 'actions',

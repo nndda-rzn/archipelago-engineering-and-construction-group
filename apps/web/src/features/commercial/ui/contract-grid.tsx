@@ -3,7 +3,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { useExecuteContract } from '../model/commercial.api';
 import type { Contract } from '@aec/api-contracts';
 import { formatIdr as fmt } from '@/shared/lib/format';
-import { commercialStatusVariant } from './commercial-status';
+import { commercialStatusVariant, type CommercialStatus } from './commercial-status';
 
 const contractHelper = createColumnHelper<Contract>();
 
@@ -24,6 +24,6 @@ export const contractColumns = [
   contractHelper.accessor('contractType', { header: 'Tipe', cell: (info) => <Badge variant="default">{info.getValue()}</Badge> }),
   contractHelper.accessor('value', { header: 'Nilai', cell: (info) => <span className="font-mono tabular-nums text-neutral-800 font-medium">{fmt(info.getValue())}</span> }),
   contractHelper.accessor('retentionTerm', { header: 'Retensi', cell: (info) => <span className="font-mono tabular-nums text-neutral-600">{info.getValue()}%</span> }),
-  contractHelper.accessor('status', { header: 'Status', cell: (info) => <Badge variant={commercialStatusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge> }),
+  contractHelper.accessor('status', { header: 'Status', cell: (info) => <Badge variant={commercialStatusVariant[info.getValue() as CommercialStatus]}>{info.getValue()}</Badge> }),
   contractHelper.display({ id: 'actions', header: '', cell: ({ row }) => <ContractExecuteBtn contract={row.original} /> }),
 ];

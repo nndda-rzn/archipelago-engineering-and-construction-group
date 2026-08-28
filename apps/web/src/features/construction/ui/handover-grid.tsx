@@ -1,11 +1,13 @@
-import { Badge } from '@aec/ui';
+import { Badge, type BadgeVariant } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import type { HandoverPackage } from '@aec/api-contracts';
 
-export const statusVariant: Record<string, 'default' | 'warning' | 'success'> = {
+export type HandoverStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'COMPLETED';
+
+export const statusVariant: Record<HandoverStatus, BadgeVariant> = {
   DRAFT: 'default', SUBMITTED: 'warning', APPROVED: 'success', COMPLETED: 'success',
 };
-export const statusLabel: Record<string, string> = {
+export const statusLabel: Record<HandoverStatus, string> = {
   DRAFT: 'Draft', SUBMITTED: 'Diajukan', APPROVED: 'Disetujui', COMPLETED: 'Selesai',
 };
 
@@ -15,5 +17,5 @@ export const handoverColumns = [
   columnHelper.accessor('title', { header: 'Judul' }),
   columnHelper.accessor('handoverDate', { header: 'Tanggal', cell: (i) => i.getValue() ? new Date(i.getValue() as string).toLocaleDateString('id-ID') : '-' }),
   columnHelper.accessor('items', { header: 'Dokumen', cell: (i) => { const items = i.getValue(); const verified = items.filter((x) => x.status === 'VERIFIED').length; return <span className="font-mono text-xs tabular-nums">{verified}/{items.length} verified</span>; } }),
-  columnHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={statusVariant[i.getValue()] ?? 'default'}>{statusLabel[i.getValue()] ?? i.getValue()}</Badge> }),
+  columnHelper.accessor('status', { header: 'Status', cell: ({ row }) => <Badge variant={statusVariant[row.original.status as HandoverStatus]}>{statusLabel[row.original.status as HandoverStatus]}</Badge> }),
 ];

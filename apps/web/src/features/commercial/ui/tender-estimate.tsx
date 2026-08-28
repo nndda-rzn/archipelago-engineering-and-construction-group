@@ -3,7 +3,7 @@ import { Badge, Button, Input, Label } from '@aec/ui';
 import { useCreateEstimate, useCreatePricingScenario, useTransitionEstimate } from '../model/tender.api';
 import type { Estimate } from '@aec/api-contracts';
 import { formatIdr as fmt } from '@/shared/lib/format';
-import { statusVariant } from './tender-grid';
+import { statusVariant, type TenderStatus } from './tender-grid';
 import type { OppOption } from './tender-types';
 
 export function EstimatePanel({
@@ -63,7 +63,7 @@ export function EstimatePanel({
                 <td className="px-4 py-2 font-mono text-neutral-800">v{e.version}</td>
                 <td className="px-4 py-2 font-mono text-neutral-600">{e.estimateNumber}</td>
                 <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-800">{fmt(e.totalAmount)}</td>
-                <td className="px-4 py-2"><Badge variant={statusVariant[e.status] ?? 'default'}>{e.status}</Badge></td>
+                <td className="px-4 py-2"><Badge variant={statusVariant[e.status as TenderStatus]}>{e.status}</Badge></td>
                 <td className="px-4 py-2">
                   <div className="flex gap-1">
                     {e.status === 'WORKING' && <Button size="sm" variant="ghost" onClick={() => transition.mutate({ id: e.id, status: 'REVIEW' })}>Review</Button>}

@@ -1,12 +1,14 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button } from '@aec/ui';
+import { Badge, Button, type BadgeVariant } from '@aec/ui';
 import {
   useCompleteEquipmentPm, useEndEquipmentAssignment, useResolveEquipmentBreakdown,
 } from '../model/hcm.api';
 import type { Equipment, EquipmentAssignment, EquipmentBreakdown, EquipmentPm } from '@aec/api-contracts';
 import { formatIdr as fmt } from '@/shared/lib/format';
 
-export const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
+type EquipmentStatus = 'AVAILABLE' | 'ASSIGNED' | 'MAINTENANCE' | 'BREAKDOWN' | 'RETIRED';
+
+export const statusVariant: Record<EquipmentStatus, BadgeVariant> = {
   AVAILABLE: 'success',
   ASSIGNED: 'default',
   MAINTENANCE: 'warning',
@@ -42,7 +44,7 @@ export const equipmentColumns = [
   }),
   columnHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={statusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge>,
+    cell: ({ row }) => <Badge variant={statusVariant[row.original.status as EquipmentStatus]}>{row.original.status}</Badge>,
   }),
 ];
 
