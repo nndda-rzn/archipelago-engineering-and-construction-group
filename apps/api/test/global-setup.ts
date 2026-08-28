@@ -11,6 +11,6 @@ export default function globalSetup() {
     throw new Error('prisma/schema.prisma tidak ditemukan');
   }
 
-  execSync('npx prisma db push --force-reset', { stdio: 'inherit', env: process.env });
+  execSync('npx prisma migrate reset --force', { stdio: 'inherit', env: process.env });
   execSync('npx prisma db seed', { stdio: 'inherit', env: process.env });
 }
