@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createVariationSchema, variationSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
-export const variationKeys = { all: ['variations'] as const, list: (params: object) => [...variationKeys.all, 'list', params] as const };
+export const variationKeys = { all: ['variations'] as const, list: (params: PaginationParams & { projectId?: string; status?: string }) => [...variationKeys.all, 'list', params] as const };
 
-export function useVariations(params: { page: number; pageSize: number; projectId?: string; status?: string }) {
+export function useVariations(params: PaginationParams & { projectId?: string; status?: string }) {
   return useQuery({
     queryKey: variationKeys.list(params),
     queryFn: async () => {

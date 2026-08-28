@@ -13,8 +13,7 @@ import {
   OpportunityForm,
   ContractForm,
 } from '@/features/commercial/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 type Tab = 'clients' | 'opportunities' | 'contracts';
 

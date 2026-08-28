@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createPaymentSchema, paymentSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
-export const payKeys = { all: ['payments'] as const, list: (params: object) => [...payKeys.all, 'list', params] as const };
+export const payKeys = { all: ['payments'] as const, list: (params: PaginationParams) => [...payKeys.all, 'list', params] as const };
 
-export function usePayments(params: { page: number; pageSize: number }) {
+export function usePayments(params: PaginationParams) {
   return useQuery({
     queryKey: payKeys.list(params),
     queryFn: async () => {

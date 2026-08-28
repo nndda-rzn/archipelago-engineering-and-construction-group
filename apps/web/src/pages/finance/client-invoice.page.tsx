@@ -3,8 +3,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, ConfirmActionButton, DataGrid, Input, Label } from '@aec/ui';
 import { useClientInvoices, useCreateClientInvoice, usePostClientInvoice, useProgressClaims, type ClientInvoice } from '@/features/finance';
 import { formatIdr as fmt } from '@/shared/lib/format';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
   DRAFT: 'default',

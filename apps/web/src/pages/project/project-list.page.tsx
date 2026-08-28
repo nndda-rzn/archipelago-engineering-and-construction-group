@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Button, DataGrid, Input } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { ProjectForm, projectColumns } from '@/features/project/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 export function ProjectListPage() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });

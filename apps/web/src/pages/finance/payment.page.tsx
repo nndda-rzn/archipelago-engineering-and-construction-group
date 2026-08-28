@@ -4,8 +4,7 @@ import { Badge, Button, ConfirmActionButton, DataGrid, EmptyCell } from '@aec/ui
 import { useApprovePayment, usePayPayment, usePayments, type Payment } from '@/features/finance';
 import { PaymentForm } from '@/features/finance';
 import { formatIdr } from '@/shared/lib/format';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
   DRAFT: 'default',

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { trialBalanceSchema } from '@aec/api-contracts';
 import { getJson } from '@/shared/lib/http';
 
-export const tbKeys = { all: ['trial-balance'] as const, get: (params: object) => [...tbKeys.all, 'get', params] as const };
+export const tbKeys = { all: ['trial-balance'] as const, get: (params: { legalEntityId?: string; from?: string; to?: string }) => [...tbKeys.all, 'get', params] as const };
 
 export function useTrialBalance(params: { legalEntityId?: string; from?: string; to?: string }) {
   return useQuery({

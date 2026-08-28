@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createGoodsReceiptSchema, goodsReceiptSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
-export const grKeys = { all: ['goods-receipts'] as const, list: (params: object) => [...grKeys.all, 'list', params] as const };
+export const grKeys = { all: ['goods-receipts'] as const, list: (params: PaginationParams) => [...grKeys.all, 'list', params] as const };
 
-export function useGoodsReceipts(params: { page: number; pageSize: number }) {
+export function useGoodsReceipts(params: PaginationParams) {
   return useQuery({
     queryKey: grKeys.list(params),
     queryFn: async () => {

@@ -5,13 +5,14 @@ import {
   type BudgetStatus, type CommercialEvaluation, type PoChange, type VendorPerformance, type VendorRating,
 } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
 export const hardeningKeys = {
   all: ['procurement-hardening'] as const,
   budgetStatus: (projectId: string) => [...hardeningKeys.all, 'budget', projectId] as const,
   commercialEval: (rfqId: string) => [...hardeningKeys.all, 'commercial', rfqId] as const,
   poChanges: (poId: string) => [...hardeningKeys.all, 'po-changes', poId] as const,
-  ratings: (params: object) => [...hardeningKeys.all, 'ratings', params] as const,
+  ratings: (params: PaginationParams) => [...hardeningKeys.all, 'ratings', params] as const,
   summary: () => [...hardeningKeys.all, 'summary'] as const,
 };
 
@@ -67,7 +68,7 @@ export function useApprovePoChange() {
   });
 }
 
-export function useVendorRatings(params: { page: number; pageSize: number }) {
+export function useVendorRatings(params: PaginationParams) {
   return useQuery({
     queryKey: hardeningKeys.ratings(params),
     queryFn: async () => {

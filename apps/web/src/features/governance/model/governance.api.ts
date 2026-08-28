@@ -4,16 +4,17 @@ import {
   createLegalCaseSchema, legalCaseSchema, createAccessReviewSchema, accessReviewSchema,
 } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
 export const govKeys = {
   all: ['governance'] as const,
-  risks: (params: object) => [...govKeys.all, 'risks', params] as const,
-  audits: (params: object) => [...govKeys.all, 'audits', params] as const,
-  legal: (params: object) => [...govKeys.all, 'legal', params] as const,
-  reviews: (params: object) => [...govKeys.all, 'reviews', params] as const,
+  risks: (params: PaginationParams) => [...govKeys.all, 'risks', params] as const,
+  audits: (params: PaginationParams) => [...govKeys.all, 'audits', params] as const,
+  legal: (params: PaginationParams) => [...govKeys.all, 'legal', params] as const,
+  reviews: (params: PaginationParams) => [...govKeys.all, 'reviews', params] as const,
 };
 
-export function useRisks(params: { page: number; pageSize: number }) {
+export function useRisks(params: PaginationParams) {
   return useQuery({
     queryKey: govKeys.risks(params),
     queryFn: async () => {
@@ -44,7 +45,7 @@ export function useMitigateRisk() {
   });
 }
 
-export function useAudits(params: { page: number; pageSize: number }) {
+export function useAudits(params: PaginationParams) {
   return useQuery({
     queryKey: govKeys.audits(params),
     queryFn: async () => {
@@ -92,7 +93,7 @@ export function useRespondFinding() {
   });
 }
 
-export function useLegalCases(params: { page: number; pageSize: number }) {
+export function useLegalCases(params: PaginationParams) {
   return useQuery({
     queryKey: govKeys.legal(params),
     queryFn: async () => {
@@ -122,7 +123,7 @@ export function useUpdateLegalCaseStatus() {
   });
 }
 
-export function useAccessReviews(params: { page: number; pageSize: number }) {
+export function useAccessReviews(params: PaginationParams) {
   return useQuery({
     queryKey: govKeys.reviews(params),
     queryFn: async () => {

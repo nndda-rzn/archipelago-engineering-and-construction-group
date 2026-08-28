@@ -6,20 +6,21 @@ import {
   type BankAccount, type BankGuarantee, type PaymentProposal,
 } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
 export type { BankAccount, BankGuarantee, PaymentProposal };
 
 export const treasuryKeys = {
   all: ['treasury'] as const,
-  bankAccounts: (params: object) => [...treasuryKeys.all, 'bank-accounts', params] as const,
+  bankAccounts: (params: PaginationParams) => [...treasuryKeys.all, 'bank-accounts', params] as const,
   cashPosition: () => [...treasuryKeys.all, 'cash-position'] as const,
-  proposals: (params: object) => [...treasuryKeys.all, 'payment-proposals', params] as const,
-  guarantees: (params: object) => [...treasuryKeys.all, 'bank-guarantees', params] as const,
+  proposals: (params: PaginationParams) => [...treasuryKeys.all, 'payment-proposals', params] as const,
+  guarantees: (params: PaginationParams) => [...treasuryKeys.all, 'bank-guarantees', params] as const,
   forecasts: () => [...treasuryKeys.all, 'cash-forecasts'] as const,
   fx: () => [...treasuryKeys.all, 'fx-exposures'] as const,
 };
 
-export function useBankAccounts(params: { page: number; pageSize: number }) {
+export function useBankAccounts(params: PaginationParams) {
   return useQuery({
     queryKey: treasuryKeys.bankAccounts(params),
     queryFn: async () => {
@@ -51,7 +52,7 @@ export function useCashPosition() {
   });
 }
 
-export function usePaymentProposals(params: { page: number; pageSize: number }) {
+export function usePaymentProposals(params: PaginationParams) {
   return useQuery({
     queryKey: treasuryKeys.proposals(params),
     queryFn: async () => {
@@ -85,7 +86,7 @@ export const useSubmitProposal = () => useProposalAction('submit');
 export const useApproveProposal = () => useProposalAction('approve');
 export const useReleaseProposal = () => useProposalAction('release');
 
-export function useBankGuarantees(params: { page: number; pageSize: number }) {
+export function useBankGuarantees(params: PaginationParams) {
   return useQuery({
     queryKey: treasuryKeys.guarantees(params),
     queryFn: async () => {

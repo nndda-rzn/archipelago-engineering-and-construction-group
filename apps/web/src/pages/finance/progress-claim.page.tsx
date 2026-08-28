@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Button, DataGrid } from '@aec/ui';
 import { useProgressClaims } from '@/features/finance';
 import { ClaimForm, progressClaimColumns, claimTypeLabel } from '@/features/finance/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 const CLAIM_TYPES = ['PROGRESS', 'COST', 'TIME', 'EOT', 'CONTRACTUAL'] as const;
 
 export function ProgressClaimPage() {

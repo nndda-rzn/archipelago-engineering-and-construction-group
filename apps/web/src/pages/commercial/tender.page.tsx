@@ -8,8 +8,7 @@ import {
   BidForm, EstimatePanel, DeviationPanel, SubmissionForm, AmendmentPanel,
   bidColumns, submissionColumns,
 } from '@/features/commercial/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 type Tab = 'bid' | 'estimates' | 'deviations' | 'submissions' | 'amendments';
 

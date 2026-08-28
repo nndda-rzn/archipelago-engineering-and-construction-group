@@ -16,8 +16,7 @@ import {
   subColumns,
   trmColumns,
 } from '@/features/engineering/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 export function EngineeringPage() {
   const [tab, setTab] = useState<EngTab>('deliverables');

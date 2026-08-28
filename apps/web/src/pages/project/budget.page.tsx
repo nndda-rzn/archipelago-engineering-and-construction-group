@@ -3,8 +3,7 @@ import { EntitySelect } from '@aec/ui';
 import { useBudget, usePublishBudget, useUpsertBudget } from '@/features/project';
 import { useProjects } from '@/entities/project';
 import { BudgetRow, BudgetStatusBadge, BudgetTotalBar } from '@/features/project/ui';
-
-const PAGE_SIZE = 100;
+import { PAGE_SIZE_LARGE as PAGE_SIZE } from '@/shared/lib/pagination';
 
 export function BudgetPage() {
   const [projectId, setProjectId] = useState('');

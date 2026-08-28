@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createMaterialIssueSchema, materialIssueSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
-export const miKeys = { all: ['material-issues'] as const, list: (params: object) => [...miKeys.all, 'list', params] as const };
+export const miKeys = { all: ['material-issues'] as const, list: (params: PaginationParams) => [...miKeys.all, 'list', params] as const };
 
-export function useMaterialIssues(params: { page: number; pageSize: number }) {
+export function useMaterialIssues(params: PaginationParams) {
   return useQuery({
     queryKey: miKeys.list(params),
     queryFn: async () => {

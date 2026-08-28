@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createVendorInvoiceSchema, vendorInvoiceSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
-export const invKeys = { all: ['vendor-invoices'] as const, list: (params: object) => [...invKeys.all, 'list', params] as const };
+export const invKeys = { all: ['vendor-invoices'] as const, list: (params: PaginationParams) => [...invKeys.all, 'list', params] as const };
 
-export function useVendorInvoices(params: { page: number; pageSize: number }) {
+export function useVendorInvoices(params: PaginationParams) {
   return useQuery({
     queryKey: invKeys.list(params),
     queryFn: async () => {

@@ -3,8 +3,7 @@ import { Button, DataGrid, EntitySelect } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useWorkPackages } from '@/features/construction';
 import { CreateWorkPackageForm, WorkPackageActionsPanel, workPackageColumns } from '@/features/construction/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 export function WorkPackagesPage() {
   const [projectId, setProjectId] = useState('');

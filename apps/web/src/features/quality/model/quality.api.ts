@@ -4,16 +4,17 @@ import {
   createNcrSchema, ncrSchema, createPunchItemSchema, punchListItemSchema,
 } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
 export const qualityKeys = {
   all: ['quality'] as const,
-  itps: (params: object) => [...qualityKeys.all, 'itps', params] as const,
-  inspections: (params: object) => [...qualityKeys.all, 'inspections', params] as const,
-  ncrs: (params: object) => [...qualityKeys.all, 'ncrs', params] as const,
-  punch: (params: object) => [...qualityKeys.all, 'punch', params] as const,
+  itps: (params: PaginationParams) => [...qualityKeys.all, 'itps', params] as const,
+  inspections: (params: PaginationParams) => [...qualityKeys.all, 'inspections', params] as const,
+  ncrs: (params: PaginationParams) => [...qualityKeys.all, 'ncrs', params] as const,
+  punch: (params: PaginationParams) => [...qualityKeys.all, 'punch', params] as const,
 };
 
-export function useItps(params: { page: number; pageSize: number }) {
+export function useItps(params: PaginationParams) {
   return useQuery({
     queryKey: qualityKeys.itps(params),
     queryFn: async () => {
@@ -35,7 +36,7 @@ export function useCreateItp() {
   });
 }
 
-export function useInspections(params: { page: number; pageSize: number }) {
+export function useInspections(params: PaginationParams) {
   return useQuery({
     queryKey: qualityKeys.inspections(params),
     queryFn: async () => {
@@ -65,7 +66,7 @@ export function useInspect() {
   });
 }
 
-export function useNcrs(params: { page: number; pageSize: number }) {
+export function useNcrs(params: PaginationParams) {
   return useQuery({
     queryKey: qualityKeys.ncrs(params),
     queryFn: async () => {
@@ -104,7 +105,7 @@ export function useReinspectNcr() {
   });
 }
 
-export function usePunchItems(params: { page: number; pageSize: number }) {
+export function usePunchItems(params: PaginationParams) {
   return useQuery({
     queryKey: qualityKeys.punch(params),
     queryFn: async () => {

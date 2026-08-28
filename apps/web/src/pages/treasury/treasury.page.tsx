@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { DataGrid } from '@aec/ui';
 import { useBankAccounts, useBankGuarantees, useCashForecasts, useCashPosition, useFxExposures, usePaymentProposals } from '@/features/treasury';
 import { BankAccountForm, ProposalForm, GuaranteeForm, ForecastForm, FxForm, bankColumns, proposalColumns, bgColumns, CashPositionSection, CashForecastSection, FxExposureSection } from '@/features/treasury/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 type Tab = 'bank-accounts' | 'cash-position' | 'proposals' | 'guarantees' | 'forecasts' | 'fx';
 

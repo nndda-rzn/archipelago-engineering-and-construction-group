@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Button, DataGrid, Input } from '@aec/ui';
 import { usePayrollAllocations } from '@/features/hcm';
 import { PayrollForm, payrollColumns } from '@/features/hcm/ui';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 export function PayrollPage() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });

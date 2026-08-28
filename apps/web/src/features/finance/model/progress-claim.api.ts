@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createProgressClaimSchema, progressClaimSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
-export const claimKeys = { all: ['progress-claims'] as const, list: (params: object) => [...claimKeys.all, 'list', params] as const };
+export const claimKeys = { all: ['progress-claims'] as const, list: (params: PaginationParams & { claimType?: string }) => [...claimKeys.all, 'list', params] as const };
 
-export function useProgressClaims(params: { page: number; pageSize: number; claimType?: string }) {
+export function useProgressClaims(params: PaginationParams & { claimType?: string }) {
   return useQuery({
     queryKey: claimKeys.list(params),
     queryFn: async () => {

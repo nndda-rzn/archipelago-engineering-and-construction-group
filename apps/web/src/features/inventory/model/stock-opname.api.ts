@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createStockOpnameSchema, stockOpnameSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
-export const opnKeys = { all: ['stock-opnames'] as const, list: (params: object) => [...opnKeys.all, 'list', params] as const };
+export const opnKeys = { all: ['stock-opnames'] as const, list: (params: PaginationParams) => [...opnKeys.all, 'list', params] as const };
 
-export function useStockOpnames(params: { page: number; pageSize: number }) {
+export function useStockOpnames(params: PaginationParams) {
   return useQuery({
     queryKey: opnKeys.list(params),
     queryFn: async () => {

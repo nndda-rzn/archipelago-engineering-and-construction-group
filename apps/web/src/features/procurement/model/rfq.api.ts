@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createQuoteSchema, createRfqSchema, rfqSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
-export const rfqKeys = { all: ['rfq'] as const, list: (params: object) => [...rfqKeys.all, 'list', params] as const };
+export const rfqKeys = { all: ['rfq'] as const, list: (params: PaginationParams) => [...rfqKeys.all, 'list', params] as const };
 
-export function useRfqs(params: { page: number; pageSize: number }) {
+export function useRfqs(params: PaginationParams) {
   return useQuery({
     queryKey: rfqKeys.list(params),
     queryFn: async () => {

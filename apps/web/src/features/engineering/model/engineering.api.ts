@@ -5,17 +5,18 @@ import {
   createTransmittalSchema, transmittalSchema,
 } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
 export const engKeys = {
   all: ['engineering'] as const,
-  deliverables: (params: object) => [...engKeys.all, 'deliverables', params] as const,
-  drawings: (params: object) => [...engKeys.all, 'drawings', params] as const,
-  rfis: (params: object) => [...engKeys.all, 'rfis', params] as const,
-  submittals: (params: object) => [...engKeys.all, 'submittals', params] as const,
-  transmittals: (params: object) => [...engKeys.all, 'transmittals', params] as const,
+  deliverables: (params: PaginationParams) => [...engKeys.all, 'deliverables', params] as const,
+  drawings: (params: PaginationParams) => [...engKeys.all, 'drawings', params] as const,
+  rfis: (params: PaginationParams) => [...engKeys.all, 'rfis', params] as const,
+  submittals: (params: PaginationParams) => [...engKeys.all, 'submittals', params] as const,
+  transmittals: (params: PaginationParams) => [...engKeys.all, 'transmittals', params] as const,
 };
 
-export function useDeliverables(params: { page: number; pageSize: number }) {
+export function useDeliverables(params: PaginationParams) {
   return useQuery({
     queryKey: engKeys.deliverables(params),
     queryFn: async () => {
@@ -45,7 +46,7 @@ export function useUpdateDeliverableStatus() {
   });
 }
 
-export function useDrawings(params: { page: number; pageSize: number }) {
+export function useDrawings(params: PaginationParams) {
   return useQuery({
     queryKey: engKeys.drawings(params),
     queryFn: async () => {
@@ -75,7 +76,7 @@ export function usePublishDrawing() {
   });
 }
 
-export function useRfis(params: { page: number; pageSize: number }) {
+export function useRfis(params: PaginationParams) {
   return useQuery({
     queryKey: engKeys.rfis(params),
     queryFn: async () => {
@@ -106,7 +107,7 @@ export function useAnswerRfi() {
   });
 }
 
-export function useSubmittals(params: { page: number; pageSize: number }) {
+export function useSubmittals(params: PaginationParams) {
   return useQuery({
     queryKey: engKeys.submittals(params),
     queryFn: async () => {
@@ -136,7 +137,7 @@ export function useReviewSubmittal() {
   });
 }
 
-export function useTransmittals(params: { page: number; pageSize: number }) {
+export function useTransmittals(params: PaginationParams) {
   return useQuery({
     queryKey: engKeys.transmittals(params),
     queryFn: async () => {

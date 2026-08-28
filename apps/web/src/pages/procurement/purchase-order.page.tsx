@@ -3,8 +3,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, ConfirmActionButton, DataGrid, EmptyCell, Input, Label } from '@aec/ui';
 import { useCreatePo, usePos, usePrs, useReleasePo, type PurchaseOrder } from '@/features/procurement';
 import { formatIdr } from '@/shared/lib/format';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 const statusVariant: Record<string, 'default' | 'success' | 'warning' | 'muted'> = {
   DRAFT: 'default',

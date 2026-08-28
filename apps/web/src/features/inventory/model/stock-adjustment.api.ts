@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createStockAdjustmentSchema, stockAdjustmentSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
-export const adjKeys = { all: ['stock-adjustments'] as const, list: (params: object) => [...adjKeys.all, 'list', params] as const };
+export const adjKeys = { all: ['stock-adjustments'] as const, list: (params: PaginationParams) => [...adjKeys.all, 'list', params] as const };
 
-export function useStockAdjustments(params: { page: number; pageSize: number }) {
+export function useStockAdjustments(params: PaginationParams) {
   return useQuery({
     queryKey: adjKeys.list(params),
     queryFn: async () => {

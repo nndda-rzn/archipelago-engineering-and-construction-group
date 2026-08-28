@@ -3,8 +3,7 @@ import { Button, EntitySelect, Label } from '@aec/ui';
 import { useWbsTree } from '@/entities/wbs';
 import { useProjects } from '@/entities/project';
 import { WbsForm, WbsTree } from '@/features/project/ui';
-
-const PAGE_SIZE = 100;
+import { PAGE_SIZE_LARGE as PAGE_SIZE } from '@/shared/lib/pagination';
 
 export function WbsPage() {
   const [projectId, setProjectId] = useState('');

@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createWarehouseSchema, warehouseSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
-export const whKeys = { all: ['warehouses'] as const, list: (params: object) => [...whKeys.all, 'list', params] as const };
+export const whKeys = { all: ['warehouses'] as const, list: (params: PaginationParams) => [...whKeys.all, 'list', params] as const };
 
-export function useWarehouses(params: { page: number; pageSize: number }) {
+export function useWarehouses(params: PaginationParams) {
   return useQuery({
     queryKey: whKeys.list(params),
     queryFn: async () => {

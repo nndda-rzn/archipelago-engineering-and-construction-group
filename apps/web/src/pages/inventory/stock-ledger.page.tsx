@@ -3,8 +3,7 @@ import { Button, DataGrid } from '@aec/ui';
 import { useStockLedger, useStockSummary, useWarehouses } from '@/features/inventory';
 import { WarehouseForm, ledgerColumns } from '@/features/inventory';
 import { formatIdr } from '@/shared/lib/format';
-
-const PAGE_SIZE = 20;
+import { PAGE_SIZE } from '@/shared/lib/pagination';
 
 export function StockLedgerPage() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });

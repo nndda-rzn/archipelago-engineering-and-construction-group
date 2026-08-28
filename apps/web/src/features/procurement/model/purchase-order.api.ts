@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { purchaseOrderSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
-export const poKeys = { all: ['po'] as const, list: (params: object) => [...poKeys.all, 'list', params] as const };
+export const poKeys = { all: ['po'] as const, list: (params: PaginationParams) => [...poKeys.all, 'list', params] as const };
 
-export function usePos(params: { page: number; pageSize: number }) {
+export function usePos(params: PaginationParams) {
   return useQuery({
     queryKey: poKeys.list(params),
     queryFn: async () => {

@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { stockLedgerEntrySchema, stockSummarySchema } from '@aec/api-contracts';
 import { getJson } from '@/shared/lib/http';
+import { type PaginationParams } from '@/shared/lib/pagination';
 
-export const ledgerKeys = { all: ['stock-ledger'] as const, list: (params: object) => [...ledgerKeys.all, 'list', params] as const, summary: (projectId: string | null) => [...ledgerKeys.all, 'summary', projectId] as const };
+export const ledgerKeys = { all: ['stock-ledger'] as const, list: (params: PaginationParams & { projectId?: string }) => [...ledgerKeys.all, 'list', params] as const, summary: (projectId: string | null) => [...ledgerKeys.all, 'summary', projectId] as const };
 
-export function useStockLedger(params: { page: number; pageSize: number; projectId?: string }) {
+export function useStockLedger(params: PaginationParams & { projectId?: string }) {
   return useQuery({
     queryKey: ledgerKeys.list(params),
     queryFn: async () => {

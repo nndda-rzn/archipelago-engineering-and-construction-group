@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { chartOfAccountSchema, createChartOfAccountSchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
 
-export const coaKeys = { all: ['chart-of-accounts'] as const, list: (params: object) => [...coaKeys.all, 'list', params] as const };
+export const coaKeys = { all: ['chart-of-accounts'] as const, list: (params: { legalEntityId?: string }) => [...coaKeys.all, 'list', params] as const };
 
 export function useChartOfAccounts(params: { legalEntityId?: string }) {
   return useQuery({
