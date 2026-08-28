@@ -2,6 +2,7 @@ import { Badge, Button, type BadgeVariant } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useUpdateFiscalPeriodStatus } from '../model/master-data.api';
 import type { FiscalPeriod, Vendor } from '@aec/api-contracts';
+import { formatDate } from '@/shared/lib/format';
 
 type MasterDataStatus = 'ACTIVE' | 'OPEN' | 'CLOSED' | 'LOCKED' | 'SOFT_CLOSED' | 'FUTURE' | 'INACTIVE';
 
@@ -52,11 +53,11 @@ export const periodColumns = [
   }),
   periodHelper.accessor('startDate', {
     header: 'Mulai',
-    cell: (info) => <span className="font-mono text-neutral-600">{new Date(info.getValue()).toLocaleDateString('id-ID')}</span>,
+    cell: (info) => <span className="font-mono text-neutral-600">{formatDate(info.getValue())}</span>,
   }),
   periodHelper.accessor('endDate', {
     header: 'Selesai',
-    cell: (info) => <span className="font-mono text-neutral-600">{new Date(info.getValue()).toLocaleDateString('id-ID')}</span>,
+    cell: (info) => <span className="font-mono text-neutral-600">{formatDate(info.getValue())}</span>,
   }),
   periodHelper.accessor('status', {
     header: 'Status',

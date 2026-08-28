@@ -5,6 +5,7 @@ import { useLegalEntities } from '@/entities/legal-entity';
 import { useJournals, usePostJournal, type Journal } from '@/features/finance';
 import { JournalForm } from '@/features/finance';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
+import { formatDate } from '@/shared/lib/format';
 
 const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
   DRAFT: 'default',
@@ -27,7 +28,7 @@ const columns = [
   }),
   columnHelper.accessor('date', {
     header: 'Tanggal',
-    cell: (info) => new Date(info.getValue()).toLocaleDateString('id-ID'),
+    cell: (info) => formatDate(info.getValue()),
   }),
   columnHelper.accessor('source', {
     header: 'Sumber',

@@ -2,6 +2,7 @@ import { Badge, Button, type BadgeVariant } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useApproveTimesheet } from '../model/hcm.api';
 import type { Timesheet } from '@aec/api-contracts';
+import { formatDate } from '@/shared/lib/format';
 
 type TimesheetStatus = 'SUBMITTED' | 'APPROVED' | 'REJECTED';
 
@@ -12,7 +13,7 @@ export const timesheetStatusVariant: Record<TimesheetStatus, BadgeVariant> = {
 const columnHelper = createColumnHelper<Timesheet>();
 
 export const timesheetColumns = [
-  columnHelper.accessor('workDate', { header: 'Tanggal', cell: (i) => <span className="font-mono text-neutral-600">{new Date(i.getValue()).toLocaleDateString('id-ID')}</span> }),
+  columnHelper.accessor('workDate', { header: 'Tanggal', cell: (i) => <span className="font-mono text-neutral-600">{formatDate(i.getValue())}</span> }),
   columnHelper.accessor('employee', { header: 'Karyawan', cell: (i) => <span className="text-neutral-800 font-medium">{i.getValue()?.name}</span> }),
   columnHelper.accessor('project', { header: 'Project', cell: (i) => <span className="text-neutral-700">{i.getValue()?.code}</span> }),
   columnHelper.accessor('activity', { header: 'Aktivitas', cell: (i) => <span className="text-neutral-600">{i.getValue() ?? '-'}</span> }),
