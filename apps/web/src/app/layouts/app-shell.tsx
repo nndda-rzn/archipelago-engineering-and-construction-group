@@ -224,7 +224,7 @@ export function AppShell() {
         <span className="text-h2 font-semibold tracking-tight text-neutral-900">AEC ERP</span>
       </div>
       <div className="flex-1 overflow-y-auto">{sidebarContentNav}</div>
-      <div className="border-t border-neutral-200 px-4 py-3 text-caption text-neutral-400">AEC ERP v0.1.0</div>
+      <div className="border-t border-neutral-200 px-4 py-3 text-caption text-neutral-500">AEC ERP v0.1.0</div>
     </>
   );
 
@@ -268,7 +268,7 @@ export function AppShell() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto">{sidebarContentNav}</div>
-            <div className="border-t border-neutral-200 px-4 py-3 text-caption text-neutral-400">AEC ERP v0.1.0</div>
+            <div className="border-t border-neutral-200 px-4 py-3 text-caption text-neutral-500">AEC ERP v0.1.0</div>
           </aside>
         </div>
       )}

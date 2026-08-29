@@ -139,7 +139,7 @@ export function LoginPage() {
           </form>
 
           <div className="mt-8">
-            <p className="text-caption font-medium uppercase tracking-wide text-neutral-400">Akun demo</p>
+            <p className="text-caption font-medium uppercase tracking-wide text-neutral-500">Akun demo</p>
             <div className="mt-2 space-y-2">
               {DEMO_CREDENTIALS.map((c) => (
                 <button
@@ -153,7 +153,7 @@ export function LoginPage() {
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-caption text-neutral-400">Klik untuk mengisi otomatis.</p>
+            <p className="mt-2 text-caption text-neutral-500">Klik untuk mengisi otomatis.</p>
           </div>
         </div>
       </div>
