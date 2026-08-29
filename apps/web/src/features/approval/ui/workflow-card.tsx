@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, type BadgeVariant, Button, ConfirmActionButton, Input, Label } from '@aec/ui';
+import { Badge, type BadgeVariant, Button, ConfirmActionButton, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useAddWorkflowStep, usePublishWorkflow, useNewWorkflowVersion, type WorkflowDefinition } from '../model/approval.api';
 import { formatNumber } from '@/shared/lib/format';
 
@@ -105,13 +105,18 @@ export function WorkflowCard({ workflow }: { workflow: WorkflowDefinition }) {
             <Label htmlFor={`step-cond-${workflow.id}`}>Kondisi (opsional)</Label>
             <div className="flex gap-1">
               <Input id={`step-cond-${workflow.id}`} placeholder="totalAmount" value={condField} onChange={(e) => setCondField(e.target.value)} className="h-8 w-full" />
-              <select value={condOp} onChange={(e) => setCondOp(e.target.value)} aria-label="Operator" className="h-8 w-14 rounded-md border border-neutral-200 bg-white px-1 text-caption">
-                <option value=">">&gt;</option>
-                <option value="<">&lt;</option>
-                <option value=">=">&gt;=</option>
-                <option value="<=">&lt;=</option>
-                <option value="==">=</option>
-              </select>
+              <Select value={condOp} onValueChange={setCondOp}>
+                <SelectTrigger id={`step-cond-op-${workflow.id}`} className="h-8 w-14" aria-label="Operator">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value=">">&gt;</SelectItem>
+                  <SelectItem value="<">&lt;</SelectItem>
+                  <SelectItem value=">=">&gt;=</SelectItem>
+                  <SelectItem value="<=">&lt;=</SelectItem>
+                  <SelectItem value="==">=</SelectItem>
+                </SelectContent>
+              </Select>
               <Input type="number" value={condValue || ''} onChange={(e) => setCondValue(Number(e.target.value))} className="h-8 w-20" aria-label="Nilai kondisi" />
             </div>
           </div>

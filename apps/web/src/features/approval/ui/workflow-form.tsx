@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateWorkflowDefinition } from '../model/approval.api';
 
 export function CreateWorkflowForm({ onDone }: { onDone: () => void }) {
@@ -29,15 +29,15 @@ export function CreateWorkflowForm({ onDone }: { onDone: () => void }) {
         </div>
         <div>
           <Label htmlFor="wf-type">Tipe Transaksi</Label>
-          <select
-            id="wf-type"
-            value={transactionType}
-            onChange={(e) => setTransactionType(e.target.value)}
-            className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
-          >
-            <option value="PurchaseRequisition">PurchaseRequisition</option>
-            <option value="PurchaseOrder">PurchaseOrder</option>
-          </select>
+          <Select value={transactionType} onValueChange={setTransactionType}>
+            <SelectTrigger id="wf-type">
+              <SelectValue placeholder="Pilih tipe…" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="PurchaseRequisition">PurchaseRequisition</SelectItem>
+              <SelectItem value="PurchaseOrder">PurchaseOrder</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <div className="mt-4 flex justify-end gap-2">
