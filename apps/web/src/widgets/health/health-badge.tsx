@@ -4,7 +4,7 @@ export function HealthBadge() {
   const { data, isLoading, isError, refetch } = useHealth();
 
   if (isLoading) {
-    return <span className="text-sm text-neutral-500">Memeriksa API...</span>;
+    return <span className="text-sm text-neutral-500">Memeriksa API…</span>;
   }
 
   if (isError || !data) {
