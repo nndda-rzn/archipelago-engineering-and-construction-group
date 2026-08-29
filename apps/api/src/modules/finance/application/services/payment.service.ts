@@ -158,8 +158,22 @@ export class PaymentService {
     const [items, total] = await this.prisma.$transaction([
       this.prisma.payment.findMany({
         where,
-        include: {
-          items: { include: { invoice: { select: { invoiceNumber: true, totalAmount: true } } } },
+        select: {
+          id: true,
+          paymentNumber: true,
+          projectId: true,
+          vendor: true,
+          bankAccount: true,
+          currency: true,
+          totalAmount: true,
+          status: true,
+          paymentDate: true,
+          reference: true,
+          remark: true,
+          createdAt: true,
+          items: {
+            select: { id: true, invoiceId: true, amount: true, invoice: { select: { invoiceNumber: true, totalAmount: true } } },
+          },
           project: { select: { code: true, name: true } },
         },
         orderBy: { createdAt: 'desc' },

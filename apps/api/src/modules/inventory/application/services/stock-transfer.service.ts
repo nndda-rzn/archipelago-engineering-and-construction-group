@@ -178,8 +178,16 @@ export class StockTransferService {
     const [items, total] = await this.prisma.$transaction([
       this.prisma.stockTransfer.findMany({
         where,
-        include: {
-          items: true,
+        select: {
+          id: true,
+          transferNumber: true,
+          projectId: true,
+          fromWarehouseId: true,
+          toWarehouseId: true,
+          status: true,
+          remark: true,
+          createdAt: true,
+          items: { select: { id: true, description: true, quantity: true, unit: true, wbsItemId: true } },
           project: { select: { code: true, name: true } },
           fromWarehouse: { select: { code: true, name: true } },
           toWarehouse: { select: { code: true, name: true } },
