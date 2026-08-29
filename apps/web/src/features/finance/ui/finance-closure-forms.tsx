@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import {
   useCreateIntercompany,
   useStartPeriodClose,
@@ -28,17 +28,21 @@ export function IntercompanyForm() {
       <div className="flex items-end gap-3">
         <div>
           <Label htmlFor="ic-from">Dari Entity</Label>
-          <select id="ic-from" value={fromEntityId} onChange={(e) => setFromEntityId(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih.</option>
-            {(entities?.items ?? []).map((e) => <option key={e.id} value={e.id}>{e.code}</option>)}
-          </select>
+          <Select value={fromEntityId} onValueChange={setFromEntityId}>
+            <SelectTrigger id="ic-from"><SelectValue placeholder="Pilih." /></SelectTrigger>
+            <SelectContent>
+              {(entities?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="ic-to">Ke Entity</Label>
-          <select id="ic-to" value={toEntityId} onChange={(e) => setToEntityId(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih.</option>
-            {(entities?.items ?? []).map((e) => <option key={e.id} value={e.id}>{e.code}</option>)}
-          </select>
+          <Select value={toEntityId} onValueChange={setToEntityId}>
+            <SelectTrigger id="ic-to"><SelectValue placeholder="Pilih." /></SelectTrigger>
+            <SelectContent>
+              {(entities?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="ic-amt">Nilai</Label>
@@ -65,10 +69,12 @@ export function PeriodCloseForm() {
       <div className="flex items-end gap-3">
         <div>
           <Label htmlFor="pc-entity">Entity</Label>
-          <select id="pc-entity" value={legalEntityId} onChange={(e) => setLegalEntityId(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih.</option>
-            {(entities?.items ?? []).map((e) => <option key={e.id} value={e.id}>{e.code}</option>)}
-          </select>
+          <Select value={legalEntityId} onValueChange={setLegalEntityId}>
+            <SelectTrigger id="pc-entity"><SelectValue placeholder="Pilih." /></SelectTrigger>
+            <SelectContent>
+              {(entities?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="pc-period">Periode</Label>
@@ -92,15 +98,12 @@ export function EntitySelector({ entityId, setEntityId }: { entityId: string; se
   return (
     <div className="mb-4 w-72">
       <Label htmlFor="fs-entity">Legal Entity</Label>
-      <select
-        id="fs-entity"
-        value={entityId}
-        onChange={(e) => setEntityId(e.target.value)}
-        className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body text-neutral-900 hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
-      >
-        <option value="">Pilih.</option>
-        {(entities?.items ?? []).map((e) => <option key={e.id} value={e.id}>{e.code} - {e.legalName}</option>)}
-      </select>
+      <Select value={entityId} onValueChange={setEntityId}>
+        <SelectTrigger id="fs-entity"><SelectValue placeholder="Pilih." /></SelectTrigger>
+        <SelectContent>
+          {(entities?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code} - {e.legalName}</SelectItem>)}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

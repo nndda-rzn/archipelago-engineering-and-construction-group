@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { usePos } from '@/features/procurement';
 import { useCreateVendorInvoice } from '../model/finance.api';
 
@@ -35,10 +35,12 @@ export function InvoiceForm({ onDone }: { onDone: () => void }) {
       <div className="grid grid-cols-3 gap-4">
         <div>
           <Label htmlFor="inv-po">PO (harus RELEASED)</Label>
-          <select id="inv-po" value={poId} onChange={(e) => { setPoId(e.target.value); setLines([]); }} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20">
-            <option value="">Pilih PO…</option>
-            {releasedPos.map((po) => <option key={po.id} value={po.id}>{po.poNumber} — {po.vendor}</option>)}
-          </select>
+          <Select value={poId} onValueChange={(v) => { setPoId(v); setLines([]); }}>
+            <SelectTrigger id="inv-po"><SelectValue placeholder="Pilih PO…" /></SelectTrigger>
+            <SelectContent>
+              {releasedPos.map((po) => <SelectItem key={po.id} value={po.id}>{po.poNumber} — {po.vendor}</SelectItem>)}
+            </SelectContent>
+          </Select>
           {releasedPos.length === 0 && <p className="mt-1 text-caption text-neutral-500">Tidak ada PO RELEASED.</p>}
         </div>
         <div>

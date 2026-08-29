@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateCashForecast } from '../model/treasury.api';
 import { useLegalEntities } from '@/entities/legal-entity';
 
@@ -23,10 +23,12 @@ export function ForecastForm() {
       <div className="flex items-end gap-3">
         <div>
           <Label htmlFor="cf-entity">Entity</Label>
-          <select id="cf-entity" value={legalEntityId} onChange={(e) => setLegalEntityId(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih…</option>
-            {(entities?.items ?? []).map((e) => <option key={e.id} value={e.id}>{e.code}</option>)}
-          </select>
+          <Select value={legalEntityId} onValueChange={setLegalEntityId}>
+            <SelectTrigger id="cf-entity"><SelectValue placeholder="Pilih…" /></SelectTrigger>
+            <SelectContent>
+              {(entities?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="cf-period">Periode</Label>

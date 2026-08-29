@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button } from '@aec/ui';
+import { Badge, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useLegalEntities } from '@/entities/legal-entity';
 import { useTrialBalance } from '@/features/finance';
 import { formatIdr as fmt } from '@/shared/lib/format';
@@ -37,15 +37,12 @@ export function TrialBalancePage() {
       <div className="mb-6 flex flex-wrap items-end gap-4 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
         <div>
           <label htmlFor="tb-entity" className="mb-1 block text-caption font-medium uppercase tracking-wide text-neutral-500">Legal Entity</label>
-          <select
-            id="tb-entity"
-            value={defaultEntityId}
-            onChange={(e) => setEntityId(e.target.value)}
-            className="flex h-9 w-48 rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
-          >
-            <option value="">Pilih entity…</option>
-            {(entities.data?.items ?? []).map((en) => <option key={en.id} value={en.id}>{en.code}</option>)}
-          </select>
+          <Select value={defaultEntityId} onValueChange={setEntityId}>
+            <SelectTrigger id="tb-entity" className="w-48"><SelectValue placeholder="Pilih entity…" /></SelectTrigger>
+            <SelectContent>
+              {(entities.data?.items ?? []).map((en) => <SelectItem key={en.id} value={en.id}>{en.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <label htmlFor="tb-from" className="mb-1 block text-caption font-medium uppercase tracking-wide text-neutral-500">Dari</label>

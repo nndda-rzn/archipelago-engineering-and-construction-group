@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, ConfirmActionButton, DataGrid, Input, Label } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, DataGrid, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useClientInvoices, useCreateClientInvoice, usePostClientInvoice, useProgressClaims, type ClientInvoice } from '@/features/finance';
 import { formatIdr as fmt } from '@/shared/lib/format';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
@@ -80,19 +80,16 @@ function ClientInvoiceForm({ onDone }: { onDone: () => void }) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="cinv-claim">Claim CERTIFIED</Label>
-          <select
-            id="cinv-claim"
-            value={claimId}
-            onChange={(e) => setClaimId(e.target.value)}
-            className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
-          >
-            <option value="">Pilih claim…</option>
-            {certifiedClaims.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.claimNumber} — {fmt(Number(c.certifiedAmount ?? c.amount))}
-              </option>
-            ))}
-          </select>
+          <Select value={claimId} onValueChange={setClaimId}>
+            <SelectTrigger id="cinv-claim"><SelectValue placeholder="Pilih claim…" /></SelectTrigger>
+            <SelectContent>
+              {certifiedClaims.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.claimNumber} — {fmt(Number(c.certifiedAmount ?? c.amount))}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="cinv-tax">PPN Keluaran</Label>

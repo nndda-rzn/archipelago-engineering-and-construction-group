@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateChartOfAccount } from '../model/chart-of-account.api';
 import { useChartOfAccounts } from '../model/chart-of-account.api';
 
@@ -24,11 +24,26 @@ export function CoaForm({ onDone, entityId }: { onDone: () => void; entityId: st
         <div><Label htmlFor="coa-name">Nama</Label><Input id="coa-name" placeholder="mis. Aset Tetap" value={name} onChange={(e) => setName(e.target.value)} /></div>
         <div>
           <Label htmlFor="coa-type">Tipe Akun</Label>
-          <select id="coa-type" value={accountType} onChange={(e) => setAccountType(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body"><option value="ASSET">Aset</option><option value="LIABILITY">Liabilitas</option><option value="EQUITY">Ekuitas</option><option value="REVENUE">Pendapatan</option><option value="EXPENSE">Beban</option></select>
+          <Select value={accountType} onValueChange={setAccountType}>
+            <SelectTrigger id="coa-type"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ASSET">Aset</SelectItem>
+              <SelectItem value="LIABILITY">Liabilitas</SelectItem>
+              <SelectItem value="EQUITY">Ekuitas</SelectItem>
+              <SelectItem value="REVENUE">Pendapatan</SelectItem>
+              <SelectItem value="EXPENSE">Beban</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="coa-balance">Saldo Normal</Label>
-          <select id="coa-balance" value={normalBalance} onChange={(e) => setNormalBalance(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body"><option value="DEBIT">Debit</option><option value="CREDIT">Kredit</option></select>
+          <Select value={normalBalance} onValueChange={setNormalBalance}>
+            <SelectTrigger id="coa-balance"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="DEBIT">Debit</SelectItem>
+              <SelectItem value="CREDIT">Kredit</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="col-span-2"><Label htmlFor="coa-desc">Deskripsi (opsional)</Label><Input id="coa-desc" placeholder="Keterangan akun" value={description} onChange={(e) => setDescription(e.target.value)} /></div>
       </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useCreateSubcontract, useCreateSubcontractProgress } from '../model/subcontract.api';
 import type { Subcontract } from '@aec/api-contracts';
@@ -25,10 +25,12 @@ export function SubconForm({ onDone }: { onDone: () => void }) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="sc-project">Project</Label>
-          <select id="sc-project" value={projectId} onChange={(e) => setProjectId(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih project...</option>
-            {(projects.data?.items ?? []).map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}
-          </select>
+          <Select value={projectId} onValueChange={setProjectId}>
+            <SelectTrigger id="sc-project"><SelectValue placeholder="Pilih project…" /></SelectTrigger>
+            <SelectContent>
+              {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div><Label htmlFor="sc-vendor">Vendor Subkon</Label><Input id="sc-vendor" placeholder="PT. Subkon Sejahtera" value={vendor} onChange={(e) => setVendor(e.target.value)} /></div>
         <div><Label htmlFor="sc-title">Judul Pekerjaan</Label><Input id="sc-title" placeholder="mis. Struktur baja area B" value={title} onChange={(e) => setTitle(e.target.value)} /></div>

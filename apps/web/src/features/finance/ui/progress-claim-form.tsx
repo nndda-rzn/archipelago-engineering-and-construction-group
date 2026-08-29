@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useWorkPackages } from '@/features/construction';
 import { useCreateProgressClaim } from '../model/progress-claim.api';
@@ -45,26 +45,33 @@ export function ClaimForm({ onDone }: { onDone: () => void }) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="clm-project">Project</Label>
-          <select id="clm-project" value={projectId} onChange={(e) => { setProjectId(e.target.value); setWorkPackageId(''); }} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih project…</option>
-            {(projects.data?.items ?? []).map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}
-          </select>
+          <Select value={projectId} onValueChange={(v) => { setProjectId(v); setWorkPackageId(''); }}>
+            <SelectTrigger id="clm-project"><SelectValue placeholder="Pilih project…" /></SelectTrigger>
+            <SelectContent>
+              {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="clm-type">Tipe Klaim</Label>
-          <select id="clm-type" value={claimType} onChange={(e) => setClaimType(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body">
-            {CLAIM_TYPES.map((t) => <option key={t} value={t}>{t} — {claimTypeLabel[t]}</option>)}
-          </select>
+          <Select value={claimType} onValueChange={setClaimType}>
+            <SelectTrigger id="clm-type"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {CLAIM_TYPES.map((t) => <SelectItem key={t} value={t}>{t} — {claimTypeLabel[t]}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div><Label htmlFor="clm-period">Periode</Label><Input id="clm-period" placeholder="mis. 2026-08" value={period} onChange={(e) => setPeriod(e.target.value)} /></div>
         <div><Label htmlFor="clm-amount">Nilai Klaim</Label><Input id="clm-amount" type="number" min={0} step={100000} value={amount || ''} onChange={(e) => setAmount(Number(e.target.value))} /></div>
         {isTimeType && <div><Label htmlFor="clm-eot">Requested Extension Days</Label><Input id="clm-eot" type="number" min={1} max={3650} value={requestedExtensionDays} onChange={(e) => setRequestedExtensionDays(e.target.value)} /></div>}
         <div>
           <Label htmlFor="clm-wp">Work Package</Label>
-          <select id="clm-wp" value={workPackageId} onChange={(e) => setWorkPackageId(e.target.value)} disabled={!projectId} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body disabled:bg-neutral-50">
-            <option value="">Tanpa work package</option>
-            {(workPackages?.items ?? []).map((w) => <option key={w.id} value={w.id}>{w.wpNumber} — {w.title} ({w.latestProgress ?? 0}%)</option>)}
-          </select>
+          <Select value={workPackageId} onValueChange={setWorkPackageId} disabled={!projectId}>
+            <SelectTrigger id="clm-wp"><SelectValue placeholder="Tanpa work package" /></SelectTrigger>
+            <SelectContent>
+              {(workPackages?.items ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{w.wpNumber} — {w.title} ({w.latestProgress ?? 0}%)</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div><Label htmlFor="clm-billable">Billable Progress (%)</Label><Input id="clm-billable" type="number" min={0} max={100} value={billableProgress} onChange={(e) => setBillableProgress(e.target.value)} disabled={!selectedWp} /></div>
         <div><Label htmlFor="clm-desc">Deskripsi</Label><Input id="clm-desc" value={description} onChange={(e) => setDescription(e.target.value)} /></div>

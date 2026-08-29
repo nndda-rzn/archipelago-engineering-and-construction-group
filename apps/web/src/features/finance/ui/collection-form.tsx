@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useCreateCollection } from '../model/collection.api';
 import { useClientInvoices } from '../model/client-invoice.api';
@@ -41,10 +41,12 @@ export function CollectionForm({ onDone }: { onDone: () => void }) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="col-project">Project</Label>
-          <select id="col-project" value={projectId} onChange={(e) => { setProjectId(e.target.value); setLines([]); }} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih project…</option>
-            {(projects.data?.items ?? []).map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}
-          </select>
+          <Select value={projectId} onValueChange={(v) => { setProjectId(v); setLines([]); }}>
+            <SelectTrigger id="col-project"><SelectValue placeholder="Pilih project…" /></SelectTrigger>
+            <SelectContent>
+              {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div><Label htmlFor="col-client">Klien</Label><Input id="col-client" placeholder="PT Klien Utama" value={client} onChange={(e) => setClient(e.target.value)} /></div>
         <div><Label htmlFor="col-ref">Referensi (opsional)</Label><Input id="col-ref" value={reference} onChange={(e) => setReference(e.target.value)} /></div>

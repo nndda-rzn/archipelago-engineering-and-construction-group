@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateBankAccount } from '../model/treasury.api';
 import { useLegalEntities } from '@/entities/legal-entity';
 
@@ -25,10 +25,12 @@ export function BankAccountForm() {
       <div className="flex items-end gap-3">
         <div>
           <Label htmlFor="ba-entity">Entity</Label>
-          <select id="ba-entity" value={legalEntityId} onChange={(e) => setLegalEntityId(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih…</option>
-            {(entities?.items ?? []).map((e) => <option key={e.id} value={e.id}>{e.code}</option>)}
-          </select>
+          <Select value={legalEntityId} onValueChange={setLegalEntityId}>
+            <SelectTrigger id="ba-entity"><SelectValue placeholder="Pilih…" /></SelectTrigger>
+            <SelectContent>
+              {(entities?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="ba-code">Kode Bank</Label>
@@ -48,9 +50,12 @@ export function BankAccountForm() {
         </div>
         <div>
           <Label htmlFor="ba-ccy">Mata Uang</Label>
-          <select id="ba-ccy" value={currency} onChange={(e) => setCurrency(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            {['IDR', 'USD', 'EUR', 'SGD', 'JPY'].map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <Select value={currency} onValueChange={setCurrency}>
+            <SelectTrigger id="ba-ccy"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {['IDR', 'USD', 'EUR', 'SGD', 'JPY'].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="ba-bal">Saldo Awal</Label>
