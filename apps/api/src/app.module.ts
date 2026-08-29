@@ -2,6 +2,7 @@ import { Module, ValidationPipe } from '@nestjs/common';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { LoggerModule } from 'nestjs-pino';
 import { HealthController } from './health/health.controller';
 import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
 import { FoundationModule } from './modules/foundation';
@@ -23,6 +24,17 @@ import { TreasuryModule } from './modules/treasury';
 
 @Module({
   imports: [
+    LoggerModule.forRoot({
+      pinoHttp: {
+        level: process.env.LOG_LEVEL ?? 'debug',
+        transport:
+          process.env.NODE_ENV === 'production'
+            ? undefined
+            : { target: 'pino-pretty', options: { singleLine: true } },
+        autoLogging: true,
+        redact: ['req.headers.authorization', 'req.headers.cookie'],
+      },
+    }),
     ThrottlerModule.forRoot([
       {
         name: 'short',

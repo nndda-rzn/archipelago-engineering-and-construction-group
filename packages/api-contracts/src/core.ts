@@ -43,3 +43,10 @@ export const healthResponseSchema = z.object({
   timestamp: z.string(),
 });
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
+
+export const readinessResponseSchema = z.object({
+  status: z.enum(['ok', 'error']),
+  db: z.enum(['up', 'down']),
+  timestamp: z.string(),
+});
+export type ReadinessResponse = z.infer<typeof readinessResponseSchema>;

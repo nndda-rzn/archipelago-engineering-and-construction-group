@@ -27,6 +27,6 @@ import { FoundationHardeningService } from './application/services/foundation-ha
   ],
   controllers: [AuthController, AuditController, UserController, RoleController, LegalEntityController, FoundationHardeningController],
   providers: [AuthService, AuditService, UserService, RoleService, LegalEntityService, FoundationHardeningService, PrismaService, Reflector, AuthGuard, PermissionsGuard],
-  exports: [AuthService, AuditService, JwtModule, AuthGuard, PermissionsGuard],
+  exports: [AuthService, AuditService, JwtModule, AuthGuard, PermissionsGuard, PrismaService],
 })
 export class FoundationModule {}

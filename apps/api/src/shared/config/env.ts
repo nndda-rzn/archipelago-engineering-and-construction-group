@@ -16,6 +16,7 @@ export const envSchema = z.object({
     .transform((v) => v === 'true' || v === '1'),
   THROTTLE_TTL: z.coerce.number().int().min(1).default(60),
   THROTTLE_LIMIT: z.coerce.number().int().min(1).default(100),
+  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('debug'),
 });
 
 export type Env = z.infer<typeof envSchema>;
