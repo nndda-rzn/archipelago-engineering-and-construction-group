@@ -1,4 +1,4 @@
-import { Input, Label } from '@aec/ui';
+import { Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import type { Project } from '@aec/api-contracts';
 import type { Warehouse } from '@aec/api-contracts';
 
@@ -31,27 +31,28 @@ export function IssueHeaderFields({
     <div className="grid grid-cols-2 gap-4">
       <div>
         <Label htmlFor="mi-project">Project</Label>
-        <select
-          id="mi-project"
+        <Select
           value={projectId}
-          onChange={(e) => { onProjectChange(e.target.value); onWarehouseChange(''); }}
-          className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
+          onValueChange={(v) => { onProjectChange(v); onWarehouseChange(''); }}
         >
-          <option value="">Pilih project…</option>
-          {projects.map((p) => <option key={p.id} value={p.id}>{p.code} — {p.name}</option>)}
-        </select>
+          <SelectTrigger id="mi-project">
+            <SelectValue placeholder="Pilih project…" />
+          </SelectTrigger>
+          <SelectContent>
+            {projects.map((p) => <SelectItem key={p.id} value={p.id}>{p.code} — {p.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
       <div>
         <Label htmlFor="mi-wh">Warehouse</Label>
-        <select
-          id="mi-wh"
-          value={warehouseId}
-          onChange={(e) => onWarehouseChange(e.target.value)}
-          className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
-        >
-          <option value="">Pilih warehouse…</option>
-          {projectWhs.map((w) => <option key={w.id} value={w.id}>{w.code} — {w.name}</option>)}
-        </select>
+        <Select value={warehouseId} onValueChange={onWarehouseChange}>
+          <SelectTrigger id="mi-wh">
+            <SelectValue placeholder="Pilih warehouse…" />
+          </SelectTrigger>
+          <SelectContent>
+            {projectWhs.map((w) => <SelectItem key={w.id} value={w.id}>{w.code} — {w.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
       <div>
         <Label htmlFor="mi-to">Issue ke</Label>
@@ -59,12 +60,17 @@ export function IssueHeaderFields({
       </div>
       <div>
         <Label htmlFor="mi-reason">Alasan</Label>
-        <select id="mi-reason" value={reason} onChange={(e) => onReasonChange(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20">
-          <option value="CONSTRUCTION">CONSTRUCTION</option>
-          <option value="MAINTENANCE">MAINTENANCE</option>
-          <option value="CONSUMPTION">CONSUMPTION</option>
-          <option value="OTHERS">OTHERS</option>
-        </select>
+        <Select value={reason} onValueChange={onReasonChange}>
+          <SelectTrigger id="mi-reason">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="CONSTRUCTION">CONSTRUCTION</SelectItem>
+            <SelectItem value="MAINTENANCE">MAINTENANCE</SelectItem>
+            <SelectItem value="CONSUMPTION">CONSUMPTION</SelectItem>
+            <SelectItem value="OTHERS">OTHERS</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
