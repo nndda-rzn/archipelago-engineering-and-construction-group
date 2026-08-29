@@ -24,7 +24,7 @@ function AnomalyRow({ anomaly }: { anomaly: Anomaly }) {
       <div className="flex items-center gap-3">
         <Badge variant={severityVariant[anomaly.severity] ?? 'default'}>{anomaly.severity}</Badge>
         <span className="font-mono text-caption text-neutral-500">{anomaly.type}</span>
-        {anomaly.projectCode && <span className="font-mono text-caption text-neutral-400">{anomaly.projectCode}</span>}
+        {anomaly.projectCode && <span className="font-mono text-caption text-neutral-500">{anomaly.projectCode}</span>}
       </div>
       <span className="text-body-sm text-neutral-700">{anomaly.message}</span>
     </div>

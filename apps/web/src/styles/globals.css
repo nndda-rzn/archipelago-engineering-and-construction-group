@@ -119,7 +119,7 @@ body {
 /* Focus ring universal */
 *:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--racing-red-400);
+  box-shadow: 0 0 0 2px var(--racing-red-600);
 }
 
 /* Selection */
