@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, DataGrid } from '@aec/ui';
+import { Button, DataGrid, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useEquipment, type Equipment } from '@/features/hcm';
 import { EquipmentForm, EquipmentDetail, equipmentColumns } from '@/features/hcm/ui';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
@@ -26,17 +26,17 @@ export function EquipmentPage() {
           <p className="mt-1 text-body-sm text-neutral-500">Aset alat berat, PM, breakdown, utilization (FR-HCM-005..009)</p>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body"
-          >
-            <option value="">Semua Status</option>
-            <option value="AVAILABLE">AVAILABLE</option>
-            <option value="ASSIGNED">ASSIGNED</option>
-            <option value="MAINTENANCE">MAINTENANCE</option>
-            <option value="BREAKDOWN">BREAKDOWN</option>
-          </select>
+          <Select aria-label="Filter status" value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Semua Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="AVAILABLE">AVAILABLE</SelectItem>
+              <SelectItem value="ASSIGNED">ASSIGNED</SelectItem>
+              <SelectItem value="MAINTENANCE">MAINTENANCE</SelectItem>
+              <SelectItem value="BREAKDOWN">BREAKDOWN</SelectItem>
+            </SelectContent>
+          </Select>
           <Button size="sm" onClick={() => setShowForm((s) => !s)}>
             {showForm ? 'Tutup' : '+ Buat Equipment'}
           </Button>

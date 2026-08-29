@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, DataGrid } from '@aec/ui';
+import { Button, DataGrid, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useTimesheets } from '@/features/hcm';
 import { TimesheetForm, timesheetColumns } from '@/features/hcm/ui';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
@@ -18,11 +18,15 @@ export function TimesheetsPage() {
           <p className="mt-1 text-body-sm text-neutral-500">Jam kerja karyawan ke project/WBS (FR-HCM-004)</p>
         </div>
         <div className="flex items-center gap-2">
-          <select aria-label="Filter status" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPagination({ pageIndex: 0, pageSize: PAGE_SIZE }); }} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Semua status</option>
-            <option value="SUBMITTED">SUBMITTED</option>
-            <option value="APPROVED">APPROVED</option>
-          </select>
+          <Select aria-label="Filter status" value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPagination((p) => ({ ...p, pageIndex: 0 })); }}>
+            <SelectTrigger>
+              <SelectValue placeholder="Semua status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="SUBMITTED">SUBMITTED</SelectItem>
+              <SelectItem value="APPROVED">APPROVED</SelectItem>
+            </SelectContent>
+          </Select>
           <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Tutup' : '+ Kirim Timesheet'}</Button>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, DataGrid } from '@aec/ui';
+import { Button, DataGrid, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useAssignments, useEmployees } from '@/features/hcm';
 import { EmployeeForm, AssignmentForm, employeeColumns, assignmentColumns } from '@/features/hcm/ui';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
@@ -22,11 +22,15 @@ export function EmployeesPage() {
           <p className="mt-1 text-body-sm text-neutral-500">Master karyawan + project assignment (FR-HCM-001/002/003)</p>
         </div>
         <div className="flex items-center gap-2">
-          <select aria-label="Filter status" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPagination({ pageIndex: 0, pageSize: PAGE_SIZE }); }} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Semua status</option>
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="INACTIVE">INACTIVE</option>
-          </select>
+          <Select aria-label="Filter status" value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPagination({ pageIndex: 0, pageSize: PAGE_SIZE }); }}>
+            <SelectTrigger>
+              <SelectValue placeholder="Semua status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+              <SelectItem value="INACTIVE">INACTIVE</SelectItem>
+            </SelectContent>
+          </Select>
           <Button size="sm" onClick={() => setShowForm((s) => !s)}>
             {showForm ? 'Tutup' : '+ Buat Employee'}
           </Button>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateAccessReview, useCreateAudit, useCreateLegalCase, useCreateRisk } from '../model/governance.api';
 
 export function RiskForm({ onDone }: { onDone: () => void }) {
@@ -26,9 +26,14 @@ export function RiskForm({ onDone }: { onDone: () => void }) {
         </div>
         <div>
           <Label htmlFor="risk-cat">Kategori</Label>
-          <select id="risk-cat" value={category} onChange={(e) => setCategory(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            {['TECHNICAL', 'FINANCIAL', 'SCHEDULE', 'HSE', 'COMMERCIAL', 'OTHER'].map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger id="risk-cat">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {['TECHNICAL', 'FINANCIAL', 'SCHEDULE', 'HSE', 'COMMERCIAL', 'OTHER'].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="risk-l">Likelihood</Label>
@@ -92,9 +97,14 @@ export function LegalForm({ onDone }: { onDone: () => void }) {
         </div>
         <div>
           <Label htmlFor="legal-type">Tipe</Label>
-          <select id="legal-type" value={caseType} onChange={(e) => setCaseType(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            {['CONTRACT', 'LABOR', 'REGULATORY', 'TAX', 'OTHER'].map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <Select value={caseType} onValueChange={setCaseType}>
+            <SelectTrigger id="legal-type">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {['CONTRACT', 'LABOR', 'REGULATORY', 'TAX', 'OTHER'].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="legal-cp">Pihak Lawan</Label>

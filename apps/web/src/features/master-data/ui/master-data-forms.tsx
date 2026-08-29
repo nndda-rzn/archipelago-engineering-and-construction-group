@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateFiscalPeriod, useCreateVendor } from '../model/master-data.api';
 
 export function VendorForm({ onDone }: { onDone: () => void }) {
@@ -18,9 +18,14 @@ export function VendorForm({ onDone }: { onDone: () => void }) {
         <div><Label htmlFor="vnd-tax">NPWP</Label><Input id="vnd-tax" value={taxId} onChange={(e) => setTaxId(e.target.value)} /></div>
         <div>
           <Label htmlFor="vnd-cat">Kategori</Label>
-          <select id="vnd-cat" value={category} onChange={(e) => setCategory(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            {['MATERIAL', 'SUBCONTRACTOR', 'SERVICE', 'EQUIPMENT', 'OTHER'].map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger id="vnd-cat">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {['MATERIAL', 'SUBCONTRACTOR', 'SERVICE', 'EQUIPMENT', 'OTHER'].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <Button onClick={onSubmit} loading={create.isPending}>Buat Vendor</Button>
       </div>

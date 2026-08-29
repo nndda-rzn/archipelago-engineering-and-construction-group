@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateIncident, useCreateObservation, useCreatePermit } from '../model/hse.api';
 
 export function ObservationForm({ onDone }: { onDone: () => void }) {
@@ -18,10 +18,15 @@ export function ObservationForm({ onDone }: { onDone: () => void }) {
       <div className="flex items-end gap-3">
         <div>
           <Label htmlFor="obs-type">Tipe</Label>
-          <select id="obs-type" value={type} onChange={(e) => setType(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="UNSAFE">UNSAFE</option>
-            <option value="SAFE">SAFE</option>
-          </select>
+          <Select value={type} onValueChange={setType}>
+            <SelectTrigger id="obs-type">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="UNSAFE">UNSAFE</SelectItem>
+              <SelectItem value="SAFE">SAFE</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex-1">
           <Label htmlFor="obs-desc">Deskripsi</Label>
@@ -50,21 +55,31 @@ export function IncidentForm({ onDone }: { onDone: () => void }) {
       <div className="flex items-end gap-3">
         <div>
           <Label htmlFor="inc-type">Tipe</Label>
-          <select id="inc-type" value={type} onChange={(e) => setType(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="NEAR_MISS">NEAR_MISS</option>
-            <option value="INJURY">INJURY</option>
-            <option value="PROPERTY">PROPERTY</option>
-            <option value="ENVIRONMENT">ENVIRONMENT</option>
-          </select>
+          <Select value={type} onValueChange={setType}>
+            <SelectTrigger id="inc-type">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="NEAR_MISS">NEAR_MISS</SelectItem>
+              <SelectItem value="INJURY">INJURY</SelectItem>
+              <SelectItem value="PROPERTY">PROPERTY</SelectItem>
+              <SelectItem value="ENVIRONMENT">ENVIRONMENT</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="inc-sev">Severity</Label>
-          <select id="inc-sev" value={severity} onChange={(e) => setSeverity(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="LOW">LOW</option>
-            <option value="MEDIUM">MEDIUM</option>
-            <option value="HIGH">HIGH</option>
-            <option value="CRITICAL">CRITICAL</option>
-          </select>
+          <Select value={severity} onValueChange={setSeverity}>
+            <SelectTrigger id="inc-sev">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="LOW">LOW</SelectItem>
+              <SelectItem value="MEDIUM">MEDIUM</SelectItem>
+              <SelectItem value="HIGH">HIGH</SelectItem>
+              <SelectItem value="CRITICAL">CRITICAL</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex-1">
           <Label htmlFor="inc-desc">Deskripsi</Label>
