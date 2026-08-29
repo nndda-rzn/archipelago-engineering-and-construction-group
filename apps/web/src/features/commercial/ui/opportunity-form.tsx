@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useClients, useCreateOpportunity } from '../model/commercial.api';
 
 export function OpportunityForm({ onDone }: { onDone: () => void }) {
@@ -21,10 +21,14 @@ export function OpportunityForm({ onDone }: { onDone: () => void }) {
       <div className="flex items-end gap-3">
         <div>
           <Label htmlFor="opp-client">Client</Label>
-          <select id="opp-client" value={clientId} onChange={(e) => setClientId(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih…</option>
-            {(clients?.items ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <Select value={clientId} onValueChange={setClientId}>
+            <SelectTrigger id="opp-client">
+              <SelectValue placeholder="Pilih…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(clients?.items ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex-1">
           <Label htmlFor="opp-title">Judul</Label>

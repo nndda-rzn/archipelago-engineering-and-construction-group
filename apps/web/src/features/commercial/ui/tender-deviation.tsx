@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, Input, Label } from '@aec/ui';
+import { Badge, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateDeviation } from '../model/tender.api';
 import type { ContractDeviation } from '@aec/api-contracts';
 import { statusVariant, type TenderStatus, ApproveDeviationBtn, RejectDeviationBtn } from './tender-grid';
@@ -25,10 +25,14 @@ export function DeviationPanel({
       <div className="flex items-end gap-3 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
         <div className="w-72">
           <Label htmlFor="dev-opp">Opportunity</Label>
-          <select id="dev-opp" value={oppId} onChange={(e) => setOppId(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih…</option>
-            {opportunities.map((o) => <option key={o.id} value={o.id}>{o.oppNumber}</option>)}
-          </select>
+          <Select value={oppId} onValueChange={setOppId}>
+            <SelectTrigger id="dev-opp">
+              <SelectValue placeholder="Pilih…" />
+            </SelectTrigger>
+            <SelectContent>
+              {opportunities.map((o) => <SelectItem key={o.id} value={o.id}>{o.oppNumber}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="dev-clause">Klausul</Label>

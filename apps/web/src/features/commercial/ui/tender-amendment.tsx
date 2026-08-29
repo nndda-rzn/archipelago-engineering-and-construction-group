@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, DataGrid, Input, Label } from '@aec/ui';
+import { Button, DataGrid, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateAmendment } from '../model/tender.api';
 import type { ContractAmendment } from '@aec/api-contracts';
 import { amendmentColumns } from './tender-grid';
@@ -19,10 +19,14 @@ export function AmendmentPanel({
       <div className="flex items-end gap-3 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
         <div className="w-72">
           <Label htmlFor="amd-contract">Kontrak</Label>
-          <select id="amd-contract" value={contractId} onChange={(e) => setContractId(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih…</option>
-            {contracts.map((c) => <option key={c.id} value={c.id}>{c.contractNumber} — {c.title}</option>)}
-          </select>
+          <Select value={contractId} onValueChange={setContractId}>
+            <SelectTrigger id="amd-contract">
+              <SelectValue placeholder="Pilih…" />
+            </SelectTrigger>
+            <SelectContent>
+              {contracts.map((c) => <SelectItem key={c.id} value={c.id}>{c.contractNumber} — {c.title}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex-1">
           <Label htmlFor="amd-title">Judul</Label>

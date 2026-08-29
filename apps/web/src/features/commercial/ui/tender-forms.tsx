@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateBidDecision, useCreateTenderSubmission } from '../model/tender.api';
 import type { OppOption } from './tender-types';
 
@@ -17,16 +17,25 @@ export function BidForm({ opportunities }: { opportunities: OppOption[] }) {
       <div className="flex items-end gap-3">
         <div className="flex-1">
           <Label htmlFor="bid-opp">Opportunity</Label>
-          <select id="bid-opp" value={oppId} onChange={(e) => setOppId(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih…</option>
-            {opportunities.map((o) => <option key={o.id} value={o.id}>{o.oppNumber} — {o.title}</option>)}
-          </select>
+          <Select value={oppId} onValueChange={setOppId}>
+            <SelectTrigger id="bid-opp">
+              <SelectValue placeholder="Pilih…" />
+            </SelectTrigger>
+            <SelectContent>
+              {opportunities.map((o) => <SelectItem key={o.id} value={o.id}>{o.oppNumber} — {o.title}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="bid-dec">Keputusan</Label>
-          <select id="bid-dec" value={decision} onChange={(e) => setDecision(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            {['BID', 'NO_BID'].map((d) => <option key={d} value={d}>{d}</option>)}
-          </select>
+          <Select value={decision} onValueChange={setDecision}>
+            <SelectTrigger id="bid-dec">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {['BID', 'NO_BID'].map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex-1">
           <Label htmlFor="bid-rat">Alasan</Label>
@@ -56,16 +65,25 @@ export function SubmissionForm({ opportunities }: { opportunities: OppOption[] }
       <div className="flex items-end gap-3">
         <div className="flex-1">
           <Label htmlFor="ts-opp">Opportunity</Label>
-          <select id="ts-opp" value={oppId} onChange={(e) => setOppId(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih…</option>
-            {opportunities.map((o) => <option key={o.id} value={o.id}>{o.oppNumber} — {o.title}</option>)}
-          </select>
+          <Select value={oppId} onValueChange={setOppId}>
+            <SelectTrigger id="ts-opp">
+              <SelectValue placeholder="Pilih…" />
+            </SelectTrigger>
+            <SelectContent>
+              {opportunities.map((o) => <SelectItem key={o.id} value={o.id}>{o.oppNumber} — {o.title}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="ts-ch">Channel</Label>
-          <select id="ts-ch" value={channel} onChange={(e) => setChannel(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            {['ELECTRONIC', 'HARDCOPY', 'PORTAL'].map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <Select value={channel} onValueChange={setChannel}>
+            <SelectTrigger id="ts-ch">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {['ELECTRONIC', 'HARDCOPY', 'PORTAL'].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="ts-pkg">Versi Paket</Label>

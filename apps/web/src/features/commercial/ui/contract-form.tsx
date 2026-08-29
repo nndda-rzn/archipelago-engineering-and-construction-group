@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useClients, useCreateContract } from '../model/commercial.api';
 import { useProjects } from '@/entities/project';
 
@@ -32,17 +32,25 @@ export function ContractForm({ onDone }: { onDone: () => void }) {
       <div className="flex items-end gap-3">
         <div>
           <Label htmlFor="ctr-client">Client</Label>
-          <select id="ctr-client" value={clientId} onChange={(e) => setClientId(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih…</option>
-            {(clients?.items ?? []).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <Select value={clientId} onValueChange={setClientId}>
+            <SelectTrigger id="ctr-client">
+              <SelectValue placeholder="Pilih…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(clients?.items ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="ctr-project">Project (opsional)</Label>
-          <select id="ctr-project" value={projectId} onChange={(e) => setProjectId(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Tanpa</option>
-            {(projects?.items ?? []).map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}
-          </select>
+          <Select value={projectId} onValueChange={setProjectId}>
+            <SelectTrigger id="ctr-project">
+              <SelectValue placeholder="Tanpa" />
+            </SelectTrigger>
+            <SelectContent>
+              {(projects?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex-1">
           <Label htmlFor="ctr-title">Judul Kontrak</Label>
@@ -50,12 +58,17 @@ export function ContractForm({ onDone }: { onDone: () => void }) {
         </div>
         <div>
           <Label htmlFor="ctr-type">Tipe</Label>
-          <select id="ctr-type" value={contractType} onChange={(e) => setContractType(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="LUMP_SUM">LUMP_SUM</option>
-            <option value="UNIT_PRICE">UNIT_PRICE</option>
-            <option value="COST_PLUS">COST_PLUS</option>
-            <option value="TIME_MATERIAL">TIME_MATERIAL</option>
-          </select>
+          <Select value={contractType} onValueChange={setContractType}>
+            <SelectTrigger id="ctr-type">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="LUMP_SUM">LUMP_SUM</SelectItem>
+              <SelectItem value="UNIT_PRICE">UNIT_PRICE</SelectItem>
+              <SelectItem value="COST_PLUS">COST_PLUS</SelectItem>
+              <SelectItem value="TIME_MATERIAL">TIME_MATERIAL</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="ctr-value">Nilai</Label>
