@@ -52,7 +52,7 @@ function DecideButtons({ task }: { task: ApprovalTask }) {
             <DialogTitle>Tolak dokumen</DialogTitle>
             <DialogDescription>Alasan reject (opsional)</DialogDescription>
           </DialogHeader>
-          <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Alasan penolakan..." autoFocus />
+          <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Alasan penolakan…" autoFocus />
           <DialogFooter>
             <Button variant="ghost" onClick={() => setRejectOpen(false)}>Batal</Button>
             <Button variant="destructive" onClick={() => { setRejectOpen(false); setComment(''); decide.mutate({ taskId: task.id, decision: 'REJECT', comment: comment || undefined }, { onSuccess: () => toast({ title: 'Ditolak', description: task.transactionCode ?? undefined, variant: 'info' }), onError: () => toast({ title: 'Gagal menolak', description: 'Periksa kembali dokumen terkait.', variant: 'error' }) }); }} loading={decide.isPending}>Tolak</Button>
