@@ -36,8 +36,8 @@ import { TreasuryModule } from './modules/treasury';
       },
       {
         name: 'long',
-        ttl: 60000,
-        limit: 100,
+        ttl: Number(process.env.THROTTLE_TTL ?? 60) * 1000,
+        limit: Number(process.env.THROTTLE_LIMIT ?? 100),
       },
     ]),
     FoundationModule, ProjectModule, ProcurementModule, InventoryModule, ApprovalModule, FinanceModule, ConstructionModule, HcmModule, HseModule, QualityModule, GovernanceModule, AnalyticsModule, CommercialModule, EngineeringModule, MasterDataModule, TreasuryModule],
