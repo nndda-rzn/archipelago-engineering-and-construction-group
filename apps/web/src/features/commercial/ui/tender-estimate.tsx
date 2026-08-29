@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, Input, Label } from '@aec/ui';
+import { Badge, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateEstimate, useCreatePricingScenario, useTransitionEstimate } from '../model/tender.api';
 import type { Estimate } from '@aec/api-contracts';
 import { formatIdr as fmt } from '@/shared/lib/format';
@@ -28,10 +28,14 @@ export function EstimatePanel({
       <div className="flex items-end gap-3 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
         <div className="w-72">
           <Label htmlFor="est-opp">Opportunity</Label>
-          <select id="est-opp" value={oppId} onChange={(e) => { setOppId(e.target.value); setSelectedEstimateId(''); }} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih…</option>
-            {opportunities.map((o) => <option key={o.id} value={o.id}>{o.oppNumber} — {o.title}</option>)}
-          </select>
+          <Select value={oppId} onValueChange={(v) => { setOppId(v); setSelectedEstimateId(''); }}>
+            <SelectTrigger id="est-opp">
+              <SelectValue placeholder="Pilih…" />
+            </SelectTrigger>
+            <SelectContent>
+              {opportunities.map((o) => <SelectItem key={o.id} value={o.id}>{o.oppNumber} — {o.title}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex-1">
           <Label htmlFor="est-desc">Deskripsi</Label>
@@ -85,9 +89,14 @@ export function EstimatePanel({
           <div className="mt-3 flex items-end gap-3">
             <div>
               <Label htmlFor="sc-type">Tipe</Label>
-              <select id="sc-type" value={scenarioType} onChange={(e) => setScenarioType(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-                {['BASE', 'AGGRESSIVE', 'TARGET', 'NEGOTIATION_FLOOR', 'BEST_CASE'].map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
+              <Select value={scenarioType} onValueChange={setScenarioType}>
+                <SelectTrigger id="sc-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {['BASE', 'AGGRESSIVE', 'TARGET', 'NEGOTIATION_FLOOR', 'BEST_CASE'].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label htmlFor="sc-amt">Nilai</Label>
