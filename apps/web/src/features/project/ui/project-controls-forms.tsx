@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateControlAccount, useCreateCostCode, useCreateForecast } from '../model/project-controls.api';
 import { useWbsTree } from '@/entities/wbs';
 
@@ -21,16 +21,25 @@ export function CostCodeForm({ projectId }: { projectId: string }) {
         <div className="flex-1"><Label htmlFor="cc-name">Nama</Label><Input id="cc-name" value={name} onChange={(e) => setName(e.target.value)} /></div>
         <div>
           <Label htmlFor="cc-wbs">WBS</Label>
-          <select id="cc-wbs" value={wbsItemId} onChange={(e) => setWbsItemId(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">-</option>
-            {(wbs ?? []).map((w) => <option key={w.id} value={w.id}>{w.code} {w.name}</option>)}
-          </select>
+          <Select value={wbsItemId} onValueChange={setWbsItemId}>
+            <SelectTrigger id="cc-wbs">
+              <SelectValue placeholder="Tanpa" />
+            </SelectTrigger>
+            <SelectContent>
+              {(wbs ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{w.code} {w.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="cc-type">Tipe</Label>
-          <select id="cc-type" value={costType} onChange={(e) => setCostType(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            {['DIRECT', 'INDIRECT', 'LABOR', 'MATERIAL', 'SUBCONTRACTOR', 'EQUIPMENT', 'OVERHEAD'].map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
+          <Select value={costType} onValueChange={setCostType}>
+            <SelectTrigger id="cc-type">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {['DIRECT', 'INDIRECT', 'LABOR', 'MATERIAL', 'SUBCONTRACTOR', 'EQUIPMENT', 'OVERHEAD'].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <Button onClick={onSubmit} loading={create.isPending}>Buat Cost Code</Button>
       </div>
@@ -61,10 +70,14 @@ export function ControlAccountForm({ projectId }: { projectId: string }) {
         <div className="flex-1"><Label htmlFor="ca-name">Nama</Label><Input id="ca-name" value={name} onChange={(e) => setName(e.target.value)} /></div>
         <div>
           <Label htmlFor="ca-wbs">WBS</Label>
-          <select id="ca-wbs" value={wbsItemId} onChange={(e) => setWbsItemId(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih…</option>
-            {(wbs ?? []).map((w) => <option key={w.id} value={w.id}>{w.code} {w.name}</option>)}
-          </select>
+          <Select value={wbsItemId} onValueChange={setWbsItemId}>
+            <SelectTrigger id="ca-wbs">
+              <SelectValue placeholder="Pilih…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(wbs ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{w.code} {w.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div><Label htmlFor="ca-mgr">Responsible</Label><Input id="ca-mgr" value={responsibleManager} onChange={(e) => setResponsibleManager(e.target.value)} /></div>
         <div><Label htmlFor="ca-budget">Budget</Label><Input id="ca-budget" type="number" min={0} value={budgetAmount} onChange={(e) => setBudgetAmount(e.target.value)} className="w-28" /></div>
