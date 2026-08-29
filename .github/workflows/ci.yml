@@ -66,3 +66,19 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  docker-build:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: quality
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build API image
+        run: docker build -f apps/api/Dockerfile -t aec-api:ci .
+
+      - name: Build Web image
+        run: docker build -f apps/web/Dockerfile -t aec-web:ci .
