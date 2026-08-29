@@ -1,6 +1,11 @@
 ## Requirement
 
-<!-- FR-xxx / BR-xxx / NFR-xxx atau Phase 0 engineering foundation -->
+<!-- FR-xxx / BR-xxx / NFR-xxx atau Phase 0 engineering foundation / konteks plan (mis. Backend-Scalability-Plan PR-A1) -->
+
+## Label & Milestone (wajib diisi)
+
+- Label: `type/*` (1) + `phase/*` (1) + `priority/p0..p3` (1) + `risk/high` (hanya bila finance/security/migration/architecture)
+- Milestone: `backend-scaling-{a|b|c|d|e}` atau milestone lain yang relevan
 
 ## Perubahan
 
