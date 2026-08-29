@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, DataGrid, Input } from '@aec/ui';
+import { Button, DataGrid, Input, Label } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { ProjectForm, projectColumns } from '@/features/project/ui';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
@@ -20,7 +20,7 @@ export function ProjectListPage() {
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Tutup' : '+ Tambah Project'}</Button>
       </div>
       {showForm && <ProjectForm onDone={() => setShowForm(false)} />}
-      <div className="mb-4 w-64"><Input type="search" placeholder="Cari kode, nama, klien..." value={search} onChange={(e) => { setSearch(e.target.value); setPagination((p) => ({ ...p, pageIndex: 0 })); }} /></div>
+      <div className="mb-4 w-64"><Label htmlFor="project-search">Cari project</Label><Input id="project-search" type="search" placeholder="Kode, nama, klien…" autoComplete="off" value={search} onChange={(e) => { setSearch(e.target.value); setPagination((p) => ({ ...p, pageIndex: 0 })); }} /></div>
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
         <DataGrid columns={projectColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={setPagination} isLoading={isLoading} isError={isError} onRetry={() => refetch()} emptyMessage="Belum ada project" exportFilename="projects" />
       </div>
