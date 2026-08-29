@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateCommissioning } from '../model/work-package.api';
 import type { CommissioningSystem } from '@aec/api-contracts';
 
@@ -26,11 +26,25 @@ export function CommissioningForm({ projectId, tree, onDone }: { projectId: stri
         <div><Label>Nama</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Process Plant" /></div>
         <div>
           <Label>Level</Label>
-          <select value={level} onChange={(e) => setLevel(e.target.value as never)} className="w-full rounded-md border border-neutral-300 px-3 py-2 text-body-sm"><option value="PLANT">Plant</option><option value="SYSTEM">System</option><option value="SUBSYSTEM">Subsystem</option><option value="EQUIPMENT">Equipment</option></select>
+          <Select value={level} onValueChange={(v) => setLevel(v as never)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="PLANT">Plant</SelectItem><SelectItem value="SYSTEM">System</SelectItem><SelectItem value="SUBSYSTEM">Subsystem</SelectItem><SelectItem value="EQUIPMENT">Equipment</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label>Parent</Label>
-          <select value={parentId} onChange={(e) => setParentId(e.target.value)} className="w-full rounded-md border border-neutral-300 px-3 py-2 text-body-sm"><option value="">Root</option>{flatten(tree).map((n) => <option key={n.id} value={n.id}>{n.label}</option>)}</select>
+          <Select value={parentId} onValueChange={setParentId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Root" />
+            </SelectTrigger>
+            <SelectContent>
+              {flatten(tree).map((n) => <SelectItem key={n.id} value={n.id}>{n.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div><Label>Catatan</Label><Input value={remark} onChange={(e) => setRemark(e.target.value)} placeholder="Opsional" /></div>
       </div>

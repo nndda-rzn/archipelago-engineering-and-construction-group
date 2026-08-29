@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useCreateRfq } from '../model/procurement.api';
 
@@ -32,15 +32,14 @@ export function RfqForm({ onDone }: { onDone: () => void }) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="rfq-project">Project</Label>
-          <select
-            id="rfq-project"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
-          >
-            <option value="">Pilih project…</option>
-            {(projects.data?.items ?? []).map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}
-          </select>
+          <Select value={projectId} onValueChange={setProjectId}>
+            <SelectTrigger id="rfq-project">
+              <SelectValue placeholder="Pilih project…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="rfq-title">Judul</Label>

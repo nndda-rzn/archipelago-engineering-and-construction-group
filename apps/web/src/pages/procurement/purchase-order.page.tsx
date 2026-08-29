@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, ConfirmActionButton, DataGrid, EmptyCell, Input, Label } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, DataGrid, EmptyCell, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreatePo, usePos, usePrs, useReleasePo, type PurchaseOrder } from '@/features/procurement';
 import { formatIdr } from '@/shared/lib/format';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
@@ -106,10 +106,14 @@ export function PurchaseOrderPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="po-pr">Dari PR (harus APPROVED)</Label>
-              <select id="po-pr" value={requisitionId} onChange={(e) => setRequisitionId(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20">
-                <option value="">Pilih PR…</option>
-                {approvedPrs.map((pr) => <option key={pr.id} value={pr.id}>{pr.prNumber} — {pr.requestedBy}</option>)}
-              </select>
+              <Select value={requisitionId} onValueChange={setRequisitionId}>
+                <SelectTrigger id="po-pr">
+                  <SelectValue placeholder="Pilih PR…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {approvedPrs.map((pr) => <SelectItem key={pr.id} value={pr.id}>{pr.prNumber} — {pr.requestedBy}</SelectItem>)}
+                </SelectContent>
+              </Select>
               {approvedPrs.length === 0 && <p className="mt-1 text-caption text-neutral-500">Tidak ada PR APPROVED. PR perlu di-approve dulu.</p>}
             </div>
             <div>

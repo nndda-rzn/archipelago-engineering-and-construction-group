@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateVendorRating } from '@/features/procurement';
 import { useProjects } from '@/entities/project';
 import { useVendors } from '@/features/master-data';
@@ -25,38 +25,53 @@ export function VendorRatingForm() {
     );
   };
 
-  const selectCls = 'flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body';
-
   return (
     <div className="mb-4 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <h3 className="mb-3 text-h3 text-neutral-900">Beri Rating Vendor</h3>
       <div className="flex flex-wrap items-end gap-3">
         <div>
           <Label htmlFor="vr-vendor">Vendor</Label>
-          <select id="vr-vendor" value={vendorId} onChange={(e) => setVendorId(e.target.value)} className={selectCls}>
-            <option value="">Pilih vendor…</option>
-            {(vendors.data?.items ?? []).map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
-          </select>
+          <Select value={vendorId} onValueChange={setVendorId}>
+            <SelectTrigger id="vr-vendor">
+              <SelectValue placeholder="Pilih vendor…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(vendors.data?.items ?? []).map((v) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="vr-project">Project (opsional)</Label>
-          <select id="vr-project" value={projectId} onChange={(e) => setProjectId(e.target.value)} className={selectCls}>
-            <option value="">Semua</option>
-            {(projects.data?.items ?? []).map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}
-          </select>
+          <Select value={projectId} onValueChange={setProjectId}>
+            <SelectTrigger id="vr-project">
+              <SelectValue placeholder="Semua" />
+            </SelectTrigger>
+            <SelectContent>
+              {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="vr-category">Kategori</Label>
-          <select id="vr-category" value={category} onChange={(e) => setCategory(e.target.value)} className={selectCls}>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger id="vr-category">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="vr-score">Skor</Label>
-          <select id="vr-score" value={score} onChange={(e) => setScore(e.target.value)} className={selectCls}>
-            <option value="">-</option>
-            {['1', '2', '3', '4', '5'].map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <Select value={score} onValueChange={setScore}>
+            <SelectTrigger id="vr-score">
+              <SelectValue placeholder="-" />
+            </SelectTrigger>
+            <SelectContent>
+              {['1', '2', '3', '4', '5'].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex-1">
           <Label htmlFor="vr-remark">Catatan</Label>

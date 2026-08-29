@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateDailyReport } from '../model/work-package.api';
 
 export function CreateDailyReportForm({ projectId, onDone }: { projectId: string; onDone: () => void }) {
@@ -23,7 +23,7 @@ export function CreateDailyReportForm({ projectId, onDone }: { projectId: string
     <div className="space-y-3 rounded-md border border-neutral-200 bg-white p-4">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div><Label htmlFor="dr-date">Tanggal</Label><Input id="dr-date" type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} /></div>
-        <div><Label htmlFor="dr-weather">Cuaca</Label><select id="dr-weather" value={weather} onChange={(e) => setWeather(e.target.value)} className="w-full rounded-md border border-neutral-300 px-3 py-2 text-body-sm"><option value="CERAH">Cerah</option><option value="BERAWAN">Berawan</option><option value="MENDUNG">Mendung</option><option value="HUJAN">Hujan</option></select></div>
+        <div><Label htmlFor="dr-weather">Cuaca</Label><Select value={weather} onValueChange={setWeather}><SelectTrigger id="dr-weather"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="CERAH">Cerah</SelectItem><SelectItem value="BERAWAN">Berawan</SelectItem><SelectItem value="MENDUNG">Mendung</SelectItem><SelectItem value="HUJAN">Hujan</SelectItem></SelectContent></Select></div>
         <div><Label>Manpower (baris)</Label><Button size="sm" variant="secondary" onClick={() => setLines([...lines, { trade: '', count: '', hours: '' }])}>+ Tambah</Button></div>
       </div>
       {lines.map((l, i) => <div key={i} className="grid grid-cols-1 gap-3 md:grid-cols-4"><div><Label>Trade</Label><Input value={l.trade} onChange={(e) => updateLine(i, 'trade', e.target.value)} placeholder="KONSTRUKSI" /></div><div><Label>Jumlah</Label><Input type="number" min={1} value={l.count} onChange={(e) => updateLine(i, 'count', e.target.value)} placeholder="10" /></div><div><Label>Jam Kerja</Label><Input type="number" min={0} max={24} value={l.hours} onChange={(e) => updateLine(i, 'hours', e.target.value)} placeholder="8" /></div><div className="flex items-end">{lines.length > 1 && <Button size="sm" variant="secondary" onClick={() => setLines(lines.filter((_, idx) => idx !== i))}>Hapus</Button>}</div></div>)}
