@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, Input, Label } from '@aec/ui';
+import { Badge, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateDoaRule, useResolveDoa } from '../model/foundation-hardening.api';
 
 const TX_TYPES = ['PurchaseRequisition', 'PurchaseOrder', 'Journal', 'Payment', 'BudgetBaseline', 'Contract'];
@@ -17,24 +17,38 @@ export function DoaForm() {
       <div className="flex items-end gap-3">
         <div>
           <Label htmlFor="doaf-tx">Transaksi</Label>
-          <select id="doaf-tx" value={transactionType} onChange={(e) => setTransactionType(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            {TX_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
+          <Select value={transactionType} onValueChange={setTransactionType}>
+            <SelectTrigger id="doaf-tx">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TX_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div><Label htmlFor="doaf-from">Dari</Label><Input id="doaf-from" type="number" value={amountFrom} onChange={(e) => setAmountFrom(e.target.value)} className="w-28" /></div>
         <div><Label htmlFor="doaf-to">Sampai</Label><Input id="doaf-to" type="number" value={amountTo} onChange={(e) => setAmountTo(e.target.value)} className="w-28" /></div>
         <div>
           <Label htmlFor="doaf-risk">Risiko</Label>
-          <select id="doaf-risk" value={riskLevel} onChange={(e) => setRiskLevel(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Semua</option>
-            {['LOW', 'MEDIUM', 'HIGH'].map((r) => <option key={r} value={r}>{r}</option>)}
-          </select>
+          <Select value={riskLevel} onValueChange={setRiskLevel}>
+            <SelectTrigger id="doaf-risk">
+              <SelectValue placeholder="Semua" />
+            </SelectTrigger>
+            <SelectContent>
+              {['LOW', 'MEDIUM', 'HIGH'].map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="doaf-lv">Level</Label>
-          <select id="doaf-lv" value={approverLevel} onChange={(e) => setApproverLevel(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            {['L1', 'L2', 'L3', 'L4', 'L5', 'L6'].map((l) => <option key={l} value={l}>{l}</option>)}
-          </select>
+          <Select value={approverLevel} onValueChange={setApproverLevel}>
+            <SelectTrigger id="doaf-lv">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {['L1', 'L2', 'L3', 'L4', 'L5', 'L6'].map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div><Label htmlFor="doaf-role">Role</Label><Input id="doaf-role" value={approverRoleCode} onChange={(e) => setApproverRoleCode(e.target.value)} placeholder="PROCUREMENT_MANAGER" /></div>
         <Button onClick={() => {
@@ -60,9 +74,14 @@ export function ResolveForm() {
     <div className="mt-2 flex items-end gap-3">
       <div>
         <Label htmlFor="doar-tx">Transaksi</Label>
-        <select id="doar-tx" value={transactionType} onChange={(e) => setTransactionType(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-          {TX_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
+        <Select value={transactionType} onValueChange={setTransactionType}>
+          <SelectTrigger id="doar-tx">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {TX_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
       <div><Label htmlFor="doar-amt">Amount</Label><Input id="doar-amt" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-36" /></div>
       <Button onClick={() => {
