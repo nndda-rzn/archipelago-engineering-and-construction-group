@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateOrganization } from '../model/foundation-hardening.api';
 import { useLegalEntities } from '@/entities/legal-entity';
 
@@ -14,10 +14,14 @@ export function OrgForm() {
       <div className="flex items-end gap-3">
         <div>
           <Label htmlFor="orgf-entity">Entity</Label>
-          <select id="orgf-entity" value={legalEntityId} onChange={(e) => setLegalEntityId(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih…</option>
-            {(entities?.items ?? []).map((e) => <option key={e.id} value={e.id}>{e.code}</option>)}
-          </select>
+          <Select value={legalEntityId} onValueChange={setLegalEntityId}>
+            <SelectTrigger id="orgf-entity">
+              <SelectValue placeholder="Pilih…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(entities?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex-1">
           <Label htmlFor="orgf-name">Nama</Label>
@@ -25,9 +29,14 @@ export function OrgForm() {
         </div>
         <div>
           <Label htmlFor="orgf-type">Tipe</Label>
-          <select id="orgf-type" value={orgType} onChange={(e) => setOrgType(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            {['GROUP', 'LEGAL_ENTITY', 'BUSINESS_UNIT', 'DIVISION', 'REGION', 'BRANCH', 'DEPARTMENT', 'SECTION'].map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
+          <Select value={orgType} onValueChange={setOrgType}>
+            <SelectTrigger id="orgf-type">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {['GROUP', 'LEGAL_ENTITY', 'BUSINESS_UNIT', 'DIVISION', 'REGION', 'BRANCH', 'DEPARTMENT', 'SECTION'].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <Button onClick={() => { if (legalEntityId && name) create.mutate({ legalEntityId, name, orgType }, { onSuccess: () => setName('') }); }} loading={create.isPending}>
           Buat
