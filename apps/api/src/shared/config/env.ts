@@ -9,6 +9,13 @@ export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   DATABASE_URL: z.string().url(),
   JWT_SECRET: z.string().min(32),
+  CORS_ORIGIN: z.string().default('*'),
+  TRUST_PROXY: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true' || v === '1'),
+  THROTTLE_TTL: z.coerce.number().int().min(1).default(60),
+  THROTTLE_LIMIT: z.coerce.number().int().min(1).default(100),
 });
 
 export type Env = z.infer<typeof envSchema>;
