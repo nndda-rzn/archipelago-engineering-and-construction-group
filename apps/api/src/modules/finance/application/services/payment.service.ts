@@ -17,10 +17,24 @@ export class PaymentService {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
 
+    // Batch load semua invoice (C2: hindari N+1) + aggregate paid per invoice.
+    const invoiceIds = dto.items.map((i) => i.invoiceId);
+    const invoices = await this.prisma.vendorInvoice.findMany({
+      where: { id: { in: invoiceIds } },
+    });
+    const invoiceMap = new Map(invoices.map((inv) => [inv.id, inv]));
+
+    const paidGroups = await this.prisma.paymentItem.groupBy({
+      by: ['invoiceId'],
+      where: { invoiceId: { in: invoiceIds }, payment: { status: { in: ['APPROVED', 'PAID'] } } },
+      _sum: { amount: true },
+    });
+    const paidMap = new Map(paidGroups.map((g) => [g.invoiceId, Number(g._sum.amount ?? 0)]));
+
     let totalAmount = 0;
     const items: Array<{ invoiceId: string; amount: number }> = [];
     for (const item of dto.items) {
-      const invoice = await this.prisma.vendorInvoice.findUnique({ where: { id: item.invoiceId } });
+      const invoice = invoiceMap.get(item.invoiceId);
       if (!invoice) throw new NotFoundException({ code: 'INVOICE_NOT_FOUND', message: `Invoice ${item.invoiceId} tidak ditemukan` });
       if (invoice.status !== 'POSTED') {
         throw new ConflictException({ code: 'INVOICE_NOT_POSTED', message: `Invoice ${invoice.invoiceNumber} harus POSTED sebelum dibayar` });
@@ -29,11 +43,7 @@ export class PaymentService {
         throw new ConflictException({ code: 'INVOICE_PROJECT_MISMATCH', message: 'Invoice bukan milik project ini' });
       }
 
-      const paidAgg = await this.prisma.paymentItem.aggregate({
-        where: { invoiceId: invoice.id, payment: { status: { in: ['APPROVED', 'PAID'] } } },
-        _sum: { amount: true },
-      });
-      const open = Number(invoice.totalAmount) - Number(paidAgg._sum.amount ?? 0);
+      const open = Number(invoice.totalAmount) - (paidMap.get(invoice.id) ?? 0);
       if (Number(item.amount) > open + 0.001) {
         throw new ConflictException({
           code: 'EXCEED_AP_OPEN',
@@ -44,27 +54,28 @@ export class PaymentService {
       items.push({ invoiceId: invoice.id, amount: Number(item.amount) });
     }
 
-    const seq = await this.prisma.$transaction(async (tx) => {
+    // Seq + create dalam SATU transaksi (C1: hilangkan gap nomor & partial-failure).
+    const payment = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'PAY' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'PAY', prefix: `PAY-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-    });
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
 
-    const payment = await this.prisma.payment.create({
-      data: {
-        paymentNumber: seq,
-        projectId: dto.projectId,
-        vendor: dto.vendor,
-        bankAccount: dto.bankAccount ?? null,
-        reference: dto.reference ?? null,
-        remark: dto.remark ?? null,
-        totalAmount,
-        items: { create: items },
-      },
-      include: { items: true },
+      return tx.payment.create({
+        data: {
+          paymentNumber: seq,
+          projectId: dto.projectId,
+          vendor: dto.vendor,
+          bankAccount: dto.bankAccount ?? null,
+          reference: dto.reference ?? null,
+          remark: dto.remark ?? null,
+          totalAmount,
+          items: { create: items },
+        },
+        include: { items: true },
+      });
     });
 
     await this.audit.record({
@@ -72,7 +83,7 @@ export class PaymentService {
       action: 'Payment.CREATE',
       resource: 'Payment',
       resourceId: payment.id,
-      newValue: { paymentNumber: seq, totalAmount: Number(totalAmount), vendor: dto.vendor },
+      newValue: { paymentNumber: payment.paymentNumber, totalAmount: Number(totalAmount), vendor: dto.vendor },
       source: 'api',
     });
 
