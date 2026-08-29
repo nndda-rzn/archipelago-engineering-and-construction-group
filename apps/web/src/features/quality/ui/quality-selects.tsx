@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Label } from '@aec/ui';
+import { Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useWorkPackages } from '@/features/construction';
 
@@ -15,10 +15,14 @@ export function ProjectSelect({ projectId, setProjectId }: { projectId: string; 
   return (
     <div>
       <Label htmlFor="qp-project">Project</Label>
-      <select id="qp-project" value={projectId} onChange={(e) => setProjectId(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-        <option value="">Pilih project…</option>
-        {(projects.data?.items ?? []).map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}
-      </select>
+      <Select value={projectId} onValueChange={setProjectId}>
+        <SelectTrigger id="qp-project">
+          <SelectValue placeholder="Pilih project…" />
+        </SelectTrigger>
+        <SelectContent>
+          {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
@@ -27,10 +31,14 @@ export function WpSelect({ id, projectId, value, onChange, workPackages }: { id:
   return (
     <div>
       <Label htmlFor={id}>Work Package</Label>
-      <select id={id} value={value} onChange={(e) => onChange(e.target.value)} disabled={!projectId} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body disabled:bg-neutral-50">
-        <option value="">Tanpa WP</option>
-        {(workPackages?.items ?? []).map((w) => <option key={w.id} value={w.id}>{w.wpNumber}{w.title ? ` — ${w.title}` : ''}</option>)}
-      </select>
+      <Select value={value} onValueChange={onChange} disabled={!projectId}>
+        <SelectTrigger id={id}>
+          <SelectValue placeholder="Tanpa WP" />
+        </SelectTrigger>
+        <SelectContent>
+          {(workPackages?.items ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{w.wpNumber}{w.title ? ` — ${w.title}` : ''}</SelectItem>)}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

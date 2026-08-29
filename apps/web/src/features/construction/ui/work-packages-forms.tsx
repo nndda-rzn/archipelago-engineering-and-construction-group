@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, Input, Label, type BadgeVariant } from '@aec/ui';
+import { Badge, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, type BadgeVariant } from '@aec/ui';
 import { useWbsTree } from '@/entities/wbs';
 import { useCreateWorkPackage, useStartWorkPackage, useCompleteWorkPackage, useAddProgress } from '../model/work-package.api';
 
@@ -32,10 +32,14 @@ export function CreateWorkPackageForm({ projectId, onDone }: { projectId: string
         </div>
         <div>
           <Label htmlFor="wp-wbs">WBS</Label>
-          <select id="wp-wbs" value={wbsItemId} onChange={(e) => setWbsItemId(e.target.value)} className="w-full rounded-md border border-neutral-300 px-3 py-2 text-body-sm">
-            <option value="">Pilih WBS...</option>
-            {wbs && flatten(wbs).map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}
-          </select>
+          <Select value={wbsItemId} onValueChange={setWbsItemId}>
+            <SelectTrigger id="wp-wbs">
+              <SelectValue placeholder="Pilih WBS…" />
+            </SelectTrigger>
+            <SelectContent>
+              {wbs && flatten(wbs).map((w) => <SelectItem key={w.id} value={w.id}>{w.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div><Label htmlFor="wp-qty">Qty Rencana</Label><Input id="wp-qty" type="number" value={plannedQty} onChange={(e) => setPlannedQty(e.target.value)} placeholder="120" /></div>
         <div><Label htmlFor="wp-unit">Unit</Label><Input id="wp-unit" value={unit} onChange={(e) => setUnit(e.target.value)} /></div>

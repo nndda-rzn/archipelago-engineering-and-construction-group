@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateNcr } from '../model/quality.api';
 import { ProjectSelect, WpSelect, useProjectOptions } from './quality-selects';
 
@@ -24,20 +24,30 @@ export function NcrForm({ onDone }: { onDone: () => void }) {
         <WpSelect id="ncr-wp" projectId={projectId} value={wpId} onChange={setWpId} workPackages={workPackages} />
         <div>
           <Label htmlFor="ncr-cat">Kategori</Label>
-          <select id="ncr-cat" value={category} onChange={(e) => setCategory(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="WORKMANSHIP">WORKMANSHIP</option>
-            <option value="MATERIAL">MATERIAL</option>
-            <option value="DESIGN">DESIGN</option>
-            <option value="DOCUMENT">DOCUMENT</option>
-          </select>
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger id="ncr-cat">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="WORKMANSHIP">WORKMANSHIP</SelectItem>
+              <SelectItem value="MATERIAL">MATERIAL</SelectItem>
+              <SelectItem value="DESIGN">DESIGN</SelectItem>
+              <SelectItem value="DOCUMENT">DOCUMENT</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="ncr-sev">Severity</Label>
-          <select id="ncr-sev" value={severity} onChange={(e) => setSeverity(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="MINOR">MINOR</option>
-            <option value="MAJOR">MAJOR</option>
-            <option value="CRITICAL">CRITICAL</option>
-          </select>
+          <Select value={severity} onValueChange={setSeverity}>
+            <SelectTrigger id="ncr-sev">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="MINOR">MINOR</SelectItem>
+              <SelectItem value="MAJOR">MAJOR</SelectItem>
+              <SelectItem value="CRITICAL">CRITICAL</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex-1">
           <Label htmlFor="ncr-desc">Deskripsi NCR</Label>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, DataGrid, Label, EntitySelect } from '@aec/ui';
+import { Button, DataGrid, Label, EntitySelect, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import {
   useBudgetStatus, useCommercialEvaluation, usePoChanges, useVendorRatings, useVendorPerformanceSummary,
 } from '@/features/procurement';
@@ -18,8 +18,6 @@ import {
 
 const PAGE_SIZE = 20;
 type PaginationState = { pageIndex: number; pageSize: number };
-
-const selectCls = 'flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body text-neutral-900 hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20';
 
 export function BudgetCheckSection() {
   const projects = useProjects({ page: 1, pageSize: 100 });
@@ -80,17 +78,25 @@ export function PoChangeSection() {
       <div className="flex items-end gap-3 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
         <div className="w-72">
           <Label htmlFor="poc-po">Purchase Order</Label>
-          <select id="poc-po" value={poId} onChange={(e) => setPoId(e.target.value)} className={selectCls}>
-            <option value="">Pilih.</option>
-            {(pos.data?.items ?? []).map((p) => <option key={p.id} value={p.id}>{p.poNumber} - {fmt(p.totalAmount)}</option>)}
-          </select>
+          <Select value={poId} onValueChange={setPoId}>
+            <SelectTrigger id="poc-po">
+              <SelectValue placeholder="Pilih…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(pos.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.poNumber} - {fmt(p.totalAmount)}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div className="w-72">
           <Label htmlFor="poc-rfq">RFQ (commercial eval)</Label>
-          <select id="poc-rfq" value={rfqId} onChange={(e) => setRfqId(e.target.value)} className={selectCls}>
-            <option value="">Pilih.</option>
-            {(rfqs.data?.items ?? []).map((r) => <option key={r.id} value={r.id}>{r.rfqNumber} - {r.title}</option>)}
-          </select>
+          <Select value={rfqId} onValueChange={setRfqId}>
+            <SelectTrigger id="poc-rfq">
+              <SelectValue placeholder="Pilih…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(rfqs.data?.items ?? []).map((r) => <SelectItem key={r.id} value={r.id}>{r.rfqNumber} - {r.title}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
