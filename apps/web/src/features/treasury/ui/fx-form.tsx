@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateFxExposure } from '../model/treasury.api';
 import { useLegalEntities } from '@/entities/legal-entity';
 
@@ -22,16 +22,21 @@ export function FxForm() {
       <div className="flex items-end gap-3">
         <div>
           <Label htmlFor="fx-entity">Entity</Label>
-          <select id="fx-entity" value={legalEntityId} onChange={(e) => setLegalEntityId(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih…</option>
-            {(entities?.items ?? []).map((e) => <option key={e.id} value={e.id}>{e.code}</option>)}
-          </select>
+          <Select value={legalEntityId} onValueChange={setLegalEntityId}>
+            <SelectTrigger id="fx-entity"><SelectValue placeholder="Pilih…" /></SelectTrigger>
+            <SelectContent>
+              {(entities?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="fx-ccy">Mata Uang</Label>
-          <select id="fx-ccy" value={currency} onChange={(e) => setCurrency(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            {['USD', 'EUR', 'SGD', 'JPY', 'GBP', 'CNY'].map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <Select value={currency} onValueChange={setCurrency}>
+            <SelectTrigger id="fx-ccy"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {['USD', 'EUR', 'SGD', 'JPY', 'GBP', 'CNY'].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="fx-amt">Eksposur</Label>

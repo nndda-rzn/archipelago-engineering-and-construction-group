@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateBankGuarantee } from '../model/treasury.api';
 import { useLegalEntities } from '@/entities/legal-entity';
 import { useProjects } from '@/entities/project';
@@ -26,23 +26,30 @@ export function GuaranteeForm() {
       <div className="flex items-end gap-3">
         <div>
           <Label htmlFor="bg-entity">Entity</Label>
-          <select id="bg-entity" value={legalEntityId} onChange={(e) => setLegalEntityId(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih…</option>
-            {(entities?.items ?? []).map((e) => <option key={e.id} value={e.id}>{e.code}</option>)}
-          </select>
+          <Select value={legalEntityId} onValueChange={setLegalEntityId}>
+            <SelectTrigger id="bg-entity"><SelectValue placeholder="Pilih…" /></SelectTrigger>
+            <SelectContent>
+              {(entities?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="bg-project">Project</Label>
-          <select id="bg-project" value={projectId} onChange={(e) => setProjectId(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">—</option>
-            {(projects?.items ?? []).map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}
-          </select>
+          <Select value={projectId} onValueChange={setProjectId}>
+            <SelectTrigger id="bg-project"><SelectValue placeholder="Pilih…" /></SelectTrigger>
+            <SelectContent>
+              {(projects?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="bg-type">Tipe</Label>
-          <select id="bg-type" value={guaranteeType} onChange={(e) => setGuaranteeType(e.target.value)} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            {['BID', 'PERFORMANCE', 'ADVANCE', 'RETENTION', 'MAINTENANCE'].map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
+          <Select value={guaranteeType} onValueChange={setGuaranteeType}>
+            <SelectTrigger id="bg-type"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {['BID', 'PERFORMANCE', 'ADVANCE', 'RETENTION', 'MAINTENANCE'].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex-1">
           <Label htmlFor="bg-benef">Beneficiary</Label>

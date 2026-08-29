@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, ConfirmDialog, DataGrid, EmptyCell, useToast } from '@aec/ui';
+import { Badge, Button, ConfirmDialog, DataGrid, EmptyCell, useToast, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useLegalEntities } from '@/entities/legal-entity';
 import { useJournals, usePostJournal, type Journal } from '@/features/finance';
 import { JournalForm } from '@/features/finance';
@@ -98,15 +98,12 @@ export function JournalPage() {
           <p className="mt-1 text-body-sm text-neutral-500">Double-entry journal — debit = kredit (FR-FIN-003/004)</p>
         </div>
         <div className="flex items-center gap-3">
-          <select
-            value={defaultEntityId}
-            onChange={(e) => setEntityId(e.target.value)}
-            aria-label="Pilih legal entity"
-            className="flex h-9 w-48 rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
-          >
-            <option value="">Pilih entity…</option>
-            {(entities.data?.items ?? []).map((en) => <option key={en.id} value={en.id}>{en.code}</option>)}
-          </select>
+          <Select value={defaultEntityId} onValueChange={setEntityId}>
+            <SelectTrigger className="w-48" aria-label="Pilih legal entity"><SelectValue placeholder="Pilih entity…" /></SelectTrigger>
+            <SelectContent>
+              {(entities.data?.items ?? []).map((en) => <SelectItem key={en.id} value={en.id}>{en.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
           <Button size="sm" onClick={() => setShowForm((s) => !s)}>
             {showForm ? 'Tutup' : '+ Buat Journal'}
           </Button>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useCreateVariation } from '../model/variation.api';
 
@@ -33,15 +33,12 @@ export function VariationForm({ onDone }: { onDone: () => void }) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="vr-project">Project</Label>
-          <select
-            id="vr-project"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
-          >
-            <option value="">Pilih project…</option>
-            {(projects.data?.items ?? []).map((project) => <option key={project.id} value={project.id}>{project.code}</option>)}
-          </select>
+          <Select value={projectId} onValueChange={setProjectId}>
+            <SelectTrigger id="vr-project"><SelectValue placeholder="Pilih project…" /></SelectTrigger>
+            <SelectContent>
+              {(projects.data?.items ?? []).map((project) => <SelectItem key={project.id} value={project.id}>{project.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="vr-title">Judul Variation</Label>
@@ -49,15 +46,13 @@ export function VariationForm({ onDone }: { onDone: () => void }) {
         </div>
         <div>
           <Label htmlFor="vr-type">Tipe</Label>
-          <select
-            id="vr-type"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
-          >
-            <option value="ADDITIVE">ADDITIVE — menambah kontrak</option>
-            <option value="DEDUCTIVE">DEDUCTIVE — mengurangi kontrak</option>
-          </select>
+          <Select value={type} onValueChange={setType}>
+            <SelectTrigger id="vr-type"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ADDITIVE">ADDITIVE — menambah kontrak</SelectItem>
+              <SelectItem value="DEDUCTIVE">DEDUCTIVE — mengurangi kontrak</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="vr-amount">Perubahan Nilai</Label>

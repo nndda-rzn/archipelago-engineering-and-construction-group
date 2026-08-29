@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useChartOfAccounts, useCreateJournal } from '../model/finance.api';
 import { formatNumber } from '@/shared/lib/format';
 
@@ -57,10 +57,12 @@ export function JournalForm({ onDone, entityId }: { onDone: () => void; entityId
             {lines.map((line, index) => (
               <tr key={index} className="border-t border-neutral-100">
                 <td className="px-3 py-2">
-                  <select value={line.accountId} onChange={(e) => updateLine(index, { accountId: e.target.value })} className="h-8 w-48 rounded-md border border-neutral-200 bg-white px-2 text-body focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20">
-                    <option value="">Pilih akun…</option>
-                    {(accounts ?? []).map((acc) => <option key={acc.id} value={acc.id}>{acc.code} — {acc.name}</option>)}
-                  </select>
+                  <Select value={line.accountId} onValueChange={(v) => updateLine(index, { accountId: v })}>
+                    <SelectTrigger className="h-8 w-48"><SelectValue placeholder="Pilih akun…" /></SelectTrigger>
+                    <SelectContent>
+                      {(accounts ?? []).map((acc) => <SelectItem key={acc.id} value={acc.id}>{acc.code} — {acc.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </td>
                 <td className="px-3 py-2"><Input value={line.description ?? ''} placeholder="opsional" onChange={(e) => updateLine(index, { description: e.target.value })} className="h-8 w-44" /></td>
                 <td className="px-3 py-2"><Input type="number" min={0} value={line.debit || ''} placeholder="0" onChange={(e) => updateLine(index, { debit: Number(e.target.value), credit: line.credit > 0 && Number(e.target.value) > 0 ? 0 : line.credit })} className="h-8 w-28 text-right" /></td>

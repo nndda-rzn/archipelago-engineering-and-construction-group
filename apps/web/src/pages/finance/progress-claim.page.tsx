@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, DataGrid } from '@aec/ui';
+import { Button, DataGrid, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useProgressClaims } from '@/features/finance';
 import { ClaimForm, progressClaimColumns, claimTypeLabel } from '@/features/finance/ui';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
@@ -19,10 +19,12 @@ export function ProgressClaimPage() {
           <p className="mt-1 text-body-sm text-neutral-500">Klaim progres pekerjaan ke klien — tipe PROGRESS/COST/TIME/EOT/KONTRACTUAL (FR-CMR-007)</p>
         </div>
         <div className="flex items-center gap-2">
-          <select aria-label="Filter tipe klaim" value={claimTypeFilter} onChange={(e) => { setClaimTypeFilter(e.target.value); setPagination({ pageIndex: 0, pageSize: PAGE_SIZE }); }} className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Semua tipe</option>
-            {CLAIM_TYPES.map((t) => <option key={t} value={t}>{t} — {claimTypeLabel[t]}</option>)}
-          </select>
+          <Select value={claimTypeFilter} onValueChange={(v) => { setClaimTypeFilter(v); setPagination({ pageIndex: 0, pageSize: PAGE_SIZE }); }}>
+            <SelectTrigger className="w-auto" aria-label="Filter tipe klaim"><SelectValue placeholder="Semua tipe" /></SelectTrigger>
+            <SelectContent>
+              {CLAIM_TYPES.map((t) => <SelectItem key={t} value={t}>{t} — {claimTypeLabel[t]}</SelectItem>)}
+            </SelectContent>
+          </Select>
           <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Tutup' : '+ Buat Klaim'}</Button>
         </div>
       </div>
