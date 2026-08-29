@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useLegalEntities } from '@/entities/legal-entity';
 import { useProjects } from '@/entities/project';
 import { useCreateAssignment, useCreateEmployee } from '../model/hcm.api';
@@ -33,10 +33,14 @@ export function EmployeeForm({ onDone }: { onDone: () => void }) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="emp-entity">Legal Entity</Label>
-          <select id="emp-entity" value={legalEntityId} onChange={(e) => setLegalEntityId(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih entity...</option>
-            {(entities.data?.items ?? []).map((e) => <option key={e.id} value={e.id}>{e.code} - {e.legalName}</option>)}
-          </select>
+          <Select value={legalEntityId} onValueChange={setLegalEntityId}>
+            <SelectTrigger id="emp-entity">
+              <SelectValue placeholder="Pilih entity…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(entities.data?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code} - {e.legalName}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div><Label htmlFor="emp-name">Nama</Label><Input id="emp-name" value={name} onChange={(e) => setName(e.target.value)} /></div>
         <div><Label htmlFor="emp-pos">Posisi</Label><Input id="emp-pos" placeholder="mis. Site Engineer" value={position} onChange={(e) => setPosition(e.target.value)} /></div>
@@ -78,10 +82,14 @@ export function AssignmentForm({ employee }: { employee: Employee }) {
     <div className="mt-4 flex flex-wrap items-end gap-2 border-t border-neutral-100 pt-4">
       <div>
         <Label htmlFor="asg-project">Project</Label>
-        <select id="asg-project" value={projectId} onChange={(e) => setProjectId(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body">
-          <option value="">Pilih project...</option>
-          {(projects.data?.items ?? []).map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}
-        </select>
+        <Select value={projectId} onValueChange={setProjectId}>
+          <SelectTrigger id="asg-project">
+            <SelectValue placeholder="Pilih project…" />
+          </SelectTrigger>
+          <SelectContent>
+            {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
       <div><Label htmlFor="asg-role">Peran</Label><Input id="asg-role" placeholder="mis. Site Engineer" value={role} onChange={(e) => setRole(e.target.value)} /></div>
       <div><Label htmlFor="asg-alloc">Alokasi (%)</Label><Input id="asg-alloc" type="number" min={1} max={100} placeholder="mis. 50" value={allocationPercent} onChange={(e) => setAllocationPercent(e.target.value)} /></div>
