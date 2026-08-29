@@ -32,7 +32,7 @@ export function PayrollForm({ onDone }: { onDone: () => void }) {
         <div><Label htmlFor="pa-gross">Gross Payroll</Label><Input id="pa-gross" type="number" min={0} step={100000} value={gross} onChange={(e) => setGross(e.target.value)} /></div>
         <div><Label htmlFor="pa-project-amt">Alokasi ke Project</Label><Input id="pa-project-amt" type="number" min={0} step={100000} value={projectAmount} onChange={(e) => setProjectAmount(e.target.value)} /></div>
       </div>
-      <p className={`mt-2 text-caption ${balanced ? 'text-emerald-700' : 'text-destructive-600'}`}>Overhead otomatis: {fmt(overhead)} — {balanced ? 'balance OK (gross = project + overhead)' : 'alokasi melebihi gross'}</p>
+      <p className={`mt-2 text-caption ${balanced ? 'text-success-700' : 'text-destructive-600'}`}>Overhead otomatis: {fmt(overhead)} — {balanced ? 'balance OK (gross = project + overhead)' : 'alokasi melebihi gross'}</p>
       <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Batal</Button><Button type="button" onClick={onSubmit} loading={create.isPending} disabled={!balanced}>Buat Alokasi</Button></div>
       {create.isError && <p className="mt-2 text-caption text-destructive-600">Gagal membuat alokasi payroll.</p>}
     </div>

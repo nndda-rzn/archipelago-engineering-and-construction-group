@@ -40,12 +40,12 @@ const pcsColumns = [
   }),
   pcsHelper.accessor('revenue', {
     header: 'Revenue',
-    cell: (info) => <span className="font-mono tabular-nums text-emerald-700">{fmt(info.getValue())}</span>,
+    cell: (info) => <span className="font-mono tabular-nums text-success-700">{fmt(info.getValue())}</span>,
   }),
   pcsHelper.accessor('margin', {
     header: 'Margin',
     cell: (info) => (
-      <span className={`font-mono tabular-nums font-medium ${info.getValue() >= 0 ? 'text-emerald-700' : 'text-destructive-600'}`}>
+      <span className={`font-mono tabular-nums font-medium ${info.getValue() >= 0 ? 'text-success-700' : 'text-destructive-600'}`}>
         {fmt(info.getValue())}
       </span>
     ),
@@ -93,9 +93,9 @@ export function ReportingPage() {
             <>
               <CashFlowChart data={cashFlow.data.series} />
               <div className="mt-3 flex gap-6 text-body-sm text-neutral-600">
-                <span>Total In: <span className="font-mono text-emerald-700">{fmt(cashFlow.data.totalCashIn)}</span></span>
+                <span>Total In: <span className="font-mono text-success-700">{fmt(cashFlow.data.totalCashIn)}</span></span>
                 <span>Total Out: <span className="font-mono text-destructive-600">{fmt(cashFlow.data.totalCashOut)}</span></span>
-                <span>Net: <span className={`font-mono font-medium ${cashFlow.data.netCash >= 0 ? 'text-emerald-700' : 'text-destructive-600'}`}>{fmt(cashFlow.data.netCash)}</span></span>
+                <span>Net: <span className={`font-mono font-medium ${cashFlow.data.netCash >= 0 ? 'text-success-700' : 'text-destructive-600'}`}>{fmt(cashFlow.data.netCash)}</span></span>
               </div>
             </>
           ) : null}

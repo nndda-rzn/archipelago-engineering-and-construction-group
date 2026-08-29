@@ -39,7 +39,7 @@ export const variationColumns = [
     cell: (info) => {
       const value = Number(info.getValue());
       const isAdditive = info.row.original.type === 'ADDITIVE';
-      return <span className={`font-mono tabular-nums ${isAdditive ? 'text-emerald-700' : 'text-destructive-600'}`}>{isAdditive ? '+' : '-'}{fmt(value)}</span>;
+      return <span className={`font-mono tabular-nums ${isAdditive ? 'text-success-700' : 'text-destructive-600'}`}>{isAdditive ? '+' : '-'}{fmt(value)}</span>;
     },
   }),
   columnHelper.accessor('scheduleImpactDays', {
