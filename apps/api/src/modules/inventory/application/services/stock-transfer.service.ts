@@ -25,39 +25,58 @@ export class StockTransferService {
     ]);
     if (!fromWh || !toWh) throw new NotFoundException({ code: 'WAREHOUSE_NOT_FOUND', message: 'Warehouse tidak ditemukan' });
 
-    for (const item of dto.items) {
-      if (!item.wbsItemId) continue;
-      const wbs = await this.prisma.wbsItem.findUnique({ where: { id: item.wbsItemId } });
-      if (!wbs || wbs.projectId !== dto.projectId) {
-        throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: `WBS ${item.wbsItemId} tidak ada di project ini` });
+    // Batch validasi WBS (C2: hindari N+1 per item).
+    const wbsIds = dto.items.filter((i) => i.wbsItemId).map((i) => i.wbsItemId!);
+    if (wbsIds.length > 0) {
+      const wbsItems = await this.prisma.wbsItem.findMany({ where: { id: { in: wbsIds } } });
+      const wbsByProject = new Map(wbsItems.map((w) => [w.id, w.projectId]));
+      for (const item of dto.items) {
+        if (!item.wbsItemId) continue;
+        const ownerProjectId = wbsByProject.get(item.wbsItemId);
+        if (ownerProjectId !== dto.projectId) {
+          throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: `WBS ${item.wbsItemId} tidak ada di project ini` });
+        }
       }
     }
 
-    // Cek stok cukup di warehouse asal (anti over-transfer)
-    for (const item of dto.items) {
-      const agg = await this.prisma.stockLedgerEntry.aggregate({
-        where: { projectId: dto.projectId, warehouseId: dto.fromWarehouseId, wbsItemId: item.wbsItemId ?? null },
-        _sum: { quantity: true, totalValue: true },
-      });
-      const onHand = Number(agg._sum.quantity ?? 0);
-      if (Number(item.quantity) > onHand) {
+    // Batch cek stok (C2): aggregate stok per bucket asal via groupBy.
+    const stockBuckets = dto.items.reduce<Map<string, { key: string; projectId: string; warehouseId: string; wbsItemId: string | null; requiredQty: number }>>((acc, item) => {
+      const key = `${dto.projectId}|${item.wbsItemId ?? 'NULL'}|${dto.fromWarehouseId}`;
+      const cur = acc.get(key) ?? { key, projectId: dto.projectId, warehouseId: dto.fromWarehouseId, wbsItemId: item.wbsItemId ?? null, requiredQty: 0 };
+      cur.requiredQty += Number(item.quantity);
+      acc.set(key, cur);
+      return acc;
+    }, new Map());
+
+    const bucketKeys = [...stockBuckets.values()];
+    const stockAggs = await this.prisma.stockLedgerEntry.groupBy({
+      by: ['projectId', 'warehouseId', 'wbsItemId'],
+      where: {
+        OR: bucketKeys.map((b) => ({ projectId: b.projectId, warehouseId: b.warehouseId, wbsItemId: b.wbsItemId })),
+      },
+      _sum: { quantity: true },
+    });
+    const stockMap = new Map(stockAggs.map((a) => [`${a.projectId}|${a.wbsItemId ?? 'NULL'}|${a.warehouseId}`, Number(a._sum.quantity ?? 0)]));
+
+    for (const b of bucketKeys) {
+      const onHand = stockMap.get(b.key) ?? 0;
+      if (b.requiredQty > onHand) {
         throw new ConflictException({
           code: 'INSUFFICIENT_STOCK',
-          message: `Stok tidak cukup di ${fromWh.code} untuk "${item.description}" (tersedia ${onHand} ${item.unit ?? 'EA'})`,
+          message: `Stok tidak cukup di ${fromWh.code} (tersedia ${onHand})`,
         });
       }
     }
 
-    const seq = await this.prisma.$transaction(async (tx) => {
+    // Seq + create + ledger dalam SATU transaksi atomic (C1: hilangkan gap nomor & partial-failure).
+    const transfer = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'ST' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'ST', prefix: `ST-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-    });
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
 
-    const transfer = await this.prisma.$transaction(async (tx) => {
       const created = await tx.stockTransfer.create({
         data: {
           transferNumber: seq,
@@ -140,7 +159,7 @@ export class StockTransferService {
       action: 'StockTransfer.CREATE',
       resource: 'StockTransfer',
       resourceId: transfer.id,
-      newValue: { transferNumber: seq, from: fromWh.code, to: toWh.code, itemCount: transfer.items.length },
+      newValue: { transferNumber: transfer.transferNumber, from: fromWh.code, to: toWh.code, itemCount: transfer.items.length },
       source: 'api',
     });
 
