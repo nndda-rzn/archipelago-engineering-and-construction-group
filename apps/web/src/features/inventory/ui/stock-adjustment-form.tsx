@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useWarehouses } from '../model/warehouse.api';
 import { useCreateStockAdjustment } from '../model/stock-adjustment.api';
@@ -39,27 +39,40 @@ export function AdjustmentForm({ onDone }: { onDone: () => void }) {
       <div className="grid grid-cols-3 gap-4">
         <div>
           <Label htmlFor="adj-project">Project</Label>
-          <select id="adj-project" value={projectId} onChange={(e) => { setProjectId(e.target.value); setWarehouseId(''); }} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih project…</option>
-            {(projects.data?.items ?? []).map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}
-          </select>
+          <Select value={projectId} onValueChange={(v) => { setProjectId(v); setWarehouseId(''); }}>
+            <SelectTrigger id="adj-project">
+              <SelectValue placeholder="Pilih project…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="adj-wh">Warehouse</Label>
-          <select id="adj-wh" value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih…</option>
-            {projectWhs.map((w) => <option key={w.id} value={w.id}>{w.code}</option>)}
-          </select>
+          <Select value={warehouseId} onValueChange={setWarehouseId}>
+            <SelectTrigger id="adj-wh">
+              <SelectValue placeholder="Pilih…" />
+            </SelectTrigger>
+            <SelectContent>
+              {projectWhs.map((w) => <SelectItem key={w.id} value={w.id}>{w.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label htmlFor="adj-reason">Alasan</Label>
-          <select id="adj-reason" value={reasonCode} onChange={(e) => setReasonCode(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="LOSS">LOSS</option>
-            <option value="DAMAGE">DAMAGE</option>
-            <option value="SURPLUS">SURPLUS</option>
-            <option value="REVALUATION">REVALUATION</option>
-            <option value="OTHERS">OTHERS</option>
-          </select>
+          <Select value={reasonCode} onValueChange={setReasonCode}>
+            <SelectTrigger id="adj-reason">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="LOSS">LOSS</SelectItem>
+              <SelectItem value="DAMAGE">DAMAGE</SelectItem>
+              <SelectItem value="SURPLUS">SURPLUS</SelectItem>
+              <SelectItem value="REVALUATION">REVALUATION</SelectItem>
+              <SelectItem value="OTHERS">OTHERS</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

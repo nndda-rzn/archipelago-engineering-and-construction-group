@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { usePos } from '@/features/procurement';
 import { useCreateGoodsReceipt } from '../model/goods-receipt.api';
 import { useWarehouses } from '../model/warehouse.api';
@@ -27,18 +27,26 @@ export function ReceiptForm({ onDone }: { onDone: () => void }) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="gr-po">PO (harus RELEASED)</Label>
-          <select id="gr-po" value={poId} onChange={(e) => { setPoId(e.target.value); setQty({}); }} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih PO...</option>
-            {releasedPos.map((po) => <option key={po.id} value={po.id}>{po.poNumber} - {po.vendor}</option>)}
-          </select>
+          <Select value={poId} onValueChange={(v) => { setPoId(v); setQty({}); }}>
+            <SelectTrigger id="gr-po">
+              <SelectValue placeholder="Pilih PO…" />
+            </SelectTrigger>
+            <SelectContent>
+              {releasedPos.map((po) => <SelectItem key={po.id} value={po.id}>{po.poNumber} - {po.vendor}</SelectItem>)}
+            </SelectContent>
+          </Select>
           {releasedPos.length === 0 && <p className="mt-1 text-caption text-neutral-500">Tidak ada PO RELEASED. Release PO dulu.</p>}
         </div>
         <div>
           <Label htmlFor="gr-wh">Warehouse</Label>
-          <select id="gr-wh" value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="">Pilih warehouse...</option>
-            {(warehouses.data?.items ?? []).map((wh) => <option key={wh.id} value={wh.id}>{wh.code} - {wh.name}</option>)}
-          </select>
+          <Select value={warehouseId} onValueChange={setWarehouseId}>
+            <SelectTrigger id="gr-wh">
+              <SelectValue placeholder="Pilih warehouse…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(warehouses.data?.items ?? []).map((wh) => <SelectItem key={wh.id} value={wh.id}>{wh.code} - {wh.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
       </div>
       {selectedPo && (

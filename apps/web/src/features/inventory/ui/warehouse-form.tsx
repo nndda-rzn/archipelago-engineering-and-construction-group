@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateWarehouse } from '../model/warehouse.api';
 
 export function WarehouseForm({ onDone }: { onDone: () => void }) {
@@ -24,12 +24,17 @@ export function WarehouseForm({ onDone }: { onDone: () => void }) {
         <div><Label htmlFor="wh-name">Nama</Label><Input id="wh-name" placeholder="Warehouse Proyek" value={name} onChange={(e) => setName(e.target.value)} /></div>
         <div>
           <Label htmlFor="wh-type">Tipe</Label>
-          <select id="wh-type" value={type} onChange={(e) => setType(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body">
-            <option value="PROJECT">PROJECT</option>
-            <option value="CORPORATE">CORPORATE</option>
-            <option value="TEMPORARY">TEMPORARY</option>
-            <option value="VIRTUAL">VIRTUAL</option>
-          </select>
+          <Select value={type} onValueChange={setType}>
+            <SelectTrigger id="wh-type">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="PROJECT">PROJECT</SelectItem>
+              <SelectItem value="CORPORATE">CORPORATE</SelectItem>
+              <SelectItem value="TEMPORARY">TEMPORARY</SelectItem>
+              <SelectItem value="VIRTUAL">VIRTUAL</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div><Label htmlFor="wh-location">Lokasi</Label><Input id="wh-location" value={location} onChange={(e) => setLocation(e.target.value)} /></div>
       </div>

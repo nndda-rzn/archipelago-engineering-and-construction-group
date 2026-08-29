@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useWarehouses } from '../model/warehouse.api';
 import { useCreateStockOpname } from '../model/stock-opname.api';
@@ -23,8 +23,8 @@ export function OpnameForm({ onDone }: { onDone: () => void }) {
   return (
     <div className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="grid grid-cols-2 gap-4">
-        <div><Label htmlFor="opn-project">Project</Label><select id="opn-project" value={projectId} onChange={(e) => { setProjectId(e.target.value); setWarehouseId(''); }} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body"><option value="">Pilih project...</option>{(projects.data?.items ?? []).map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}</select></div>
-        <div><Label htmlFor="opn-wh">Warehouse</Label><select id="opn-wh" value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-body"><option value="">Pilih...</option>{projectWhs.map((w) => <option key={w.id} value={w.id}>{w.code} - {w.name}</option>)}</select></div>
+        <div><Label htmlFor="opn-project">Project</Label><Select value={projectId} onValueChange={(v) => { setProjectId(v); setWarehouseId(''); }}><SelectTrigger id="opn-project"><SelectValue placeholder="Pilih project…" /></SelectTrigger><SelectContent>{(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}</SelectContent></Select></div>
+        <div><Label htmlFor="opn-wh">Warehouse</Label><Select value={warehouseId} onValueChange={setWarehouseId}><SelectTrigger id="opn-wh"><SelectValue placeholder="Pilih…" /></SelectTrigger><SelectContent>{projectWhs.map((w) => <SelectItem key={w.id} value={w.id}>{w.code} - {w.name}</SelectItem>)}</SelectContent></Select></div>
       </div>
       <div className="mt-4 overflow-hidden rounded-md border border-neutral-200">
         <table className="w-full text-left text-body">

@@ -1,4 +1,4 @@
-import { Button, Input } from '@aec/ui';
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 
 export type IssueLine = { description: string; quantity: number; unit: string; wbsItemId: string };
 export type WbsOption = { id: string; label: string };
@@ -36,14 +36,17 @@ export function IssueLineEditor({
                   <Input placeholder="Contoh: Semen 50kg" value={line.description} onChange={(e) => onChange(index, { description: e.target.value })} className="h-8" />
                 </td>
                 <td className="px-3 py-2">
-                  <select
+                  <Select
                     value={line.wbsItemId}
-                    onChange={(e) => onChange(index, { wbsItemId: e.target.value })}
-                    className="flex h-8 w-full rounded-md border border-neutral-200 bg-white px-2 text-body hover:border-neutral-300"
+                    onValueChange={(v) => onChange(index, { wbsItemId: v })}
                   >
-                    <option value="">WBS (opsional)…</option>
-                    {wbsOptions.map((w) => <option key={w.id} value={w.id}>{w.label}</option>)}
-                  </select>
+                    <SelectTrigger className="h-8" aria-label={`WBS baris ${index + 1}`}>
+                      <SelectValue placeholder="WBS (opsional)…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {wbsOptions.map((w) => <SelectItem key={w.id} value={w.id}>{w.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </td>
                 <td className="px-3 py-2">
                   <Input placeholder="EA" value={line.unit} onChange={(e) => onChange(index, { unit: e.target.value })} className="h-8 w-20" />
