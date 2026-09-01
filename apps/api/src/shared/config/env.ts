@@ -17,6 +17,7 @@ export const envSchema = z.object({
   THROTTLE_TTL: z.coerce.number().int().min(1).default(60),
   THROTTLE_LIMIT: z.coerce.number().int().min(1).default(100),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('debug'),
+  REDIS_URL: z.string().default('redis://localhost:6379'),
 });
 
 export type Env = z.infer<typeof envSchema>;
