@@ -17,7 +17,11 @@ export class QueueService {
 
   constructor() {
     const url = process.env.REDIS_URL ?? 'redis://localhost:6379';
-    this.connection = new IORedis(url, { maxRetriesPerRequest: null });
+    this.connection = new IORedis(url, {
+      maxRetriesPerRequest: 0,
+      enableOfflineQueue: false,
+      retryStrategy: (times) => (times > 3 ? null : Math.min(times * 200, 1000)),
+    });
     this.queue = new Queue(QUEUE_NAME, { connection: this.connection });
   }
 
