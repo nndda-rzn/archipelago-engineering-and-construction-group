@@ -4,6 +4,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
 import { CacheModule } from './shared/cache/cache.module';
+import { QueueModule } from './shared/queue/queue.module';
 import { HealthController } from './health/health.controller';
 import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
 import { FoundationModule } from './modules/foundation';
@@ -53,7 +54,7 @@ import { TreasuryModule } from './modules/treasury';
         limit: Number(process.env.THROTTLE_LIMIT ?? 100),
       },
     ]),
-    FoundationModule, ProjectModule, ProcurementModule, InventoryModule, ApprovalModule, FinanceModule, ConstructionModule, HcmModule, HseModule, QualityModule, GovernanceModule, AnalyticsModule, CommercialModule, EngineeringModule, MasterDataModule, TreasuryModule, CacheModule],
+    FoundationModule, ProjectModule, ProcurementModule, InventoryModule, ApprovalModule, FinanceModule, ConstructionModule, HcmModule, HseModule, QualityModule, GovernanceModule, AnalyticsModule, CommercialModule, EngineeringModule, MasterDataModule, TreasuryModule, CacheModule, QueueModule],
   controllers: [HealthController],
   providers: [
     {
