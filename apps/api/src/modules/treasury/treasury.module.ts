@@ -1,11 +1,23 @@
 import { Module } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
+import { SharedModule } from '@/shared/shared.module';
 import { TreasuryController } from './presentation/controllers/treasury.controller';
-import { TreasuryService } from './application/services/treasury.service';
+import { BankAccountService } from './application/services/bank-account.service';
+import { PaymentProposalService } from './application/services/payment-proposal.service';
+import { BankGuaranteeService } from './application/services/bank-guarantee.service';
+import { CashForecastService } from './application/services/cash-forecast.service';
+import { FxExposureService } from './application/services/fx-exposure.service';
 
 @Module({
-  imports: [],
+  imports: [SharedModule],
   controllers: [TreasuryController],
-  providers: [TreasuryService, PrismaService],
+  providers: [
+    PrismaService,
+    BankAccountService,
+    PaymentProposalService,
+    BankGuaranteeService,
+    CashForecastService,
+    FxExposureService,
+  ],
 })
 export class TreasuryModule {}
