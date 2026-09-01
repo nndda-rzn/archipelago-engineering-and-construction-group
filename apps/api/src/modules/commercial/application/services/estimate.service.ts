@@ -1,0 +1,85 @@
+import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '@/shared/database/prisma.service';
+import { AuditService } from '@/modules/foundation';
+import { SequenceHelper } from '@/shared/utils/sequence.helper';
+import type { CreateEstimateDto, CreatePricingScenarioDto } from '../../presentation/dto/tender.dto';
+
+@Injectable()
+export class EstimateService {
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(SequenceHelper) private readonly seq: SequenceHelper,
+  ) {}
+
+  // FR-COM-003: Estimate versioning
+  async createEstimate(opportunityId: string, dto: CreateEstimateDto, actorId: string) {
+    const opp = await this.prisma.opportunity.findUnique({ where: { id: opportunityId } });
+    if (!opp) throw new NotFoundException({ code: 'OPPORTUNITY_NOT_FOUND', message: 'Opportunity tidak ditemukan' });
+
+    const bid = await this.prisma.bidDecision.findUnique({ where: { opportunityId } });
+    if (!bid || bid.decision !== 'BID') {
+      throw new ConflictException({ code: 'BID_NOT_APPROVED', message: 'Bid/No-Bid harus BID sebelum bid preparation (FR-COM-002)' });
+    }
+
+    const last = await this.prisma.estimate.findFirst({ where: { opportunityId }, orderBy: { version: 'desc' } });
+    const version = (last?.version ?? 0) + 1;
+    const estimateNumber = await this.seq.next('EST', `EST-${new Date().getFullYear()}-`);
+
+    const estimate = await this.prisma.estimate.create({
+      data: { estimateNumber, opportunityId, version, description: dto.description ?? null, totalAmount: dto.totalAmount, createdBy: actorId },
+    });
+
+    await this.audit.record({ userId: actorId, action: 'Estimate.CREATE', resource: 'Estimate', resourceId: estimate.id, newValue: { estimateNumber, version, totalAmount: Number(dto.totalAmount) }, source: 'api' });
+    return estimate;
+  }
+
+  // FR-COM-003: version transition WORKING→REVIEW→APPROVED→FINAL_BID
+  async transitionEstimate(id: string, status: string, actorId: string) {
+    const estimate = await this.prisma.estimate.findUnique({ where: { id } });
+    if (!estimate) throw new NotFoundException({ code: 'ESTIMATE_NOT_FOUND', message: 'Estimate tidak ditemukan' });
+
+    const allowed: Record<string, string[]> = {
+      WORKING: ['REVIEW'],
+      REVIEW: ['APPROVED', 'WORKING'],
+      APPROVED: ['FINAL_BID', 'SUPERSEDED'],
+      FINAL_BID: ['AWARD_RECONCILED', 'SUPERSEDED'],
+      SUPERSEDED: [],
+      AWARD_RECONCILED: [],
+    };
+    if (!(allowed[estimate.status] ?? []).includes(status)) {
+      throw new ConflictException({ code: 'INVALID_TRANSITION', message: `Transisi ${estimate.status} → ${status} tidak valid` });
+    }
+
+    const updated = await this.prisma.estimate.update({ where: { id }, data: { status } });
+    await this.audit.record({ userId: actorId, action: 'Estimate.TRANSITION', resource: 'Estimate', resourceId: id, newValue: { estimateNumber: estimate.estimateNumber, status }, source: 'api' });
+    return updated;
+  }
+
+  async listEstimates(opportunityId: string) {
+    const estimates = await this.prisma.estimate.findMany({
+      where: { opportunityId },
+      include: { pricingScenarios: true },
+      orderBy: { version: 'desc' },
+    });
+    return { items: estimates, total: estimates.length };
+  }
+
+  // FR-COM-004: Pricing scenario
+  async createPricingScenario(estimateId: string, dto: CreatePricingScenarioDto, actorId: string) {
+    const estimate = await this.prisma.estimate.findUnique({ where: { id: estimateId } });
+    if (!estimate) throw new NotFoundException({ code: 'ESTIMATE_NOT_FOUND', message: 'Estimate tidak ditemukan' });
+
+    const exists = await this.prisma.pricingScenario.findUnique({
+      where: { estimateId_scenarioType: { estimateId, scenarioType: dto.scenarioType } },
+    });
+    if (exists) throw new ConflictException({ code: 'SCENARIO_EXISTS', message: `Scenario ${dto.scenarioType} sudah ada di estimate ini` });
+
+    const scenario = await this.prisma.pricingScenario.create({
+      data: { estimateId, scenarioType: dto.scenarioType, amount: dto.amount, marginPct: dto.marginPct ?? 0, note: dto.note ?? null },
+    });
+
+    await this.audit.record({ userId: actorId, action: 'PricingScenario.CREATE', resource: 'PricingScenario', resourceId: scenario.id, newValue: { estimateNumber: estimate.estimateNumber, scenarioType: dto.scenarioType, amount: Number(dto.amount) }, source: 'api' });
+    return scenario;
+  }
+}
