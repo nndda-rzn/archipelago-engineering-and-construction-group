@@ -8,6 +8,8 @@ if (!connectionString) throw new Error('DATABASE_URL is required');
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
+// ─── Permission matrix ───────────────────────────────────────────────────────
+
 const permissions = [
   ['LegalEntity.VIEW', 'LegalEntity', 'VIEW'],
   ['LegalEntity.CREATE', 'LegalEntity', 'CREATE'],
@@ -164,9 +166,19 @@ const permissions = [
   ['Treasury.CREATE', 'Treasury', 'CREATE'],
   ['Treasury.APPROVE', 'Treasury', 'APPROVE'],
   ['Treasury.RELEASE', 'Treasury', 'RELEASE'],
+  // Finance permissions (konsolidasi dari invoicePermissions)
+  ['VendorInvoice.VIEW', 'VendorInvoice', 'VIEW'],
+  ['VendorInvoice.CREATE', 'VendorInvoice', 'CREATE'],
+  ['VendorInvoice.POST', 'VendorInvoice', 'POST'],
+  ['Payment.VIEW', 'Payment', 'VIEW'],
+  ['Payment.CREATE', 'Payment', 'CREATE'],
+  ['Payment.APPROVE', 'Payment', 'APPROVE'],
+  ['Payment.PAY', 'Payment', 'PAY'],
 ] as const;
 
-async function main() {
+// ─── Seed functions ───────────────────────────────────────────────────────────
+
+async function seedFoundation() {
   const entity = await prisma.legalEntity.upsert({
     where: { code: 'AEC-CON' },
     update: {},
@@ -177,13 +189,11 @@ async function main() {
       country: 'ID',
     },
   });
+  console.log(`[foundation] Seeded legal entity: ${entity.code}`);
+  return { entity };
+}
 
-  const role = await prisma.role.upsert({
-    where: { code: 'SUPER_ADMIN' },
-    update: {},
-    create: { code: 'SUPER_ADMIN', name: 'Super Administrator' },
-  });
-
+async function seedPermissions(roleId: string) {
   for (const [code, resource, action] of permissions) {
     const permission = await prisma.permission.upsert({
       where: { code },
@@ -193,76 +203,55 @@ async function main() {
     await prisma.rolePermission.upsert({
       where: {
         roleId_permissionId_scopeType_scopeValue: {
-          roleId: role.id,
+          roleId,
           permissionId: permission.id,
           scopeType: 'GLOBAL',
           scopeValue: '',
         },
       },
       update: {},
-      create: { roleId: role.id, permissionId: permission.id, scopeType: 'GLOBAL', scopeValue: '' },
+      create: { roleId, permissionId: permission.id, scopeType: 'GLOBAL', scopeValue: '' },
     });
   }
+  console.log(`[permissions] Seeded ${permissions.length} permissions → SUPER_ADMIN`);
+}
 
-  const password = process.env.SEED_ADMIN_PASSWORD ?? 'Admin123!';
-  const passwordHash = await bcrypt.hash(password, 12);
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@aec.local' },
-    update: { passwordHash, legalEntityId: entity.id, status: 'ACTIVE' },
-    create: {
-      username: 'admin',
-      email: 'admin@aec.local',
-      displayName: 'AEC Administrator',
-      passwordHash,
-      legalEntityId: entity.id,
-    },
+async function seedUsers(entityId: string) {
+  const superAdminRole = await prisma.role.upsert({
+    where: { code: 'SUPER_ADMIN' },
+    update: {},
+    create: { code: 'SUPER_ADMIN', name: 'Super Administrator' },
   });
 
-  await prisma.userRole.upsert({
-    where: {
-      userId_roleId_effectiveFrom: {
-        userId: admin.id,
-        roleId: role.id,
-        effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
-      },
-    },
-    update: { effectiveTo: null },
-    create: {
-      userId: admin.id,
-      roleId: role.id,
-      effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
-    },
-  });
-
-  // Demo approval roles (FR-FND-007) — approver untuk PR/PO
   const buyerRole = await prisma.role.upsert({
     where: { code: 'BUYER' },
     update: {},
     create: { code: 'BUYER', name: 'Buyer', description: 'Membuat PR' },
   });
+
   const procManagerRole = await prisma.role.upsert({
     where: { code: 'PROCUREMENT_MANAGER' },
     update: {},
     create: { code: 'PROCUREMENT_MANAGER', name: 'Procurement Manager', description: 'Menyetujui PR/PO' },
   });
 
-  const buyerPassword = await bcrypt.hash('Buyer123!', 12);
-  const buyer = await prisma.user.upsert({
-    where: { email: 'buyer@aec.local' },
-    update: { passwordHash: buyerPassword, legalEntityId: entity.id, status: 'ACTIVE' },
-    create: {
-      username: 'buyer',
-      email: 'buyer@aec.local',
-      displayName: 'Buyer Demo',
-      passwordHash: buyerPassword,
-      legalEntityId: entity.id,
-    },
+  // Seed permissions untuk SUPER_ADMIN
+  await seedPermissions(superAdminRole.id);
+
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? 'Admin123!';
+  const adminHash = await bcrypt.hash(adminPassword, 12);
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@aec.local' },
+    update: { passwordHash: adminHash, legalEntityId: entityId, status: 'ACTIVE' },
+    create: { username: 'admin', email: 'admin@aec.local', displayName: 'AEC Administrator', passwordHash: adminHash, legalEntityId: entityId },
   });
+
   await prisma.userRole.upsert({
-    where: { userId_roleId_effectiveFrom: { userId: buyer.id, roleId: buyerRole.id, effectiveFrom: new Date('2026-01-01T00:00:00.000Z') } },
+    where: { userId_roleId_effectiveFrom: { userId: admin.id, roleId: superAdminRole.id, effectiveFrom: new Date('2026-01-01T00:00:00.000Z') } },
     update: { effectiveTo: null },
-    create: { userId: buyer.id, roleId: buyerRole.id, effectiveFrom: new Date('2026-01-01T00:00:00.000Z') },
+    create: { userId: admin.id, roleId: superAdminRole.id, effectiveFrom: new Date('2026-01-01T00:00:00.000Z') },
   });
+
   // Admin dapat bertindak sebagai PROCUREMENT_MANAGER (approver demo)
   await prisma.userRole.upsert({
     where: { userId_roleId_effectiveFrom: { userId: admin.id, roleId: procManagerRole.id, effectiveFrom: new Date('2026-01-01T00:00:00.000Z') } },
@@ -270,36 +259,39 @@ async function main() {
     create: { userId: admin.id, roleId: procManagerRole.id, effectiveFrom: new Date('2026-01-01T00:00:00.000Z') },
   });
 
-  // Buyer: bisa lihat/lihat project + buat PR + submit approval
+  const buyerPassword = await bcrypt.hash('Buyer123!', 12);
+  const buyer = await prisma.user.upsert({
+    where: { email: 'buyer@aec.local' },
+    update: { passwordHash: buyerPassword, legalEntityId: entityId, status: 'ACTIVE' },
+    create: { username: 'buyer', email: 'buyer@aec.local', displayName: 'Buyer Demo', passwordHash: buyerPassword, legalEntityId: entityId },
+  });
+
+  await prisma.userRole.upsert({
+    where: { userId_roleId_effectiveFrom: { userId: buyer.id, roleId: buyerRole.id, effectiveFrom: new Date('2026-01-01T00:00:00.000Z') } },
+    update: { effectiveTo: null },
+    create: { userId: buyer.id, roleId: buyerRole.id, effectiveFrom: new Date('2026-01-01T00:00:00.000Z') },
+  });
+
+  // Buyer permissions
   const buyerPermissionCodes = [
-    'Project.VIEW',
-    'WBS.VIEW',
-    'PurchaseRequisition.VIEW',
-    'PurchaseRequisition.CREATE',
-    'PurchaseOrder.VIEW',
-    'PurchaseOrder.CREATE',
-    'Approval.VIEW',
-    'Approval.SUBMIT',
-    'Approval.APPROVE',
+    'Project.VIEW', 'WBS.VIEW', 'PurchaseRequisition.VIEW', 'PurchaseRequisition.CREATE',
+    'PurchaseOrder.VIEW', 'PurchaseOrder.CREATE', 'Approval.VIEW', 'Approval.SUBMIT', 'Approval.APPROVE',
   ];
   for (const code of buyerPermissionCodes) {
     const permission = await prisma.permission.findUnique({ where: { code } });
     if (!permission) continue;
     await prisma.rolePermission.upsert({
-      where: {
-        roleId_permissionId_scopeType_scopeValue: {
-          roleId: buyerRole.id,
-          permissionId: permission.id,
-          scopeType: 'GLOBAL',
-          scopeValue: '',
-        },
-      },
+      where: { roleId_permissionId_scopeType_scopeValue: { roleId: buyerRole.id, permissionId: permission.id, scopeType: 'GLOBAL', scopeValue: '' } },
       update: {},
       create: { roleId: buyerRole.id, permissionId: permission.id, scopeType: 'GLOBAL', scopeValue: '' },
     });
   }
 
-  // Demo project + WBS (PRD §46.4)
+  console.log(`[users] Seeded: ${admin.email}, ${buyer.email}`);
+  return { superAdminRole, buyerRole, procManagerRole, admin, buyer };
+}
+
+async function seedDemoData(entityId: string) {
   const demoProject = await prisma.project.upsert({
     where: { code: 'PRJ-EPC-2027-014' },
     update: {},
@@ -307,7 +299,7 @@ async function main() {
       code: 'PRJ-EPC-2027-014',
       name: 'EPC Industrial Processing Facility',
       client: 'PT Klien Utama',
-      legalEntityId: entity.id,
+      legalEntityId: entityId,
       location: 'Karawang',
       currency: 'IDR',
     },
@@ -327,55 +319,17 @@ async function main() {
     });
   }
 
-  console.log(
-    `Seeded ${entity.code}, ${role.code}, ${admin.email}, ${buyer.email}, ${demoProject.code} + ${wbsLevels.length} WBS`,
-  );
-
-  // Demo warehouse project (FR-INV-002) — untuk goods receipt demo
   const demoWarehouse = await prisma.warehouse.upsert({
     where: { code: 'WH-PROJ-014' },
     update: {},
-    create: {
-      code: 'WH-PROJ-014',
-      name: 'Warehouse Proyek 014',
-      warehouseType: 'PROJECT',
-      projectId: demoProject.id,
-      location: 'Karawang',
-    },
+    create: { code: 'WH-PROJ-014', name: 'Warehouse Proyek 014', warehouseType: 'PROJECT', projectId: demoProject.id, location: 'Karawang' },
   });
-  console.log(`Seeded warehouse ${demoWarehouse.code}`);
 
-  // VendorInvoice permissions
-  const invoicePermissions = [
-    ['VendorInvoice.VIEW', 'VendorInvoice', 'VIEW'],
-    ['VendorInvoice.CREATE', 'VendorInvoice', 'CREATE'],
-    ['VendorInvoice.POST', 'VendorInvoice', 'POST'],
-    ['Payment.VIEW', 'Payment', 'VIEW'],
-    ['Payment.CREATE', 'Payment', 'CREATE'],
-    ['Payment.APPROVE', 'Payment', 'APPROVE'],
-    ['Payment.PAY', 'Payment', 'PAY'],
-  ] as const;
-  for (const [code, resource, action] of invoicePermissions) {
-    const permission = await prisma.permission.upsert({
-      where: { code },
-      update: {},
-      create: { code, resource, action },
-    });
-    await prisma.rolePermission.upsert({
-      where: {
-        roleId_permissionId_scopeType_scopeValue: {
-          roleId: role.id,
-          permissionId: permission.id,
-          scopeType: 'GLOBAL',
-          scopeValue: '',
-        },
-      },
-      update: {},
-      create: { roleId: role.id, permissionId: permission.id, scopeType: 'GLOBAL', scopeValue: '' },
-    });
-  }
+  console.log(`[demo-data] Seeded: ${demoProject.code} + ${wbsLevels.length} WBS + ${demoWarehouse.code}`);
+  return { demoProject };
+}
 
-  // COA baseline (FR-FIN-002) — PSAK sederhana
+async function seedFinance(entityId: string) {
   const coaBaseline: Array<{ code: string; name: string; accountType: string; normalBalance: string }> = [
     { code: '1100', name: 'Kas dan Bank', accountType: 'ASSET', normalBalance: 'DEBIT' },
     { code: '1200', name: 'Piutang Usaha', accountType: 'ASSET', normalBalance: 'DEBIT' },
@@ -390,15 +344,25 @@ async function main() {
   ];
   for (const acc of coaBaseline) {
     await prisma.chartOfAccount.upsert({
-      where: { legalEntityId_code: { legalEntityId: entity.id, code: acc.code } },
+      where: { legalEntityId_code: { legalEntityId: entityId, code: acc.code } },
       update: {},
-      create: { legalEntityId: entity.id, code: acc.code, name: acc.name, accountType: acc.accountType, normalBalance: acc.normalBalance },
+      create: { legalEntityId: entityId, code: acc.code, name: acc.name, accountType: acc.accountType, normalBalance: acc.normalBalance },
     });
   }
-  console.log(`Seeded ${coaBaseline.length} COA baseline`);
+  console.log(`[finance] Seeded ${coaBaseline.length} COA baseline (PSAK)`);
+}
 
-  // Workflow definition demo (FR-FND-007 full) — PR & PO approval
-  const workflowSeeds = [
+async function seedWorkflows() {
+  type WorkflowStep = {
+    stepOrder: number;
+    name: string;
+    approverRoleCode: string;
+    conditionField?: string;
+    conditionOp?: string;
+    conditionValue?: number | null;
+  };
+
+  const workflowSeeds: Array<{ code: string; transactionType: string; steps: WorkflowStep[] }> = [
     {
       code: 'PR_APPROVAL',
       transactionType: 'PurchaseRequisition',
@@ -415,6 +379,7 @@ async function main() {
       ],
     },
   ];
+
   for (const wf of workflowSeeds) {
     const existing = await prisma.workflowDefinition.findFirst({ where: { code: wf.code } });
     if (!existing) {
@@ -426,12 +391,32 @@ async function main() {
           status: 'ACTIVE',
           transactionType: wf.transactionType,
           createdBy: 'system',
-          steps: { create: wf.steps.map((s) => ({ ...s, conditionValue: s.conditionValue ?? null })) },
+          steps: {
+            create: wf.steps.map((s) => ({
+              stepOrder: s.stepOrder,
+              name: s.name,
+              approverRoleCode: s.approverRoleCode,
+              conditionField: s.conditionField ?? null,
+              conditionOp: s.conditionOp ?? null,
+              conditionValue: s.conditionValue ?? null,
+            })),
+          },
         },
       });
-      console.log(`Seeded workflow ${def.code} v${def.version}`);
+      console.log(`[workflows] Seeded workflow ${def.code} v${def.version}`);
     }
   }
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+
+async function main() {
+  const { entity } = await seedFoundation();
+  const { } = await seedUsers(entity.id);
+  await seedDemoData(entity.id);
+  await seedFinance(entity.id);
+  await seedWorkflows();
+  console.log('[seed] Selesai.');
 }
 
 main()
@@ -440,4 +425,3 @@ main()
     process.exitCode = 1;
   })
   .finally(() => prisma.$disconnect());
-
