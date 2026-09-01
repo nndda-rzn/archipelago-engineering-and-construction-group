@@ -1,132 +1,9 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation } from '@tanstack/react-router';
-import { ChevronDown, LogOut, Menu, X } from 'lucide-react';
+import { ChevronDown, Menu, X } from 'lucide-react';
 import { cn } from '@aec/ui';
-import { useMe, useLogout } from '@/features/auth';
-
-type NavItem = { label: string; to: string };
-type NavGroup = { label: string; items: NavItem[]; defaultCollapsed?: boolean };
-
-const navGroups: NavGroup[] = [
-  {
-    label: 'Main',
-    items: [
-      { label: 'Dashboard', to: '/' },
-      { label: 'Executive Analytics', to: '/analytics' },
-      { label: 'Advanced Reporting', to: '/analytics/reporting' },
-      { label: 'Approval', to: '/approvals' },
-      { label: 'Workflow', to: '/workflows' },
-    ],
-  },
-  {
-    label: 'Foundation',
-    items: [
-      { label: 'Legal Entities', to: '/foundation/legal-entities' },
-      { label: 'Foundation Hardening', to: '/foundation/hardening' },
-      { label: 'Master Data', to: '/master-data' },
-      { label: 'User Management', to: '/foundation/users' },
-      { label: 'Role Management', to: '/foundation/roles' },
-      { label: 'Audit Trail', to: '/foundation/audit-logs' },
-    ],
-  },
-  {
-    label: 'Project',
-    items: [
-      { label: 'Proyek', to: '/projects' },
-      { label: 'WBS', to: '/wbs' },
-      { label: 'Budget', to: '/budget' },
-      { label: 'Project Health', to: '/project-health' },
-      { label: 'Project Controls', to: '/project-controls' },
-    ],
-  },
-  {
-    label: 'Commercial',
-    items: [
-      { label: 'Komersial', to: '/commercial' },
-      { label: 'Tender & Bid', to: '/commercial/tender' },
-    ],
-  },
-  {
-    label: 'Engineering',
-    items: [{ label: 'Engineering', to: '/engineering' }],
-  },
-  {
-    label: 'Procurement',
-    items: [
-      { label: 'Purchase Requisition', to: '/procurement/pr' },
-      { label: 'Purchase Order', to: '/procurement/po' },
-      { label: 'RFQ', to: '/procurement/rfq' },
-      { label: 'Procurement Hardening', to: '/procurement/hardening' },
-    ],
-  },
-  {
-    label: 'Finance',
-    defaultCollapsed: true,
-    items: [
-      { label: 'Vendor Invoice', to: '/finance/vendor-invoices' },
-      { label: 'Payment', to: '/finance/payments' },
-      { label: 'Progress Claim', to: '/finance/progress-claims' },
-      { label: 'Client Invoice', to: '/finance/client-invoices' },
-      { label: 'Collection', to: '/finance/collections' },
-      { label: 'Variation Order', to: '/finance/variations' },
-      { label: 'Subcontract', to: '/finance/subcontracts' },
-      { label: 'GL Journal', to: '/finance/journals' },
-      { label: 'Trial Balance', to: '/finance/trial-balance' },
-      { label: 'Chart of Accounts', to: '/finance/chart-of-accounts' },
-      { label: 'Finance Closure', to: '/finance/closure' },
-      { label: 'Treasury', to: '/treasury' },
-    ],
-  },
-  {
-    label: 'Inventory',
-    defaultCollapsed: true,
-    items: [
-      { label: 'Goods Receipt', to: '/inventory/goods-receipts' },
-      { label: 'Material Issue', to: '/inventory/material-issues' },
-      { label: 'Stock Adjustment', to: '/inventory/stock-adjustments' },
-      { label: 'Stock Opname', to: '/inventory/stock-opnames' },
-      { label: 'Stock Transfer', to: '/inventory/stock-transfers' },
-      { label: 'Stock Ledger', to: '/inventory/stock-ledger' },
-    ],
-  },
-  {
-    label: 'Construction',
-    items: [
-      { label: 'Work Packages', to: '/construction/work-packages' },
-      { label: 'Daily Report', to: '/construction/daily-reports' },
-      { label: 'Commissioning', to: '/construction/commissioning' },
-      { label: 'Handover', to: '/construction/handover' },
-    ],
-  },
-  {
-    label: 'HCM',
-    items: [
-      { label: 'Employee', to: '/hcm/employees' },
-      { label: 'Timesheet', to: '/hcm/timesheets' },
-      { label: 'Equipment', to: '/hcm/equipment' },
-      { label: 'Payroll Allocation', to: '/hcm/payroll' },
-    ],
-  },
-  {
-    label: 'HSE & Quality',
-    items: [
-      { label: 'HSE', to: '/hse' },
-      { label: 'Kualitas', to: '/quality' },
-      { label: 'Tata Kelola', to: '/governance' },
-    ],
-  },
-];
-
-const STORAGE_KEY = 'aec_sidebar_collapsed';
-
-/** Baca state collapse per grup dari localStorage (toleran error). */
-function readCollapsed(): Record<string, boolean> {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
-  } catch {
-    return {};
-  }
-}
+import { navGroups, readCollapsed, STORAGE_KEY, type NavGroup } from './nav-config';
+import { UserMenu } from './user-menu';
 
 export function AppShell() {
   const location = useLocation();
@@ -135,13 +12,7 @@ export function AppShell() {
     const saved = readCollapsed();
     return Object.fromEntries(navGroups.map((g) => [g.label, saved[g.label] ?? g.defaultCollapsed ?? false]));
   });
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { data: me } = useMe();
-  const logout = useLogout();
-
-  const displayName = me?.displayName ?? me?.email?.split('@')[0] ?? 'Pengguna';
-  const initial = (displayName.charAt(0) ?? '?').toUpperCase();
 
   const navigateAndClose = () => {
     setMobileOpen(false);
@@ -230,7 +101,7 @@ export function AppShell() {
 
   return (
     <div className="flex h-screen">
-      { /* Skip link */ }
+      {/* Skip link */}
       <a
         href="#main-content"
         className="fixed -top-10 left-2 z-command rounded bg-racing-red-600 px-3 py-2 text-body-sm text-white focus-visible:top-2"
@@ -238,12 +109,12 @@ export function AppShell() {
         Lewati ke konten
       </a>
 
-      { /* Sidebar desktop — hidden di mobile */ }
+      {/* Sidebar desktop — hidden di mobile */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-neutral-200 bg-white lg:flex" aria-label="Navigasi">
         {sidebarContent}
       </aside>
 
-      { /* Sidebar mobile — drawer */ }
+      {/* Sidebar mobile — drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-drawer lg:hidden" role="dialog" aria-modal="true" aria-label="Navigasi">
           <button
@@ -273,9 +144,9 @@ export function AppShell() {
         </div>
       )}
 
-      { /* Main area */ }
+      {/* Main area */}
       <div className="flex flex-1 flex-col">
-        { /* Topbar */ }
+        {/* Topbar */}
         <header className="flex h-12 shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-4 lg:px-6">
           <div className="flex items-center gap-3">
             <button
@@ -288,49 +159,10 @@ export function AppShell() {
             </button>
             <span className="text-body-sm font-medium text-neutral-700">AEC Group</span>
           </div>
-          <div className="relative flex items-center">
-            <button
-              type="button"
-              onClick={() => setUserMenuOpen((o) => !o)}
-              aria-haspopup="menu"
-              aria-expanded={userMenuOpen}
-              className="flex items-center gap-2 rounded-md px-2 py-1 transition-colors duration-fast hover:bg-neutral-100"
-            >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-racing-red-600 text-body-sm font-medium text-white" aria-hidden="true">
-                {initial}
-              </span>
-              <span className="text-body-sm font-medium text-neutral-800">{displayName}</span>
-              <ChevronDown className={cn('h-3.5 w-3.5 text-neutral-400 transition-transform duration-fast', userMenuOpen && 'rotate-180')} aria-hidden="true" />
-            </button>
-            {userMenuOpen && (
-              <div
-                role="menu"
-                className="absolute right-0 top-full z-dropdown mt-1 w-56 rounded-md border border-neutral-200 bg-white p-1 shadow-md"
-              >
-                <div className="border-b border-neutral-100 px-3 py-2">
-                  <p className="text-body-sm font-medium text-neutral-900">{displayName}</p>
-                  <p className="truncate text-caption text-neutral-500">{me?.email}</p>
-                </div>
-                <div className="flex flex-wrap gap-1 px-3 py-2">
-                  {(me?.roles ?? []).map((r) => (
-                    <span key={r} className="rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-caption text-neutral-600">{r}</span>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={logout}
-                  className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-body-sm text-destructive-600 transition-colors duration-fast hover:bg-destructive-50"
-                >
-                  <LogOut className="h-4 w-4" aria-hidden="true" />
-                  Keluar
-                </button>
-              </div>
-            )}
-          </div>
+          <UserMenu />
         </header>
 
-        { /* Content */ }
+        {/* Content */}
         <main id="main-content" className="flex-1 overflow-y-auto bg-neutral-50 p-6">
           <Outlet />
         </main>
