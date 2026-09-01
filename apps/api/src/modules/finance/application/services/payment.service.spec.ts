@@ -1,5 +1,4 @@
 import { PaymentService } from './payment.service';
-import { GlHelper } from './shared/gl.helper';
 import type { CreatePaymentDto } from '../../presentation/dto/finance.dto';
 
 async function expectCode(promise: Promise<unknown>, code: string) {
@@ -16,10 +15,16 @@ async function expectCode(promise: Promise<unknown>, code: string) {
 
 describe('PaymentService', () => {
   let service: PaymentService;
-  const audit = { record: jest.fn().mockResolvedValue(undefined) };
-  const gl = { postPaymentJournal: jest.fn().mockResolvedValue(undefined) } as unknown as GlHelper;
+  const audit = { record: jest.fn() };
+  const gl = { postPaymentJournal: jest.fn() };
 
-  let prisma: any;
+  interface PrismaMock {
+    project: { findUnique: jest.Mock };
+    vendorInvoice: { findMany: jest.Mock };
+    paymentItem: { groupBy: jest.Mock };
+    $transaction: jest.Mock;
+  }
+  let prisma: PrismaMock;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -29,7 +34,7 @@ describe('PaymentService', () => {
       paymentItem: { groupBy: jest.fn() },
       $transaction: jest.fn(),
     };
-    service = new PaymentService(prisma, audit as any, gl);
+    service = new PaymentService(prisma as never, audit as never, gl as never);
   });
 
   const dto = (over: Partial<CreatePaymentDto> = {}): CreatePaymentDto => ({
@@ -94,7 +99,7 @@ describe('PaymentService', () => {
         }),
       },
     };
-    prisma.$transaction.mockImplementation((cb: any) => cb(tx));
+    prisma.$transaction.mockImplementation((cb: any) => cb(tx)); // eslint-disable-line @typescript-eslint/no-explicit-any
 
     const result = await service.createPayment(dto(), 'user-1');
 
