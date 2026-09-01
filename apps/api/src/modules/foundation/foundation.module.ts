@@ -15,7 +15,9 @@ import { AuditService } from './application/services/audit.service';
 import { UserService } from './application/services/user.service';
 import { RoleService } from './application/services/role.service';
 import { LegalEntityService } from './application/services/legal-entity.service';
-import { FoundationHardeningService } from './application/services/foundation-hardening.service';
+import { OrganizationService } from './application/services/organization.service';
+import { DoaService } from './application/services/doa.service';
+import { CurrencyService } from './application/services/currency.service';
 
 @Global()
 @Module({
@@ -26,7 +28,7 @@ import { FoundationHardeningService } from './application/services/foundation-ha
     }),
   ],
   controllers: [AuthController, AuditController, UserController, RoleController, LegalEntityController, FoundationHardeningController],
-  providers: [AuthService, AuditService, UserService, RoleService, LegalEntityService, FoundationHardeningService, PrismaService, Reflector, AuthGuard, PermissionsGuard],
+  providers: [AuthService, AuditService, UserService, RoleService, LegalEntityService, OrganizationService, DoaService, CurrencyService, PrismaService, Reflector, AuthGuard, PermissionsGuard],
   exports: [AuthService, AuditService, JwtModule, AuthGuard, PermissionsGuard, PrismaService],
 })
 export class FoundationModule {}
