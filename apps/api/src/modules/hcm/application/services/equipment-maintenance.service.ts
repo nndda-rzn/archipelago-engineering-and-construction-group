@@ -1,0 +1,145 @@
+import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '@/shared/database/prisma.service';
+import { AuditService } from '@/modules/foundation';
+import type { CreateEquipmentPmDto, CreateEquipmentBreakdownDto } from '../../presentation/dto/equipment.dto';
+
+@Injectable()
+export class EquipmentMaintenanceService {
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(AuditService) private readonly audit: AuditService,
+  ) {}
+
+  // FR-EQP-004: PM schedule (DATE | HOURS | METER)
+  async createPm(equipmentId: string, dto: CreateEquipmentPmDto, actorId: string) {
+    const equipment = await this.prisma.equipment.findUnique({ where: { id: equipmentId } });
+    if (!equipment) throw new NotFoundException({ code: 'EQUIPMENT_NOT_FOUND', message: 'Equipment tidak ditemukan' });
+
+    const pm = await this.prisma.equipmentPm.create({
+      data: {
+        equipmentId,
+        triggerType: dto.triggerType ?? 'DATE',
+        dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+        dueMeter: dto.dueMeter ?? null,
+        scheduledDate: new Date(),
+        description: dto.description ?? null,
+      },
+    });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'EquipmentPm.CREATE',
+      resource: 'EquipmentPm',
+      resourceId: pm.id,
+      newValue: { equipmentId, triggerType: pm.triggerType },
+      source: 'api',
+    });
+
+    return pm;
+  }
+
+  async completePm(equipmentId: string, pmId: string, actorId: string) {
+    const pm = await this.prisma.equipmentPm.findUnique({ where: { id: pmId } });
+    if (!pm || pm.equipmentId !== equipmentId) {
+      throw new NotFoundException({ code: 'PM_NOT_FOUND', message: 'PM schedule tidak ditemukan' });
+    }
+    if (pm.status !== 'SCHEDULED') {
+      throw new ConflictException({ code: 'NOT_SCHEDULED', message: `Hanya SCHEDULED yang bisa diselesaikan (${pm.status})` });
+    }
+
+    const done = await this.prisma.equipmentPm.update({
+      where: { id: pmId },
+      data: { status: 'DONE', completedAt: new Date() },
+    });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'EquipmentPm.COMPLETE',
+      resource: 'EquipmentPm',
+      resourceId: pmId,
+      newValue: { equipmentId },
+      source: 'api',
+    });
+
+    return done;
+  }
+
+  async listPms(equipmentId: string) {
+    const items = await this.prisma.equipmentPm.findMany({
+      where: { equipmentId },
+      orderBy: { scheduledDate: 'desc' },
+      take: 50,
+    });
+    return { items };
+  }
+
+  // FR-EQP-005: breakdown — downtime + cost impact, status OPEN → RESOLVED
+  async createBreakdown(equipmentId: string, dto: CreateEquipmentBreakdownDto, actorId: string) {
+    const equipment = await this.prisma.equipment.findUnique({ where: { id: equipmentId } });
+    if (!equipment) throw new NotFoundException({ code: 'EQUIPMENT_NOT_FOUND', message: 'Equipment tidak ditemukan' });
+
+    const breakdown = await this.prisma.equipmentBreakdown.create({
+      data: {
+        equipmentId,
+        breakdownDate: dto.breakdownDate ? new Date(dto.breakdownDate) : new Date(),
+        downtimeHours: Number(dto.downtimeHours),
+        costImpact: dto.costImpact ?? 0,
+        description: dto.description ?? null,
+      },
+    });
+
+    await this.prisma.equipment.update({ where: { id: equipmentId }, data: { status: 'BREAKDOWN' } });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'EquipmentBreakdown.CREATE',
+      resource: 'EquipmentBreakdown',
+      resourceId: breakdown.id,
+      newValue: { equipmentId, downtimeHours: Number(dto.downtimeHours), costImpact: dto.costImpact ?? 0 },
+      source: 'api',
+    });
+
+    return breakdown;
+  }
+
+  async resolveBreakdown(equipmentId: string, breakdownId: string, actorId: string) {
+    const bd = await this.prisma.equipmentBreakdown.findUnique({ where: { id: breakdownId } });
+    if (!bd || bd.equipmentId !== equipmentId) {
+      throw new NotFoundException({ code: 'BREAKDOWN_NOT_FOUND', message: 'Breakdown tidak ditemukan' });
+    }
+    if (bd.status !== 'OPEN') {
+      throw new ConflictException({ code: 'NOT_OPEN', message: `Hanya OPEN yang bisa di-resolve (${bd.status})` });
+    }
+
+    const resolved = await this.prisma.equipmentBreakdown.update({
+      where: { id: breakdownId },
+      data: { status: 'RESOLVED', resolvedAt: new Date() },
+    });
+
+    // kembali ke AVAILABLE bila tak ada breakdown OPEN lain
+    const openCount = await this.prisma.equipmentBreakdown.count({ where: { equipmentId, status: 'OPEN' } });
+    if (openCount === 0) {
+      await this.prisma.equipment.update({ where: { id: equipmentId }, data: { status: 'AVAILABLE' } });
+    }
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'EquipmentBreakdown.RESOLVE',
+      resource: 'EquipmentBreakdown',
+      resourceId: breakdownId,
+      newValue: { equipmentId },
+      source: 'api',
+    });
+
+    return resolved;
+  }
+
+  async listBreakdowns(equipmentId: string) {
+    const items = await this.prisma.equipmentBreakdown.findMany({
+      where: { equipmentId },
+      orderBy: { breakdownDate: 'desc' },
+      take: 50,
+    });
+    return { items };
+  }
+}
