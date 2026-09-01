@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
+import { SharedModule } from '@/shared/shared.module';
 import { HseController } from './presentation/controllers/hse.controller';
-import { HseService } from './application/services/hse.service';
+import { SafetyObservationService } from './application/services/safety-observation.service';
+import { HseIncidentService } from './application/services/hse-incident.service';
+import { PermitToWorkService } from './application/services/permit-to-work.service';
+import { CorrectiveActionService } from './application/services/corrective-action.service';
 
 @Module({
-  imports: [],
+  imports: [SharedModule],
   controllers: [HseController],
-  providers: [HseService, PrismaService],
+  providers: [PrismaService, SafetyObservationService, HseIncidentService, PermitToWorkService, CorrectiveActionService],
 })
 export class HseModule {}
