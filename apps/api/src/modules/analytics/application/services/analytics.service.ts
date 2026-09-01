@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
+import { CacheService } from '@/shared/cache/cache.service';
 
 /**
  * Fase 10 Analytics — advisory read-only (PRD §32: AI/analytics = advisory, bukan transaction authority).
@@ -9,10 +10,12 @@ import { PrismaService } from '@/shared/database/prisma.service';
 export class AnalyticsService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CacheService) private readonly cache: CacheService,
   ) {}
 
   // Executive KPIs lintas domain
   async executive() {
+    return this.cache.wrap('analytics:executive', 30, async () => {
     const [projects, budgetAgg, vendorInvoiceAgg, paymentAgg, collectionAgg, clientInvoiceAgg] = await this.prisma.$transaction([
       this.prisma.project.findMany({ select: { id: true, code: true, name: true, status: true, contractValue: true, advanceAmount: true } }),
       this.prisma.budgetItem.aggregate({ _sum: { amount: true } }),
@@ -58,10 +61,12 @@ export class AnalyticsService {
       },
       generatedAt: new Date().toISOString(),
     };
+    });
   }
 
   // Rule-based anomaly detection
   async anomalies() {
+    return this.cache.wrap('analytics:anomalies', 60, async () => {
     const anomalies: Array<{ type: string; severity: 'LOW' | 'MEDIUM' | 'HIGH'; projectCode?: string; message: string }> = [];
 
     // 1. Budget overrun: budget item usage mendekati/melebihi amount (via journal lines per project vs budget)
@@ -119,12 +124,14 @@ export class AnalyticsService {
     }
 
     return { anomalies, total: anomalies.length, generatedAt: new Date().toISOString() };
+    });
   }
 
   // ─── Advanced Reporting (Fase 10) ───
 
   // Cash flow: cash in (collection) vs cash out (payment) per bulan
   async cashFlow() {
+    return this.cache.wrap('analytics:cash-flow', 60, async () => {
     const [collections, payments] = await this.prisma.$transaction([
       this.prisma.collection.findMany({ where: { status: 'POSTED' }, select: { totalAmount: true, collectedAt: true } }),
       this.prisma.payment.findMany({ where: { status: 'PAID' }, select: { totalAmount: true, paymentDate: true } }),
@@ -152,10 +159,12 @@ export class AnalyticsService {
     const totalOut = series.reduce((s, r) => s + r.cashOut, 0);
 
     return { series, totalCashIn: totalIn, totalCashOut: totalOut, netCash: Math.round((totalIn - totalOut) * 100) / 100, generatedAt: new Date().toISOString() };
+    });
   }
 
   // Aging AP/AR (FR-FIN-007): invoice belum dibayar dikelompokkan umur
   async aging() {
+    return this.cache.wrap('analytics:aging', 60, async () => {
     const today = new Date();
     const bucket = (d: Date): string => {
       const days = Math.floor((today.getTime() - d.getTime()) / 86400000);
@@ -202,10 +211,12 @@ export class AnalyticsService {
       ap: order.map((b) => ({ bucket: b, amount: Math.round((apBuckets.get(b) ?? 0) * 100) / 100 })),
       generatedAt: new Date().toISOString(),
     };
+    });
   }
 
   // Project cost summary: budget vs cost vs claim per project
   async projectCostSummary() {
+    return this.cache.wrap('analytics:project-cost-summary', 60, async () => {
     const projects = await this.prisma.project.findMany({ select: { id: true, code: true, name: true, contractValue: true } });
     const [budgetAgg, vendorInvoiceAgg, clientInvoiceAgg] = await Promise.all([
       this.prisma.budgetItem.groupBy({ by: ['projectId'], _sum: { amount: true } }),
@@ -234,5 +245,6 @@ export class AnalyticsService {
     });
 
     return { items, generatedAt: new Date().toISOString() };
+    });
   }
 }
