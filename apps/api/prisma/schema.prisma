@@ -354,8 +354,10 @@ model PurchaseRequisition {
 
   @@index([projectId])
   @@index([status])
+  @@index([projectId, status])
 }
 
+// FR-PRO-001: PR — permintaan pembelian dari project
 model PurchaseRequisitionItem {
   id                 String              @id @default(cuid())
   requisitionId      String
@@ -394,6 +396,7 @@ model PurchaseOrder {
 
   @@index([projectId])
   @@index([status])
+  @@index([projectId, status])
 }
 
 // FR-PRO-008: PO change — perubahan amount/scope versioned, tidak overwrite
