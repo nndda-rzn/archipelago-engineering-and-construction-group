@@ -1,7 +1,15 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
+import { buildTree, type TreeNode } from '@/shared/utils/tree.util';
 import type { CreateCommissioningDto } from '../../presentation/dto/commissioning.dto';
+
+/** Unwrap TreeNode<T> menjadi struktur flat dengan children — backward compat */
+function unwrapTree<T extends { id: string; parentId: string | null }>(
+  nodes: TreeNode<T>[],
+): Array<T & { children: unknown[] }> {
+  return nodes.map((n) => ({ ...n.item, children: unwrapTree(n.children) }));
+}
 
 @Injectable()
 export class CommissioningService {
@@ -15,22 +23,7 @@ export class CommissioningService {
       where: { projectId },
       orderBy: [{ level: 'asc' }, { code: 'asc' }],
     });
-
-    const map = new Map<string, { id: string; projectId: string; parentId: string | null; code: string; name: string; level: string; status: string; remark: string | null; children: unknown[] }>();
-    const roots: unknown[] = [];
-
-    for (const item of items) {
-      map.set(item.id, { ...item, children: [] });
-    }
-    for (const item of items) {
-      const node = map.get(item.id)!;
-      if (item.parentId && map.has(item.parentId)) {
-        (map.get(item.parentId)!.children as unknown[]).push(node);
-      } else {
-        roots.push(node);
-      }
-    }
-    return roots;
+    return unwrapTree(buildTree(items));
   }
 
   async create(projectId: string, dto: CreateCommissioningDto, actorId: string) {

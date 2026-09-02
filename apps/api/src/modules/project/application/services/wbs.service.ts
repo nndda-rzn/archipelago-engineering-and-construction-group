@@ -1,16 +1,15 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
+import { buildTree, type TreeNode } from '@/shared/utils/tree.util';
 import type { CreateWbsItemDto } from '../../presentation/dto/wbs.dto';
 
-export type WbsTreeNode = {
-  id: string;
-  code: string;
-  name: string;
-  description: string | null;
-  sortOrder: number;
-  children: WbsTreeNode[];
-};
+/** Unwrap TreeNode<T> menjadi struktur flat dengan children — backward compat dengan API consumer */
+function unwrapTree<T extends { id: string; parentId: string | null }>(
+  nodes: TreeNode<T>[],
+): Array<T & { children: Array<T & { children: unknown[] }> }> {
+  return nodes.map((n) => ({ ...n.item, children: unwrapTree(n.children) as Array<T & { children: unknown[] }> }));
+}
 
 @Injectable()
 export class WbsService {
@@ -24,31 +23,9 @@ export class WbsService {
       where: { projectId },
       orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }],
     });
-
-    const map = new Map<string, WbsTreeNode>();
-    const roots: WbsTreeNode[] = [];
-
-    for (const item of items) {
-      map.set(item.id, {
-        id: item.id,
-        code: item.code,
-        name: item.name,
-        description: item.description,
-        sortOrder: item.sortOrder,
-        children: [],
-      });
-    }
-
-    for (const item of items) {
-      const node = map.get(item.id)!;
-      if (item.parentId && map.has(item.parentId)) {
-        map.get(item.parentId)!.children.push(node);
-      } else {
-        roots.push(node);
-      }
-    }
-
-    return roots;
+    // buildTree returns TreeNode<T> — unwrap untuk backward compat ({id,code,...,children})
+    const tree = buildTree(items);
+    return unwrapTree(tree);
   }
 
   async create(projectId: string, dto: CreateWbsItemDto, actorId: string) {
