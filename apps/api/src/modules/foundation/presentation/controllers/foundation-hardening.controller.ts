@@ -19,8 +19,6 @@ export class FoundationHardeningController {
     @Inject(CurrencyService) private readonly currency: CurrencyService,
   ) {}
 
-  // ─── Organization (FR-FND-002) ───────────────────────────────────────────────
-
   @Get('legal-entities/:id/organizations')
   @Permissions(Permission.LegalEntityView)
   listOrganizations(@Param('id') id: string, @Query('asOf') asOf?: string) {
@@ -32,8 +30,6 @@ export class FoundationHardeningController {
   createOrganization(@Body() dto: CreateOrganizationDto, @Req() request: { user?: { sub?: string } }) {
     return this.organization.createOrganization(dto, request.user?.sub ?? 'system');
   }
-
-  // ─── DoA (FR-FND-006) ────────────────────────────────────────────────────────
 
   @Get('doa-rules')
   @Permissions(Permission.RoleView)
@@ -52,8 +48,6 @@ export class FoundationHardeningController {
   resolveDoa(@Body() dto: ResolveDoaDto) {
     return this.doa.resolveDoa(dto);
   }
-
-  // ─── Currency (FR-FND-011) ────────────────────────────────────────────────────
 
   @Get('currencies')
   @Permissions(Permission.LegalEntityView)

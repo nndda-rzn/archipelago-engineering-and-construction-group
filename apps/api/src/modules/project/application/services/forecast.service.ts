@@ -10,7 +10,6 @@ export class ForecastService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-PRJ-010: Forecast (ETC/EAC/VAC)
   async createForecast(projectId: string, dto: CreateForecastDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });

@@ -10,7 +10,6 @@ export class ContractDeviationService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-COM-006: Contract deviation
   async createContractDeviation(opportunityId: string, dto: CreateContractDeviationDto, actorId: string) {
     const opp = await this.prisma.opportunity.findUnique({ where: { id: opportunityId } });
     if (!opp) throw new NotFoundException({ code: 'OPPORTUNITY_NOT_FOUND', message: 'Opportunity tidak ditemukan' });

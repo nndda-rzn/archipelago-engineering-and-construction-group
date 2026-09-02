@@ -11,7 +11,6 @@ export class ControlAccountService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-PRJ-004: Control Account
   async createControlAccount(projectId: string, dto: CreateControlAccountDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });

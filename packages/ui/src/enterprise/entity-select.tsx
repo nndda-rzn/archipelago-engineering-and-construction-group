@@ -3,10 +3,6 @@ import { Search } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../primitives/select';
 import { Input } from '../primitives/input';
 
-/**
- * EntitySelect — dropdown dengan pencarian client-side.
- * Menggantikan <select> flat untuk daftar panjang (project, entity, vendor, dll).
- */
 export interface EntitySelectOption {
   value: string;
   label: string;

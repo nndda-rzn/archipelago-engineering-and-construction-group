@@ -1,9 +1,5 @@
 import { z } from 'zod';
 
-/**
- * Env validation (fail fast) — validasi saat bootstrap.
- * Semua env wajib sesuai schema sebelum app jalan.
- */
 export const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).default(3000),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),

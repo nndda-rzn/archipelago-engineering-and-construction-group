@@ -8,7 +8,6 @@ export function WorkflowDefinitionPage() {
   const [showForm, setShowForm] = useState(false);
   const { data, isLoading, isError, refetch } = useWorkflowDefinitions();
 
-  // Group by code: tampil semua versi, aktif di atas
   const sorted = [...(data ?? [])].sort((a, b) => {
     if (a.code !== b.code) return a.code.localeCompare(b.code);
     return b.version - a.version;

@@ -24,8 +24,6 @@ export class TenderController {
     @Inject(ContractAmendmentService) private readonly contractAmendment: ContractAmendmentService,
   ) {}
 
-  // ─── Bid Decision (FR-COM-002) ───────────────────────────────────────────────
-
   @Post('opportunities/:id/bid-decision')
   @Permissions(Permission.OpportunityEdit)
   decideBid(@Param('id') id: string, @Body() dto: CreateBidDecisionDto, @Req() request: { user?: { sub?: string } }) {
@@ -37,8 +35,6 @@ export class TenderController {
   listBidDecisions(@Query() query: ListTenderQueryDto) {
     return this.bidDecision.listBidDecisions(query);
   }
-
-  // ─── Estimate (FR-COM-003/004) ───────────────────────────────────────────────
 
   @Post('opportunities/:id/estimates')
   @Permissions(Permission.OpportunityEdit)
@@ -64,8 +60,6 @@ export class TenderController {
     return this.estimate.createPricingScenario(id, dto, request.user?.sub ?? 'system');
   }
 
-  // ─── Contract Deviation (FR-COM-006) ─────────────────────────────────────────
-
   @Post('opportunities/:id/deviations')
   @Permissions(Permission.OpportunityEdit)
   createContractDeviation(@Param('id') id: string, @Body() dto: CreateContractDeviationDto, @Req() request: { user?: { sub?: string } }) {
@@ -90,8 +84,6 @@ export class TenderController {
     return this.contractDeviation.approveDeviation(id, false, request.user?.sub ?? 'system');
   }
 
-  // ─── Tender Submission (FR-COM-007) ──────────────────────────────────────────
-
   @Post('tender-submissions')
   @Permissions(Permission.OpportunityEdit)
   createTenderSubmission(@Body() dto: CreateTenderSubmissionDto, @Req() request: { user?: { sub?: string } }) {
@@ -103,8 +95,6 @@ export class TenderController {
   listTenderSubmissions(@Query() query: ListTenderQueryDto) {
     return this.tenderSubmission.listTenderSubmissions(query);
   }
-
-  // ─── Contract Amendment (FR-COM-008) ─────────────────────────────────────────
 
   @Post('contracts/:id/amendments')
   @Permissions(Permission.ContractEdit)

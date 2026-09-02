@@ -23,8 +23,6 @@ export class GovernanceController {
     @Inject(AccessReviewService) private readonly accessReview: AccessReviewService,
   ) {}
 
-  // ─── Risk (FR-GOV-001) ───────────────────────────────────────────────────────
-
   @Get('governance/risks')
   @Permissions(Permission.RiskView)
   listRisks(@Query() query: ListRiskQueryDto) {
@@ -42,8 +40,6 @@ export class GovernanceController {
   mitigateRisk(@Param('id') id: string, @Body() dto: MitigateRiskDto, @Req() request: { user?: { sub?: string } }) {
     return this.risk.mitigateRisk(id, dto, request.user?.sub ?? 'system');
   }
-
-  // ─── Audit Engagement (FR-GOV-002) ───────────────────────────────────────────
 
   @Get('governance/audits')
   @Permissions(Permission.AuditView)
@@ -75,8 +71,6 @@ export class GovernanceController {
     return this.auditEngagement.respondFinding(id, dto, request.user?.sub ?? 'system');
   }
 
-  // ─── Legal Case (FR-GOV-003) ─────────────────────────────────────────────────
-
   @Get('governance/legal-cases')
   @Permissions(Permission.LegalCaseView)
   listLegalCases(@Query() query: ListLegalCaseQueryDto) {
@@ -94,8 +88,6 @@ export class GovernanceController {
   updateLegalCaseStatus(@Param('id') id: string, @Body() dto: LegalCaseStatusDto, @Req() request: { user?: { sub?: string } }) {
     return this.legalCase.updateLegalCaseStatus(id, dto, request.user?.sub ?? 'system');
   }
-
-  // ─── Access Review (FR-GOV-004) ───────────────────────────────────────────────
 
   @Get('governance/access-reviews')
   @Permissions(Permission.AccessReviewView)

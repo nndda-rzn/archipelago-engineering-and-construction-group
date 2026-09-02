@@ -13,7 +13,6 @@ export class PermitToWorkService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-HSE-004: permit to work
   async createPermit(dto: CreatePermitDto, actorId: string) {
     if (dto.validFrom && dto.validTo && new Date(dto.validTo) <= new Date(dto.validFrom)) {
       throw new BadRequestException({ code: 'INVALID_PERIOD', message: 'validTo harus setelah validFrom' });

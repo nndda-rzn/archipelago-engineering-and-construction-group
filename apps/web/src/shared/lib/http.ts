@@ -1,7 +1,5 @@
-/**
- * HTTP client dasar — FSD shared/lib.
- * Memakai fetch + base `/api` (proxy vite ke api:3000).
- */
+
+
 const API_BASE = '/api/v1';
 
 export class ApiError extends Error {
@@ -15,7 +13,6 @@ export class ApiError extends Error {
   }
 }
 
-/** Logout saat token invalid/expired (401) — hapus token + session, redirect ke login. */
 function handleUnauthorized() {
   const hadToken = !!getToken();
   clearToken();
@@ -30,11 +27,6 @@ const AUTH_HEADERS = (): Record<string, string> => {
   return { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
 };
 
-/**
- * Decimal Prisma dikirim sebagai string ("5000000000"), tapi zod schema response pakai number().
- * Revive string numerik -> number, KECUALI key identitas yang memang string (kode, nomor dokumen, NPWP, dll).
- * Catatan: Int field (probability, version, score) dikirim sebagai number asli — hanya Decimal yang jadi string.
- */
 const NUMERIC_STRING_EXCLUDE = /(Code|Number|Id|Phone|Hash|Revision)$|tax|accountNumber|serialNumber|^unit$|^currency$/i;
 
 export function jsonReviver(key: string, value: unknown): unknown {
@@ -89,7 +81,6 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
   return res.text().then((text) => JSON.parse(text, jsonReviver)) as Promise<T>;
 }
 
-/** Simpan token ke localStorage (sederhana — Keycloak menyusul). */
 const TOKEN_KEY = 'aec_token';
 const SESSION_KEY = 'aec_session';
 

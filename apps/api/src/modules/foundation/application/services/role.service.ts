@@ -32,7 +32,6 @@ export class RoleService {
       where: { code: { in: dto.permissionCodes } },
     });
 
-    // Reset assignments lalu set ulang (simplifikasi baseline; versioning menyusul)
     await this.prisma.$transaction([
       this.prisma.rolePermission.deleteMany({ where: { roleId: id } }),
       this.prisma.rolePermission.createMany({

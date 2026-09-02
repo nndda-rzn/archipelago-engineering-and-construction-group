@@ -13,7 +13,6 @@ export class EquipmentMasterService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-EQP-001: equipment master
   async createEquipment(dto: CreateEquipmentDto, actorId: string) {
     const seq = await this.seq.next('EQ', `EQ-${new Date().getFullYear()}-`);
 

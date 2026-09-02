@@ -1,4 +1,4 @@
-// Barrel re-export — semua consumer lama tetap bekerja tanpa perubahan import
+
 export * from './finance/vendor-invoice';
 export * from './finance/payment';
 export * from './finance/chart-of-account';

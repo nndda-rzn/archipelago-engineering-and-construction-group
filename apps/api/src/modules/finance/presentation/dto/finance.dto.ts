@@ -1,4 +1,4 @@
-// Barrel re-export — semua consumer lama tetap bekerja tanpa perubahan import
+
 export * from './vendor-invoice.dto';
 export * from './payment.dto';
 export * from './chart-of-account.dto';

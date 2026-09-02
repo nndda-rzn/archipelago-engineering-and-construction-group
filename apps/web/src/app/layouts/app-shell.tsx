@@ -24,16 +24,14 @@ export function AppShell() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       } catch {
-        // localStorage tidak tersedia — abaikan
+        void 0;
       }
       return next;
     });
   };
 
-  /** Item aktif jika pathname sama persis (root `/`) atau diawali path item. */
   const isItemActive = (to: string) => (to === '/' ? pathname === '/' : pathname === to || pathname.startsWith(`${to}/`));
 
-  /** Grup dianggap aktif bila salah satu item-nya aktif — otomatis expand. */
   const isGroupActive = (group: NavGroup) => group.items.some((item) => isItemActive(item.to));
 
   const sidebarContentNav = (
@@ -101,7 +99,7 @@ export function AppShell() {
 
   return (
     <div className="flex h-screen">
-      {/* Skip link */}
+      {}
       <a
         href="#main-content"
         className="fixed -top-10 left-2 z-command rounded bg-racing-red-600 px-3 py-2 text-body-sm text-white focus-visible:top-2"
@@ -109,12 +107,12 @@ export function AppShell() {
         Lewati ke konten
       </a>
 
-      {/* Sidebar desktop — hidden di mobile */}
+      {}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-neutral-200 bg-white lg:flex" aria-label="Navigasi">
         {sidebarContent}
       </aside>
 
-      {/* Sidebar mobile — drawer */}
+      {}
       {mobileOpen && (
         <div className="fixed inset-0 z-drawer lg:hidden" role="dialog" aria-modal="true" aria-label="Navigasi">
           <button
@@ -144,9 +142,9 @@ export function AppShell() {
         </div>
       )}
 
-      {/* Main area */}
+      {}
       <div className="flex flex-1 flex-col">
-        {/* Topbar */}
+        {}
         <header className="flex h-12 shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-4 lg:px-6">
           <div className="flex items-center gap-3">
             <button
@@ -162,7 +160,7 @@ export function AppShell() {
           <UserMenu />
         </header>
 
-        {/* Content */}
+        {}
         <main id="main-content" className="flex-1 overflow-y-auto bg-neutral-50 p-6">
           <Outlet />
         </main>

@@ -13,7 +13,6 @@ export class TenderSubmissionService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-COM-007: Tender submission evidence
   async createTenderSubmission(dto: CreateTenderSubmissionDto, actorId: string) {
     const opp = await this.prisma.opportunity.findUnique({ where: { id: dto.opportunityId } });
     if (!opp) throw new NotFoundException({ code: 'OPPORTUNITY_NOT_FOUND', message: 'Opportunity tidak ditemukan' });

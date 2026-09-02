@@ -2,11 +2,6 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-/**
- * PrismaService — pool sizing + slow-query log.
- * - connection_limit / pool_timeout dari env (DATABASE_URL query param atau DATABASE_POOL_*).
- * - Slow query > SLOW_QUERY_MS (default 200ms) di-log (NFR-OBS).
- */
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
@@ -17,7 +12,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       throw new Error('DATABASE_URL is required');
     }
 
-    // Pool sizing — opsional lewat query param `connection_limit` di DATABASE_URL.
     const url = new URL(connectionString);
     const connectionLimit = Number(url.searchParams.get('connection_limit') ?? process.env.DATABASE_POOL_MAX ?? 10);
     const poolTimeout = Number(url.searchParams.get('pool_timeout') ?? process.env.DATABASE_POOL_TIMEOUT ?? 10);
@@ -30,7 +24,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       ],
     });
 
-    // Slow-query log — query > SLOW_QUERY_MS (default 200ms).
     const slowQueryMs = Number(process.env.SLOW_QUERY_MS ?? 200);
     this.$on('query' as never, (e: { query: string; duration: number; params: string }) => {
       if (e.duration > slowQueryMs) {

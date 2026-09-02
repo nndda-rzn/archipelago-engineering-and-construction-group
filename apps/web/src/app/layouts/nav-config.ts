@@ -1,4 +1,4 @@
-// Nav configuration — data statis navigasi sidebar AEC ERP
+
 
 export type NavItem = { label: string; to: string };
 export type NavGroup = { label: string; items: NavItem[]; defaultCollapsed?: boolean };
@@ -115,7 +115,6 @@ export const navGroups: NavGroup[] = [
 
 export const STORAGE_KEY = 'aec_sidebar_collapsed';
 
-/** Baca state collapse per grup dari localStorage (toleran error). */
 export function readCollapsed(): Record<string, boolean> {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');

@@ -31,7 +31,6 @@ export class StockLedgerService {
     return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
   }
 
-  // Ringkasan stok saat ini per WBS item (diturunkan dari ledger — FR-INV-001)
   async stockSummary(projectId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });

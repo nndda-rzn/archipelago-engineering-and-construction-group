@@ -39,8 +39,6 @@ export class HcmController {
     @Inject(EquipmentUsageService) private readonly equipmentUsage: EquipmentUsageService,
   ) {}
 
-  // ─── Employee (FR-HCM-001) ──────────────────────────────────────────────────
-
   @Get('employees')
   @Permissions(Permission.EmployeeView)
   listEmployees(@Query() query: ListEmployeeQueryDto) {
@@ -58,8 +56,6 @@ export class HcmController {
   changeEmployeeStatus(@Param('id') id: string, @Body() dto: ChangeEmployeeStatusDto, @Req() request: { user?: { sub?: string } }) {
     return this.employeeLifecycle.changeEmployeeStatus(id, dto, request.user?.sub ?? 'system');
   }
-
-  // ─── Project Assignment (FR-HCM-002/003) ────────────────────────────────────
 
   @Get('employees/:id/assignments')
   @Permissions(Permission.EmployeeView)
@@ -79,8 +75,6 @@ export class HcmController {
     return this.projectAssignment.endAssignment(id, assignmentId, dto, request.user?.sub ?? 'system');
   }
 
-  // ─── Timesheet (FR-HCM-004) ─────────────────────────────────────────────────
-
   @Get('timesheets')
   @Permissions(Permission.TimesheetView)
   listTimesheets(@Query() query: ListTimesheetQueryDto) {
@@ -99,8 +93,6 @@ export class HcmController {
     return this.timesheet.approveTimesheet(id, dto, request.user?.sub ?? 'system');
   }
 
-  // ─── Payroll Allocation (FR-HCM-005) ────────────────────────────────────────
-
   @Get('payroll-allocations')
   @Permissions(Permission.PayrollView)
   listPayrollAllocations(@Query() query: ListPayrollAllocationQueryDto) {
@@ -113,8 +105,6 @@ export class HcmController {
     return this.payroll.createPayrollAllocation(dto, request.user?.sub ?? 'system');
   }
 
-  // ─── Equipment Master (FR-EQP-001) ──────────────────────────────────────────
-
   @Get('equipment')
   @Permissions(Permission.EquipmentView)
   listEquipment(@Query() query: ListEquipmentQueryDto) {
@@ -126,8 +116,6 @@ export class HcmController {
   createEquipment(@Body() dto: CreateEquipmentDto, @Req() request: { user?: { sub?: string } }) {
     return this.equipmentMaster.createEquipment(dto, request.user?.sub ?? 'system');
   }
-
-  // ─── Equipment Assignment (FR-EQP-002) ──────────────────────────────────────
 
   @Get('equipment/:id/assignments')
   @Permissions(Permission.EquipmentView)
@@ -147,8 +135,6 @@ export class HcmController {
     return this.equipmentAssignment.endAssignment(id, assignmentId, request.user?.sub ?? 'system');
   }
 
-  // ─── Equipment Utilization (FR-EQP-003) ─────────────────────────────────────
-
   @Get('equipment/:id/utilizations')
   @Permissions(Permission.EquipmentView)
   listEquipmentUtilizations(@Param('id') id: string) {
@@ -160,8 +146,6 @@ export class HcmController {
   createEquipmentUtilization(@Param('id') id: string, @Body() dto: CreateEquipmentUtilizationDto, @Req() request: { user?: { sub?: string } }) {
     return this.equipmentUtilization.createUtilization(id, dto, request.user?.sub ?? 'system');
   }
-
-  // ─── Equipment Maintenance (FR-EQP-004/005) ──────────────────────────────────
 
   @Get('equipment/:id/pms')
   @Permissions(Permission.EquipmentView)
@@ -198,8 +182,6 @@ export class HcmController {
   resolveEquipmentBreakdown(@Param('id') id: string, @Param('breakdownId') breakdownId: string, @Req() request: { user?: { sub?: string } }) {
     return this.equipmentMaintenance.resolveBreakdown(id, breakdownId, request.user?.sub ?? 'system');
   }
-
-  // ─── Equipment Usage (FR-EQP-006) ───────────────────────────────────────────
 
   @Get('equipment/:id/usages')
   @Permissions(Permission.EquipmentView)

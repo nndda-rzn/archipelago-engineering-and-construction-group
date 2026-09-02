@@ -131,8 +131,6 @@ export const createQuoteSchema = z.object({
 });
 export type CreateQuote = z.infer<typeof createQuoteSchema>;
 
-// ─── Procurement Hardening (Fase 11E, FR-PRO-002/005/006/008/010) ─────────────
-
 export const budgetStatusSchema = z.object({
   projectId: z.string(),
   budget: z.number(),

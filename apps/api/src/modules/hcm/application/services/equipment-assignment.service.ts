@@ -10,7 +10,6 @@ export class EquipmentAssignmentService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-EQP-002: assignment effective-dated — assign → status ASSIGNED
   async createAssignment(equipmentId: string, dto: CreateEquipmentAssignmentDto, actorId: string) {
     const equipment = await this.prisma.equipment.findUnique({ where: { id: equipmentId } });
     if (!equipment) throw new NotFoundException({ code: 'EQUIPMENT_NOT_FOUND', message: 'Equipment tidak ditemukan' });
@@ -58,7 +57,6 @@ export class EquipmentAssignmentService {
       data: { status: 'ENDED', endDate: new Date() },
     });
 
-    // kembalikan ke AVAILABLE bila tak ada assignment ACTIVE lain
     const stillActive = await this.prisma.equipmentAssignment.count({
       where: { equipmentId, status: 'ACTIVE' },
     });

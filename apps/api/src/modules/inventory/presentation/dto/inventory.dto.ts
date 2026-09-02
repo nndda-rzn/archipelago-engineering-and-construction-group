@@ -173,7 +173,7 @@ export class StockAdjustmentItemDto {
 
   @Type(() => Number)
   @IsNumber()
-  quantity!: number; // delta: + surplus, - loss
+  quantity!: number;
 
   @IsOptional()
   @IsString()
@@ -193,7 +193,7 @@ export class CreateStockAdjustmentDto {
 
   @IsString()
   @Length(2, 30)
-  reasonCode!: string; // DAMAGE | LOSS | SURPLUS | REVALUATION | OTHERS
+  reasonCode!: string;
 
   @IsOptional()
   @IsString()

@@ -13,7 +13,6 @@ export class InspectionService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-QA-002: inspection request
   async createInspection(dto: CreateInspectionDto, actorId: string) {
     const inspectionNumber = await this.seq.next('INS', `INS-${new Date().getFullYear()}-`);
     const ins = await this.prisma.inspectionRequest.create({

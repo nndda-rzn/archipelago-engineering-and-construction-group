@@ -17,7 +17,6 @@ export class PaymentService {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
 
-    // Batch load semua invoice (C2: hindari N+1) + aggregate paid per invoice.
     const invoiceIds = dto.items.map((i) => i.invoiceId);
     const invoices = await this.prisma.vendorInvoice.findMany({
       where: { id: { in: invoiceIds } },
@@ -54,7 +53,6 @@ export class PaymentService {
       items.push({ invoiceId: invoice.id, amount: Number(item.amount) });
     }
 
-    // Seq + create dalam SATU transaksi (C1: hilangkan gap nomor & partial-failure).
     const payment = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'PAY' },

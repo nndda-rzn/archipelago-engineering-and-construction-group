@@ -35,7 +35,6 @@ export class StockOpnameService {
       return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
     });
 
-    // bookQuantity diambil dari ledger saat opname (bukan input)
     const opname = await this.prisma.$transaction(async (tx) => {
       const items = await Promise.all(
         dto.items.map(async (i) => {
@@ -67,7 +66,6 @@ export class StockOpnameService {
         include: { items: true },
       });
 
-      // Reconciliation: selisih ≠ 0 → buat Adjustment DRAFT (perlu approval sebelum efek ke ledger)
       const diffs = created.items.filter((i) => Number(i.difference) !== 0);
       for (const item of diffs) {
         const adjSeq = await tx.numberSequence.upsert({

@@ -7,7 +7,6 @@ import { PrismaService } from '@/shared/database/prisma.service';
 export class HealthController {
   constructor(private readonly prisma: PrismaService) {}
 
-  // Liveness — app hidup.
   @Get()
   getHealth(): HealthResponse {
     return healthResponseSchema.parse({
@@ -17,7 +16,6 @@ export class HealthController {
     });
   }
 
-  // Readiness — siap menerima traffic (DB reachable). Utk orchestrator/LB probe.
   @Get('ready')
   async getReady(): Promise<ReadinessResponse> {
     try {

@@ -7,7 +7,6 @@ import type { FinancialStatementQueryDto } from '../../presentation/dto/finance-
 export class FinancialStatementService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  // FR-FIN-012: Financial statements
   private async statementRows(query: FinancialStatementQueryDto) {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: query.legalEntityId } });
     if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });

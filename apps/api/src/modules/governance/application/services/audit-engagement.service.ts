@@ -13,7 +13,6 @@ export class AuditEngagementService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-GOV-002: audit engagement + finding lifecycle
   async createAudit(dto: CreateAuditDto, actorId: string) {
     const auditNumber = await this.seq.next('AUD', `AUD-${new Date().getFullYear()}-`);
     const auditRecord = await this.prisma.auditEngagement.create({

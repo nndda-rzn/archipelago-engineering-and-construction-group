@@ -4,9 +4,6 @@ import { X } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { Button } from './button';
 
-/**
- * Dialog — berbasis Radix. Focus trap, Escape close, portal — bawaan Radix.
- */
 const Dialog = DialogPrimitive.Root;
 const DialogTrigger = DialogPrimitive.Trigger;
 const DialogClose = DialogPrimitive.Close;
@@ -80,9 +77,6 @@ DialogFooter.displayName = 'DialogFooter';
 
 export { Dialog, DialogTrigger, DialogClose, DialogOverlay, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter };
 
-/**
- * ConfirmDialog — ganti window.confirm. Kontrolled: open + onOpenChange.
- */
 export interface ConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;

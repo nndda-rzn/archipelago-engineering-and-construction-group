@@ -12,7 +12,6 @@ export class CashForecastService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-TRY-004: Cash Forecast
   async createCashForecast(dto: CreateCashForecastDto, actorId: string) {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
     if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });

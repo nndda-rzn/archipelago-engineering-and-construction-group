@@ -5,7 +5,6 @@ import { PrismaService } from '@/shared/database/prisma.service';
 export class ConsolidationService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  // FR-FIN-011: Consolidation (intercompany elimination)
   async consolidation() {
     const entities = await this.prisma.legalEntity.findMany({ select: { id: true, code: true, legalName: true } });
     const perEntity: Array<{ entityCode: string; legalName: string; totalAsset: number; totalLiability: number; totalEquity: number; totalRevenue: number; totalExpense: number }> = [];

@@ -4,7 +4,6 @@ import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import type { CompletePeriodStepDto, CreatePeriodCloseDto } from '../../presentation/dto/finance-closure.dto';
 
-/** periodWhere utility — dipakai oleh PeriodCloseService dan FinancialStatementService */
 export function periodWhere(legalEntityId: string, from?: string, to?: string): Prisma.JournalWhereInput {
   return {
     legalEntityId,
@@ -24,7 +23,6 @@ export class PeriodCloseService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-FIN-010: Period close lifecycle
   async startPeriodClose(dto: CreatePeriodCloseDto, actorId: string) {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
     if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });

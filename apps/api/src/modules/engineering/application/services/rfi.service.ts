@@ -13,7 +13,6 @@ export class RfiService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-ENG-003: RFI — impact cost/schedule
   async createRfi(dto: CreateRfiDto, actorId: string) {
     const number = await this.seq.next('RFI', `RFI-${new Date().getFullYear()}-`);
     const rfi = await this.prisma.rfi.create({

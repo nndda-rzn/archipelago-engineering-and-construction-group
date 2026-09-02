@@ -23,8 +23,6 @@ export class ProcurementHardeningService {
     return seq;
   }
 
-  // ─── FR-PRO-008: PO Change versioned ────────────────────────────────────────
-
   async createPoChange(poId: string, dto: CreatePoChangeDto, actorId: string) {
     const po = await this.prisma.purchaseOrder.findUnique({ where: { id: poId } });
     if (!po) throw new NotFoundException({ code: 'PO_NOT_FOUND', message: 'PO tidak ditemukan' });
@@ -92,8 +90,6 @@ export class ProcurementHardeningService {
     });
     return { items, total: items.length };
   }
-
-  // ─── FR-PRO-010: Vendor performance ─────────────────────────────────────────
 
   async createRating(dto: CreateVendorRatingDto, actorId: string) {
     const vendor = await this.prisma.vendor.findUnique({ where: { id: dto.vendorId } });

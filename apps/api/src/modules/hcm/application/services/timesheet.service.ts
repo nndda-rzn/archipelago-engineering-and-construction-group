@@ -11,7 +11,6 @@ export class TimesheetService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-HCM-004: timesheet ke project/WBS
   async createTimesheet(dto: CreateTimesheetDto, actorId: string) {
     const employee = await this.prisma.employee.findUnique({ where: { id: dto.employeeId } });
     if (!employee) throw new NotFoundException({ code: 'EMPLOYEE_NOT_FOUND', message: 'Employee tidak ditemukan' });

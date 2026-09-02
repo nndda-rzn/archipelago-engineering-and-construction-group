@@ -5,7 +5,6 @@ import { PrismaService } from '@/shared/database/prisma.service';
 export class CommitmentService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  // FR-PRJ-007: Commitment (PO/subcontract released)
   async commitment(projectId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });

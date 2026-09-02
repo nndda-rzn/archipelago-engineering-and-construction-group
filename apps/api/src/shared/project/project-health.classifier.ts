@@ -1,13 +1,5 @@
-/**
- * ProjectHealthClassifier — klasifikasi health project berdasarkan budget utilization.
- * Menggantikan duplikasi threshold 70%/90% di:
- *   - project-health.service.ts
- *   - project-controls.service.ts (earnedValue)
- *   - portfolio.service.ts
- *
- * Contoh pakai:
- *   const { utilization, health } = classifyHealth(totalBudget, totalActual);
- */
+
+
 export type HealthStatus = 'NO_BUDGET' | 'ON_TRACK' | 'AT_RISK' | 'CRITICAL';
 
 export interface HealthResult {

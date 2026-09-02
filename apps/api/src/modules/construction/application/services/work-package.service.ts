@@ -102,7 +102,6 @@ export class WorkPackageService {
       throw new ConflictException({ code: 'WP_NOT_DRAFT', message: `Hanya DRAFT yang bisa dimulai (${wp.status})` });
     }
 
-    // FR-CON-002: readiness gate — WP wajib IFC tidak boleh mulai tanpa current IFC
     if (wp.requiresIFC) {
       const ifcCount = await this.prisma.drawing.count({ where: { projectId: wp.projectId, isIFC: true } });
       if (ifcCount === 0) {
@@ -131,7 +130,6 @@ export class WorkPackageService {
     return updated;
   }
 
-  // FR-CON-002: readiness check — status gate tanpa start
   async readiness(id: string) {
     const wp = await this.prisma.constructionWorkPackage.findUnique({ where: { id } });
     if (!wp) throw new NotFoundException({ code: 'WP_NOT_FOUND', message: 'Work package tidak ditemukan' });
@@ -181,7 +179,6 @@ export class WorkPackageService {
       throw new ConflictException({ code: 'WP_NOT_STARTED', message: 'Work package harus IN_PROGRESS sebelum catat progress' });
     }
 
-    // Guard progress monotonik tidak naik (physicalProgress kumulatif tidak boleh turun)
     const latest = await this.prisma.workPackageProgress.findFirst({
       where: { workPackageId: id },
       orderBy: { progressDate: 'desc' },
@@ -204,7 +201,6 @@ export class WorkPackageService {
       },
     });
 
-    // Auto-complete bila mencapai 100%
     if (Number(dto.physicalProgress) >= 100 && wp.status === 'IN_PROGRESS') {
       await this.prisma.constructionWorkPackage.update({ where: { id }, data: { status: 'COMPLETED' } });
     }

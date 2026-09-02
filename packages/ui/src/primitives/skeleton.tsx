@@ -1,12 +1,8 @@
 import * as React from 'react';
 import { cn } from '../lib/cn';
 
-/**
- * Skeleton — placeholder loading shimmer.
- * Pakai untuk KPI, tabel, kartu. Aksesibilitas: aria-busy + label.
- */
 export interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** Tinggi default mengikuti teks. */
+
   asChild?: boolean;
 }
 
@@ -23,7 +19,6 @@ export function Skeleton({ className, ...props }: SkeletonProps) {
   );
 }
 
-/** Blok skeleton untuk baris tabel — konsisten lebar kolom umum. */
 export function TableSkeleton({ rows = 5, cols = 5 }: { rows?: number; cols?: number }) {
   return (
     <div className="p-4" aria-label="Memuat data">
@@ -38,7 +33,6 @@ export function TableSkeleton({ rows = 5, cols = 5 }: { rows?: number; cols?: nu
   );
 }
 
-/** Grid skeleton untuk kartu KPI. */
 export function KpiSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">

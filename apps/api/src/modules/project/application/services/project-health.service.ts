@@ -17,7 +17,6 @@ export class ProjectHealthService {
     });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
 
-    // Budget baseline
     const budgetItems = await this.prisma.budgetItem.findMany({ where: { projectId: id, status: 'PUBLISHED' } });
     const budgetByWbs = new Map<string, number>();
     let totalBudget = 0;
@@ -27,10 +26,8 @@ export class ProjectHealthService {
       totalBudget += v;
     }
 
-    // Actual cost — delegate ke shared calculator (eliminasi duplikasi)
     const totalActual = await this.actualCost.compute(id);
 
-    // Revenue dari posted client invoices
     const postedClientInvoices = await this.prisma.clientInvoice.findMany({
       where: { projectId: id, status: 'POSTED' },
       select: { id: true },
@@ -44,7 +41,6 @@ export class ProjectHealthService {
       : [];
     const revenue = revenuePost.reduce((sum, j) => sum + j.lines.reduce((s, l) => s + Number(l.credit), 0), 0);
 
-    // WBS breakdown per item
     const ledgerOut = await this.prisma.stockLedgerEntry.groupBy({
       by: ['wbsItemId'],
       where: { projectId: id, movementType: 'OUT', totalValue: { not: null } },
@@ -69,7 +65,6 @@ export class ProjectHealthService {
       return { id: w.id, code: w.code, name: w.name, parentId: w.parentId, budget, actual, variance, utilization: budget > 0 ? Math.round((actual / budget) * 1000) / 10 : null };
     });
 
-    // Health classification — delegate ke shared classifier (eliminasi duplikasi)
     const { utilization, health } = classifyHealth(totalBudget, totalActual);
 
     return {

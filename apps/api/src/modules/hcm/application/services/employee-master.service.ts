@@ -13,7 +13,6 @@ export class EmployeeMasterService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-HCM-001: employee master
   async createEmployee(dto: CreateEmployeeDto, actorId: string) {
     const legalEntity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
     if (!legalEntity) throw new NotFoundException({ code: 'LEGAL_ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });

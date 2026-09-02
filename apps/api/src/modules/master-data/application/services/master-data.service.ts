@@ -13,7 +13,6 @@ export class MasterDataService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-PRO-010: vendor master
   async createVendor(dto: CreateVendorDto, actorId: string) {
     const seq = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
@@ -55,7 +54,6 @@ export class MasterDataService {
     return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
   }
 
-  // FR-FND-010: fiscal period
   async createFiscalPeriod(dto: CreateFiscalPeriodDto, actorId: string) {
     const start = new Date(dto.startDate);
     const end = new Date(dto.endDate);
@@ -75,7 +73,6 @@ export class MasterDataService {
     return period;
   }
 
-  // FR-FND-010: status lifecycle FUTURE→OPEN→SOFT_CLOSED→CLOSED→LOCKED
   async updateFiscalPeriodStatus(id: string, dto: UpdateFiscalPeriodStatusDto, actorId: string) {
     const period = await this.prisma.fiscalPeriod.findUnique({ where: { id } });
     if (!period) throw new NotFoundException({ code: 'PERIOD_NOT_FOUND', message: 'Periode tidak ditemukan' });

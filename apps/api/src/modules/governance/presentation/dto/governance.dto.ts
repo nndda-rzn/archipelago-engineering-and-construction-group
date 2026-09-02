@@ -203,7 +203,7 @@ export class ListLegalCaseQueryDto {
 export class CreateAccessReviewDto {
   @IsString()
   @Length(7, 10)
-  period!: string; // mis. "2026-Q3"
+  period!: string;
 }
 
 export class CompleteAccessReviewDto {

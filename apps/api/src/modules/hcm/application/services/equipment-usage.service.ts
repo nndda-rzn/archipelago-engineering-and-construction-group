@@ -10,7 +10,6 @@ export class EquipmentUsageService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-EQP-006: usage → project cost
   async createUsage(equipmentId: string, dto: CreateEquipmentUsageDto, actorId: string) {
     const equipment = await this.prisma.equipment.findUnique({ where: { id: equipmentId } });
     if (!equipment) throw new NotFoundException({ code: 'EQUIPMENT_NOT_FOUND', message: 'Equipment tidak ditemukan' });

@@ -2,15 +2,11 @@ import * as React from 'react';
 import { Button, type ButtonProps } from '../primitives/button';
 import { ConfirmDialog } from '../primitives/dialog';
 
-/**
- * ConfirmActionButton — tombol + konfirmasi terintegrasi.
- * Ganti window.confirm: klik → dialog → konfirmasi → onConfirm().
- */
 export interface ConfirmActionButtonProps extends Omit<ButtonProps, 'onClick'> {
   confirmTitle: string;
   confirmDescription?: string;
   confirmLabel?: string;
-  /** Dipanggil saat user konfirmasi. */
+
   onConfirm: () => void;
 }
 

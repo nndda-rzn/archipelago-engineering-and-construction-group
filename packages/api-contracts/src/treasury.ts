@@ -1,8 +1,6 @@
 import { z } from 'zod';
 import { paginatedResponseSchema } from './core';
 
-// ─── Treasury (Fase 11A, FR-TRY-001..005) ────────────────────────────────────
-
 export const bankAccountSchema = z.object({
   id: z.string(),
   accountCode: z.string(),

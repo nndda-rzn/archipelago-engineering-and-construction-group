@@ -17,14 +17,12 @@ const rootRoute = createRootRoute({
   ),
 });
 
-// Standalone — tanpa AppShell
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
   component: lazyRouteComponent(() => import('./pages/auth/login.page'), 'LoginPage'),
 });
 
-// App layout — pakai AppShell (sidebar + topbar), wajib login. Pathless layout: root path dipegang child.
 const appRoute = createRoute({
   getParentRoute: () => rootRoute,
   id: 'app',

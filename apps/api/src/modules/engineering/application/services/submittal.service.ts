@@ -13,7 +13,6 @@ export class SubmittalService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-ENG-004: submittal review cycle
   async createSubmittal(dto: CreateSubmittalDto, actorId: string) {
     const number = await this.seq.next('SUB', `SUB-${new Date().getFullYear()}-`);
     const item = await this.prisma.submittal.create({

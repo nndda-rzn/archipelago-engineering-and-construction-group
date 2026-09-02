@@ -13,7 +13,6 @@ export class ItpService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-QA-001: ITP terkait work package
   async createItp(dto: CreateItpDto, actorId: string) {
     const itpNumber = await this.seq.next('ITP', `ITP-${new Date().getFullYear()}-`);
     const itp = await this.prisma.itp.create({

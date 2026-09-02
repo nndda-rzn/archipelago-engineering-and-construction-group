@@ -3,11 +3,6 @@ import * as SelectPrimitive from '@radix-ui/react-select';
 import { Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '../lib/cn';
 
-/**
- * Select — berbasis Radix. Menggantikan <select> native ad-hoc (115+ duplikasi).
- * Sizing konsisten dengan Input (h-9, text-body, rounded-md).
- */
-
 const Select = SelectPrimitive.Root;
 const SelectGroup = SelectPrimitive.Group;
 const SelectValue = SelectPrimitive.Value;

@@ -3,7 +3,7 @@ import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
-  /** Label fallback (mis. nama route). */
+
   label?: string;
 }
 
@@ -12,10 +12,6 @@ interface ErrorBoundaryState {
   message?: string;
 }
 
-/**
- * Error boundary — cegah satu error komponen mematikan seluruh halaman.
- * Tampilkan fallback + tombol reload. Mount sekali di app root.
- */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   override state: ErrorBoundaryState = { hasError: false };
 

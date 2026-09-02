@@ -1,4 +1,4 @@
-// Barrel re-export — semua consumer lama tetap bekerja tanpa perubahan import
+
 export { BankAccountService } from './bank-account.service';
 export { PaymentProposalService } from './payment-proposal.service';
 export { BankGuaranteeService } from './bank-guarantee.service';

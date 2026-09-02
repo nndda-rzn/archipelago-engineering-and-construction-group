@@ -13,7 +13,6 @@ export class PaymentProposalService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-TRY-002: Payment Proposal lifecycle DRAFT→SUBMITTED→APPROVED→RELEASED
   async createPaymentProposal(dto: CreatePaymentProposalDto, actorId: string) {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
     if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });

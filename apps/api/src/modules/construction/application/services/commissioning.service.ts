@@ -4,7 +4,6 @@ import { AuditService } from '@/modules/foundation';
 import { buildTree, type TreeNode } from '@/shared/utils/tree.util';
 import type { CreateCommissioningDto } from '../../presentation/dto/commissioning.dto';
 
-/** Unwrap TreeNode<T> menjadi struktur flat dengan children — backward compat */
 function unwrapTree<T extends { id: string; parentId: string | null }>(
   nodes: TreeNode<T>[],
 ): Array<T & { children: unknown[] }> {

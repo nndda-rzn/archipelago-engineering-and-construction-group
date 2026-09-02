@@ -11,7 +11,6 @@ export class PurchaseRequisitionService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-PRO-002: budget availability check — estimated total ≤ remaining budget (published − commitment − PR lain)
   private async budgetCheck(projectId: string, estimatedTotal: number) {
     const [budgetAgg, poAgg, subconAgg, prAgg] = await Promise.all([
       this.prisma.budgetItem.aggregate({ where: { projectId, status: 'PUBLISHED' }, _sum: { amount: true } }),
@@ -90,7 +89,6 @@ export class PurchaseRequisitionService {
     return pr;
   }
 
-  // FR-PRO-002: status budget project — untuk UI + traceability
   async budgetStatus(projectId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });

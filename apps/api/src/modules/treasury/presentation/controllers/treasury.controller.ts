@@ -24,8 +24,6 @@ export class TreasuryController {
     @Inject(FxExposureService) private readonly fxExposure: FxExposureService,
   ) {}
 
-  // ─── Bank Account (FR-TRY-001) ───────────────────────────────────────────────
-
   @Get('treasury/bank-accounts')
   @Permissions(Permission.TreasuryView)
   listBankAccounts(@Query() query: ListBankAccountQueryDto) {
@@ -43,8 +41,6 @@ export class TreasuryController {
   cashPosition() {
     return this.bankAccount.cashPosition();
   }
-
-  // ─── Payment Proposal (FR-TRY-002) ──────────────────────────────────────────
 
   @Get('treasury/payment-proposals')
   @Permissions(Permission.TreasuryView)
@@ -76,8 +72,6 @@ export class TreasuryController {
     return this.paymentProposal.releaseProposal(id, request.user?.sub ?? 'system');
   }
 
-  // ─── Bank Guarantee (FR-TRY-003) ─────────────────────────────────────────────
-
   @Get('treasury/bank-guarantees')
   @Permissions(Permission.TreasuryView)
   listBankGuarantees(@Query() query: ListBankGuaranteeQueryDto) {
@@ -90,8 +84,6 @@ export class TreasuryController {
     return this.bankGuarantee.createBankGuarantee(dto, request.user?.sub ?? 'system');
   }
 
-  // ─── Cash Forecast (FR-TRY-004) ──────────────────────────────────────────────
-
   @Get('treasury/cash-forecasts')
   @Permissions(Permission.TreasuryView)
   listCashForecasts() {
@@ -103,8 +95,6 @@ export class TreasuryController {
   createCashForecast(@Body() dto: CreateCashForecastDto, @Req() request: { user?: { sub?: string } }) {
     return this.cashForecast.createCashForecast(dto, request.user?.sub ?? 'system');
   }
-
-  // ─── FX Exposure (FR-TRY-005) ────────────────────────────────────────────────
 
   @Get('treasury/fx-exposures')
   @Permissions(Permission.TreasuryView)

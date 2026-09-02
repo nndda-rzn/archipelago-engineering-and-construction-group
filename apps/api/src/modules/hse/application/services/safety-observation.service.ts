@@ -13,7 +13,6 @@ export class SafetyObservationService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-HSE-001: safety observation
   async createObservation(dto: CreateObservationDto, actorId: string) {
     const obsNumber = await this.seq.next('OBS', `OBS-${new Date().getFullYear()}-`);
     const obs = await this.prisma.safetyObservation.create({

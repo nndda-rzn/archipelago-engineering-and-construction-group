@@ -11,7 +11,6 @@ export class VariationService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-CMR-005: potential change TIDAK mengubah contract value
   async createVariation(dto: CreateVariationDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
@@ -51,7 +50,6 @@ export class VariationService {
     return variation;
   }
 
-  // FR-CMR-006: approved variation update contract value (dan jadwal)
   async approveVariation(id: string, actorId: string) {
     const variation = await this.prisma.projectVariation.findUnique({ where: { id } });
     if (!variation) throw new NotFoundException({ code: 'VARIATION_NOT_FOUND', message: 'Variation tidak ditemukan' });
@@ -65,7 +63,6 @@ export class VariationService {
         data: { status: 'APPROVED', approvedBy: actorId, approvedAt: new Date() },
       });
 
-      // FR-CMR-006: contract value ikut berubah (additive +, deductive -)
       const project = await tx.project.findUniqueOrThrow({ where: { id: v.projectId } });
       const base = project.contractValue != null ? Number(project.contractValue) : 0;
       const delta = v.type === 'DEDUCTIVE' ? -Number(v.amountChange) : Number(v.amountChange);

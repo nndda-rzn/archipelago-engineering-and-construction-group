@@ -13,7 +13,6 @@ export class DeliverableService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-ENG-001: deliverable register
   async createDeliverable(dto: CreateDeliverableDto, actorId: string) {
     const number = await this.seq.next('DLV', `DLV-${new Date().getFullYear()}-`);
     const item = await this.prisma.deliverable.create({

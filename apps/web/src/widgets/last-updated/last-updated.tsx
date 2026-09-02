@@ -6,10 +6,6 @@ import { formatRelativeTime } from '@/shared/lib/format';
 
 const STALE_MS = 30_000;
 
-/**
- * LastUpdated — tampilkan kapan query terakhir diperbarui + indikator stale.
- * Dipakai di dashboard & halaman data. Data stale = keputusan salah (P3).
- */
 export function LastUpdated({ queryKey, className }: { queryKey: readonly unknown[]; className?: string }) {
   const qc = useQueryClient();
   const isFetching = useIsFetching({ queryKey: [...queryKey] });
