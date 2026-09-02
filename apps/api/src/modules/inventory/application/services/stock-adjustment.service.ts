@@ -2,6 +2,7 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
+import { StockLedgerWriter } from '@/shared/inventory/stock-ledger-writer';
 import type { CreateStockAdjustmentDto } from '../../presentation/dto/inventory.dto';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class StockAdjustmentService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(StockLedgerWriter) private readonly ledger: StockLedgerWriter,
   ) {}
 
   async createStockAdjustment(dto: CreateStockAdjustmentDto, actorId: string) {
@@ -94,41 +96,23 @@ export class StockAdjustmentService {
         include: { items: true },
       });
 
-      // Ledger ADJUSTMENT (delta qty, bisa +/-)
-      const bucketKeys = new Set<string>();
-      for (const item of updated.items) {
-        bucketKeys.add(`${adjustment.projectId}|${item.wbsItemId ?? 'NULL'}|${adjustment.warehouseId}`);
-      }
-      const balances: Record<string, number> = {};
-      for (const key of bucketKeys) {
-        const [projectId, wbsItemId, warehouseId] = key.split('|');
-        const agg = await tx.stockLedgerEntry.aggregate({
-          where: { projectId, warehouseId, wbsItemId: wbsItemId === 'NULL' ? null : wbsItemId },
-          _sum: { quantity: true },
-        });
-        balances[key] = Number(agg._sum.quantity ?? 0);
-      }
-
-      const ledgerRows: Prisma.StockLedgerEntryCreateManyInput[] = [];
-      for (const item of updated.items) {
-        const key = `${adjustment.projectId}|${item.wbsItemId ?? 'NULL'}|${adjustment.warehouseId}`;
-        const running = (balances[key] ?? 0) + Number(item.quantity);
-        balances[key] = running;
-        ledgerRows.push({
-          projectId: adjustment.projectId,
-          wbsItemId: item.wbsItemId ?? null,
-          warehouseId: adjustment.warehouseId,
-          documentType: 'ADJUSTMENT',
-          documentId: item.id,
-          reference: adjustment.adjustmentNumber,
-          description: `Adjustment ${adjustment.reasonCode}`,
-          movementType: Number(item.quantity) >= 0 ? 'IN' : 'OUT',
-          quantity: Number(item.quantity),
-          unit: item.unit,
-          balanceAfter: String(running),
-        });
-      }
-      await tx.stockLedgerEntry.createMany({ data: ledgerRows });
+      // Tulis ledger ADJUSTMENT — delegate ke StockLedgerWriter (eliminasi duplikasi)
+      // Catatan: movementType IN untuk qty positif, OUT untuk qty negatif
+      // StockLedgerWriter urus sign berdasarkan movementType
+      await this.ledger.write(tx, updated.items.map((item) => ({
+        projectId: adjustment.projectId,
+        wbsItemId: item.wbsItemId ?? null,
+        warehouseId: adjustment.warehouseId,
+        documentType: 'ADJUSTMENT',
+        documentId: item.id,
+        reference: adjustment.adjustmentNumber,
+        description: `Adjustment ${adjustment.reasonCode}`,
+        movementType: Number(item.quantity) >= 0 ? 'IN' as const : 'OUT' as const,
+        quantity: Math.abs(Number(item.quantity)),  // positif — StockLedgerWriter urus sign
+        unit: item.unit,
+        unitPrice: null,
+        totalValue: null,
+      })));
 
       return updated;
     });

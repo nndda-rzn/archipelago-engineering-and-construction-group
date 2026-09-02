@@ -24,7 +24,10 @@ export interface LedgerLine {
   totalValue: number | null;
 }
 
-type PrismaTx = Omit<PrismaService, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
+// Interface minimal untuk tx dari Prisma.$transaction
+interface LedgerTx {
+  stockLedgerEntry: PrismaService['stockLedgerEntry'];
+}
 
 @Injectable()
 export class StockLedgerWriter {
@@ -40,7 +43,7 @@ export class StockLedgerWriter {
    *     await this.ledger.write(tx, lines);
    *   });
    */
-  async write(tx: PrismaTx, lines: LedgerLine[]): Promise<void> {
+  async write(tx: LedgerTx, lines: LedgerLine[]): Promise<void> {
     if (lines.length === 0) return;
 
     // Kumpulkan unique bucket keys untuk query balance sekaligus
