@@ -1,9 +1,15 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
-import { buildTree } from '@/shared/utils/tree.util';
+import { buildTree, type TreeNode } from '@/shared/utils/tree.util';
 import type { CreateWbsItemDto } from '../../presentation/dto/wbs.dto';
 
+/** Unwrap TreeNode<T> menjadi struktur flat dengan children — backward compat dengan API consumer */
+function unwrapTree<T extends { id: string; parentId: string | null }>(
+  nodes: TreeNode<T>[],
+): Array<T & { children: Array<T & { children: unknown[] }> }> {
+  return nodes.map((n) => ({ ...n.item, children: unwrapTree(n.children) as Array<T & { children: unknown[] }> }));
+}
 
 @Injectable()
 export class WbsService {
@@ -17,7 +23,9 @@ export class WbsService {
       where: { projectId },
       orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }],
     });
-    return buildTree(items);
+    // buildTree returns TreeNode<T> — unwrap untuk backward compat ({id,code,...,children})
+    const tree = buildTree(items);
+    return unwrapTree(tree);
   }
 
   async create(projectId: string, dto: CreateWbsItemDto, actorId: string) {
