@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "db:seed": "tsx prisma/seed.ts",
     "test:e2e": "jest --config ./test/jest-e2e.json --forceExit",
-    "test": "pnpm test:e2e"
+    "test:unit": "jest --config ./test/jest-unit.json",
+    "test": "pnpm test:unit && pnpm test:e2e"
   },
   "dependencies": {
     "@aec/api-contracts": "workspace:*",
