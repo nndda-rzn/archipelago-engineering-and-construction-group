@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createObservationSchema, safetyObservationSchema, createIncidentSchema, hseIncidentSchema,
-  createPermitSchema, permitToWorkSchema, createCorrectiveActionSchema,
+  createPermitSchema, permitToWorkSchema, createCorrectiveActionSchema, correctiveActionSchema,
 } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
 import { type PaginationParams } from '@/shared/lib/pagination';
@@ -11,6 +11,7 @@ export const hseKeys = {
   observations: (params: PaginationParams & { status?: string }) => [...hseKeys.all, 'observations', params] as const,
   incidents: (params: PaginationParams & { status?: string; severity?: string }) => [...hseKeys.all, 'incidents', params] as const,
   permits: (params: PaginationParams & { status?: string }) => [...hseKeys.all, 'permits', params] as const,
+  correctiveActions: (params: PaginationParams & { sourceId?: string; status?: string }) => [...hseKeys.all, 'corrective-actions', params] as const,
 };
 
 export function useObservations(params: PaginationParams & { status?: string }) {
@@ -81,6 +82,19 @@ export function useResolveIncident() {
   return useMutation({
     mutationFn: ({ id }: { id: string }) => postJson<unknown>(`/hse/incidents/${id}/resolve`, {}),
     onSuccess: () => qc.invalidateQueries({ queryKey: hseKeys.all }),
+  });
+}
+
+export function useCorrectiveActions(params: PaginationParams & { sourceId?: string; status?: string }) {
+  return useQuery({
+    queryKey: hseKeys.correctiveActions(params),
+    queryFn: async () => {
+      const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+      if (params.sourceId) qs.set('sourceId', params.sourceId);
+      if (params.status) qs.set('status', params.status);
+      const data = await getJson<{ items: unknown; total: number }>(`/hse/corrective-actions?${qs}`);
+      return { items: correctiveActionSchema.array().parse(data.items), total: data.total };
+    },
   });
 }
 

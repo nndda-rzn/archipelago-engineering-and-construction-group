@@ -10,7 +10,7 @@ export const qualityKeys = {
   all: ['quality'] as const,
   itps: (params: PaginationParams) => [...qualityKeys.all, 'itps', params] as const,
   inspections: (params: PaginationParams) => [...qualityKeys.all, 'inspections', params] as const,
-  ncrs: (params: PaginationParams) => [...qualityKeys.all, 'ncrs', params] as const,
+  ncrs: (params: PaginationParams & { status?: string; severity?: string }) => [...qualityKeys.all, 'ncrs', params] as const,
   punch: (params: PaginationParams) => [...qualityKeys.all, 'punch', params] as const,
 };
 
@@ -66,11 +66,13 @@ export function useInspect() {
   });
 }
 
-export function useNcrs(params: PaginationParams) {
+export function useNcrs(params: PaginationParams & { status?: string; severity?: string }) {
   return useQuery({
     queryKey: qualityKeys.ncrs(params),
     queryFn: async () => {
       const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+      if (params.status) qs.set('status', params.status);
+      if (params.severity) qs.set('severity', params.severity);
       const data = await getJson<{ items: unknown; total: number }>(`/quality/ncrs?${qs}`);
       return { items: ncrSchema.array().parse(data.items), total: data.total };
     },
