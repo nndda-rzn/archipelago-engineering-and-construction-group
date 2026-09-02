@@ -2,7 +2,7 @@ import * as React from 'react';
 import {
   CheckCircle2, XCircle, Clock, CircleDashed, FilePen, Send, Ban,
   Eye, Rocket, Lock, AlertTriangle, TrendingDown, TrendingUp, Zap,
-  ShieldAlert, ShieldCheck, Wrench, UserX, Award,
+  ShieldCheck, Wrench, UserX, Award,
 } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { Badge, type BadgeProps } from '../primitives/badge';
