@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
+import { SharedModule } from '@/shared/shared.module';
 import { FinanceController } from './presentation/controllers/finance.controller';
 import { FinanceClosureController } from './presentation/controllers/finance-closure.controller';
 import { VendorInvoiceService } from './application/services/vendor-invoice.service';
@@ -16,7 +17,7 @@ import { FinanceClosureService } from './application/services/finance-closure.se
 import { GlHelper } from './application/services/shared/gl.helper';
 
 @Module({
-  imports: [],
+  imports: [SharedModule],
   controllers: [FinanceController, FinanceClosureController],
   providers: [
     PrismaService,
