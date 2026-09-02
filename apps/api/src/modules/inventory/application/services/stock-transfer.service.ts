@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Inject, Injectable, NotFoundExc
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
+import { StockLedgerWriter } from '@/shared/inventory/stock-ledger-writer';
 import type { CreateStockTransferDto, ListStockTransferQueryDto } from '../../presentation/dto/inventory.dto';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class StockTransferService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(StockLedgerWriter) private readonly ledger: StockLedgerWriter,
   ) {}
 
   async createStockTransfer(dto: CreateStockTransferDto, actorId: string) {
@@ -97,32 +99,9 @@ export class StockTransferService {
         include: { items: true },
       });
 
-      // Hitung saldo semua bucket (source OUT + target IN)
-      const bucketKeys = new Set<string>();
-      for (const item of created.items) {
-        bucketKeys.add(`${dto.projectId}|${item.wbsItemId ?? 'NULL'}|${dto.fromWarehouseId}`);
-        bucketKeys.add(`${dto.projectId}|${item.wbsItemId ?? 'NULL'}|${dto.toWarehouseId}`);
-      }
-      const balances: Record<string, number> = {};
-      for (const key of bucketKeys) {
-        const [projectId, wbsItemId, warehouseId] = key.split('|');
-        const agg = await tx.stockLedgerEntry.aggregate({
-          where: { projectId, warehouseId, wbsItemId: wbsItemId === 'NULL' ? null : wbsItemId },
-          _sum: { quantity: true },
-        });
-        balances[key] = Number(agg._sum.quantity ?? 0);
-      }
-
-      const ledgerRows: Prisma.StockLedgerEntryCreateManyInput[] = [];
-      for (const item of created.items) {
-        const outKey = `${dto.projectId}|${item.wbsItemId ?? 'NULL'}|${dto.fromWarehouseId}`;
-        const inKey = `${dto.projectId}|${item.wbsItemId ?? 'NULL'}|${dto.toWarehouseId}`;
-        const outBalance = (balances[outKey] ?? 0) - Number(item.quantity);
-        const inBalance = (balances[inKey] ?? 0) + Number(item.quantity);
-        balances[outKey] = outBalance;
-        balances[inKey] = inBalance;
-
-        ledgerRows.push({
+      // Tulis ledger TRANSFER_OUT + TRANSFER_IN — delegate ke StockLedgerWriter
+      const ledgerLines = created.items.flatMap((item) => [
+        {
           projectId: dto.projectId,
           wbsItemId: item.wbsItemId ?? null,
           warehouseId: dto.fromWarehouseId,
@@ -130,12 +109,13 @@ export class StockTransferService {
           documentId: item.id,
           reference: seq,
           description: `Transfer ke ${toWh.code}`,
-          movementType: 'OUT',
-          quantity: -Number(item.quantity),
+          movementType: 'TRANSFER_OUT' as const,
+          quantity: Number(item.quantity),
           unit: item.unit,
-          balanceAfter: String(outBalance),
-        });
-        ledgerRows.push({
+          unitPrice: null,
+          totalValue: null,
+        },
+        {
           projectId: dto.projectId,
           wbsItemId: item.wbsItemId ?? null,
           warehouseId: dto.toWarehouseId,
@@ -143,13 +123,14 @@ export class StockTransferService {
           documentId: item.id,
           reference: seq,
           description: `Transfer dari ${fromWh.code}`,
-          movementType: 'IN',
+          movementType: 'TRANSFER_IN' as const,
           quantity: Number(item.quantity),
           unit: item.unit,
-          balanceAfter: String(inBalance),
-        });
-      }
-      await tx.stockLedgerEntry.createMany({ data: ledgerRows });
+          unitPrice: null,
+          totalValue: null,
+        },
+      ]);
+      await this.ledger.write(tx, ledgerLines);
 
       return created;
     });

@@ -2,6 +2,7 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
+import { StockLedgerWriter } from '@/shared/inventory/stock-ledger-writer';
 import type { CreateMaterialIssueDto, ListMaterialIssueQueryDto } from '../../presentation/dto/inventory.dto';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class MaterialIssueService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(StockLedgerWriter) private readonly ledger: StockLedgerWriter,
   ) {}
 
   async createMaterialIssue(dto: CreateMaterialIssueDto, actorId: string) {
@@ -90,43 +92,21 @@ export class MaterialIssueService {
         include: { items: true },
       });
 
-      // Ledger OUT (qty negatif) + running balance
-      const balanceKeys = new Set<string>();
-      for (const item of created.items) {
-        balanceKeys.add(`${dto.projectId}|${item.wbsItemId ?? 'NULL'}|${dto.warehouseId}`);
-      }
-      const balances: Record<string, number> = {};
-      for (const key of balanceKeys) {
-        const [projectId, wbsItemId, warehouseId] = key.split('|');
-        const agg = await tx.stockLedgerEntry.aggregate({
-          where: { projectId, warehouseId, wbsItemId: wbsItemId === 'NULL' ? null : wbsItemId },
-          _sum: { quantity: true },
-        });
-        balances[key] = Number(agg._sum.quantity ?? 0);
-      }
-
-      await tx.stockLedgerEntry.createMany({
-        data: created.items.map((item) => {
-          const key = `${dto.projectId}|${item.wbsItemId ?? 'NULL'}|${dto.warehouseId}`;
-          const running = (balances[key] ?? 0) - Number(item.quantity);
-          balances[key] = running;
-          return {
-            projectId: dto.projectId,
-            wbsItemId: item.wbsItemId ?? null,
-            warehouseId: dto.warehouseId,
-            documentType: 'ISSUE',
-            documentId: item.id,
-            reference: seq,
-            description: `Material issue ke ${dto.issuedTo}`,
-            movementType: 'OUT',
-            quantity: -Number(item.quantity),
-            unit: item.unit,
-            unitPrice: item.unitPrice,
-            totalValue: item.totalValue != null ? -Number(item.totalValue) : null,
-            balanceAfter: String(running),
-          };
-        }),
-      });
+      // Tulis stock ledger OUT — delegate ke StockLedgerWriter (eliminasi duplikasi)
+      await this.ledger.write(tx, created.items.map((item) => ({
+        projectId: dto.projectId,
+        wbsItemId: item.wbsItemId ?? null,
+        warehouseId: dto.warehouseId,
+        documentType: 'ISSUE',
+        documentId: item.id,
+        reference: seq,
+        description: `Material issue ke ${dto.issuedTo}`,
+        movementType: 'OUT' as const,
+        quantity: Number(item.quantity),  // positif — StockLedgerWriter urus sign
+        unit: item.unit,
+        unitPrice: item.unitPrice != null ? Number(item.unitPrice) : null,
+        totalValue: item.totalValue != null ? Number(item.totalValue) : null,
+      })));
 
       return created;
     });
