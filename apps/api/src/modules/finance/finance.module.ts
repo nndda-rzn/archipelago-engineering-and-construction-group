@@ -13,7 +13,10 @@ import { ClientInvoiceService } from './application/services/client-invoice.serv
 import { CollectionService } from './application/services/collection.service';
 import { VariationService } from './application/services/variation.service';
 import { SubcontractService } from './application/services/subcontract.service';
-import { FinanceClosureService } from './application/services/finance-closure.service';
+import { IntercompanyService } from './application/services/intercompany.service';
+import { PeriodCloseService } from './application/services/period-close.service';
+import { FinancialStatementService } from './application/services/financial-statement.service';
+import { ConsolidationService } from './application/services/consolidation.service';
 import { GlHelper } from './application/services/shared/gl.helper';
 
 @Module({
@@ -32,7 +35,10 @@ import { GlHelper } from './application/services/shared/gl.helper';
     CollectionService,
     VariationService,
     SubcontractService,
-    FinanceClosureService,
+    IntercompanyService,
+    PeriodCloseService,
+    FinancialStatementService,
+    ConsolidationService,
   ],
 })
 export class FinanceModule {}
