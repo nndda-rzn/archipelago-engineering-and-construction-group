@@ -11,6 +11,8 @@ import {
 } from '@tanstack/react-table';
 import { ChevronDown, ChevronUp, ChevronsUpDown, Download } from 'lucide-react';
 import { Button } from '../primitives/button';
+import { TableSkeleton } from '../primitives/skeleton';
+import { ErrorState } from './state';
 
 export interface DataGridProps<TData> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TanStack ColumnDef memakai any untuk value generic.
@@ -72,7 +74,6 @@ export function DataGrid<TData>({
 }: DataGridProps<TData>) {
   const isServer = pagination !== undefined && onPaginationChange !== undefined;
 
-  // Client mode: internal pagination state agar TanStack tak crash (getPageCount butuh state.pagination).
   const [internalPagination, setInternalPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
   const effectivePagination = pagination ?? internalPagination;
 
@@ -115,20 +116,11 @@ export function DataGrid<TData>({
   };
 
   if (isLoading) {
-    return <p className="p-6 text-body-sm text-neutral-500">Memuat…</p>;
+    return <TableSkeleton rows={5} cols={columns.length} />;
   }
 
   if (isError) {
-    return (
-      <div className="p-6 text-body-sm text-destructive-600">
-        Gagal memuat data.{' '}
-        {onRetry && (
-          <button type="button" className="text-racing-red-600 hover:underline" onClick={onRetry}>
-            Coba lagi
-          </button>
-        )}
-      </div>
-    );
+    return <ErrorState onRetry={onRetry} />;
   }
 
   const pageCount = table.getPageCount();
@@ -139,7 +131,11 @@ export function DataGrid<TData>({
     <div>
       {!hideToolbar && (
         <div className="flex items-center justify-between border-b border-neutral-200 px-3 py-2">
-          <span className="text-caption text-neutral-500">{data.length} baris</span>
+          <span className="text-caption text-neutral-500">
+            {rowCount != null
+              ? `${data.length} dari ${rowCount.toLocaleString('id-ID')} total`
+              : `${data.length} baris`}
+          </span>
           {exportFilename && (
             <Button size="sm" variant="secondary" onClick={exportCsv} disabled={data.length === 0}>
               <Download className="h-3.5 w-3.5" aria-hidden="true" />
@@ -159,14 +155,22 @@ export function DataGrid<TData>({
                   return (
                     <th
                       key={header.id}
+                      scope="col"
                       className="px-2 py-2 text-caption font-medium uppercase text-neutral-500"
                       style={{ width: header.getSize() }}
+                      aria-sort={
+                        sortDir === 'asc' ? 'ascending'
+                        : sortDir === 'desc' ? 'descending'
+                        : canSort ? 'none'
+                        : undefined
+                      }
                     >
                       {header.isPlaceholder ? null : canSort ? (
                         <button
                           type="button"
                           className="inline-flex items-center gap-1 uppercase hover:text-neutral-700"
                           onClick={header.column.getToggleSortingHandler()}
+                          aria-label={`Urutkan berdasarkan ${typeof header.column.columnDef.header === 'string' ? header.column.columnDef.header : header.id}`}
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}
                           {sortDir === 'asc' ? (
@@ -215,7 +219,7 @@ export function DataGrid<TData>({
       {isServer && pageCount > 1 && (
         <div className="flex items-center justify-between border-t border-neutral-200 px-4 py-2">
           <span className="text-caption text-neutral-500">
-            {pageIndex * pageSize + 1}–{Math.min((pageIndex + 1) * pageSize, rowCount ?? 0)} dari {rowCount ?? 0}
+            {pageIndex * pageSize + 1}–{Math.min((pageIndex + 1) * pageSize, rowCount ?? 0)} dari {rowCount?.toLocaleString('id-ID') ?? 0}
           </span>
           <div className="flex items-center gap-2">
             <Button
