@@ -24,7 +24,7 @@ export function AppShell() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       } catch {
-
+        void 0;
       }
       return next;
     });
