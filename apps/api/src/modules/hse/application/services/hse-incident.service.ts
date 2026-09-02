@@ -63,7 +63,7 @@ export class HseIncidentService {
       ...(query.status ? { status: query.status } : {}),
     };
     const [items, total] = await this.prisma.$transaction([
-      this.prisma.hseIncident.findMany({ where, include: { project: { select: { code: true, name: true } }, correctiveActions: { orderBy: { createdAt: 'desc' } } }, orderBy: { incidentDate: 'desc' }, skip: (page - 1) * pageSize, take: pageSize }),
+      this.prisma.hseIncident.findMany({ where, include: { project: { select: { code: true, name: true } }, correctiveActions: { orderBy: { createdAt: 'desc' }, take: 5 } }, orderBy: { incidentDate: 'desc' }, skip: (page - 1) * pageSize, take: pageSize }),
       this.prisma.hseIncident.count({ where }),
     ]);
     return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
