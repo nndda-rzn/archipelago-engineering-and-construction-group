@@ -6,7 +6,6 @@ import {
 } from '../model/treasury.api';
 import { formatDate, formatIdr as fmt } from '@/shared/lib/format';
 
-type TreasuryStatus = 'ACTIVE' | 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'RELEASED' | 'EXPIRED' | 'RETURNED' | 'CLAIMED' | 'INACTIVE' | 'BLOCKED';
 
 const bankHelper = createColumnHelper<BankAccount>();
 const proposalHelper = createColumnHelper<PaymentProposal>();

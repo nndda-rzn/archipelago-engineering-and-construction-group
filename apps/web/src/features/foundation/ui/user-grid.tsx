@@ -3,7 +3,6 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { useBlockUser } from '@/entities/user';
 import type { User } from '@aec/api-contracts';
 
-type UserStatus = 'ACTIVE' | 'BLOCKED' | 'INACTIVE';
 
 const columnHelper = createColumnHelper<User>();
 

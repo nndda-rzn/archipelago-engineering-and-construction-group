@@ -3,7 +3,6 @@ import { Badge, Button, ConfirmActionButton, Input, Label, Select, SelectContent
 import { useAddWorkflowStep, usePublishWorkflow, useNewWorkflowVersion, type WorkflowDefinition } from '../model/approval.api';
 import { formatNumber } from '@/shared/lib/format';
 
-type WorkflowStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
 
 const opLabel: Record<string, string> = {
   '>': '>', '<': '<', '>=': '≥', '<=': '≤', '==': '=',

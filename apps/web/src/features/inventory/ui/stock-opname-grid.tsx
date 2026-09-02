@@ -2,7 +2,6 @@ import { Badge, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import type { StockOpname } from '@aec/api-contracts';
 
-type OpnameStatus = 'DRAFT' | 'IN_PROGRESS' | 'RECONCILED' | 'CLOSED';
 
 const columnHelper = createColumnHelper<StockOpname>();
 

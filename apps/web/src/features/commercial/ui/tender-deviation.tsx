@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Badge, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, StatusBadge } from '@aec/ui';
 import { useCreateDeviation } from '../model/tender.api';
 import type { ContractDeviation } from '@aec/api-contracts';
-import { type TenderStatus, ApproveDeviationBtn, RejectDeviationBtn } from './tender-grid';
+import { ApproveDeviationBtn, RejectDeviationBtn } from './tender-grid';
 import type { OppOption } from './tender-types';
 
 export function DeviationPanel({

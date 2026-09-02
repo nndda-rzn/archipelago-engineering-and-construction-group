@@ -3,7 +3,6 @@ import { Badge, Button, Input, Label, Select, SelectContent, SelectItem, SelectT
 import { useCreateEstimate, useCreatePricingScenario, useTransitionEstimate } from '../model/tender.api';
 import type { Estimate } from '@aec/api-contracts';
 import { formatIdr as fmt } from '@/shared/lib/format';
-import { type TenderStatus } from './tender-grid';
 import type { OppOption } from './tender-types';
 
 export function EstimatePanel({

@@ -4,7 +4,6 @@ import { useApproveDeviation, useExecuteAmendment, useRejectDeviation } from '..
 import type { BidDecision, ContractAmendment, ContractDeviation, TenderSubmission } from '@aec/api-contracts';
 import { formatIdr as fmt } from '@/shared/lib/format';
 
-export type TenderStatus = 'BID' | 'NO_BID' | 'APPROVED' | 'REJECTED' | 'EXECUTED' | 'WORKING' | 'REVIEW' | 'FINAL_BID' | 'AWARD_RECONCILED' | 'OPEN';
 
 const bidHelper = createColumnHelper<BidDecision>();
 const submissionHelper = createColumnHelper<TenderSubmission>();

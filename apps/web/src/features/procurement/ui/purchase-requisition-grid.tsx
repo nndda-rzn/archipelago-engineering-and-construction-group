@@ -3,7 +3,6 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { useSubmitForApproval } from '@/features/approval';
 import type { PurchaseRequisition } from '@aec/api-contracts';
 
-type PrStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 const columnHelper = createColumnHelper<PurchaseRequisition>();
 
 export const purchaseRequisitionColumns = [

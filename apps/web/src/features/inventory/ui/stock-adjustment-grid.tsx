@@ -3,7 +3,6 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { useApproveStockAdjustment } from '../model/stock-adjustment.api';
 import type { StockAdjustment } from '@aec/api-contracts';
 
-type AdjustmentStatus = 'DRAFT' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
 const columnHelper = createColumnHelper<StockAdjustment>();
 
