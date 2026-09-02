@@ -28,7 +28,7 @@ export function IssueHeaderFields({
   const projectWhs = warehouses.filter((w) => w.projectId === projectId || (w.warehouseType === 'CORPORATE' && !w.projectId));
 
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
         <Label htmlFor="mi-project">Project</Label>
         <Select

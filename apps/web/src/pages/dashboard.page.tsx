@@ -48,6 +48,7 @@ export function DashboardPage() {
             {data.items.length === 0 ? (
               <EmptyState title="Belum ada project" description="Buat project pertama untuk mulai mengelola portfolio." />
             ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-left text-body">
               <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
                 <tr>
@@ -96,6 +97,7 @@ export function DashboardPage() {
                 </tr>
               </tfoot>
             </table>
+            </div>
             )}
             </div>
           </div>

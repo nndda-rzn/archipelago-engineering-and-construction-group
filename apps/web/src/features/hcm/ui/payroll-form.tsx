@@ -24,7 +24,7 @@ export function PayrollForm({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div><Label htmlFor="pa-emp">Karyawan</Label><EntitySelect value={employeeId} onValueChange={setEmployeeId} options={(employees.data?.items ?? []).map((e) => ({ value: e.id, label: `${e.employeeNumber} — ${e.name}` }))} placeholder="Pilih karyawan…" searchPlaceholder="Cari karyawan…" /></div>
         <div><Label htmlFor="pa-period">Periode</Label><Input id="pa-period" placeholder="mis. 2026-08" value={period} onChange={(e) => setPeriod(e.target.value)} /></div>
         <div><Label htmlFor="pa-project">Project (opsional)</Label><EntitySelect value={projectId} onValueChange={setProjectId} options={[{ value: '', label: 'Corporate overhead' }, ...(projects.data?.items ?? []).map((p) => ({ value: p.id, label: p.code }))]} placeholder="Corporate overhead" searchPlaceholder="Cari project…" /></div>

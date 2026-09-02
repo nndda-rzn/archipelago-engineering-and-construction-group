@@ -19,7 +19,7 @@ export function WarehouseForm({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div><Label htmlFor="wh-code">Kode</Label><Input id="wh-code" placeholder="WH-PROJ-014" value={code} onChange={(e) => setCode(e.target.value)} /></div>
         <div><Label htmlFor="wh-name">Nama</Label><Input id="wh-name" placeholder="Warehouse Proyek" value={name} onChange={(e) => setName(e.target.value)} /></div>
         <div>

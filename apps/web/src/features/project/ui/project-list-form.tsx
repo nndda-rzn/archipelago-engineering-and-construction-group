@@ -23,7 +23,7 @@ export function ProjectForm({ onDone }: { onDone: () => void }) {
 
   return (
     <form onSubmit={onSubmit} className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div><Label htmlFor="code">Kode Project</Label><Input id="code" placeholder="PRJ-EPC-2027-014" spellCheck={false} error={!!errors.code} {...register('code')} />{errors.code && <p className="mt-1 text-caption text-destructive-600">{errors.code.message}</p>}</div>
         <div><Label htmlFor="name">Nama Project</Label><Input id="name" placeholder="EPC Industrial Processing Facility" error={!!errors.name} {...register('name')} />{errors.name && <p className="mt-1 text-caption text-destructive-600">{errors.name.message}</p>}</div>
         <div><Label htmlFor="client">Klien</Label><Input id="client" placeholder="PT Klien Utama" error={!!errors.client} {...register('client')} />{errors.client && <p className="mt-1 text-caption text-destructive-600">{errors.client.message}</p>}</div>

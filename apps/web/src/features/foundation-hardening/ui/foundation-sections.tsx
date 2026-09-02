@@ -9,16 +9,18 @@ export type IfcSummary = { total: number; released: number };
 
 export function OrgStructureTable({ nodes }: { nodes: OrganizationNode[] }) {
   return (
-    <table className="mt-2 w-full text-left text-body">
-      <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500"><tr><th className="px-4 py-2">Unit</th><th className="px-4 py-2">Tipe</th><th className="px-4 py-2">Kode</th><th className="px-4 py-2">Level</th><th className="px-4 py-2">Status</th></tr></thead>
-      <tbody>{nodes.map((o) => <tr key={o.id} className="border-t border-neutral-100 hover:bg-neutral-50"><td className="px-4 py-2 text-neutral-800">{o.name}</td><td className="px-4 py-2"><Badge variant="default">{o.orgType}</Badge></td><td className="px-4 py-2 font-mono text-neutral-600">{o.code ?? '-'}</td><td className="px-4 py-2 font-mono tabular-nums text-neutral-600">{o.level ?? '-'}</td><td className="px-4 py-2"><Badge variant={o.status === 'ACTIVE' ? 'success' : 'muted'}>{o.status}</Badge></td></tr>)}</tbody>
-    </table>
+    <div className="overflow-x-auto">
+      <table className="mt-2 w-full text-left text-body">
+        <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500"><tr><th className="px-4 py-2">Unit</th><th className="px-4 py-2">Tipe</th><th className="px-4 py-2">Kode</th><th className="px-4 py-2">Level</th><th className="px-4 py-2">Status</th></tr></thead>
+        <tbody>{nodes.map((o) => <tr key={o.id} className="border-t border-neutral-100 hover:bg-neutral-50"><td className="px-4 py-2 text-neutral-800">{o.name}</td><td className="px-4 py-2"><Badge variant="default">{o.orgType}</Badge></td><td className="px-4 py-2 font-mono text-neutral-600">{o.code ?? '-'}</td><td className="px-4 py-2 font-mono tabular-nums text-neutral-600">{o.level ?? '-'}</td><td className="px-4 py-2"><Badge variant={o.status === 'ACTIVE' ? 'success' : 'muted'}>{o.status}</Badge></td></tr>)}</tbody>
+      </table>
+    </div>
   );
 }
 
 export function DoaRulesTable({ rules }: { rules: DoaRuleItem[] }) {
   return (
-    <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
+    <div className="rounded-md border border-neutral-200 bg-white shadow-xs overflow-x-auto">
       <table className="w-full text-left text-body">
         <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500"><tr><th className="px-4 py-2">Transaksi</th><th className="px-4 py-2 text-right">Dari</th><th className="px-4 py-2 text-right">Sampai</th><th className="px-4 py-2">Risiko</th><th className="px-4 py-2">Level</th><th className="px-4 py-2">Role</th></tr></thead>
         <tbody>{rules.map((r) => <tr key={r.id} className="border-t border-neutral-100 hover:bg-neutral-50"><td className="px-4 py-2 font-mono text-neutral-800">{r.transactionType}</td><td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-700">{r.amountFrom != null ? r.amountFrom.toLocaleString('id-ID') : '-'}</td><td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-700">{r.amountTo != null ? r.amountTo.toLocaleString('id-ID') : '-'}</td><td className="px-4 py-2">{r.riskLevel ? <Badge variant="default">{r.riskLevel}</Badge> : '-'}</td><td className="px-4 py-2"><Badge variant="info">{r.approverLevel}</Badge></td><td className="px-4 py-2 font-mono text-neutral-600">{r.approverRoleCode ?? '-'}</td></tr>)}</tbody>
@@ -35,10 +37,12 @@ export const CurrencyGrid: ColumnDef<CurrencyItem, unknown>[] = [
 
 export function RatesTable({ rates }: { rates: ExchangeRateItem[] }) {
   return (
-    <table className="w-full text-left text-body">
-      <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500"><tr><th className="px-4 py-2">Dari</th><th className="px-4 py-2">Ke</th><th className="px-4 py-2">Tipe</th><th className="px-4 py-2 text-right">Rate</th></tr></thead>
-      <tbody>{rates.map((r) => <tr key={r.id} className="border-t border-neutral-100 hover:bg-neutral-50"><td className="px-4 py-2 font-mono text-neutral-800">{r.fromCurrency?.code ?? '-'}</td><td className="px-4 py-2 font-mono text-neutral-700">{r.toCurrency?.code ?? '-'}</td><td className="px-4 py-2"><Badge variant="default">{r.rateType}</Badge></td><td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-800">{r.rate}</td></tr>)}{rates.length === 0 && <tr><td colSpan={4} className="px-4 py-4 text-caption text-neutral-500">Belum ada kurs.</td></tr>}</tbody>
-    </table>
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-body">
+        <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500"><tr><th className="px-4 py-2">Dari</th><th className="px-4 py-2">Ke</th><th className="px-4 py-2">Tipe</th><th className="px-4 py-2 text-right">Rate</th></tr></thead>
+        <tbody>{rates.map((r) => <tr key={r.id} className="border-t border-neutral-100 hover:bg-neutral-50"><td className="px-4 py-2 font-mono text-neutral-800">{r.fromCurrency?.code ?? '-'}</td><td className="px-4 py-2 font-mono text-neutral-700">{r.toCurrency?.code ?? '-'}</td><td className="px-4 py-2"><Badge variant="default">{r.rateType}</Badge></td><td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-800">{r.rate}</td></tr>)}{rates.length === 0 && <tr><td colSpan={4} className="px-4 py-4 text-caption text-neutral-500">Belum ada kurs.</td></tr>}</tbody>
+      </table>
+    </div>
   );
 }
 

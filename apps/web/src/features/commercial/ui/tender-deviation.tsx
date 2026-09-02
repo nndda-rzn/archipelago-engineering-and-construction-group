@@ -53,7 +53,7 @@ export function DeviationPanel({
         <Button onClick={onSubmit} loading={create.isPending}>Buat Deviation</Button>
       </div>
 
-      <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
+      <div className="rounded-md border border-neutral-200 bg-white shadow-xs overflow-x-auto">
         <table className="w-full text-left text-body">
           <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
             <tr>

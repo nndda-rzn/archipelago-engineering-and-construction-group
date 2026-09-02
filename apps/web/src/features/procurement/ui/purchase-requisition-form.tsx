@@ -27,7 +27,7 @@ export function PurchaseRequisitionForm({ onDone }: { onDone: () => void }) {
   };
   return (
     <div className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div><Label htmlFor="pr-project">Project</Label><Select value={projectId} onValueChange={(v) => { setProjectId(v); setWbsItemId(''); }}><SelectTrigger id="pr-project"><SelectValue placeholder="Pilih project…" /></SelectTrigger><SelectContent>{(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}</SelectContent></Select></div>
         <div><Label htmlFor="pr-wbs">WBS (opsional)</Label><Select value={wbsItemId} onValueChange={setWbsItemId} disabled={!projectId}><SelectTrigger id="pr-wbs"><SelectValue placeholder="Tanpa WBS" /></SelectTrigger><SelectContent>{flattenWbs(wbsTree ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{w.code} {w.name}</SelectItem>)}</SelectContent></Select></div>
         <div><Label htmlFor="pr-requested">Diminta Oleh</Label><Input id="pr-requested" placeholder="Nama pemohon" value={requestedBy} onChange={(e) => setRequestedBy(e.target.value)} /></div>

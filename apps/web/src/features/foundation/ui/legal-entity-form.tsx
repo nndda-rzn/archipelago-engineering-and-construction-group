@@ -25,7 +25,7 @@ export function LegalEntityForm({ onDone }: { onDone: () => void }) {
 
   return (
     <form onSubmit={onSubmit} className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div><Label htmlFor="code">Kode</Label><Input id="code" placeholder="AEC-EPC" error={!!errors.code} {...register('code')} />{errors.code && <p className="mt-1 text-caption text-destructive-600">{errors.code.message}</p>}</div>
         <div><Label htmlFor="legalName">Nama Legal</Label><Input id="legalName" placeholder="PT AEC EPC" error={!!errors.legalName} {...register('legalName')} />{errors.legalName && <p className="mt-1 text-caption text-destructive-600">{errors.legalName.message}</p>}</div>
         <div><Label htmlFor="taxIdentifier">NPWP</Label><Input id="taxIdentifier" placeholder="00.000.000.0-000.000" error={!!errors.taxIdentifier} {...register('taxIdentifier')} />{errors.taxIdentifier && <p className="mt-1 text-caption text-destructive-600">{errors.taxIdentifier.message}</p>}</div>

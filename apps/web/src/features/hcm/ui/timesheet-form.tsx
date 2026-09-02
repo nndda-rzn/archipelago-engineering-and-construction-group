@@ -19,7 +19,7 @@ export function TimesheetForm({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div><Label htmlFor="ts-emp">Karyawan</Label><EntitySelect value={employeeId} onValueChange={setEmployeeId} options={(employees.data?.items ?? []).map((e) => ({ value: e.id, label: `${e.employeeNumber} — ${e.name}` }))} placeholder="Pilih karyawan…" searchPlaceholder="Cari karyawan…" /></div>
         <div><Label htmlFor="ts-project">Project</Label><EntitySelect value={projectId} onValueChange={setProjectId} options={(projects.data?.items ?? []).map((p) => ({ value: p.id, label: p.code }))} placeholder="Pilih project…" searchPlaceholder="Cari project…" /></div>
         <div><Label htmlFor="ts-hours">Jam Kerja</Label><Input id="ts-hours" type="number" min={0.5} max={24} step={0.5} placeholder="mis. 8" value={hours} onChange={(e) => setHours(e.target.value)} /></div>

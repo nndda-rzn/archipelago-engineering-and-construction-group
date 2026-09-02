@@ -30,7 +30,7 @@ export function VariationForm({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="vr-project">Project</Label>
           <Select value={projectId} onValueChange={setProjectId}>

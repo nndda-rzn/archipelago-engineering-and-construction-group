@@ -86,6 +86,7 @@ export function TrialBalancePage() {
                 </Badge>
               </div>
 
+              <div className="overflow-x-auto">
               <table className="w-full text-left text-body">
                 <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
                   <tr>
@@ -121,6 +122,7 @@ export function TrialBalancePage() {
                   </tr>
                 </tfoot>
               </table>
+              </div>
             </>
           )}
         </div>
