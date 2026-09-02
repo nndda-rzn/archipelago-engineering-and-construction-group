@@ -1,17 +1,10 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, ConfirmActionButton, DataGrid, EmptyCell } from '@aec/ui';
+import { Button, ConfirmActionButton, DataGrid, EmptyCell, StatusBadge } from '@aec/ui';
 import { useApprovePayment, usePayPayment, usePayments, type Payment } from '@/features/finance';
 import { PaymentForm } from '@/features/finance';
 import { formatIdr } from '@/shared/lib/format';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
-
-const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
-  DRAFT: 'default',
-  APPROVED: 'warning',
-  PAID: 'success',
-  CANCELLED: 'default',
-};
 
 const columnHelper = createColumnHelper<Payment>();
 
@@ -38,7 +31,7 @@ const columns = [
   }),
   columnHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={statusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge>,
+    cell: (info) => <StatusBadge status={info.getValue()} />,
   }),
   columnHelper.display({
     id: 'actions',

@@ -1,5 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, type BadgeVariant, Button } from '@aec/ui';
+import { Badge, Button, StatusBadge } from '@aec/ui';
 import {
   useApproveProposal, useReleaseProposal, useSubmitProposal,
   type BankAccount, type BankGuarantee, type PaymentProposal,
@@ -7,19 +7,6 @@ import {
 import { formatDate, formatIdr as fmt } from '@/shared/lib/format';
 
 type TreasuryStatus = 'ACTIVE' | 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'RELEASED' | 'EXPIRED' | 'RETURNED' | 'CLAIMED' | 'INACTIVE' | 'BLOCKED';
-
-export const statusVariant: Record<TreasuryStatus, BadgeVariant> = {
-  ACTIVE: 'success',
-  DRAFT: 'default',
-  SUBMITTED: 'default',
-  APPROVED: 'success',
-  RELEASED: 'success',
-  EXPIRED: 'warning',
-  RETURNED: 'default',
-  CLAIMED: 'warning',
-  INACTIVE: 'warning',
-  BLOCKED: 'warning',
-};
 
 const bankHelper = createColumnHelper<BankAccount>();
 const proposalHelper = createColumnHelper<PaymentProposal>();
@@ -32,7 +19,7 @@ export const bankColumns = [
   bankHelper.accessor('currency', { header: 'Mata Uang', cell: (i) => <Badge variant="default">{i.getValue()}</Badge> }),
   bankHelper.accessor('legalEntity', { header: 'Entity', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue()?.code}</span> }),
   bankHelper.accessor('openingBalance', { header: 'Saldo Awal', cell: (i) => <span className="font-mono tabular-nums text-neutral-800">{fmt(i.getValue())}</span> }),
-  bankHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={statusVariant[i.getValue() as TreasuryStatus]}>{i.getValue()}</Badge> }),
+  bankHelper.accessor('status', { header: 'Status', cell: (i) => <StatusBadge status={i.getValue()} /> }),
 ];
 
 export const proposalColumns = [
@@ -40,7 +27,7 @@ export const proposalColumns = [
   proposalHelper.accessor('vendor', { header: 'Vendor', cell: (i) => <span className="text-neutral-700">{i.getValue()}</span> }),
   proposalHelper.accessor('totalAmount', { header: 'Nilai', cell: (i) => <span className="font-mono tabular-nums text-neutral-800">{fmt(i.getValue())}</span> }),
   proposalHelper.accessor('bankAccount', { header: 'Rekening', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue() ? `${i.getValue()!.bankName} ${i.getValue()!.accountCode}` : '-'}</span> }),
-  proposalHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={statusVariant[i.getValue() as TreasuryStatus]}>{i.getValue()}</Badge> }),
+  proposalHelper.accessor('status', { header: 'Status', cell: (i) => <StatusBadge status={i.getValue()} /> }),
   proposalHelper.display({
     id: 'actions',
     header: '',
@@ -71,5 +58,5 @@ export const bgColumns = [
   bgHelper.accessor('bankName', { header: 'Bank', cell: (i) => <span className="text-neutral-600">{i.getValue()}</span> }),
   bgHelper.accessor('amount', { header: 'Nilai', cell: (i) => <span className="font-mono tabular-nums text-neutral-800">{fmt(i.getValue())}</span> }),
   bgHelper.accessor('expiryDate', { header: 'Expiry', cell: (i) => <span className="font-mono text-neutral-600">{formatDate(i.getValue())}</span> }),
-  bgHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={statusVariant[i.getValue() as TreasuryStatus]}>{i.getValue()}</Badge> }),
+  bgHelper.accessor('status', { header: 'Status', cell: (i) => <StatusBadge status={i.getValue()} /> }),
 ];

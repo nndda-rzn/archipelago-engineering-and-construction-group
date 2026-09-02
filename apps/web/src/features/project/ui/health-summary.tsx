@@ -1,15 +1,8 @@
-import { Badge, type BadgeVariant } from '@aec/ui';
+import { StatusBadge } from '@aec/ui';
 import type { ProjectHealth } from '@aec/api-contracts';
 import { formatIdr as fmt } from '@/shared/lib/format';
 
 export type ProjectHealthLevel = ProjectHealth['health'];
-
-export const healthVariant: Record<ProjectHealthLevel, BadgeVariant> = {
-  NO_BUDGET: 'default',
-  ON_TRACK: 'success',
-  AT_RISK: 'warning',
-  CRITICAL: 'warning',
-};
 
 export const healthLabel: Record<ProjectHealthLevel, string> = {
   NO_BUDGET: 'Belum Ada Budget',
@@ -34,7 +27,7 @@ export function HealthSummary({ data }: { data: ProjectHealth }) {
             {data.projectCode} · {data.client} · {data.legalEntityCode}
           </p>
         </div>
-        <Badge variant={healthVariant[data.health]}>{healthLabel[data.health]}</Badge>
+        <StatusBadge status={data.health} label={healthLabel[data.health]} />
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">

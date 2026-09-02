@@ -1,17 +1,11 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, ConfirmDialog, DataGrid, EmptyCell, useToast, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
+import { Badge, Button, ConfirmDialog, DataGrid, EmptyCell, useToast, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, StatusBadge } from '@aec/ui';
 import { useLegalEntities } from '@/entities/legal-entity';
 import { useJournals, usePostJournal, type Journal } from '@/features/finance';
 import { JournalForm } from '@/features/finance';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
 import { formatDate } from '@/shared/lib/format';
-
-const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
-  DRAFT: 'default',
-  POSTED: 'success',
-  REVERSED: 'warning',
-};
 
 const sourceLabel: Record<string, string> = {
   MANUAL: 'Manual',
@@ -44,7 +38,7 @@ const columns = [
   }),
   columnHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={statusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge>,
+    cell: (info) => <StatusBadge status={info.getValue()} />,
   }),
   columnHelper.display({
     id: 'actions',

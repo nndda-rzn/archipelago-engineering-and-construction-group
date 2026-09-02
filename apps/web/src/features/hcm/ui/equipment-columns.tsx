@@ -1,20 +1,10 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, type BadgeVariant } from '@aec/ui';
+import { Badge, Button, StatusBadge } from '@aec/ui';
 import {
   useCompleteEquipmentPm, useEndEquipmentAssignment, useResolveEquipmentBreakdown,
 } from '../model/hcm.api';
 import type { Equipment, EquipmentAssignment, EquipmentBreakdown, EquipmentPm } from '@aec/api-contracts';
 import { formatDate, formatIdr as fmt } from '@/shared/lib/format';
-
-type EquipmentStatus = 'AVAILABLE' | 'ASSIGNED' | 'MAINTENANCE' | 'BREAKDOWN' | 'RETIRED';
-
-export const statusVariant: Record<EquipmentStatus, BadgeVariant> = {
-  AVAILABLE: 'success',
-  ASSIGNED: 'default',
-  MAINTENANCE: 'warning',
-  BREAKDOWN: 'warning',
-  RETIRED: 'warning',
-};
 
 const columnHelper = createColumnHelper<Equipment>();
 const assignHelper = createColumnHelper<EquipmentAssignment>();
@@ -44,7 +34,7 @@ export const equipmentColumns = [
   }),
   columnHelper.accessor('status', {
     header: 'Status',
-    cell: ({ row }) => <Badge variant={statusVariant[row.original.status as EquipmentStatus]}>{row.original.status}</Badge>,
+    cell: ({ row }) => <StatusBadge status={row.original.status} />,
   }),
 ];
 
@@ -59,7 +49,7 @@ export const assignmentColumns = [
   }),
   assignHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={info.getValue() === 'ACTIVE' ? 'success' : 'default'}>{info.getValue()}</Badge>,
+    cell: (info) => <StatusBadge status={info.getValue()} />,
   }),
   assignHelper.display({
     id: 'actions',
@@ -92,7 +82,7 @@ export const pmColumns = [
   }),
   pmHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={info.getValue() === 'DONE' ? 'success' : info.getValue() === 'OVERDUE' ? 'warning' : 'default'}>{info.getValue()}</Badge>,
+    cell: (info) => <StatusBadge status={info.getValue()} />,
   }),
   pmHelper.display({
     id: 'actions',
@@ -122,7 +112,7 @@ export const breakdownColumns = [
   }),
   bdHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={info.getValue() === 'OPEN' ? 'warning' : 'success'}>{info.getValue()}</Badge>,
+    cell: (info) => <StatusBadge status={info.getValue()} />,
   }),
   bdHelper.display({
     id: 'actions',

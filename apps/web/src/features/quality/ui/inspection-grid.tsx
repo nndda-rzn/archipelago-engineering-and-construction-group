@@ -1,8 +1,7 @@
-import { Badge, Button } from '@aec/ui';
+import { Button, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useInspect } from '../model/quality.api';
 import type { InspectionRequest } from '@aec/api-contracts';
-import { statusVariant, type QualityStatus } from './quality-status';
 
 const insHelper = createColumnHelper<InspectionRequest>();
 
@@ -24,7 +23,7 @@ function InspectButtons({ inspection }: { inspection: InspectionRequest }) {
 export const insColumns = [
   insHelper.accessor('inspectionNumber', { header: 'No. Inspeksi', cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span> }),
   insHelper.accessor('description', { header: 'Deskripsi', cell: (info) => <span className="max-w-sm truncate text-neutral-700">{info.getValue()}</span> }),
-  insHelper.accessor('result', { header: 'Hasil', cell: ({ row }) => <Badge variant={statusVariant[row.original.result as QualityStatus]}>{row.original.result}</Badge> }),
-  insHelper.accessor('status', { header: 'Status', cell: ({ row }) => <Badge variant={statusVariant[row.original.status as QualityStatus]}>{row.original.status}</Badge> }),
+  insHelper.accessor('result', { header: 'Hasil', cell: ({ row }) => <StatusBadge status={row.original.result} /> }),
+  insHelper.accessor('status', { header: 'Status', cell: ({ row }) => <StatusBadge status={row.original.status} /> }),
   insHelper.display({ id: 'actions', header: '', cell: ({ row }) => <InspectButtons inspection={row.original} /> }),
 ];

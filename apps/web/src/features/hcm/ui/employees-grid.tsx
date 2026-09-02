@@ -1,16 +1,8 @@
-import { Badge, Button, type BadgeVariant } from '@aec/ui';
+import { StatusBadge, Button } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useChangeEmployeeStatus } from '../model/hcm.api';
 import type { Employee, ProjectAssignment } from '@aec/api-contracts';
 import { formatDate } from '@/shared/lib/format';
-
-type EmployeeStatus = 'ACTIVE' | 'INACTIVE' | 'LEAVER';
-
-export const statusVariant: Record<EmployeeStatus, BadgeVariant> = {
-  ACTIVE: 'success',
-  INACTIVE: 'warning',
-  LEAVER: 'warning',
-};
 
 const columnHelper = createColumnHelper<Employee>();
 const assignHelper = createColumnHelper<ProjectAssignment>();
@@ -38,7 +30,7 @@ export const employeeColumns = [
   }),
   columnHelper.accessor('status', {
     header: 'Status',
-    cell: ({ row }) => <Badge variant={statusVariant[row.original.status as EmployeeStatus]}>{row.original.status}</Badge>,
+    cell: ({ row }) => <StatusBadge status={row.original.status} />,
   }),
   columnHelper.display({
     id: 'actions',
@@ -87,6 +79,6 @@ export const assignmentColumns = [
   }),
   assignHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={info.getValue() === 'ACTIVE' ? 'success' : 'default'}>{info.getValue()}</Badge>,
+    cell: (info) => <StatusBadge status={info.getValue()} />,
   }),
 ];

@@ -1,20 +1,8 @@
-import { Badge, Button, type BadgeVariant } from '@aec/ui';
+import { Badge, Button, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useUpdateFiscalPeriodStatus } from '../model/master-data.api';
 import type { FiscalPeriod, Vendor } from '@aec/api-contracts';
 import { formatDate } from '@/shared/lib/format';
-
-type MasterDataStatus = 'ACTIVE' | 'OPEN' | 'CLOSED' | 'LOCKED' | 'SOFT_CLOSED' | 'FUTURE' | 'INACTIVE';
-
-export const statusVariant: Record<MasterDataStatus, BadgeVariant> = {
-  ACTIVE: 'success',
-  OPEN: 'success',
-  CLOSED: 'warning',
-  LOCKED: 'warning',
-  SOFT_CLOSED: 'default',
-  FUTURE: 'default',
-  INACTIVE: 'warning',
-};
 
 const vendorHelper = createColumnHelper<Vendor>();
 const periodHelper = createColumnHelper<FiscalPeriod>();
@@ -42,7 +30,7 @@ export const vendorColumns = [
   }),
   vendorHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={statusVariant[info.getValue() as MasterDataStatus]}>{info.getValue()}</Badge>,
+    cell: (info) => <StatusBadge status={info.getValue()} />,
   }),
 ];
 
@@ -61,7 +49,7 @@ export const periodColumns = [
   }),
   periodHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={statusVariant[info.getValue() as MasterDataStatus]}>{info.getValue()}</Badge>,
+    cell: (info) => <StatusBadge status={info.getValue()} />,
   }),
   periodHelper.display({
     id: 'actions',

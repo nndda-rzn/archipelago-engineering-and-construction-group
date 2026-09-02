@@ -1,7 +1,6 @@
-import { Badge } from '@aec/ui';
+import { StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import type { Client } from '@aec/api-contracts';
-import { commercialStatusVariant, type CommercialStatus } from './commercial-status';
 
 const clientHelper = createColumnHelper<Client>();
 
@@ -11,5 +10,5 @@ export const clientColumns = [
   clientHelper.accessor('industry', { header: 'Industri', cell: (info) => <span className="text-neutral-600">{info.getValue() ?? '—'}</span> }),
   clientHelper.accessor('contactPerson', { header: 'Kontak', cell: (info) => <span className="text-neutral-600">{info.getValue() ?? '—'}</span> }),
   clientHelper.accessor('email', { header: 'Email', cell: (info) => <span className="font-mono text-neutral-500">{info.getValue() ?? '—'}</span> }),
-  clientHelper.accessor('status', { header: 'Status', cell: (info) => <Badge variant={commercialStatusVariant[info.getValue() as CommercialStatus]}>{info.getValue()}</Badge> }),
+  clientHelper.accessor('status', { header: 'Status', cell: (info) => <StatusBadge status={info.getValue()} /> }),
 ];

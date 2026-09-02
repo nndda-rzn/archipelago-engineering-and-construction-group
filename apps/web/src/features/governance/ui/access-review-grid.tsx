@@ -1,9 +1,7 @@
-import { Badge, Button } from '@aec/ui';
+import { Button, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useCompleteAccessReview } from '../model/governance.api';
 import type { AccessReview } from '@aec/api-contracts';
-import { statusVariant } from './governance-status';
-import type { GovernanceStatus } from './governance-status';
 
 const reviewHelper = createColumnHelper<AccessReview>();
 
@@ -16,6 +14,6 @@ function CompleteReviewCell({ review }: { review: AccessReview }) {
 export const reviewColumns = [
   reviewHelper.accessor('reviewNumber', { header: 'No. Review', cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span> }),
   reviewHelper.accessor('period', { header: 'Periode', cell: (info) => <span className="font-mono text-neutral-600">{info.getValue()}</span> }),
-  reviewHelper.accessor('status', { header: 'Status', cell: (info) => <Badge variant={statusVariant[info.getValue() as GovernanceStatus]}>{info.getValue()}</Badge> }),
+  reviewHelper.accessor('status', { header: 'Status', cell: (info) => <StatusBadge status={info.getValue()} /> }),
   reviewHelper.display({ id: 'actions', header: '', cell: ({ row }) => <CompleteReviewCell review={row.original} /> }),
 ];

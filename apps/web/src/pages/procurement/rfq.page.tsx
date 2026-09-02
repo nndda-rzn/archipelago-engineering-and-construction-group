@@ -1,12 +1,8 @@
 import { useState } from 'react';
-import { Badge, Button, ConfirmActionButton, Input } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, Input, StatusBadge } from '@aec/ui';
 import { useCreateQuote, useEvaluateRfq, useRfqs, useSendRfq, type Rfq } from '@/features/procurement';
 import { RfqForm } from '@/features/procurement';
 import { formatDate, formatIdr as fmt } from '@/shared/lib/format';
-
-const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
-  DRAFT: 'default', SENT: 'default', QUOTED: 'warning', EVALUATED: 'warning', AWARDED: 'success', CANCELLED: 'warning',
-};
 
 function RfqActions({ rfq }: { rfq: Rfq }) {
   const send = useSendRfq();
@@ -78,7 +74,7 @@ export function RfqPage() {
           <div key={rfq.id} className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
             <div className="flex items-start justify-between">
               <div>
-                <div className="flex items-center gap-2"><span className="font-mono text-body font-semibold text-neutral-900">{rfq.rfqNumber}</span><Badge variant={statusVariant[rfq.status] ?? 'default'}>{rfq.status}</Badge></div>
+                <div className="flex items-center gap-2"><span className="font-mono text-body font-semibold text-neutral-900">{rfq.rfqNumber}</span><StatusBadge status={rfq.status} /></div>
                 <p className="mt-0.5 text-body text-neutral-700">{rfq.title}</p>
                 <p className="text-caption text-neutral-500">{rfq.project?.code} · {rfq.items.length} item{rfq.dueDate ? ` · batas ${formatDate(rfq.dueDate)}` : ''}</p>
               </div>

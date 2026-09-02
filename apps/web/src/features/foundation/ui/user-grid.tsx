@@ -1,13 +1,9 @@
-import { Badge, type BadgeVariant, ConfirmActionButton } from '@aec/ui';
+import { Badge, ConfirmActionButton, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useBlockUser } from '@/entities/user';
 import type { User } from '@aec/api-contracts';
 
 type UserStatus = 'ACTIVE' | 'BLOCKED' | 'INACTIVE';
-
-export const statusVariant: Record<UserStatus, BadgeVariant> = {
-  ACTIVE: 'success', BLOCKED: 'warning', INACTIVE: 'muted',
-};
 
 const columnHelper = createColumnHelper<User>();
 
@@ -16,7 +12,7 @@ export const userColumns = [
   columnHelper.accessor('displayName', { header: 'Nama', cell: (i) => <span className="text-neutral-900">{i.getValue()}</span> }),
   columnHelper.accessor('email', { header: 'Email', cell: (i) => <span className="text-neutral-600">{i.getValue()}</span> }),
   columnHelper.accessor('roles', { header: 'Roles', cell: (i) => <span className="flex flex-wrap gap-1">{i.getValue().map((role) => <Badge key={role} variant="default">{role}</Badge>)}</span> }),
-  columnHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={statusVariant[i.getValue() as UserStatus]}>{i.getValue()}</Badge> }),
+  columnHelper.accessor('status', { header: 'Status', cell: (i) => <StatusBadge status={i.getValue()} /> }),
   columnHelper.display({ id: 'actions', header: '', cell: ({ row }) => <div className="flex justify-end gap-1"><BlockButton id={row.original.id} disabled={row.original.status !== 'ACTIVE'} /></div> }),
 ];
 
