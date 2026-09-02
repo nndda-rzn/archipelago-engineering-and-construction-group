@@ -1,9 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
+import { ActualCostCalculator } from '@/shared/project/actual-cost.calculator';
+import { classifyHealth } from '@/shared/project/project-health.classifier';
 
 @Injectable()
 export class PortfolioService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(ActualCostCalculator) private readonly actualCost: ActualCostCalculator,
+  ) {}
 
   async portfolio() {
     const projects = await this.prisma.project.findMany({
@@ -11,38 +16,47 @@ export class PortfolioService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const [budgetAgg, ledgerAgg, invoiceAgg, clientInvoiceAgg] = await this.prisma.$transaction([
-      this.prisma.budgetItem.groupBy({ by: ['projectId'], where: { status: 'PUBLISHED' }, orderBy: { projectId: 'asc' }, _sum: { amount: true } }),
-      this.prisma.stockLedgerEntry.groupBy({ by: ['projectId'], where: { movementType: 'OUT', totalValue: { not: null } }, orderBy: { projectId: 'asc' }, _sum: { totalValue: true } }),
-      this.prisma.journal.findMany({ where: { source: 'INVOICE', status: 'POSTED' }, select: { sourceId: true, lines: { where: { account: { code: { startsWith: '610' } } }, select: { debit: true } } } }),
-      this.prisma.journal.findMany({ where: { source: 'CLIENT_INVOICE', status: 'POSTED' }, select: { sourceId: true, lines: { where: { account: { code: { startsWith: '410' } } }, select: { credit: true } } } }),
-    ]);
-
-    const budgetMap = new Map(budgetAgg.map((r) => [r.projectId, Number(r._sum?.amount ?? 0)]));
-    const ledgerMap = new Map(ledgerAgg.map((r) => [r.projectId, Math.abs(Number(r._sum?.totalValue ?? 0))]));
-
-    const [postedVendorInvoices, postedClientInvoices] = await this.prisma.$transaction([
-      this.prisma.vendorInvoice.findMany({ where: { status: 'POSTED' }, select: { id: true, projectId: true } }),
-      this.prisma.clientInvoice.findMany({ where: { status: 'POSTED' }, select: { id: true, projectId: true } }),
-    ]);
-    const vendorInvoiceProject = new Map(postedVendorInvoices.map((i) => [i.id, i.projectId]));
-    const clientInvoiceProject = new Map(postedClientInvoices.map((i) => [i.id, i.projectId]));
-
-    const invoiceCostByProject = new Map<string, number>();
-    for (const j of invoiceAgg) {
-      if (!j.sourceId) continue;
-      const projectId = vendorInvoiceProject.get(j.sourceId);
-      if (!projectId) continue;
-      const v = j.lines.reduce((s, l) => s + Number(l.debit), 0);
-      invoiceCostByProject.set(projectId, (invoiceCostByProject.get(projectId) ?? 0) + v);
+    if (projects.length === 0) {
+      return {
+        generatedAt: new Date().toISOString(),
+        totals: { projectCount: 0, totalContract: 0, totalBudget: 0, totalActual: 0, totalRevenue: 0, totalVariance: 0 },
+        healthCounts: { NO_BUDGET: 0, ON_TRACK: 0, AT_RISK: 0, CRITICAL: 0 },
+        items: [],
+      };
     }
+
+    const projectIds = projects.map((p) => p.id);
+
+    // Batch query budget per project
+    const budgetAgg = await this.prisma.budgetItem.groupBy({
+      by: ['projectId'],
+      where: { projectId: { in: projectIds }, status: 'PUBLISHED' },
+      _sum: { amount: true },
+    });
+    const budgetMap = new Map(budgetAgg.map((r) => [r.projectId, Number(r._sum?.amount ?? 0)]));
+
+    // Actual cost batch — delegate ke shared calculator (eliminasi duplikasi)
+    const actualMap = await this.actualCost.computeBatch(projectIds);
+
+    // Revenue batch dari posted client invoices
+    const postedClientInvoices = await this.prisma.clientInvoice.findMany({
+      where: { projectId: { in: projectIds }, status: 'POSTED' },
+      select: { id: true, projectId: true },
+    });
+    const clientInvoiceProjectMap = new Map(postedClientInvoices.map((i) => [i.id, i.projectId]));
     const revenueByProject = new Map<string, number>();
-    for (const j of clientInvoiceAgg) {
-      if (!j.sourceId) continue;
-      const projectId = clientInvoiceProject.get(j.sourceId);
-      if (!projectId) continue;
-      const v = j.lines.reduce((s, l) => s + Number(l.credit), 0);
-      revenueByProject.set(projectId, (revenueByProject.get(projectId) ?? 0) + v);
+    if (postedClientInvoices.length > 0) {
+      const revenueJournals = await this.prisma.journal.findMany({
+        where: { source: 'CLIENT_INVOICE', status: 'POSTED', sourceId: { in: postedClientInvoices.map((i) => i.id) } },
+        include: { lines: { where: { account: { code: { startsWith: '410' } } }, select: { credit: true } } },
+      });
+      for (const j of revenueJournals) {
+        if (!j.sourceId) continue;
+        const projectId = clientInvoiceProjectMap.get(j.sourceId);
+        if (!projectId) continue;
+        const v = j.lines.reduce((s, l) => s + Number(l.credit), 0);
+        revenueByProject.set(projectId, (revenueByProject.get(projectId) ?? 0) + v);
+      }
     }
 
     let totalContract = 0;
@@ -53,14 +67,11 @@ export class PortfolioService {
 
     const items = projects.map((p) => {
       const budget = budgetMap.get(p.id) ?? 0;
-      const actual = (ledgerMap.get(p.id) ?? 0) + (invoiceCostByProject.get(p.id) ?? 0);
+      const actual = actualMap.get(p.id) ?? 0;
       const revenue = revenueByProject.get(p.id) ?? 0;
-      const utilization = budget > 0 ? Math.round((actual / budget) * 1000) / 10 : null;
-      let health: 'NO_BUDGET' | 'ON_TRACK' | 'AT_RISK' | 'CRITICAL';
-      if (budget === 0) health = 'NO_BUDGET';
-      else if (utilization! <= 70) health = 'ON_TRACK';
-      else if (utilization! <= 90) health = 'AT_RISK';
-      else health = 'CRITICAL';
+
+      // Health classification — delegate ke shared classifier (eliminasi duplikasi)
+      const { utilization, health } = classifyHealth(budget, actual);
       countByHealth[health] += 1;
 
       totalContract += Number(p.contractValue ?? 0);
@@ -68,7 +79,11 @@ export class PortfolioService {
       totalActual += actual;
       totalRevenue += revenue;
 
-      return { projectId: p.id, projectCode: p.code, projectName: p.name, client: p.client, status: p.status, contractValue: Number(p.contractValue ?? 0), budget, actual, revenue, variance: budget - actual, utilization, health };
+      return {
+        projectId: p.id, projectCode: p.code, projectName: p.name, client: p.client,
+        status: p.status, contractValue: Number(p.contractValue ?? 0),
+        budget, actual, revenue, variance: budget - actual, utilization, health,
+      };
     });
 
     return {

@@ -1,9 +1,14 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
+import { ActualCostCalculator } from '@/shared/project/actual-cost.calculator';
+import { classifyHealth } from '@/shared/project/project-health.classifier';
 
 @Injectable()
 export class ProjectHealthService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(ActualCostCalculator) private readonly actualCost: ActualCostCalculator,
+  ) {}
 
   async health(id: string) {
     const project = await this.prisma.project.findUnique({
@@ -12,6 +17,7 @@ export class ProjectHealthService {
     });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
 
+    // Budget baseline
     const budgetItems = await this.prisma.budgetItem.findMany({ where: { projectId: id, status: 'PUBLISHED' } });
     const budgetByWbs = new Map<string, number>();
     let totalBudget = 0;
@@ -21,36 +27,10 @@ export class ProjectHealthService {
       totalBudget += v;
     }
 
-    const ledgerOut = await this.prisma.stockLedgerEntry.groupBy({
-      by: ['wbsItemId'],
-      where: { projectId: id, movementType: 'OUT', totalValue: { not: null } },
-      orderBy: { wbsItemId: 'asc' },
-      _sum: { totalValue: true },
-    });
-    const actualByWbs = new Map<string, number>();
-    let ledgerActualTotal = 0;
-    for (const row of ledgerOut) {
-      const v = Math.abs(Number(row._sum?.totalValue ?? 0));
-      ledgerActualTotal += v;
-      if (!row.wbsItemId) continue;
-      actualByWbs.set(row.wbsItemId, (actualByWbs.get(row.wbsItemId) ?? 0) + v);
-    }
+    // Actual cost — delegate ke shared calculator (eliminasi duplikasi)
+    const totalActual = await this.actualCost.compute(id);
 
-    const postedInvoices = await this.prisma.vendorInvoice.findMany({
-      where: { projectId: id, status: 'POSTED' },
-      select: { id: true },
-    });
-    const postedInvoiceIds = postedInvoices.map((i) => i.id);
-    const invoicePost = postedInvoiceIds.length
-      ? await this.prisma.journal.findMany({
-          where: { source: 'INVOICE', status: 'POSTED', sourceId: { in: postedInvoiceIds } },
-          include: { lines: { where: { account: { code: { startsWith: '610' } } }, select: { debit: true } } },
-        })
-      : [];
-    const invoiceActual = invoicePost.reduce((sum, j) => sum + j.lines.reduce((s, l) => s + Number(l.debit), 0), 0);
-
-    const totalActual = ledgerActualTotal + invoiceActual;
-
+    // Revenue dari posted client invoices
     const postedClientInvoices = await this.prisma.clientInvoice.findMany({
       where: { projectId: id, status: 'POSTED' },
       select: { id: true },
@@ -64,12 +44,24 @@ export class ProjectHealthService {
       : [];
     const revenue = revenuePost.reduce((sum, j) => sum + j.lines.reduce((s, l) => s + Number(l.credit), 0), 0);
 
+    // WBS breakdown per item
+    const ledgerOut = await this.prisma.stockLedgerEntry.groupBy({
+      by: ['wbsItemId'],
+      where: { projectId: id, movementType: 'OUT', totalValue: { not: null } },
+      orderBy: { wbsItemId: 'asc' },
+      _sum: { totalValue: true },
+    });
+    const actualByWbs = new Map<string, number>();
+    for (const row of ledgerOut) {
+      if (!row.wbsItemId) continue;
+      actualByWbs.set(row.wbsItemId, Math.abs(Number(row._sum?.totalValue ?? 0)));
+    }
+
     const wbs = await this.prisma.wbsItem.findMany({
       where: { projectId: id },
       select: { id: true, code: true, name: true, parentId: true },
       orderBy: { code: 'asc' },
     });
-
     const wbsRows = wbs.map((w) => {
       const budget = budgetByWbs.get(w.id) ?? 0;
       const actual = actualByWbs.get(w.id) ?? 0;
@@ -77,12 +69,8 @@ export class ProjectHealthService {
       return { id: w.id, code: w.code, name: w.name, parentId: w.parentId, budget, actual, variance, utilization: budget > 0 ? Math.round((actual / budget) * 1000) / 10 : null };
     });
 
-    const utilization = totalBudget > 0 ? (totalActual / totalBudget) * 100 : null;
-    let health: 'NO_BUDGET' | 'ON_TRACK' | 'AT_RISK' | 'CRITICAL';
-    if (totalBudget === 0) health = 'NO_BUDGET';
-    else if (utilization! <= 70) health = 'ON_TRACK';
-    else if (utilization! <= 90) health = 'AT_RISK';
-    else health = 'CRITICAL';
+    // Health classification — delegate ke shared classifier (eliminasi duplikasi)
+    const { utilization, health } = classifyHealth(totalBudget, totalActual);
 
     return {
       projectId: id,
