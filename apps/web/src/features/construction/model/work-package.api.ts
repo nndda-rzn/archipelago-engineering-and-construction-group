@@ -73,7 +73,6 @@ export function useAddProgress(projectId: string) {
 
 export type { WorkPackage, CommissioningSystem, HandoverPackage };
 
-// FR-CON-005: Commissioning system
 export const commissioningKeys = {
   all: (projectId: string) => ['projects', projectId, 'commissioning'] as const,
 };
@@ -109,7 +108,6 @@ export function useUpdateCommissioningStatus(projectId: string) {
   });
 }
 
-// FR-CON-006: Handover
 export const handoverKeys = {
   all: (projectId: string) => ['projects', projectId, 'handovers'] as const,
   list: (projectId: string, params: PaginationParams) => [...handoverKeys.all(projectId), 'list', params] as const,
@@ -163,7 +161,6 @@ export function useApproveHandover(projectId: string) {
   });
 }
 
-// FR-CON-003: Daily report
 export const dailyReportKeys = {
   all: (projectId: string) => ['projects', projectId, 'daily-reports'] as const,
   list: (projectId: string, params: PaginationParams) => [...dailyReportKeys.all(projectId), 'list', params] as const,

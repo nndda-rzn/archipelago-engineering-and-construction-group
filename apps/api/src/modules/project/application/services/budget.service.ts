@@ -20,7 +20,6 @@ export class BudgetService {
       orderBy: [{ version: 'desc' }],
     });
 
-    // Group per WBS: ringkas amount per wbs (baseline terbaru per cost type)
     const byWbs = new Map<string, { amount: number; count: number }>();
     for (const item of items) {
       const current = byWbs.get(item.wbsItemId) ?? { amount: 0, count: 0 };
@@ -60,7 +59,6 @@ export class BudgetService {
 
     const costType = dto.costType ?? 'DIRECT';
 
-    // Dilarang edit setelah PUBLISHED (BR-006 — posting immutability analog)
     const existing = await this.prisma.budgetItem.findUnique({
       where: { projectId_wbsItemId_costType: { projectId, wbsItemId: dto.wbsItemId, costType } },
     });
@@ -95,7 +93,6 @@ export class BudgetService {
       throw new ConflictException({ code: 'BUDGET_EMPTY', message: 'Belum ada budget untuk di-publish' });
     }
 
-    // Versi baru: semua draft item → PUBLISHED, version +1 (simplifikasi baseline)
     await this.prisma.budgetItem.updateMany({
       where: { projectId, status: 'DRAFT' },
       data: { status: 'PUBLISHED', version: { increment: 1 } },

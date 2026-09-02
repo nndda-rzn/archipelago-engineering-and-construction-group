@@ -76,7 +76,6 @@ export class StockAdjustmentService {
       throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa di-approve (${adjustment.status})` });
     }
 
-    // guard: stok tidak boleh negatif setelah adjustment (qty negative lebih besar dari on-hand)
     for (const item of adjustment.items) {
       if (Number(item.quantity) < 0) {
         const agg = await this.prisma.stockLedgerEntry.aggregate({
@@ -96,9 +95,6 @@ export class StockAdjustmentService {
         include: { items: true },
       });
 
-      // Tulis ledger ADJUSTMENT — delegate ke StockLedgerWriter (eliminasi duplikasi)
-      // Catatan: movementType IN untuk qty positif, OUT untuk qty negatif
-      // StockLedgerWriter urus sign berdasarkan movementType
       await this.ledger.write(tx, updated.items.map((item) => ({
         projectId: adjustment.projectId,
         wbsItemId: item.wbsItemId ?? null,
@@ -108,7 +104,7 @@ export class StockAdjustmentService {
         reference: adjustment.adjustmentNumber,
         description: `Adjustment ${adjustment.reasonCode}`,
         movementType: Number(item.quantity) >= 0 ? 'IN' as const : 'OUT' as const,
-        quantity: Math.abs(Number(item.quantity)),  // positif — StockLedgerWriter urus sign
+        quantity: Math.abs(Number(item.quantity)),
         unit: item.unit,
         unitPrice: null,
         totalValue: null,

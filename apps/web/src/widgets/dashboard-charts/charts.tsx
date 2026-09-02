@@ -21,7 +21,6 @@ const tooltipStyle = {
   fontFamily: 'IBM Plex Sans, sans-serif',
 };
 
-/** Bar chart cash flow bulanan: cash in vs out. */
 export function CashFlowChart({ data }: { data: { month: string; cashIn: number; cashOut: number }[] }) {
   return (
     <ResponsiveContainer width="100%" height={220}>
@@ -37,7 +36,6 @@ export function CashFlowChart({ data }: { data: { month: string; cashIn: number;
   );
 }
 
-/** Donut distribusi project health. */
 export function HealthDonut({ data }: { data: { name: string; value: number }[] }) {
   return (
     <ResponsiveContainer width="100%" height={220}>

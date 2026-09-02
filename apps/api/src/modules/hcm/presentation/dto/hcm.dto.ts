@@ -176,7 +176,7 @@ export class CreatePayrollAllocationDto {
 
   @IsString()
   @Length(7, 7)
-  period!: string; // "2026-08"
+  period!: string;
 
   @Type(() => Number)
   @IsNumber()

@@ -127,7 +127,6 @@ export class RfqService {
       throw new ConflictException({ code: 'NO_QUOTES', message: 'Belum ada quote vendor' });
     }
 
-    // FR-PRO-005: vendor teknis REJECT tidak bisa menang (tanpa exceptional governance)
     const technicalRejected = rfq.quotes.filter((q) => q.technicalStatus === 'REJECT');
     if (technicalRejected.length > 0) {
       throw new ConflictException({
@@ -136,11 +135,10 @@ export class RfqService {
       });
     }
 
-    // FR-PRO-006: normalized commercial comparison — harga terendah + penalti lead time
     const ranked = rfq.quotes
       .filter((q) => q.status === 'SUBMITTED')
       .map((q) => {
-        const leadPenalty = Number(q.leadTimeDays ?? 0) * 0.001; // 0.1% per hari
+        const leadPenalty = Number(q.leadTimeDays ?? 0) * 0.001;
         return { quote: q, normalizedScore: Number(q.totalAmount) * (1 + leadPenalty) };
       })
       .sort((a, b) => a.normalizedScore - b.normalizedScore);
@@ -168,7 +166,6 @@ export class RfqService {
     return evaluated;
   }
 
-  // FR-PRO-005: technical review quote — PASS/REJECT
   async technicalReview(quoteId: string, technicalStatus: string, technicalNote: string | null, actorId: string) {
     const quote = await this.prisma.rfqQuote.findUnique({ where: { id: quoteId } });
     if (!quote) throw new NotFoundException({ code: 'QUOTE_NOT_FOUND', message: 'Quote tidak ditemukan' });
@@ -190,7 +187,6 @@ export class RfqService {
     return updated;
   }
 
-  // FR-PRO-006: normalized commercial comparison — tabel per quote
   async commercialEvaluation(rfqId: string) {
     const rfq = await this.prisma.rfq.findUnique({ where: { id: rfqId }, include: { quotes: { include: { items: true } } } });
     if (!rfq) throw new NotFoundException({ code: 'RFQ_NOT_FOUND', message: 'RFQ tidak ditemukan' });

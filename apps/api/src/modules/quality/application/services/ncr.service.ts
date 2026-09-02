@@ -13,7 +13,6 @@ export class NcrService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-QA-003: NCR
   async createNcr(dto: CreateNcrDto, actorId: string) {
     const ncrNumber = await this.seq.next('NCR', `NCR-${new Date().getFullYear()}-`);
     const ncr = await this.prisma.ncr.create({

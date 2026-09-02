@@ -23,8 +23,6 @@ export class QualityController {
     @Inject(PunchListService) private readonly punchList: PunchListService,
   ) {}
 
-  // ─── ITP (FR-QA-001) ─────────────────────────────────────────────────────────
-
   @Get('quality/itps')
   @Permissions(Permission.QualityView)
   listItps(@Query() query: ListItpQueryDto) {
@@ -36,8 +34,6 @@ export class QualityController {
   createItp(@Body() dto: CreateItpDto, @Req() request: { user?: { sub?: string } }) {
     return this.itp.createItp(dto, request.user?.sub ?? 'system');
   }
-
-  // ─── Inspection (FR-QA-002) ───────────────────────────────────────────────────
 
   @Get('quality/inspections')
   @Permissions(Permission.QualityView)
@@ -56,8 +52,6 @@ export class QualityController {
   inspect(@Param('id') id: string, @Body() dto: InspectDto, @Req() request: { user?: { sub?: string } }) {
     return this.inspection.inspect(id, dto, request.user?.sub ?? 'system');
   }
-
-  // ─── NCR (FR-QA-003) ─────────────────────────────────────────────────────────
 
   @Get('quality/ncrs')
   @Permissions(Permission.QualityView)
@@ -82,8 +76,6 @@ export class QualityController {
   reinspectNcr(@Param('id') id: string, @Body() dto: ReinspectNcrDto, @Req() request: { user?: { sub?: string } }) {
     return this.ncr.reinspectNcr(id, dto, request.user?.sub ?? 'system');
   }
-
-  // ─── Punch List (FR-QA-004) ───────────────────────────────────────────────────
 
   @Get('quality/punch-items')
   @Permissions(Permission.QualityView)

@@ -10,7 +10,6 @@ export class ProjectAssignmentService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-HCM-002: multi-project assignment, FR-HCM-003: allocation >100% butuh exception approval
   async createAssignment(employeeId: string, dto: CreateProjectAssignmentDto, actorId: string) {
     const employee = await this.prisma.employee.findUnique({ where: { id: employeeId } });
     if (!employee) throw new NotFoundException({ code: 'EMPLOYEE_NOT_FOUND', message: 'Employee tidak ditemukan' });
@@ -21,7 +20,6 @@ export class ProjectAssignmentService {
     const start = dto.startDate ? new Date(dto.startDate) : new Date();
     const end = dto.endDate ? new Date(dto.endDate) : null;
 
-    // FR-HCM-003: total alokasi aktif >100% → wajib exceptionApproved
     const activeAssignments = await this.prisma.projectAssignment.findMany({
       where: { employeeId, status: 'ACTIVE' },
       select: { allocationPercent: true },

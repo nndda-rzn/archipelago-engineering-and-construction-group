@@ -20,7 +20,6 @@ const iconByVariant: Record<ToastVariant, React.ReactNode> = {
 
 const ToastContext = React.createContext<(opts: ToastOptions) => void>(() => {});
 
-/** Ambil fungsi toast dari provider global. Wajib di dalam <ToastProvider>. */
 export function useToast() {
   return React.useContext(ToastContext);
 }

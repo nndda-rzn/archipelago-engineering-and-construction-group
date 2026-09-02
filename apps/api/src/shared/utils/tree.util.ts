@@ -1,13 +1,5 @@
-/**
- * buildTree<T> — generic tree builder dari flat array dengan parentId.
- * Menggantikan implementasi identik di:
- *   - wbs.service.ts
- *   - commissioning.service.ts
- *   - foundation-hardening.service.ts (listOrganizations)
- *
- * Contoh pakai:
- *   const tree = buildTree(items); // items: { id, parentId, ...rest }[]
- */
+
+
 export interface TreeNode<T> {
   item: T;
   children: TreeNode<T>[];

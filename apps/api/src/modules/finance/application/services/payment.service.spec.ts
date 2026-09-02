@@ -74,7 +74,7 @@ describe('PaymentService', () => {
   it('bayar melebihi AP open -> Conflict EXCEED_AP_OPEN', async () => {
     prisma.project.findUnique.mockResolvedValue({ id: 'proj-1' });
     prisma.vendorInvoice.findMany.mockResolvedValue([invoice]);
-    // sudah terbayar 450 -> open 50, bayar 100 > 50.
+
     prisma.paymentItem.groupBy.mockResolvedValue([{ invoiceId: 'inv-1', _sum: { amount: 450 } }]);
     await expectCode(service.createPayment(dto(), 'user-1'), 'EXCEED_AP_OPEN');
   });

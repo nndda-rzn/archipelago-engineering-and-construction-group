@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-// ─── Foundation/Domain Hardening (Fase 11F) ──────────────────────────────────
-
 export const organizationSchema = z.object({
   id: z.string(),
   legalEntityId: z.string(),

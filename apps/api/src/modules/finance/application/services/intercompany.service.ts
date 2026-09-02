@@ -13,7 +13,6 @@ export class IntercompanyService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-FIN-009: Intercompany transaction
   async createIntercompany(dto: CreateIntercompanyDto, actorId: string) {
     if (dto.fromEntityId === dto.toEntityId) {
       throw new ConflictException({ code: 'SAME_ENTITY', message: 'Entity asal dan tujuan harus berbeda' });

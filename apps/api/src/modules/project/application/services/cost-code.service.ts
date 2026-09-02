@@ -11,7 +11,6 @@ export class CostCodeService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-PRJ-003: CBS & Cost Code
   async createCostCode(projectId: string, dto: CreateCostCodeDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });

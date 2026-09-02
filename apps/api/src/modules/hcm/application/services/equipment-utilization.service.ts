@@ -10,7 +10,6 @@ export class EquipmentUtilizationService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-EQP-003: utilization — operating / available
   async createUtilization(equipmentId: string, dto: CreateEquipmentUtilizationDto, actorId: string) {
     const equipment = await this.prisma.equipment.findUnique({ where: { id: equipmentId } });
     if (!equipment) throw new NotFoundException({ code: 'EQUIPMENT_NOT_FOUND', message: 'Equipment tidak ditemukan' });
@@ -32,7 +31,6 @@ export class EquipmentUtilizationService {
       },
     });
 
-    // update meter (FR-EQP-001: currentMeter bertambah)
     if (operating > 0) {
       await this.prisma.equipment.update({
         where: { id: equipmentId },

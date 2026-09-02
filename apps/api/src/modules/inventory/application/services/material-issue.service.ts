@@ -23,7 +23,6 @@ export class MaterialIssueService {
       throw new ConflictException({ code: 'WAREHOUSE_PROJECT_MISMATCH', message: 'Warehouse bukan milik project ini' });
     }
 
-    // Validasi WBS item milik project
     for (const item of dto.items) {
       if (!item.wbsItemId) continue;
       const wbs = await this.prisma.wbsItem.findUnique({ where: { id: item.wbsItemId } });
@@ -32,7 +31,6 @@ export class MaterialIssueService {
       }
     }
 
-    // Cek ketersediaan stok per (wbsItemId, warehouse) — anti over-issue
     const available = new Map<string, number>();
     for (const item of dto.items) {
       const key = `${item.wbsItemId ?? 'NULL'}|${dto.warehouseId}`;
@@ -42,7 +40,7 @@ export class MaterialIssueService {
         _sum: { quantity: true, totalValue: true },
       });
       available.set(key, Number(agg._sum.quantity ?? 0));
-      // catat harga rata-rata untuk cost issue
+
       const qty = Number(agg._sum.quantity ?? 0);
       const value = Number(agg._sum.totalValue ?? 0);
       available.set(`${key}|value`, qty > 0 ? value / qty : 0);
@@ -92,7 +90,6 @@ export class MaterialIssueService {
         include: { items: true },
       });
 
-      // Tulis stock ledger OUT — delegate ke StockLedgerWriter (eliminasi duplikasi)
       await this.ledger.write(tx, created.items.map((item) => ({
         projectId: dto.projectId,
         wbsItemId: item.wbsItemId ?? null,
@@ -102,7 +99,7 @@ export class MaterialIssueService {
         reference: seq,
         description: `Material issue ke ${dto.issuedTo}`,
         movementType: 'OUT' as const,
-        quantity: Number(item.quantity),  // positif — StockLedgerWriter urus sign
+        quantity: Number(item.quantity),
         unit: item.unit,
         unitPrice: item.unitPrice != null ? Number(item.unitPrice) : null,
         totalValue: item.totalValue != null ? Number(item.totalValue) : null,

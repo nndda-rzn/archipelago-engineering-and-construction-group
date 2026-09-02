@@ -22,8 +22,6 @@ export class HseController {
     @Inject(CorrectiveActionService) private readonly correctiveAction: CorrectiveActionService,
   ) {}
 
-  // ─── Safety Observation (FR-HSE-001) ─────────────────────────────────────────
-
   @Get('hse/observations')
   @Permissions(Permission.SafetyObservationView)
   listObservations(@Query() query: ListObservationQueryDto) {
@@ -41,8 +39,6 @@ export class HseController {
   resolveObservation(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.safetyObservation.resolveObservation(id, request.user?.sub ?? 'system');
   }
-
-  // ─── HSE Incident (FR-HSE-002/003) ───────────────────────────────────────────
 
   @Get('hse/incidents')
   @Permissions(Permission.HseIncidentView)
@@ -68,8 +64,6 @@ export class HseController {
     return this.hseIncident.resolveIncident(id, request.user?.sub ?? 'system');
   }
 
-  // ─── Permit to Work (FR-HSE-004) ─────────────────────────────────────────────
-
   @Get('hse/permits')
   @Permissions(Permission.PermitToWorkView)
   listPermits(@Query() query: ListPermitQueryDto) {
@@ -87,8 +81,6 @@ export class HseController {
   revokePermit(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
     return this.permitToWork.revokePermit(id, request.user?.sub ?? 'system');
   }
-
-  // ─── Corrective Action (FR-HSE-005) ──────────────────────────────────────────
 
   @Post('hse/corrective-actions')
   @Permissions(Permission.CorrectiveActionCreate)

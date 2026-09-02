@@ -12,7 +12,6 @@ export class ContractAmendmentService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-COM-008: Contract amendment
   async createContractAmendment(contractId: string, dto: CreateContractAmendmentDto, actorId: string) {
     const contract = await this.prisma.contract.findUnique({ where: { id: contractId } });
     if (!contract) throw new NotFoundException({ code: 'CONTRACT_NOT_FOUND', message: 'Kontrak tidak ditemukan' });

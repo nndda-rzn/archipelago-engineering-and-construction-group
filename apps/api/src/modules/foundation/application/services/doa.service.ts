@@ -10,7 +10,6 @@ export class DoaService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-FND-006: DoA resolution
   async createDoaRule(dto: CreateDoaRuleDto, actorId: string) {
     const rule = await this.prisma.doaRule.create({
       data: {

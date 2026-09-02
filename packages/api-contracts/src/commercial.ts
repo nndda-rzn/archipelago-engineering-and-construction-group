@@ -92,8 +92,6 @@ export const createContractSchema = z.object({
 });
 export type CreateContract = z.infer<typeof createContractSchema>;
 
-// ─── Commercial Tender (Fase 11C, FR-COM-002..008) ───────────────────────────
-
 export const bidDecisionSchema = z.object({
   id: z.string(),
   opportunityId: z.string(),

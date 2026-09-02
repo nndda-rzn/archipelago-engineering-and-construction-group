@@ -10,7 +10,6 @@ export class EmployeeLifecycleService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-HCM-006: joiner-mover-leaver — status lifecycle, leaver → block user access
   async changeEmployeeStatus(id: string, dto: ChangeEmployeeStatusDto, actorId: string) {
     const employee = await this.prisma.employee.findUnique({ where: { id }, include: { user: { select: { id: true } } } });
     if (!employee) throw new NotFoundException({ code: 'EMPLOYEE_NOT_FOUND', message: 'Employee tidak ditemukan' });
@@ -28,7 +27,6 @@ export class EmployeeLifecycleService {
       },
     });
 
-    // FR-HCM-006: leaver → blokir akses user terkait
     if (status === 'LEAVER' && employee.user) {
       await this.prisma.user.update({ where: { id: employee.user.id }, data: { status: 'BLOCKED' } });
     }

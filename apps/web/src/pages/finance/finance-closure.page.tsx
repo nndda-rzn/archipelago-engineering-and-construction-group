@@ -25,7 +25,7 @@ export function FinanceClosurePage() {
     <div className="space-y-8 p-6">
       <h1 className="text-h3 font-semibold text-neutral-900">Finance Closure</h1>
 
-      {/* Intercompany */}
+      {}
       <section>
         <h2 className="mb-3 text-h5 font-medium text-neutral-800">Intercompany</h2>
         <IntercompanyForm />
@@ -58,13 +58,13 @@ export function FinanceClosurePage() {
         )}
       </section>
 
-      {/* Reconciliation */}
+      {}
       <section>
         <h2 className="mb-3 text-h5 font-medium text-neutral-800">Rekonsiliasi Intercompany</h2>
         {reconciliation.data && <ReconciliationSummary data={reconciliation.data} />}
       </section>
 
-      {/* Period Close */}
+      {}
       <section>
         <h2 className="mb-3 text-h5 font-medium text-neutral-800">Period Close</h2>
         <PeriodCloseForm />
@@ -78,7 +78,7 @@ export function FinanceClosurePage() {
         />
       </section>
 
-      {/* Financial Statements */}
+      {}
       <section>
         <h2 className="mb-3 text-h5 font-medium text-neutral-800">Laporan Keuangan</h2>
         <EntitySelector entityId={entityId} setEntityId={setEntityId} />
@@ -90,7 +90,7 @@ export function FinanceClosurePage() {
         )}
       </section>
 
-      {/* Consolidation */}
+      {}
       {consolidation.data && (
         <section>
           <h2 className="mb-3 text-h5 font-medium text-neutral-800">Konsolidasi</h2>

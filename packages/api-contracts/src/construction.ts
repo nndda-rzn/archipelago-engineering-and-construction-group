@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-// FR-CON-001: Work package
 export const workPackageSchema = z.object({
   id: z.string(),
   wpNumber: z.string(),
@@ -42,7 +41,6 @@ export const workPackageListResponseSchema = z.object({
 });
 export type WorkPackageListResponse = z.infer<typeof workPackageListResponseSchema>;
 
-// FR-CON-004: Progress per work package
 export const workPackageProgressSchema = z.object({
   id: z.string(),
   workPackageId: z.string(),
@@ -64,7 +62,6 @@ export const createProgressSchema = z.object({
 });
 export type CreateProgress = z.infer<typeof createProgressSchema>;
 
-// FR-CON-003: Daily report
 export const dailyReportSchema = z.object({
   id: z.string(),
   drNumber: z.string(),
@@ -125,7 +122,6 @@ export const dailyReportListResponseSchema = z.object({
 });
 export type DailyReportListResponse = z.infer<typeof dailyReportListResponseSchema>;
 
-// FR-CON-005: Commissioning system (hierarkis)
 export const commissioningSystemSchema: z.ZodType<{
   id: string;
   projectId: string;
@@ -159,7 +155,6 @@ export const createCommissioningSchema = z.object({
 });
 export type CreateCommissioning = z.infer<typeof createCommissioningSchema>;
 
-// FR-CON-006: Handover package
 export const handoverPackageSchema = z.object({
   id: z.string(),
   hoNumber: z.string(),

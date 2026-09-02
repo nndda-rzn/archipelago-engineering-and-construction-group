@@ -13,7 +13,6 @@ export class AccessReviewService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-GOV-004: access review berkala
   async createAccessReview(dto: CreateAccessReviewDto, actorId: string) {
     const reviewNumber = await this.seq.next('ACR', `ACR-${new Date().getFullYear()}-`);
     const review = await this.prisma.accessReview.create({

@@ -25,8 +25,6 @@ export class EngineeringController {
     @Inject(TransmittalService) private readonly transmittal: TransmittalService,
   ) {}
 
-  // ─── Deliverable (FR-ENG-001) ─────────────────────────────────────────────────
-
   @Get('engineering/deliverables')
   @Permissions(Permission.EngineeringView)
   listDeliverables(@Query() query: ListDeliverableQueryDto) {
@@ -44,8 +42,6 @@ export class EngineeringController {
   updateDeliverableStatus(@Param('id') id: string, @Body() dto: UpdateDeliverableStatusDto, @Req() request: { user?: { sub?: string } }) {
     return this.deliverable.updateDeliverableStatus(id, dto, request.user?.sub ?? 'system');
   }
-
-  // ─── Drawing (FR-ENG-002/006/012) ────────────────────────────────────────────
 
   @Get('engineering/drawings')
   @Permissions(Permission.EngineeringView)
@@ -71,8 +67,6 @@ export class EngineeringController {
     return this.drawing.listIfc(projectId);
   }
 
-  // ─── RFI (FR-ENG-003) ────────────────────────────────────────────────────────
-
   @Get('engineering/rfis')
   @Permissions(Permission.EngineeringView)
   listRfis(@Query() query: ListRfiQueryDto) {
@@ -91,8 +85,6 @@ export class EngineeringController {
     return this.rfi.answerRfi(id, dto, request.user?.sub ?? 'system');
   }
 
-  // ─── Submittal (FR-ENG-004) ───────────────────────────────────────────────────
-
   @Get('engineering/submittals')
   @Permissions(Permission.EngineeringView)
   listSubmittals(@Query() query: ListSubmittalQueryDto) {
@@ -110,8 +102,6 @@ export class EngineeringController {
   reviewSubmittal(@Param('id') id: string, @Body() dto: ReviewSubmittalDto, @Req() request: { user?: { sub?: string } }) {
     return this.submittal.reviewSubmittal(id, dto, request.user?.sub ?? 'system');
   }
-
-  // ─── Transmittal (FR-ENG-005) ─────────────────────────────────────────────────
 
   @Get('engineering/transmittals')
   @Permissions(Permission.EngineeringView)

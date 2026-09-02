@@ -10,8 +10,7 @@ export class LegalEntityService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async findAll(query: ListLegalEntityQueryDto) {
-    // Default + coerce eksplisit: runtime tsx tidak emit decorator metadata,
-    // jadi class-transformer @Type/@IsInt tidak jalan — pageSize datang string.
+
     const page = Number(query.page) || 1;
     const pageSize = Math.min(Number(query.pageSize) || 50, 200);
     const sortBy = query.sortBy;

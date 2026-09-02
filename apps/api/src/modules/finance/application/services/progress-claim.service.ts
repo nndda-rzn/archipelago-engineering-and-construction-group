@@ -15,7 +15,6 @@ export class ProgressClaimService {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
 
-    // FR-CMR-001/002: claim berbasis work package — validasi kepemilikan + snapshot progress fisik
     let physicalProgressAtClaim: number | null = null;
     if (dto.workPackageId) {
       const wp = await this.prisma.constructionWorkPackage.findUnique({
@@ -85,13 +84,11 @@ export class ProgressClaimService {
       throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa disertifikasi (${claim.status})` });
     }
 
-    // FR-CMR-003: retention dihitung eksplisit — net = certified - retention (BR-013)
     const certifiedAmount = Number(dto.certifiedAmount);
     const retentionRate = dto.retentionRate ?? 0;
     const retentionAmount = Math.round(certifiedAmount * retentionRate) / 100;
     const netCertifiedAmount = Math.round((certifiedAmount - retentionAmount) * 100) / 100;
 
-    // FR-CMR-004: recovery uang muka — rate dari project, cap sisa DP
     const advanceAmount = claim.project.advanceAmount != null ? Number(claim.project.advanceAmount) : 0;
     const recoveryRate = Number(claim.project.advanceRecoveryRate ?? 0);
     let recoveryAmount = 0;

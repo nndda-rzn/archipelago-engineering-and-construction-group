@@ -10,7 +10,6 @@ export class CorrectiveActionService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-HSE-005: corrective action
   async createCorrectiveAction(dto: CreateCorrectiveActionDto, actorId: string) {
     const source = dto.sourceType === 'OBSERVATION'
       ? await this.prisma.safetyObservation.findUnique({ where: { id: dto.sourceId } })

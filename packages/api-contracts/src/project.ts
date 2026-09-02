@@ -159,8 +159,6 @@ export const upsertBudgetSchema = z.object({
 });
 export type UpsertBudget = z.infer<typeof upsertBudgetSchema>;
 
-// ─── Project Controls (Fase 11B) ─────────────────────────────────────────────
-
 export const costCodeSchema = z.object({
   id: z.string(),
   projectId: z.string(),

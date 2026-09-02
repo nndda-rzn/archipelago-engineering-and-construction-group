@@ -11,7 +11,6 @@ export class OrganizationService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-FND-002: Effective-dated organization
   async createOrganization(dto: CreateOrganizationDto, actorId: string) {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
     if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });

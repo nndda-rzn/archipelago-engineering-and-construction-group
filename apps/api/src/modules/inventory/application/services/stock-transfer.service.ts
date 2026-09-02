@@ -27,7 +27,6 @@ export class StockTransferService {
     ]);
     if (!fromWh || !toWh) throw new NotFoundException({ code: 'WAREHOUSE_NOT_FOUND', message: 'Warehouse tidak ditemukan' });
 
-    // Batch validasi WBS (C2: hindari N+1 per item).
     const wbsIds = dto.items.filter((i) => i.wbsItemId).map((i) => i.wbsItemId!);
     if (wbsIds.length > 0) {
       const wbsItems = await this.prisma.wbsItem.findMany({ where: { id: { in: wbsIds } } });
@@ -41,7 +40,6 @@ export class StockTransferService {
       }
     }
 
-    // Batch cek stok (C2): aggregate stok per bucket asal via groupBy.
     const stockBuckets = dto.items.reduce<Map<string, { key: string; projectId: string; warehouseId: string; wbsItemId: string | null; requiredQty: number }>>((acc, item) => {
       const key = `${dto.projectId}|${item.wbsItemId ?? 'NULL'}|${dto.fromWarehouseId}`;
       const cur = acc.get(key) ?? { key, projectId: dto.projectId, warehouseId: dto.fromWarehouseId, wbsItemId: item.wbsItemId ?? null, requiredQty: 0 };
@@ -70,7 +68,6 @@ export class StockTransferService {
       }
     }
 
-    // Seq + create + ledger dalam SATU transaksi atomic (C1: hilangkan gap nomor & partial-failure).
     const transfer = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'ST' },
@@ -99,7 +96,6 @@ export class StockTransferService {
         include: { items: true },
       });
 
-      // Tulis ledger TRANSFER_OUT + TRANSFER_IN — delegate ke StockLedgerWriter
       const ledgerLines = created.items.flatMap((item) => [
         {
           projectId: dto.projectId,

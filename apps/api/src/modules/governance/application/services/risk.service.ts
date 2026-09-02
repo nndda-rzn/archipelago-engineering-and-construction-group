@@ -13,7 +13,6 @@ export class RiskService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-GOV-001: risk register — score otomatis likelihood x impact
   async createRisk(dto: CreateRiskDto, actorId: string) {
     const score = Number(dto.likelihood) * Number(dto.impact);
     const riskNumber = await this.seq.next('RSK', `RSK-${new Date().getFullYear()}-`);

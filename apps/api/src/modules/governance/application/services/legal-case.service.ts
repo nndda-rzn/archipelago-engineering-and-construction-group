@@ -13,7 +13,6 @@ export class LegalCaseService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-GOV-003: legal case
   async createLegalCase(dto: CreateLegalCaseDto, actorId: string) {
     const caseNumber = await this.seq.next('LGL', `LGL-${new Date().getFullYear()}-`);
     const legalCase = await this.prisma.legalCase.create({

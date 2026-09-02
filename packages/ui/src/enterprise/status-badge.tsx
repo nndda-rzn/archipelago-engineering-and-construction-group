@@ -3,10 +3,6 @@ import { CheckCircle2, XCircle, Clock, CircleDashed, FilePen, Send, Ban, Eye, Ro
 import { cn } from '../lib/cn';
 import { Badge, type BadgeProps } from '../primitives/badge';
 
-/**
- * StatusBadge — badge status transaksi dengan icon + teks + warna (NFR-A11Y-001).
- * Warna BUKAN satu-satunya pembeda; icon + teks mendampingi.
- */
 export type StatusKey =
   | 'DRAFT'
   | 'DRAFT_APPROVED'
@@ -50,10 +46,10 @@ export const statusMeta: Record<StatusKey, StatusMeta> = {
 
 export interface StatusBadgeProps {
   status: string;
-  /** Override label jika perlu (misal status kustom per domain). */
+
   label?: string;
   className?: string;
-  /** Icon size dalam px. */
+
   size?: number;
 }
 

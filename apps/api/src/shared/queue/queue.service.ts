@@ -4,11 +4,6 @@ import IORedis from 'ioredis';
 
 export const QUEUE_NAME = 'aec-background';
 
-/**
- * QueueService — BullMQ queue utk background jobs (email/notifikasi/export).
- * redis connection dari REDIS_URL. lazyConnect: worker & queue dikelola manual
- * agar tidak blokir saat Redis down (opsi: upscay production db terpisah).
- */
 @Injectable()
 export class QueueService {
   private readonly logger = new Logger(QueueService.name);
@@ -37,7 +32,6 @@ export class QueueService {
     }
   }
 
-  /** Register handler. Panggil dari worker entrypoint (bukan request cycle). */
   registerWorker(handler: (job: { name: string; data: unknown }) => Promise<void>): Worker {
     const worker = new Worker(
       QUEUE_NAME,

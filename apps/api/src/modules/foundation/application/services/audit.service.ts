@@ -14,10 +14,6 @@ export interface AuditEntry {
   correlationId?: string;
 }
 
-/**
- * Audit trail — FR-FND-008, PRD §28.
- * Immutable record: actor, timestamp, action, old/new value, reason, correlation id.
- */
 @Injectable()
 export class AuditService {
   private readonly logger = new Logger(AuditService.name);
@@ -40,7 +36,7 @@ export class AuditService {
         },
       });
     } catch (error) {
-      // Audit tidak boleh menggagalkan transaksi utama — log error saja (BR-015: audit tetap immutable)
+
       this.logger.error(`Gagal mencatat audit ${entry.action}: ${(error as Error).message}`);
     }
   }

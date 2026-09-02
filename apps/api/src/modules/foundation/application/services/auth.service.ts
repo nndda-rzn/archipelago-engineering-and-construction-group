@@ -59,7 +59,6 @@ export class AuthService {
     };
   }
 
-  /** Ambil profil user aktif dari token (GET /auth/me). */
   async me(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },

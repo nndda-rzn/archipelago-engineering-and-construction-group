@@ -12,7 +12,6 @@ export class EstimateService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-COM-003: Estimate versioning
   async createEstimate(opportunityId: string, dto: CreateEstimateDto, actorId: string) {
     const opp = await this.prisma.opportunity.findUnique({ where: { id: opportunityId } });
     if (!opp) throw new NotFoundException({ code: 'OPPORTUNITY_NOT_FOUND', message: 'Opportunity tidak ditemukan' });
@@ -34,7 +33,6 @@ export class EstimateService {
     return estimate;
   }
 
-  // FR-COM-003: version transition WORKING→REVIEW→APPROVED→FINAL_BID
   async transitionEstimate(id: string, status: string, actorId: string) {
     const estimate = await this.prisma.estimate.findUnique({ where: { id } });
     if (!estimate) throw new NotFoundException({ code: 'ESTIMATE_NOT_FOUND', message: 'Estimate tidak ditemukan' });
@@ -65,7 +63,6 @@ export class EstimateService {
     return { items: estimates, total: estimates.length };
   }
 
-  // FR-COM-004: Pricing scenario
   async createPricingScenario(estimateId: string, dto: CreatePricingScenarioDto, actorId: string) {
     const estimate = await this.prisma.estimate.findUnique({ where: { id: estimateId } });
     if (!estimate) throw new NotFoundException({ code: 'ESTIMATE_NOT_FOUND', message: 'Estimate tidak ditemukan' });

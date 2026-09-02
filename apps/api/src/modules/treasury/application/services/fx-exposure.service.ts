@@ -10,7 +10,6 @@ export class FxExposureService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-TRY-005: FX Exposure
   async createFxExposure(dto: CreateFxExposureDto, actorId: string) {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
     if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });

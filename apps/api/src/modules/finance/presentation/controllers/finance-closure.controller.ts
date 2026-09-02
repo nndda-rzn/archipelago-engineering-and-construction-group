@@ -21,8 +21,6 @@ export class FinanceClosureController {
     @Inject(ConsolidationService) private readonly consolidation: ConsolidationService,
   ) {}
 
-  // ─── Intercompany (FR-FIN-009) ───────────────────────────────────────────────
-
   @Get('intercompany')
   @Permissions(Permission.JournalView)
   listIntercompany(@Query() query: ListIntercompanyQueryDto) {
@@ -46,8 +44,6 @@ export class FinanceClosureController {
   intercompanyReconciliation() {
     return this.intercompany.intercompanyReconciliation();
   }
-
-  // ─── Period Close (FR-FIN-010) ───────────────────────────────────────────────
 
   @Get('period-closes')
   @Permissions(Permission.JournalView)
@@ -79,8 +75,6 @@ export class FinanceClosureController {
     return this.periodClose.lockPeriod(id, request.user?.sub ?? 'system');
   }
 
-  // ─── Financial Statement (FR-FIN-012) ────────────────────────────────────────
-
   @Get('gl/income-statement')
   @Permissions(Permission.JournalView)
   incomeStatement(@Query() query: FinancialStatementQueryDto) {
@@ -92,8 +86,6 @@ export class FinanceClosureController {
   balanceSheet(@Query() query: FinancialStatementQueryDto) {
     return this.financialStatement.balanceSheet(query);
   }
-
-  // ─── Consolidation (FR-FIN-011) ───────────────────────────────────────────────
 
   @Get('gl/consolidation')
   @Permissions(Permission.JournalView)

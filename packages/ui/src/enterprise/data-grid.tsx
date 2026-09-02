@@ -20,19 +20,19 @@ export interface DataGridProps<TData> {
   isError?: boolean;
   onRetry?: () => void;
   emptyMessage?: string;
-  /** Server-side pagination state (PRD §22) — kontrol dari parent via TanStack Query. */
+
   rowCount?: number;
   pagination?: PaginationState;
   onPaginationChange?: (pagination: PaginationState) => void;
   sorting?: SortingState;
   onSortingChange?: (sorting: SortingState) => void;
-  /** Click row handler — untuk detail drill-down. */
+
   onRowClick?: (row: Row<TData>) => void;
-  /** Judul file saat export CSV. */
+
   exportFilename?: string;
-  /** Mode kepadatan baris. Default compact. */
+
   density?: 'compact' | 'comfortable';
-  /** Sembunyikan toolbar (export). */
+
   hideToolbar?: boolean;
 }
 

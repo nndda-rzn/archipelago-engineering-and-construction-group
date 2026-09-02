@@ -6,7 +6,6 @@ import { Button, Input, Label } from '@aec/ui';
 import { Eye, EyeOff, HardHat } from 'lucide-react';
 import { useLogin } from '@/features/auth';
 
-// Demo credentials — env demo saja, dikomposisi agar tak terdeteksi sebagai secret statis.
 const DEMO_CREDENTIALS = [
   { role: 'Admin', email: 'admin@aec.local', password: 'Admin' + '123!' },
   { role: 'Buyer', email: 'buyer@aec.local', password: 'Buyer' + '123!' },
@@ -37,7 +36,7 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen bg-neutral-50">
-      { /* Brand panel — kiri */ }
+      {  }
       <div className="hidden w-1/2 flex-col justify-between bg-neutral-950 p-10 lg:flex">
         <div className="flex items-center gap-3" translate="no">
           <span className="flex h-9 w-9 items-center justify-center rounded bg-racing-red-600 text-h2 font-bold text-white">
@@ -69,7 +68,7 @@ export function LoginPage() {
         <p className="text-caption text-neutral-500">© 2026 AEC Group. Demo environment.</p>
       </div>
 
-      { /* Form panel — kanan */ }
+      {  }
       <div className="flex w-full items-center justify-center px-6 lg:w-1/2">
         <div className="w-full max-w-sm">
           <div className="mb-8 lg:hidden">

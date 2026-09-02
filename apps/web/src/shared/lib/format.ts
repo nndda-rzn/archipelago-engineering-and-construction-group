@@ -1,4 +1,4 @@
-/** Formatter murni — FSD shared/lib. Tanpa logika bisnis. */
+
 
 export function formatIdr(n: number) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
@@ -20,14 +20,12 @@ function safeDate(d: string | Date | null | undefined): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-/** Tanggal: 27 Agu 2026. Null → '—'. */
 export function formatDate(d: string | Date | null | undefined) {
   const date = safeDate(d);
   if (!date) return INVALID;
   return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
 }
 
-/** Tanggal + jam: 27 Agu 2026, 14.05. Null → '—'. */
 export function formatDateTime(d: string | Date | null | undefined) {
   const date = safeDate(d);
   if (!date) return INVALID;
@@ -40,7 +38,6 @@ export function formatDateTime(d: string | Date | null | undefined) {
   }).format(date);
 }
 
-/** Relatif: "baru saja", "5 menit lalu", "3 jam lalu", "2 hari lalu". Lebih dari 7 hari → formatDate. */
 export function formatRelativeTime(d: string | Date | null | undefined) {
   const date = safeDate(d);
   if (!date) return INVALID;

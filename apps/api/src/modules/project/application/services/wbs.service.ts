@@ -4,7 +4,6 @@ import { AuditService } from '@/modules/foundation';
 import { buildTree, type TreeNode } from '@/shared/utils/tree.util';
 import type { CreateWbsItemDto } from '../../presentation/dto/wbs.dto';
 
-/** Unwrap TreeNode<T> menjadi struktur flat dengan children — backward compat dengan API consumer */
 function unwrapTree<T extends { id: string; parentId: string | null }>(
   nodes: TreeNode<T>[],
 ): Array<T & { children: Array<T & { children: unknown[] }> }> {
@@ -23,7 +22,7 @@ export class WbsService {
       where: { projectId },
       orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }],
     });
-    // buildTree returns TreeNode<T> — unwrap untuk backward compat ({id,code,...,children})
+
     const tree = buildTree(items);
     return unwrapTree(tree);
   }

@@ -11,7 +11,6 @@ export class PayrollAllocationService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-HCM-005: payroll allocation — project + corporate overhead, harus balance
   async createPayrollAllocation(dto: CreatePayrollAllocationDto, actorId: string) {
     const employee = await this.prisma.employee.findUnique({ where: { id: dto.employeeId } });
     if (!employee) throw new NotFoundException({ code: 'EMPLOYEE_NOT_FOUND', message: 'Employee tidak ditemukan' });

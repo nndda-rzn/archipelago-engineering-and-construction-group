@@ -63,7 +63,6 @@ export class GoodsReceiptService {
       return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
     });
 
-    // POSTED + stock ledger dalam 1 transaksi (FR-INV-001: semua perubahan = movement)
     const gr = await this.prisma.$transaction(async (tx) => {
       const created = await tx.goodsReceipt.create({
         data: {
@@ -87,7 +86,6 @@ export class GoodsReceiptService {
         include: { items: true },
       });
 
-      // Tulis stock ledger — delegate ke StockLedgerWriter (eliminasi duplikasi)
       await this.ledger.write(tx, created.items.map((item) => ({
         projectId: po.projectId,
         wbsItemId: item.wbsItemId ?? null,

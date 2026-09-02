@@ -60,7 +60,7 @@ export class ListVendorQueryDto {
 export class CreateFiscalPeriodDto {
   @IsString()
   @Length(7, 7)
-  periodCode!: string; // "2026-01"
+  periodCode!: string;
 
   @Type(() => Number)
   @IsInt()

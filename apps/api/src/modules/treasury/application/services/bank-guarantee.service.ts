@@ -13,7 +13,6 @@ export class BankGuaranteeService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-TRY-003: Bank Guarantee
   async createBankGuarantee(dto: CreateBankGuaranteeDto, actorId: string) {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
     if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });

@@ -10,7 +10,6 @@ export class EquipmentMaintenanceService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-EQP-004: PM schedule (DATE | HOURS | METER)
   async createPm(equipmentId: string, dto: CreateEquipmentPmDto, actorId: string) {
     const equipment = await this.prisma.equipment.findUnique({ where: { id: equipmentId } });
     if (!equipment) throw new NotFoundException({ code: 'EQUIPMENT_NOT_FOUND', message: 'Equipment tidak ditemukan' });
@@ -73,7 +72,6 @@ export class EquipmentMaintenanceService {
     return { items };
   }
 
-  // FR-EQP-005: breakdown — downtime + cost impact, status OPEN → RESOLVED
   async createBreakdown(equipmentId: string, dto: CreateEquipmentBreakdownDto, actorId: string) {
     const equipment = await this.prisma.equipment.findUnique({ where: { id: equipmentId } });
     if (!equipment) throw new NotFoundException({ code: 'EQUIPMENT_NOT_FOUND', message: 'Equipment tidak ditemukan' });
@@ -116,7 +114,6 @@ export class EquipmentMaintenanceService {
       data: { status: 'RESOLVED', resolvedAt: new Date() },
     });
 
-    // kembali ke AVAILABLE bila tak ada breakdown OPEN lain
     const openCount = await this.prisma.equipmentBreakdown.count({ where: { equipmentId, status: 'OPEN' } });
     if (openCount === 0) {
       await this.prisma.equipment.update({ where: { id: equipmentId }, data: { status: 'AVAILABLE' } });

@@ -4,9 +4,6 @@ import { cn } from '../lib/cn';
 import { Button, type ButtonProps } from '../primitives/button';
 import { Skeleton } from '../primitives/skeleton';
 
-/**
- * EmptyState — daftar/bagian kosong dengan pesan + aksi opsional.
- */
 export interface EmptyStateProps {
   title?: string;
   description?: string;
@@ -29,9 +26,6 @@ export function EmptyState({ title, description, action, className }: EmptyState
   );
 }
 
-/**
- * ErrorState — gagal muat dengan retry.
- */
 export interface ErrorStateProps {
   message?: string;
   onRetry?: () => void;
@@ -59,7 +53,6 @@ export function ErrorState({ message, onRetry, retryLabel = 'Coba lagi', retryVa
   );
 }
 
-/** Komponen siap pakai untuk DataGrid: pilih state sesuai kondisi. */
 export function GridState({ loading, error, empty, emptyAction, retry }: {
   loading?: boolean;
   error?: boolean;

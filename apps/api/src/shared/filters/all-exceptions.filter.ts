@@ -11,11 +11,6 @@ import { randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import type { ApiError } from '@aec/api-contracts';
 
-/**
- * Standardized error envelope — PRD §23.4.
- * Format: { error: { code, message, details?, correlationId } }
- * Setiap response kritis membawa correlation id (NFR-OBS-001).
- */
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
@@ -42,7 +37,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         details = body.details;
       }
     } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
-      // Map Prisma error -> HTTP status/code yang bermakna (bukan 500 generik).
+
       const mapped = this.mapPrismaError(exception);
       status = mapped.status;
       code = mapped.code;
@@ -52,7 +47,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       code = 'INVALID_QUERY';
       message = 'Query tidak valid';
     } else {
-      // Error internal tak dikenal — log penuh utk trace.
+
       this.logger.error(
         `Unhandled exception correlationId=${correlationId}`,
         exception instanceof Error ? exception.stack : String(exception),

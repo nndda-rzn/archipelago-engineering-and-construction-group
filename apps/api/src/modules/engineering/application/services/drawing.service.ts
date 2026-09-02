@@ -13,7 +13,6 @@ export class DrawingService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-ENG-002: drawing + revision — published immutable
   async createDrawing(dto: CreateDrawingDto, actorId: string) {
     const number = await this.seq.next('DRW', `DRW-${new Date().getFullYear()}-`);
     const drawing = await this.prisma.drawing.create({
@@ -29,7 +28,6 @@ export class DrawingService {
     return drawing;
   }
 
-  // FR-ENG-002/012: publish revision — immutable, current revision bertambah
   async publishDrawing(id: string, dto: PublishDrawingDto, actorId: string) {
     const drawing = await this.prisma.drawing.findUnique({ where: { id } });
     if (!drawing) throw new NotFoundException({ code: 'DRAWING_NOT_FOUND', message: 'Drawing tidak ditemukan' });
@@ -47,7 +45,6 @@ export class DrawingService {
     return updated;
   }
 
-  // FR-ENG-006: IFC control
   async listIfc(projectId: string) {
     const items = await this.prisma.drawing.findMany({
       where: { projectId, isIFC: true },

@@ -16,8 +16,6 @@ export const statusVariant: Record<FinanceClosureStatus, BadgeVariant> = {
   REVERSED: 'warning',
 };
 
-// ── Action cell components (hooks must live in components, not column defs) ──
-
 function IcActionCell({ row }: { row: { original: Intercompany } }) {
   const post = usePostIntercompany();
   if (row.original.status !== 'DRAFT') return null;
@@ -56,8 +54,6 @@ function PcActionCell({ row }: { row: { original: PeriodClose } }) {
   }
   return null;
 }
-
-// ── Column definitions ────────────────────────────────────────────────────────
 
 const icHelper = createColumnHelper<Intercompany>();
 const pcHelper = createColumnHelper<PeriodClose>();

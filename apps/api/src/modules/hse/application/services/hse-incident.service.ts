@@ -13,7 +13,6 @@ export class HseIncidentService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-HSE-002: incident + FR-HSE-003: investigation
   async createIncident(dto: CreateIncidentDto, actorId: string) {
     const incidentNumber = await this.seq.next('INC', `INC-${new Date().getFullYear()}-`);
     const incident = await this.prisma.hseIncident.create({

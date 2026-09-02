@@ -27,7 +27,6 @@ export class PortfolioService {
 
     const projectIds = projects.map((p) => p.id);
 
-    // Batch query budget per project
     const budgetAgg = await this.prisma.budgetItem.groupBy({
       by: ['projectId'],
       where: { projectId: { in: projectIds }, status: 'PUBLISHED' },
@@ -35,10 +34,8 @@ export class PortfolioService {
     });
     const budgetMap = new Map(budgetAgg.map((r) => [r.projectId, Number(r._sum?.amount ?? 0)]));
 
-    // Actual cost batch — delegate ke shared calculator (eliminasi duplikasi)
     const actualMap = await this.actualCost.computeBatch(projectIds);
 
-    // Revenue batch dari posted client invoices
     const postedClientInvoices = await this.prisma.clientInvoice.findMany({
       where: { projectId: { in: projectIds }, status: 'POSTED' },
       select: { id: true, projectId: true },
@@ -70,7 +67,6 @@ export class PortfolioService {
       const actual = actualMap.get(p.id) ?? 0;
       const revenue = revenueByProject.get(p.id) ?? 0;
 
-      // Health classification — delegate ke shared classifier (eliminasi duplikasi)
       const { utilization, health } = classifyHealth(budget, actual);
       countByHealth[health] += 1;
 

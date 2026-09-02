@@ -64,7 +64,6 @@ export class SubcontractService {
     const progressPercent = Number(dto.progressPercent);
     if (progressPercent > 100) throw new BadRequestException({ code: 'INVALID_PROGRESS', message: 'Progress maksimal 100%' });
 
-    // FR-CMR-008 + anti-regresi: progress baru harus di atas progress tertinggi (SUBMITTED/VERIFIED)
     const last = await this.prisma.subcontractProgress.findFirst({
       where: { subcontractId: subcon.id, status: { in: ['SUBMITTED', 'VERIFIED'] } },
       orderBy: { progressPercent: 'desc' },

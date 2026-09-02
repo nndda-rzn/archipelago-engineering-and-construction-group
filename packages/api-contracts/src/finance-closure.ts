@@ -1,8 +1,6 @@
 import { z } from 'zod';
 import { paginatedResponseSchema } from './core';
 
-// ─── Finance Closure (Fase 11D, FR-FIN-009..012) ─────────────────────────────
-
 export const intercompanySchema = z.object({
   id: z.string(),
   transactionNumber: z.string(),

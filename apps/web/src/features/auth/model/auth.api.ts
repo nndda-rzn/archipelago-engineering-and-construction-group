@@ -25,7 +25,6 @@ export function useLogin() {
   });
 }
 
-/** Profil user aktif — pakai cache session dulu, sync dengan /auth/me. */
 export function useMe() {
   return useQuery({
     queryKey: authKeys.me,
@@ -48,7 +47,6 @@ export function useMe() {
   });
 }
 
-/** Logout lokal: hapus token + session, kembali ke login. */
 export function useLogout() {
   const router = useRouter();
   return () => {

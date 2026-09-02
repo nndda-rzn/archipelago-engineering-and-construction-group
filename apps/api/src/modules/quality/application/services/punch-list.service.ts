@@ -13,7 +13,6 @@ export class PunchListService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-QA-004: punch list
   async createPunchItem(dto: CreatePunchItemDto, actorId: string) {
     const punchNumber = await this.seq.next('PUN', `PUN-${new Date().getFullYear()}-`);
     const item = await this.prisma.punchListItem.create({

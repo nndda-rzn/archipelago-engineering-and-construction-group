@@ -11,7 +11,6 @@ export class BidDecisionService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-COM-002: Bid/No-Bid
   async decideBid(opportunityId: string, dto: CreateBidDecisionDto, actorId: string) {
     const opp = await this.prisma.opportunity.findUnique({ where: { id: opportunityId } });
     if (!opp) throw new NotFoundException({ code: 'OPPORTUNITY_NOT_FOUND', message: 'Opportunity tidak ditemukan' });

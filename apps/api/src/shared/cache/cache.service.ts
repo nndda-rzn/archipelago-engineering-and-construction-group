@@ -1,11 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
 
-/**
- * CacheService — thin Redis cache wrapper (ioredis, CJS-friendly).
- * lazyConnect: tidak buka koneksi saat init, hanya saat command pertama.
- * Digunakan utk caching aggregate berat (analytics) dengan TTL pendek.
- */
 @Injectable()
 export class CacheService {
   private readonly logger = new Logger(CacheService.name);
@@ -53,7 +48,6 @@ export class CacheService {
     }
   }
 
-  /** Wrap dengan caching: hit cache, miss -> compute + set. Gagal Redis -> fallback compute. */
   async wrap<T>(key: string, ttlSeconds: number, compute: () => Promise<T>): Promise<T> {
     const cached = await this.get<T>(key);
     if (cached != null) return cached;

@@ -1,4 +1,4 @@
-// Barrel re-export — semua consumer lama tetap bekerja tanpa perubahan import
+
 export { CostCodeService } from './cost-code.service';
 export { ControlAccountService } from './control-account.service';
 export { CommitmentService } from './commitment.service';

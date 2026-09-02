@@ -10,7 +10,6 @@ export class EarnedValueService {
     @Inject(ActualCostCalculator) private readonly actualCost: ActualCostCalculator,
   ) {}
 
-  // FR-PRJ-011: Earned Value (PV/EV/AC/CPI/SPI/CV/SV)
   async earnedValue(projectId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });

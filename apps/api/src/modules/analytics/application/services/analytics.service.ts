@@ -2,10 +2,6 @@ import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { CacheService } from '@/shared/cache/cache.service';
 
-/**
- * Fase 10 Analytics — advisory read-only (PRD §32: AI/analytics = advisory, bukan transaction authority).
- * Executive dashboard aggregat lintas domain + rule-based anomaly detection.
- */
 @Injectable()
 export class AnalyticsService {
   constructor(
@@ -13,7 +9,6 @@ export class AnalyticsService {
     @Inject(CacheService) private readonly cache: CacheService,
   ) {}
 
-  // Executive KPIs lintas domain
   async executive() {
     return this.cache.wrap('analytics:executive', 30, async () => {
     const [projects, budgetAgg, vendorInvoiceAgg, paymentAgg, collectionAgg, clientInvoiceAgg] = await this.prisma.$transaction([
@@ -25,7 +20,6 @@ export class AnalyticsService {
       this.prisma.clientInvoice.aggregate({ where: { status: 'POSTED' }, _sum: { totalAmount: true } }),
     ]);
 
-    // status count terpisah agar typing bersih (groupBy _count di dalam $transaction array ambigu)
     const statusGroups = await this.prisma.project.groupBy({ by: ['status'], _count: { _all: true } });
     const projectStatusCount = Object.fromEntries(statusGroups.map((r) => [r.status, r._count._all]));
     const totalContractValue = projects.reduce((s, p) => s + (p.contractValue != null ? Number(p.contractValue) : 0), 0);
@@ -64,12 +58,10 @@ export class AnalyticsService {
     });
   }
 
-  // Rule-based anomaly detection
   async anomalies() {
     return this.cache.wrap('analytics:anomalies', 60, async () => {
     const anomalies: Array<{ type: string; severity: 'LOW' | 'MEDIUM' | 'HIGH'; projectCode?: string; message: string }> = [];
 
-    // 1. Budget overrun: budget item usage mendekati/melebihi amount (via journal lines per project vs budget)
     const budgetAgg = await this.prisma.budgetItem.groupBy({ by: ['projectId'], _sum: { amount: true } });
     const budgetByProject = new Map(budgetAgg.map((r) => [r.projectId, Number(r._sum.amount ?? 0)]));
     const projects = await this.prisma.project.findMany({ select: { id: true, code: true, contractValue: true } });
@@ -86,25 +78,21 @@ export class AnalyticsService {
       }
     }
 
-    // 2. PM overdue
     const overduePmCount = await this.prisma.equipmentPm.count({ where: { status: 'SCHEDULED', dueDate: { lt: new Date() } } });
     if (overduePmCount > 0) {
       anomalies.push({ type: 'PM_OVERDUE', severity: 'MEDIUM', message: `${overduePmCount} PM schedule melewati jatuh tempo` });
     }
 
-    // 3. NCR critical belum ditutup
     const criticalNcrCount = await this.prisma.ncr.count({ where: { severity: 'CRITICAL', status: { not: 'CLOSED' } } });
     if (criticalNcrCount > 0) {
       anomalies.push({ type: 'NCR_CRITICAL_OPEN', severity: 'HIGH', message: `${criticalNcrCount} NCR CRITICAL belum ditutup` });
     }
 
-    // 4. Insiden HIGH/CRITICAL belum resolved
     const openHighIncidents = await this.prisma.hseIncident.count({ where: { severity: { in: ['HIGH', 'CRITICAL'] }, status: { not: 'RESOLVED' } } });
     if (openHighIncidents > 0) {
       anomalies.push({ type: 'INCIDENT_HIGH_OPEN', severity: 'HIGH', message: `${openHighIncidents} insiden HIGH/CRITICAL belum resolved` });
     }
 
-    // 5. Alokasi karyawan >100%
     const overallocated = await this.prisma.projectAssignment.groupBy({
       by: ['employeeId'],
       where: { status: 'ACTIVE' },
@@ -117,7 +105,6 @@ export class AnalyticsService {
       anomalies.push({ type: 'ALLOCATION_OVER_100', severity: 'MEDIUM', message: `${emps.length} karyawan alokasi aktif >100%: ${emps.map((e) => e.name).join(', ')}` });
     }
 
-    // 6. Claim DRAFT menumpuk
     const draftClaims = await this.prisma.progressClaim.count({ where: { status: 'DRAFT' } });
     if (draftClaims >= 3) {
       anomalies.push({ type: 'CLAIMS_DRAFT_BACKLOG', severity: 'LOW', message: `${draftClaims} claim masih DRAFT — perlu sertifikasi` });
@@ -127,9 +114,6 @@ export class AnalyticsService {
     });
   }
 
-  // ─── Advanced Reporting (Fase 10) ───
-
-  // Cash flow: cash in (collection) vs cash out (payment) per bulan
   async cashFlow() {
     return this.cache.wrap('analytics:cash-flow', 60, async () => {
     const [collections, payments] = await this.prisma.$transaction([
@@ -162,7 +146,6 @@ export class AnalyticsService {
     });
   }
 
-  // Aging AP/AR (FR-FIN-007): invoice belum dibayar dikelompokkan umur
   async aging() {
     return this.cache.wrap('analytics:aging', 60, async () => {
     const today = new Date();
@@ -175,7 +158,6 @@ export class AnalyticsService {
       return '90+';
     };
 
-    // AR: client invoice POSTED belum lunas
     const clientInvoices = await this.prisma.clientInvoice.findMany({
       where: { status: 'POSTED' },
       include: { collections: { select: { amount: true } } },
@@ -190,7 +172,6 @@ export class AnalyticsService {
       }
     }
 
-    // AP: vendor invoice POSTED belum dibayar
     const vendorInvoices = await this.prisma.vendorInvoice.findMany({
       where: { status: 'POSTED' },
       include: { payments: { select: { amount: true } } },
@@ -214,7 +195,6 @@ export class AnalyticsService {
     });
   }
 
-  // Project cost summary: budget vs cost vs claim per project
   async projectCostSummary() {
     return this.cache.wrap('analytics:project-cost-summary', 60, async () => {
     const projects = await this.prisma.project.findMany({ select: { id: true, code: true, name: true, contractValue: true } });

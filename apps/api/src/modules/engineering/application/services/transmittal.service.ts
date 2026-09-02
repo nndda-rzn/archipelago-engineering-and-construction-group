@@ -13,7 +13,6 @@ export class TransmittalService {
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
   ) {}
 
-  // FR-ENG-005: transmittal
   async createTransmittal(dto: CreateTransmittalDto, actorId: string) {
     const number = await this.seq.next('TRM', `TRM-${new Date().getFullYear()}-`);
     const item = await this.prisma.transmittal.create({

@@ -38,7 +38,6 @@ const columns = [
   }),
 ];
 
-// ─── Material Issue page ──────────────────────────────────────────────────────
 export function MaterialIssuePage() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
   const [showForm, setShowForm] = useState(false);

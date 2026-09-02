@@ -10,7 +10,6 @@ export class CurrencyService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  // FR-FND-011: Currency + exchange rate + revaluation
   async createCurrency(dto: CreateCurrencyDto, actorId: string) {
     const exists = await this.prisma.currency.findUnique({ where: { code: dto.code } });
     if (exists) throw new ConflictException({ code: 'CURRENCY_EXISTS', message: 'Mata uang sudah ada' });

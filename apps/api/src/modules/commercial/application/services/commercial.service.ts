@@ -51,7 +51,6 @@ export class CommercialService {
     return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
   }
 
-  // FR-COM-001: opportunity pipeline
   async createOpportunity(dto: CreateOpportunityDto, actorId: string) {
     const client = await this.prisma.client.findUnique({ where: { id: dto.clientId } });
     if (!client) throw new NotFoundException({ code: 'CLIENT_NOT_FOUND', message: 'Client tidak ditemukan' });
@@ -84,7 +83,6 @@ export class CommercialService {
     return opp;
   }
 
-  // FR-COM-001: update stage — weighted value pipeline
   async updateOpportunityStage(id: string, dto: UpdateOpportunityStageDto, actorId: string) {
     const opp = await this.prisma.opportunity.findUnique({ where: { id } });
     if (!opp) throw new NotFoundException({ code: 'OPPORTUNITY_NOT_FOUND', message: 'Opportunity tidak ditemukan' });
@@ -115,7 +113,6 @@ export class CommercialService {
     return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
   }
 
-  // FR-COM-008: contract — executed immutable
   async createContract(dto: CreateContractDto, actorId: string) {
     if (dto.clientId) {
       const client = await this.prisma.client.findUnique({ where: { id: dto.clientId } });
@@ -157,7 +154,6 @@ export class CommercialService {
     return contract;
   }
 
-  // FR-COM-008: execute — signed, immutable setelah executed
   async executeContract(id: string, dto: ExecuteContractDto, actorId: string) {
     const contract = await this.prisma.contract.findUnique({ where: { id } });
     if (!contract) throw new NotFoundException({ code: 'CONTRACT_NOT_FOUND', message: 'Kontrak tidak ditemukan' });
