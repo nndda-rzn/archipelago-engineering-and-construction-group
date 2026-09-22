@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DataGrid, EntitySelect } from '@aec/ui';
+import { Button, DataGrid, EntitySelect } from '@aec/ui';
 import {
   useCommitment, useControlAccounts, useCostCodes, useEvm, useForecasts,
 } from '@/features/project';
@@ -50,12 +50,12 @@ export function ProjectControlsPage() {
             className="w-64"
           />
           {projectId && (
-            <button
+            <Button
+              variant="secondary"
               onClick={() => setShowForm((s) => !s)}
-              className="h-9 rounded-md border border-neutral-200 bg-white px-3 text-body-sm font-medium text-neutral-600 hover:border-neutral-300"
             >
               {showForm ? 'Tutup' : '+ Buat'}
-            </button>
+            </Button>
           )}
         </div>
       </div>

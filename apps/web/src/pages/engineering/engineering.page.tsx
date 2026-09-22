@@ -35,7 +35,7 @@ export function EngineeringPage() {
     <div className="p-6">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-heading-sm font-semibold text-neutral-900">Engineering</h1>
+          <h1 className="text-h1 text-neutral-950">Engineering</h1>
           <p className="text-body text-neutral-500">
             Kelola deliverable, drawing, RFI, submittal, transmittal (FR-ENG-001..005)
           </p>

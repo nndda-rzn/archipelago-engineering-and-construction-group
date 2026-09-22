@@ -36,7 +36,7 @@ export function WbsPage() {
 
       {!projectId && <p className="text-body-sm text-neutral-500">Pilih project untuk melihat WBS.</p>}
       {isLoading && <p className="text-body-sm text-neutral-500">Memuat…</p>}
-      {isError && <p className="text-body-sm text-destructive-600">Gagal memuat WBS. <button type="button" className="text-racing-red-600 hover:underline" onClick={() => refetch()}>Coba lagi</button></p>}
+      {isError && <p className="text-body-sm text-destructive-600">Gagal memuat WBS. <Button variant="secondary" size="sm" onClick={() => refetch()}>Coba lagi</Button></p>}
 
       {tree && projectId && (
         <div>

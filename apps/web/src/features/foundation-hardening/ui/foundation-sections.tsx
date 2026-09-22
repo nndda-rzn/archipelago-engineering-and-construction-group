@@ -65,7 +65,7 @@ export function OrgSection({
     <div className="space-y-4">
       <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
         <div className="flex items-end gap-3">
-          <div className="w-72"><Label>Legal Entity</Label><EntitySelect value={entityId} onValueChange={setEntityId} options={entities.map((e) => ({ value: e.id, label: e.code }))} placeholder="Pilih entity…" searchPlaceholder="Cari entity…" /></div>
+          <div className="w-72"><Label htmlFor="foundation-entity">Legal Entity</Label><EntitySelect id="foundation-entity" value={entityId} onValueChange={setEntityId} options={entities.map((e) => ({ value: e.id, label: e.code }))} placeholder="Pilih entity…" searchPlaceholder="Cari entity…" /></div>
           <div><Label htmlFor="org-asof">As Of</Label><Input id="org-asof" type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} /></div>
         </div>
         {entityId && <div className="mt-4">{orgs.isLoading ? <p className="text-body-sm text-neutral-500">Memuat struktur org…</p> : orgs.data && <OrgStructureTable nodes={orgs.data} />}</div>}
@@ -88,7 +88,7 @@ export function IfcSection({
   return (
     <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <h2 className="mb-3 text-h2 text-neutral-950">IFC Control</h2>
-      <div className="w-72"><Label>Project</Label><EntitySelect value={projectId} onValueChange={setProjectId} options={projects.map((p) => ({ value: p.id, label: p.code }))} placeholder="Pilih project…" searchPlaceholder="Cari project…" /></div>
+      <div className="w-72"><Label htmlFor="foundation-project">Project</Label><EntitySelect id="foundation-project" value={projectId} onValueChange={setProjectId} options={projects.map((p) => ({ value: p.id, label: p.code }))} placeholder="Pilih project…" searchPlaceholder="Cari project…" /></div>
       {projectId && ifc.data && <div className="mt-3 flex gap-4 text-body-sm"><span>IFC total: <span className="font-mono font-medium">{ifc.data.total}</span></span><span>Released: <span className="font-mono font-medium">{ifc.data.released}</span></span></div>}
     </div>
   );

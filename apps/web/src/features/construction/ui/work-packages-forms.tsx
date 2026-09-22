@@ -47,8 +47,8 @@ export function CreateWorkPackageForm({ projectId, onDone }: { projectId: string
       </div>
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="secondary" onClick={onDone}>Batal</Button>
-        <Button size="sm" onClick={submit} disabled={create.isPending || !wbsItemId || !title || !plannedQty}>
-          {create.isPending ? 'Menyimpan...' : 'Buat Work Package'}
+        <Button size="sm" onClick={submit} loading={create.isPending} disabled={!wbsItemId || !title || !plannedQty}>
+          Buat Work Package
         </Button>
       </div>
       {create.isError && <p className="text-body-sm text-destructive-600">Gagal membuat work package.</p>}
@@ -126,8 +126,8 @@ export function WorkPackageActionsPanel({ projectId, items }: ActionsPanelProps)
       {progressState.open && (
         <div className="mt-4 space-y-3 rounded-md border border-neutral-200 bg-neutral-50 p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div><Label>Progress (%)</Label><Input type="number" min={0} max={100} value={progressState.value} onChange={(e) => setProgressState({ ...progressState, value: e.target.value })} /></div>
-            <div><Label>Qty Terukur</Label><Input type="number" min={0} value={progressState.qty} onChange={(e) => setProgressState({ ...progressState, qty: e.target.value })} /></div>
+            <div><Label htmlFor="wp-progress">Progress (%)</Label><Input id="wp-progress" type="number" min={0} max={100} value={progressState.value} onChange={(e) => setProgressState({ ...progressState, value: e.target.value })} /></div>
+            <div><Label htmlFor="wp-qty-terukur">Qty Terukur</Label><Input id="wp-qty-terukur" type="number" min={0} value={progressState.qty} onChange={(e) => setProgressState({ ...progressState, qty: e.target.value })} /></div>
           </div>
           <div className="flex justify-end gap-2">
             <Button size="sm" variant="secondary" onClick={() => setProgressState({ id: '', open: false, value: '', qty: '' })}>Batal</Button>

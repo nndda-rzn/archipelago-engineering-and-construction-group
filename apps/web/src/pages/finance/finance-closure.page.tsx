@@ -23,7 +23,7 @@ export function FinanceClosurePage() {
 
   return (
     <div className="space-y-8 p-6">
-      <h1 className="text-h3 font-semibold text-neutral-900">Finance Closure</h1>
+      <h1 className="text-h1 text-neutral-950">Finance Closure</h1>
 
       {}
       <section>

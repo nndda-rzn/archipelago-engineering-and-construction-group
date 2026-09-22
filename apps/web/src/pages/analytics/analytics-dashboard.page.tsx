@@ -1,4 +1,4 @@
-import { Badge, StatusBadge } from '@aec/ui';
+import { Badge, Button, StatusBadge } from '@aec/ui';
 import { useExecutiveDashboard, useAnomalies, type Anomaly } from '@/features/analytics';
 import { formatIdr as fmt } from '@/shared/lib/format';
 
@@ -34,7 +34,7 @@ export function AnalyticsDashboardPage() {
     return (
       <div>
         <p className="text-body text-destructive-600">Gagal memuat dashboard.</p>
-        <button onClick={() => refetch()} className="mt-2 text-body-sm text-racing-red-600 underline">Coba lagi</button>
+        <Button variant="ghost" size="sm" onClick={() => refetch()}>Coba lagi</Button>
       </div>
     );
   }

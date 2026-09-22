@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { EntitySelect } from '@aec/ui';
+import { Button, EntitySelect } from '@aec/ui';
 import { useBudget, usePublishBudget, useUpsertBudget } from '@/features/project';
 import { useProjects } from '@/entities/project';
 import { BudgetRow, BudgetStatusBadge, BudgetTotalBar } from '@/features/project/ui';
@@ -42,7 +42,7 @@ export function BudgetPage() {
       {isError && (
         <p className="text-body-sm text-destructive-600">
           Gagal memuat budget.{' '}
-          <button type="button" className="text-racing-red-600 hover:underline" onClick={() => refetch()}>Coba lagi</button>
+          <Button variant="secondary" size="sm" onClick={() => refetch()}>Coba lagi</Button>
         </p>
       )}
 

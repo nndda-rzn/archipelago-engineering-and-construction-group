@@ -22,12 +22,12 @@ export function CommissioningForm({ projectId, tree, onDone }: { projectId: stri
   return (
     <div className="mb-6 space-y-3 rounded-md border border-neutral-200 bg-white p-4">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div><Label>Kode</Label><Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="PLANT-01" /></div>
-        <div><Label>Nama</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Process Plant" /></div>
+        <div><Label htmlFor="comm-code">Kode</Label><Input id="comm-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="PLANT-01" /></div>
+        <div><Label htmlFor="comm-name">Nama</Label><Input id="comm-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Process Plant" /></div>
         <div>
-          <Label>Level</Label>
+          <Label htmlFor="comm-level">Level</Label>
           <Select value={level} onValueChange={(v) => setLevel(v as never)}>
-            <SelectTrigger>
+            <SelectTrigger id="comm-level">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -36,9 +36,9 @@ export function CommissioningForm({ projectId, tree, onDone }: { projectId: stri
           </Select>
         </div>
         <div>
-          <Label>Parent</Label>
+          <Label htmlFor="comm-parent">Parent</Label>
           <Select value={parentId} onValueChange={setParentId}>
-            <SelectTrigger>
+            <SelectTrigger id="comm-parent">
               <SelectValue placeholder="Root" />
             </SelectTrigger>
             <SelectContent>
@@ -46,9 +46,9 @@ export function CommissioningForm({ projectId, tree, onDone }: { projectId: stri
             </SelectContent>
           </Select>
         </div>
-        <div><Label>Catatan</Label><Input value={remark} onChange={(e) => setRemark(e.target.value)} placeholder="Opsional" /></div>
+        <div><Label htmlFor="comm-remark">Catatan</Label><Input id="comm-remark" value={remark} onChange={(e) => setRemark(e.target.value)} placeholder="Opsional" /></div>
       </div>
-      <div className="flex justify-end gap-2"><Button size="sm" variant="secondary" onClick={onDone}>Batal</Button><Button size="sm" onClick={submit} disabled={create.isPending || !code || !name}>{create.isPending ? 'Menyimpan...' : 'Tambah'}</Button></div>
+      <div className="flex justify-end gap-2"><Button size="sm" variant="secondary" onClick={onDone}>Batal</Button><Button size="sm" type="button" loading={create.isPending} disabled={!code || !name} onClick={submit}>Tambah</Button></div>
     </div>
   );
 }
