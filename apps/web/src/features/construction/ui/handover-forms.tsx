@@ -1,27 +1,75 @@
-import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { z } from 'zod';
+import { createHandoverSchema } from '@aec/api-contracts';
 import { Badge, Button, Input, Label } from '@aec/ui';
 import { useCreateHandover, useSubmitHandover, useVerifyHandoverItem, useApproveHandover } from '../model/work-package.api';
 import { statusLabel, type HandoverStatus } from './handover-grid';
+
+const DEFAULT_DOCS = ['As-Built Drawing', 'Test Certificate'];
+
+const formSchema = z.object({
+  title: createHandoverSchema.shape.title,
+  handoverDate: z.string(),
+  checklist: createHandoverSchema.shape.checklist,
+  docNames: z.array(z.object({ documentName: z.string().min(2, 'Nama dokumen wajib diisi').max(200) })),
+});
+type FormValues = z.infer<typeof formSchema>;
+
 export function HandoverForm({ projectId, onDone }: { projectId: string; onDone: () => void }) {
   const create = useCreateHandover(projectId);
-  const [title, setTitle] = useState('');
-  const [handoverDate, setHandoverDate] = useState(new Date().toISOString().slice(0, 10));
-  const [checklist, setChecklist] = useState('');
-  const [docNames, setDocNames] = useState<string[]>(['As-Built Drawing', 'Test Certificate']);
-  const submit = () => {
-    if (!title.trim()) return;
-    create.mutate({ title, handoverDate, checklist: checklist || undefined, items: docNames.map((documentName) => ({ documentName })) }, { onSuccess: () => { setTitle(''); setDocNames(['As-Built Drawing', 'Test Certificate']); onDone(); } });
-  };
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: '',
+      handoverDate: new Date().toISOString().slice(0, 10),
+      checklist: '',
+      docNames: DEFAULT_DOCS.map((documentName) => ({ documentName })),
+    },
+  });
+  const { fields, append, remove } = useFieldArray({ control, name: 'docNames' });
+  const onSubmit = handleSubmit((input) =>
+    create.mutate(
+      { title: input.title, handoverDate: input.handoverDate, checklist: input.checklist || undefined, items: input.docNames.map((d) => ({ documentName: d.documentName })) },
+      { onSuccess: () => { reset({ title: '', handoverDate: new Date().toISOString().slice(0, 10), checklist: '', docNames: DEFAULT_DOCS.map((documentName) => ({ documentName })) }); onDone(); } },
+    )
+  );
+
   return (
-    <div className="mb-6 space-y-3 rounded-md border border-neutral-200 bg-white p-4">
+    <form onSubmit={onSubmit} className="mb-6 space-y-3 rounded-md border border-neutral-200 bg-white p-4">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div><Label htmlFor="hand-title">Judul</Label><Input id="hand-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Handover Area A" /></div>
-        <div><Label htmlFor="hand-date">Tanggal</Label><Input id="hand-date" type="date" value={handoverDate} onChange={(e) => setHandoverDate(e.target.value)} /></div>
-        <div><Label htmlFor="hand-checklist">Checklist</Label><Input id="hand-checklist" value={checklist} onChange={(e) => setChecklist(e.target.value)} placeholder="Opsional" /></div>
+        <div>
+          <Label htmlFor="hand-title">Judul <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Input id="hand-title" placeholder="Handover Area A" error={!!errors.title} {...register('title')} />
+          {errors.title && <p className="mt-1 text-caption text-destructive-600">{errors.title.message}</p>}
+        </div>
+        <div>
+          <Label htmlFor="hand-date">Tanggal</Label>
+          <Input id="hand-date" type="date" error={!!errors.handoverDate} {...register('handoverDate')} />
+          {errors.handoverDate && <p className="mt-1 text-caption text-destructive-600">{errors.handoverDate.message}</p>}
+        </div>
+        <div>
+          <Label htmlFor="hand-checklist">Checklist</Label>
+          <Input id="hand-checklist" placeholder="Opsional" error={!!errors.checklist} {...register('checklist')} />
+          {errors.checklist && <p className="mt-1 text-caption text-destructive-600">{errors.checklist.message}</p>}
+        </div>
       </div>
-      <div className="space-y-2"><Label>Dokumen</Label>{docNames.map((doc, i) => <div key={i} className="flex gap-2"><Input value={doc} onChange={(e) => setDocNames(docNames.map((x, idx) => idx === i ? e.target.value : x))} /><Button size="sm" variant="secondary" onClick={() => setDocNames(docNames.filter((_, idx) => idx !== i))}>Hapus</Button></div>)}<Button size="sm" variant="secondary" onClick={() => setDocNames([...docNames, ''])}>+ Dokumen</Button></div>
-      <div className="flex justify-end gap-2"><Button size="sm" variant="secondary" onClick={onDone}>Batal</Button><Button size="sm" type="button" loading={create.isPending} disabled={!title.trim()} onClick={submit}>Buat Handover</Button></div>
-    </div>
+      <div className="space-y-2">
+        <Label>Dokumen</Label>
+        {fields.map((field, i) => (
+          <div key={field.id} className="flex gap-2">
+            <div className="flex-1">
+              <Input error={!!errors.docNames?.[i]?.documentName} {...register(`docNames.${i}.documentName` as const)} />
+              {errors.docNames?.[i]?.documentName && <p className="mt-1 text-caption text-destructive-600">{errors.docNames[i]?.documentName?.message}</p>}
+            </div>
+            <Button size="sm" variant="secondary" type="button" onClick={() => remove(i)}>Hapus</Button>
+          </div>
+        ))}
+        <Button size="sm" variant="secondary" type="button" onClick={() => append({ documentName: '' })}>+ Dokumen</Button>
+      </div>
+      <div className="flex justify-end gap-2"><Button size="sm" variant="secondary" type="button" onClick={onDone}>Batal</Button><Button size="sm" type="submit" loading={create.isPending}>Buat Handover</Button></div>
+      {create.isError && <p className="mt-1 text-caption text-destructive-600" role="alert">Gagal menyimpan. Periksa kembali data.</p>}
+    </form>
   );
 }
 
@@ -37,4 +85,3 @@ export function HandoverDetail({ selected, projectId }: { selected: { id: string
     </div>
   );
 }
-
