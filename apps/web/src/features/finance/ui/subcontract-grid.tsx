@@ -1,4 +1,4 @@
-import { Badge, Button, StatusBadge } from '@aec/ui';
+import { Button, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useRejectSubcontractProgress, useVerifySubcontractProgress } from '../model/subcontract.api';
 import type { Subcontract, SubcontractProgress } from '@aec/api-contracts';
