@@ -31,7 +31,7 @@ const columns = [
   }),
   columnHelper.accessor('correlationId', {
     header: 'Correlation',
-    cell: (info) => <span className="font-mono text-neutral-400">{info.getValue()?.slice(0, 8) ?? <EmptyCell />}</span>,
+    cell: (info) => <span className="font-mono text-neutral-500">{info.getValue()?.slice(0, 8) ?? <EmptyCell />}</span>,
   }),
 ];
 

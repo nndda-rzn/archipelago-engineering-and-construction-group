@@ -91,7 +91,7 @@ export function InvoiceForm({ onDone }: { onDone: () => void }) {
                     <td className="px-3 py-2">
                       {added ? (
                         <Input type="number" min={0} step={1} value={line?.quantity || ''} onChange={(e) => setValue(`lines.${index}.quantity`, Number(e.target.value))} className="h-8 w-24 text-right" />
-                      ) : (<span className="text-caption text-neutral-400">belum dipilih</span>)}
+                      ) : (<span className="text-caption text-neutral-500">belum dipilih</span>)}
                     </td>
                     <td className="px-3 py-2">
                       {added && <Input type="number" min={0} step={1000} value={line?.unitPrice || ''} onChange={(e) => setValue(`lines.${index}.unitPrice`, Number(e.target.value))} className="h-8 w-28 text-right" />}

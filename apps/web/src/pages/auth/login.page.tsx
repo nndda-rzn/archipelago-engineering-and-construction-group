@@ -65,7 +65,7 @@ export function LoginPage() {
           </ul>
         </div>
 
-        <p className="text-caption text-neutral-500">© 2026 AEC Group. Demo environment.</p>
+        <p className="text-caption text-neutral-400">© 2026 AEC Group. Demo environment.</p>
       </div>
 
       {  }
@@ -113,7 +113,7 @@ export function LoginPage() {
                   type="button"
                   aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
                   onClick={() => setShowPassword((s) => !s)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-neutral-400 transition-colors duration-fast hover:bg-neutral-100 hover:text-neutral-600"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-neutral-500 transition-colors duration-fast hover:bg-neutral-100 hover:text-neutral-700"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
                 </button>
