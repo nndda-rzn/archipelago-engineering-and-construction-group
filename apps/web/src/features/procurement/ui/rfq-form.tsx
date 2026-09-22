@@ -97,11 +97,11 @@ export function RfqForm({ onDone }: { onDone: () => void }) {
       <div className="mt-3 flex items-center justify-between">
         <div>
           <Label htmlFor="rfq-due">Batas Penawaran (opsional)</Label>
-          <input
+          <Input
             id="rfq-due"
             type="date"
+            className="mt-1 w-44"
             {...register('dueDate')}
-            className="mt-1 flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
           />
         </div>
         <Button type="button" variant="secondary" size="sm" onClick={() => append({ description: '', quantity: 1, unit: 'EA' })}>+ Tambah Item</Button>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
+import { Badge, Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useLegalEntities } from '@/entities/legal-entity';
 import { useTrialBalance } from '@/features/finance';
 import { formatIdr as fmt } from '@/shared/lib/format';
@@ -46,22 +46,22 @@ export function TrialBalancePage() {
         </div>
         <div>
           <label htmlFor="tb-from" className="mb-1 block text-caption font-medium uppercase tracking-wide text-neutral-500">Dari</label>
-          <input
+          <Input
             id="tb-from"
             type="date"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
-            className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
+            className="w-44"
           />
         </div>
         <div>
           <label htmlFor="tb-to" className="mb-1 block text-caption font-medium uppercase tracking-wide text-neutral-500">Sampai</label>
-          <input
+          <Input
             id="tb-to"
             type="date"
             value={to}
             onChange={(e) => setTo(e.target.value)}
-            className="flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
+            className="w-44"
           />
         </div>
         <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={isLoading}>Muat Ulang</Button>
