@@ -61,11 +61,12 @@ export const periodColumns = [
 function PeriodStatusButton({ period }: { period: FiscalPeriod }) {
   const update = useUpdateFiscalPeriodStatus();
   const next: Record<string, string> = { FUTURE: 'OPEN', OPEN: 'SOFT_CLOSED', SOFT_CLOSED: 'CLOSED', CLOSED: 'LOCKED' };
+  const label: Record<string, string> = { OPEN: 'Buka', SOFT_CLOSED: 'Tutup Sementara', CLOSED: 'Tutup', LOCKED: 'Kunci' };
   const to = next[period.status];
   if (!to) return null;
   return (
     <Button size="sm" variant="secondary" loading={update.isPending} onClick={() => update.mutate({ id: period.id, status: to })}>
-      {to}
+      {label[to] ?? to}
     </Button>
   );
 }

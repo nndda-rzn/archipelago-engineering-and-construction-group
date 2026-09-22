@@ -10,7 +10,7 @@ export function EmployeesPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
   const { data, isLoading, isError, refetch } = useEmployees({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize, status: statusFilter || undefined });
-  const { data: assignData } = useAssignments(selectedId ?? '');
+  const { data: assignData, isLoading: assignLoading } = useAssignments(selectedId ?? '');
 
   const selected = data?.items.find((e) => e.id === selectedId) ?? null;
 
@@ -60,7 +60,7 @@ export function EmployeesPage() {
           <p className="text-caption text-neutral-500">{selected.position} · {selected.department ?? '-'} · Klik baris lain untuk ganti</p>
           <AssignmentForm employee={selected} />
           <div className="mt-4">
-            <DataGrid columns={assignmentColumns} data={assignData?.items ?? []} emptyMessage="Belum ada assignment" hideToolbar />
+            <DataGrid columns={assignmentColumns} data={assignData?.items ?? []} isLoading={assignLoading} emptyMessage="Belum ada assignment" hideToolbar />
           </div>
         </div>
       )}

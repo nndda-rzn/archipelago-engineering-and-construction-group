@@ -1,6 +1,7 @@
 import { Badge, type BadgeVariant } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import type { StockLedgerEntry } from '@aec/api-contracts';
+import { formatDateTime } from '@/shared/lib/format';
 
 type MovementType = 'IN' | 'OUT' | 'ADJUST';
 
@@ -15,7 +16,7 @@ const columnHelper = createColumnHelper<StockLedgerEntry>();
 export const ledgerColumns = [
   columnHelper.accessor('createdAt', {
     header: 'Tanggal',
-    cell: (info) => <span className="tabular-nums text-neutral-500">{new Date(info.getValue()).toLocaleString('id-ID')}</span>,
+    cell: (info) => <span className="tabular-nums text-neutral-500">{formatDateTime(info.getValue())}</span>,
   }),
   columnHelper.accessor('documentType', {
     header: 'Dokumen',
