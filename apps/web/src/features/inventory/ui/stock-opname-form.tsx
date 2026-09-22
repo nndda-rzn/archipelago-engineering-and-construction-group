@@ -22,7 +22,7 @@ export function OpnameForm({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div><Label htmlFor="opn-project">Project</Label><Select value={projectId} onValueChange={(v) => { setProjectId(v); setWarehouseId(''); }}><SelectTrigger id="opn-project"><SelectValue placeholder="Pilih project…" /></SelectTrigger><SelectContent>{(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}</SelectContent></Select></div>
         <div><Label htmlFor="opn-wh">Warehouse</Label><Select value={warehouseId} onValueChange={setWarehouseId}><SelectTrigger id="opn-wh"><SelectValue placeholder="Pilih…" /></SelectTrigger><SelectContent>{projectWhs.map((w) => <SelectItem key={w.id} value={w.id}>{w.code} - {w.name}</SelectItem>)}</SelectContent></Select></div>
       </div>

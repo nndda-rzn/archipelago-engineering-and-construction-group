@@ -125,7 +125,7 @@ export function WorkPackageActionsPanel({ projectId, items }: ActionsPanelProps)
 
       {progressState.open && (
         <div className="mt-4 space-y-3 rounded-md border border-neutral-200 bg-neutral-50 p-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div><Label>Progress (%)</Label><Input type="number" min={0} max={100} value={progressState.value} onChange={(e) => setProgressState({ ...progressState, value: e.target.value })} /></div>
             <div><Label>Qty Terukur</Label><Input type="number" min={0} value={progressState.qty} onChange={(e) => setProgressState({ ...progressState, qty: e.target.value })} /></div>
           </div>

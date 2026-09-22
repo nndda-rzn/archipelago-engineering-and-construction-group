@@ -43,7 +43,7 @@ export function RoleManagementPage() {
 
       {showForm && (
         <form onSubmit={onSubmit} className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="code">Kode Role</Label>
               <Input id="code" placeholder="PROCUREMENT_MANAGER" spellCheck={false} error={!!errors.code} {...register('code')} />

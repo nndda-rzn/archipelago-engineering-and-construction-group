@@ -26,7 +26,7 @@ export function WbsForm({ projectId, parentId, projectCode, tree, onDone }: { pr
         {projectCode}
         {parentId && <span className="text-neutral-400">→ sub dari {findWbsCode(tree, parentId) ?? '…'}</span>}
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div><Label htmlFor="code">Kode WBS</Label><Input id="code" placeholder="1.1" spellCheck={false} error={!!errors.code} {...register('code')} />{errors.code && <p className="mt-1 text-caption text-destructive-600">{errors.code.message}</p>}</div>
         <div><Label htmlFor="name">Nama</Label><Input id="name" placeholder="Detail Engineering" error={!!errors.name} {...register('name')} />{errors.name && <p className="mt-1 text-caption text-destructive-600">{errors.name.message}</p>}</div>
       </div>
