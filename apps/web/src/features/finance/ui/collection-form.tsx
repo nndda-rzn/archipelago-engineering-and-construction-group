@@ -1,55 +1,70 @@
-import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm, Controller, useFieldArray, useWatch } from 'react-hook-form';
+import { z } from 'zod';
+import { createCollectionSchema } from '@aec/api-contracts';
 import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useCreateCollection } from '../model/collection.api';
 import { useClientInvoices } from '../model/client-invoice.api';
 
-type ColLine = { clientInvoiceId: string; amount: number };
+const formSchema = z.object({
+  projectId: z.string().min(1, 'Project wajib dipilih'),
+  client: createCollectionSchema.shape.client,
+  reference: z.string().max(100),
+  items: z.array(z.object({
+    clientInvoiceId: z.string(),
+    amount: z.number(),
+  })).refine((items) => items.some((i) => i.amount > 0), 'Pilih minimal satu invoice dengan jumlah > 0'),
+});
+type FormValues = z.infer<typeof formSchema>;
 
 export function CollectionForm({ onDone }: { onDone: () => void }) {
-  const [projectId, setProjectId] = useState('');
-  const [client, setClient] = useState('');
-  const [reference, setReference] = useState('');
-  const [lines, setLines] = useState<ColLine[]>([]);
-
   const projects = useProjects({ page: 1, pageSize: 100 });
   const invoices = useClientInvoices({ page: 1, pageSize: 100 });
   const postedInvoices = (invoices.data?.items ?? []).filter((inv) => inv.status === 'POSTED');
   const create = useCreateCollection();
 
-  const addLine = (clientInvoiceId: string) => {
-    const invoice = postedInvoices.find((inv) => inv.id === clientInvoiceId);
-    setLines((prev) => [...prev, { clientInvoiceId, amount: Number(invoice?.totalAmount ?? 0) }]);
-  };
+  const { register, handleSubmit, reset, control, setValue, formState: { errors } } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { projectId: '', client: '', reference: '', items: [] },
+  });
+  const { fields, append, remove, replace } = useFieldArray({ control, name: 'items' });
+  const lines = useWatch({ control, name: 'items' });
 
-  const updateLine = (index: number, patch: Partial<ColLine>) => {
-    setLines((prev) => prev.map((line, i) => (i === index ? { ...line, ...patch } : line)));
-  };
-
-  const onSubmit = () => {
-    if (!projectId || !client) return;
-    const items = lines.filter((l) => l.amount > 0).map((l) => ({ clientInvoiceId: l.clientInvoiceId, amount: l.amount }));
-    if (items.length === 0) return;
+  const onSubmit = handleSubmit((input) => {
+    const items = input.items
+      .filter((l) => l.amount > 0)
+      .map((l) => ({ clientInvoiceId: l.clientInvoiceId, amount: l.amount }));
     create.mutate(
-      { projectId, client, reference: reference || undefined, items },
-      { onSuccess: () => { setClient(''); setReference(''); setLines([]); onDone(); } },
+      { projectId: input.projectId, client: input.client, reference: input.reference || undefined, items },
+      { onSuccess: () => { reset(); onDone(); } },
     );
-  };
+  });
 
   return (
-    <div className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+    <form onSubmit={onSubmit} className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="col-project">Project</Label>
-          <Select value={projectId} onValueChange={(v) => { setProjectId(v); setLines([]); }}>
-            <SelectTrigger id="col-project"><SelectValue placeholder="Pilih project…" /></SelectTrigger>
-            <SelectContent>
-              {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <Label htmlFor="col-project">Project <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Controller name="projectId" control={control} render={({ field }) => (
+            <Select value={field.value} onValueChange={(v) => { field.onChange(v); replace([]); }}>
+              <SelectTrigger id="col-project"><SelectValue placeholder="Pilih project…" /></SelectTrigger>
+              <SelectContent>
+                {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )} />
+          {errors.projectId && <p className="mt-1 text-caption text-destructive-600">{errors.projectId.message}</p>}
         </div>
-        <div><Label htmlFor="col-client">Klien</Label><Input id="col-client" placeholder="PT Klien Utama" value={client} onChange={(e) => setClient(e.target.value)} /></div>
-        <div><Label htmlFor="col-ref">Referensi (opsional)</Label><Input id="col-ref" value={reference} onChange={(e) => setReference(e.target.value)} /></div>
+        <div>
+          <Label htmlFor="col-client">Klien <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Input id="col-client" placeholder="PT Klien Utama" error={!!errors.client} {...register('client')} />
+          {errors.client && <p className="mt-1 text-caption text-destructive-600">{errors.client.message}</p>}
+        </div>
+        <div>
+          <Label htmlFor="col-ref">Referensi (opsional)</Label>
+          <Input id="col-ref" {...register('reference')} />
+        </div>
       </div>
 
       <div className="mt-4 overflow-hidden rounded-md border border-neutral-200">
@@ -59,16 +74,18 @@ export function CollectionForm({ onDone }: { onDone: () => void }) {
           </thead>
           <tbody>
             {postedInvoices.map((inv) => {
-              const line = lines.find((l) => l.clientInvoiceId === inv.id);
+              const index = fields.findIndex((f) => f.clientInvoiceId === inv.id);
+              const added = index >= 0;
+              const line = added ? lines?.[index] : undefined;
               return (
                 <tr key={inv.id} className="border-t border-neutral-100">
                   <td className="px-3 py-2 font-mono text-neutral-700">{inv.invoiceNumber}</td>
                   <td className="px-3 py-2 text-right tabular-nums text-neutral-600">{inv.totalAmount}</td>
                   <td className="px-3 py-2">
-                    {line ? <Input type="number" min={0} step={100000} value={line.amount || ''} onChange={(e) => updateLine(lines.indexOf(line), { amount: Number(e.target.value) })} className="h-8 w-32 text-right" /> : <span className="text-caption text-neutral-400">-</span>}
+                    {added ? <Input type="number" min={0} step={100000} value={line?.amount || ''} onChange={(e) => setValue(`items.${index}.amount`, Number(e.target.value))} className="h-8 w-32 text-right" /> : <span className="text-caption text-neutral-400">-</span>}
                   </td>
                   <td className="px-3 py-2 text-right">
-                    {line ? <Button type="button" variant="ghost" size="sm" onClick={() => setLines((prev) => prev.filter((_, i) => i !== lines.indexOf(line)))}>Batal</Button> : <Button type="button" variant="secondary" size="sm" onClick={() => addLine(inv.id)}>+ Pilih</Button>}
+                    {added ? <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)}>Batal</Button> : <Button type="button" variant="secondary" size="sm" onClick={() => append({ clientInvoiceId: inv.id, amount: Number(inv.totalAmount ?? 0) })}>+ Pilih</Button>}
                   </td>
                 </tr>
               );
@@ -77,9 +94,10 @@ export function CollectionForm({ onDone }: { onDone: () => void }) {
           </tbody>
         </table>
       </div>
+      {errors.items && <p className="mt-2 text-caption text-destructive-600">{errors.items.message}</p>}
 
-      <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Batal</Button><Button type="button" onClick={onSubmit} loading={create.isPending}>Buat Collection DRAFT</Button></div>
+      <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Batal</Button><Button type="submit" loading={create.isPending}>Buat Collection DRAFT</Button></div>
       {create.isError && <p className="mt-2 text-caption text-destructive-600">Gagal. Jumlah tidak boleh melebihi sisa piutang.</p>}
-    </div>
+    </form>
   );
 }
