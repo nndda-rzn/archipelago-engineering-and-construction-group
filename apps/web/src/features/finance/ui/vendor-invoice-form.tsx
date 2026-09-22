@@ -5,6 +5,7 @@ import { createVendorInvoiceSchema } from '@aec/api-contracts';
 import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { usePos } from '@/features/procurement';
 import { useCreateVendorInvoice } from '../model/finance.api';
+import { UnsavedGuard } from '@/shared/lib/unsaved-guard';
 
 const formSchema = z.object({
   poId: z.string().min(1, 'PO wajib dipilih'),
@@ -23,7 +24,7 @@ export function InvoiceForm({ onDone }: { onDone: () => void }) {
   const releasedPos = (pos.data?.items ?? []).filter((po) => po.status === 'RELEASED');
   const create = useCreateVendorInvoice();
 
-  const { register, handleSubmit, reset, control, setValue, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, reset, control, setValue, formState: { errors, isDirty } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: { poId: '', vendorInvoiceNo: '', taxAmount: '', lines: [] },
   });
@@ -45,6 +46,7 @@ export function InvoiceForm({ onDone }: { onDone: () => void }) {
 
   return (
     <form onSubmit={onSubmit} className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+      <UnsavedGuard dirty={isDirty} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div>
           <Label htmlFor="inv-po">PO (harus RELEASED) <span aria-hidden="true" className="text-destructive-600">*</span></Label>

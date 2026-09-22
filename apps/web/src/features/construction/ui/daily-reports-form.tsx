@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { createDailyReportSchema } from '@aec/api-contracts';
 import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateDailyReport } from '../model/work-package.api';
+import { UnsavedGuard } from '@/shared/lib/unsaved-guard';
 
 const formSchema = z.object({
   reportDate: z.string(),
@@ -19,7 +20,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function CreateDailyReportForm({ projectId, onDone }: { projectId: string; onDone: () => void }) {
   const create = useCreateDailyReport(projectId);
-  const { register, handleSubmit, control, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, control, formState: { errors, isDirty } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       reportDate: new Date().toISOString().slice(0, 10),
@@ -50,6 +51,7 @@ export function CreateDailyReportForm({ projectId, onDone }: { projectId: string
 
   return (
     <form onSubmit={onSubmit} className="space-y-3 rounded-md border border-neutral-200 bg-white p-4">
+      <UnsavedGuard dirty={isDirty} />
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div>
           <Label htmlFor="dr-date">Tanggal</Label>
