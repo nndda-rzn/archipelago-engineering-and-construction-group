@@ -48,7 +48,7 @@ export function SubcontractPage() {
           isLoading={isLoading}
           isError={isError}
           onRetry={() => refetch()}
-          onRowClick={(row) => setSelectedId(row.original.id)}
+          onRowClick={(row) => setSelectedId(row.original.id)} selectedRowId={selectedId ?? undefined} getRowId={(row) => row.id}
           emptyMessage="Belum ada subcontract"
         />
       </div>

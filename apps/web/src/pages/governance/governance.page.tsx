@@ -69,7 +69,7 @@ export function GovernancePage() {
           <DataGrid columns={riskColumns} data={risks.data?.items ?? []} rowCount={risks.data?.total ?? 0} isLoading={risks.isLoading} isError={risks.isError} onRetry={() => risks.refetch()} emptyMessage="Belum ada risk" {...gridProps} />
         )}
         {tab === 'audits' && (
-          <DataGrid columns={auditColumns} data={audits.data?.items ?? []} rowCount={audits.data?.total ?? 0} isLoading={audits.isLoading} isError={audits.isError} onRetry={() => audits.refetch()} onRowClick={(row) => setSelectedAudit(row.original)} emptyMessage="Belum ada audit" {...gridProps} />
+            <DataGrid columns={auditColumns} data={audits.data?.items ?? []} rowCount={audits.data?.total ?? 0} isLoading={audits.isLoading} isError={audits.isError} onRetry={() => audits.refetch()} onRowClick={(row) => setSelectedAudit(row.original)} selectedRowId={selectedAudit?.id} getRowId={(row) => row.id} emptyMessage="Belum ada audit" {...gridProps} />
         )}
         {tab === 'legal' && (
           <DataGrid columns={legalColumns} data={legal.data?.items ?? []} rowCount={legal.data?.total ?? 0} isLoading={legal.isLoading} isError={legal.isError} onRetry={() => legal.refetch()} emptyMessage="Belum ada kasus legal" {...gridProps} />

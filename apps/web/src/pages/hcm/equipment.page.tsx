@@ -55,9 +55,11 @@ export function EquipmentPage() {
           onPaginationChange={onPaginationChange}
           isLoading={isLoading}
           isError={isError}
-          onRetry={() => refetch()}
-          onRowClick={(row) => setSelectedId(row.original.id)}
-          emptyMessage="Belum ada equipment"
+           onRetry={() => refetch()}
+           onRowClick={(row) => setSelectedId(row.original.id)}
+           selectedRowId={selectedId || undefined}
+           getRowId={(row) => row.id}
+           emptyMessage="Belum ada equipment"
         />
       </div>
 

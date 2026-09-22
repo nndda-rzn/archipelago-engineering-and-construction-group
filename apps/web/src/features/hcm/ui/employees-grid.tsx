@@ -42,18 +42,19 @@ export const employeeColumns = [
 function StatusButtons({ employee }: { employee: Employee }) {
   const change = useChangeEmployeeStatus();
   if (employee.status === 'LEAVER') return null;
+  const pendingFor = (status: string) => change.isPending && change.variables?.status === status;
   return (
     <div className="flex items-center gap-1">
       {employee.status === 'INACTIVE' ? (
-        <Button size="sm" variant="ghost" loading={change.isPending} onClick={() => change.mutate({ id: employee.id, status: 'ACTIVE' })}>
+        <Button size="sm" variant="ghost" loading={pendingFor('ACTIVE')} onClick={() => change.mutate({ id: employee.id, status: 'ACTIVE' })}>
           Aktifkan
         </Button>
       ) : (
-        <ConfirmActionButton size="sm" variant="ghost" loading={change.isPending} confirmTitle="Nonaktifkan karyawan?" confirmDescription="Karyawan akan berstatus nonaktif." confirmLabel="Nonaktifkan" onConfirm={() => change.mutate({ id: employee.id, status: 'INACTIVE' })}>
+        <ConfirmActionButton size="sm" variant="ghost" loading={pendingFor('INACTIVE')} confirmTitle="Nonaktifkan karyawan?" confirmDescription="Karyawan akan berstatus nonaktif." confirmLabel="Nonaktifkan" onConfirm={() => change.mutate({ id: employee.id, status: 'INACTIVE' })}>
           Nonaktifkan
         </ConfirmActionButton>
       )}
-      <ConfirmActionButton size="sm" variant="ghost" className="text-destructive-600" loading={change.isPending} confirmTitle="Ubah ke Leaver?" confirmDescription="Karyawan akan berstatus Leaver secara permanen dan kehilangan akses sistem." confirmLabel="Leaver" onConfirm={() => change.mutate({ id: employee.id, status: 'LEAVER' })}>
+      <ConfirmActionButton size="sm" variant="ghost" className="text-destructive-600" loading={pendingFor('LEAVER')} confirmTitle="Ubah ke Leaver?" confirmDescription="Karyawan akan berstatus Leaver secara permanen dan kehilangan akses sistem." confirmLabel="Leaver" onConfirm={() => change.mutate({ id: employee.id, status: 'LEAVER' })}>
         Leaver
       </ConfirmActionButton>
     </div>
