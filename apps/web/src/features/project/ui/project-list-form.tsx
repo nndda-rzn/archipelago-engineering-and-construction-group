@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { createProjectSchema } from '@aec/api-contracts';
 import { z } from 'zod';
 import { Button, Input, Label, EntitySelect } from '@aec/ui';
@@ -18,7 +18,8 @@ type ProjectFormValues = z.infer<typeof formSchema>;
 export function ProjectForm({ onDone }: { onDone: () => void }) {
   const entities = useLegalEntities({ page: 1, pageSize: 100 });
   const create = useCreateProject();
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<ProjectFormValues>({ resolver: zodResolver(formSchema) });
+  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<ProjectFormValues>({ resolver: zodResolver(formSchema) });
+  const legalEntityId = useWatch({ control, name: 'legalEntityId' });
   const onSubmit = handleSubmit((input) => create.mutate(input, { onSuccess: () => { reset(); onDone(); } }));
 
   return (
@@ -30,7 +31,7 @@ export function ProjectForm({ onDone }: { onDone: () => void }) {
         <div>
           <Label htmlFor="legalEntityId">Legal Entity</Label>
           <EntitySelect
-            value={watch('legalEntityId') ?? ''}
+            value={legalEntityId ?? ''}
             onValueChange={(value) => setValue('legalEntityId', value, { shouldValidate: true })}
             options={(entities.data?.items ?? []).map((e) => ({ value: e.id, label: `${e.code} — ${e.legalName}` }))}
             placeholder="Pilih entity…"
