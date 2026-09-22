@@ -6,6 +6,7 @@ import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger,
 import { useProjects } from '@/entities/project';
 import { useCreateCollection } from '../model/collection.api';
 import { useClientInvoices } from '../model/client-invoice.api';
+import { formatIdr } from '@/shared/lib/format';
 
 const formSchema = z.object({
   projectId: z.string().min(1, 'Project wajib dipilih'),
@@ -80,7 +81,7 @@ export function CollectionForm({ onDone }: { onDone: () => void }) {
               return (
                 <tr key={inv.id} className="border-t border-neutral-100">
                   <td className="px-3 py-2 font-mono text-neutral-700">{inv.invoiceNumber}</td>
-                  <td className="px-3 py-2 text-right tabular-nums text-neutral-600">{inv.totalAmount}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-neutral-600">{formatIdr(Number(inv.totalAmount))}</td>
                   <td className="px-3 py-2">
                     {added ? <Input type="number" min={0} step={100000} value={line?.amount || ''} onChange={(e) => setValue(`items.${index}.amount`, Number(e.target.value))} className="h-8 w-32 text-right" /> : <span className="text-caption text-neutral-400">-</span>}
                   </td>
