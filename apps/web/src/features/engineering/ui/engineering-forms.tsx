@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { Button, Input, Label } from '@aec/ui';
 import {
   useCreateDeliverable,
@@ -15,12 +17,15 @@ interface EngCreateFormProps {
   onClose: () => void;
 }
 
-export function EngCreateForm({ tab, onClose }: EngCreateFormProps) {
-  const [title, setTitle] = useState('');
-  const [engineer, setEngineer] = useState('');
-  const [question, setQuestion] = useState('');
-  const [recipient, setRecipient] = useState('');
+const formSchema = z.object({
+  title: z.string(),
+  engineer: z.string(),
+  question: z.string(),
+  recipient: z.string(),
+});
+type FormValues = z.infer<typeof formSchema>;
 
+export function EngCreateForm({ tab, onClose }: EngCreateFormProps) {
   const createDlv = useCreateDeliverable();
   const createDrw = useCreateDrawing();
   const createRfi = useCreateRfi();
@@ -34,56 +39,70 @@ export function EngCreateForm({ tab, onClose }: EngCreateFormProps) {
     createSub.isPending ||
     createTrm.isPending;
 
-  const reset = () => {
-    setTitle('');
-    setEngineer('');
-    setQuestion('');
-    setRecipient('');
+  // Per-tab required-field expectations kept in the resolver so validation stays in RHF.
+  const schema = formSchema.superRefine((values, ctx) => {
+    if (!values.title)
+      ctx.addIssue({ code: 'custom', path: ['title'], message: tab === 'transmittals' ? 'Subjek wajib diisi' : 'Judul wajib diisi' });
+    if (tab === 'deliverables' && !values.engineer)
+      ctx.addIssue({ code: 'custom', path: ['engineer'], message: 'Engineer wajib diisi' });
+    if (tab === 'rfis' && !values.question)
+      ctx.addIssue({ code: 'custom', path: ['question'], message: 'Pertanyaan wajib diisi' });
+    if (tab === 'transmittals' && !values.recipient)
+      ctx.addIssue({ code: 'custom', path: ['recipient'], message: 'Penerima wajib diisi' });
+  });
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    mode: 'onSubmit',
+    defaultValues: { title: '', engineer: '', question: '', recipient: '' },
+  });
+
+  const onSuccess = () => {
+    reset();
     onClose();
   };
 
-  const submit = () => {
-    if (tab === 'deliverables' && title && engineer) createDlv.mutate({ title, engineer }, { onSuccess: reset });
-    if (tab === 'drawings' && title) createDrw.mutate({ title }, { onSuccess: reset });
-    if (tab === 'rfis' && title && question) createRfi.mutate({ title, question }, { onSuccess: reset });
-    if (tab === 'submittals' && title) createSub.mutate({ title }, { onSuccess: reset });
-    if (tab === 'transmittals' && recipient && title)
-      createTrm.mutate({ recipient, subject: title }, { onSuccess: reset });
-  };
+  const onSubmit = handleSubmit((input) => {
+    if (tab === 'deliverables') createDlv.mutate({ title: input.title, engineer: input.engineer }, { onSuccess });
+    if (tab === 'drawings') createDrw.mutate({ title: input.title }, { onSuccess });
+    if (tab === 'rfis') createRfi.mutate({ title: input.title, question: input.question }, { onSuccess });
+    if (tab === 'submittals') createSub.mutate({ title: input.title }, { onSuccess });
+    if (tab === 'transmittals') createTrm.mutate({ recipient: input.recipient, subject: input.title }, { onSuccess });
+  });
 
   return (
-    <div className="mb-4 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+    <form onSubmit={onSubmit} className="mb-4 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="flex items-end gap-3">
         <div className="flex-1">
-          <Label htmlFor="eng-title">{tab === 'transmittals' ? 'Subjek' : 'Judul'}</Label>
-          <Input id="eng-title" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <Label htmlFor="eng-title">{tab === 'transmittals' ? 'Subjek' : 'Judul'} <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Input id="eng-title" error={!!errors.title} {...register('title')} />
+          {errors.title && <p className="mt-1 text-caption text-destructive-600">{errors.title.message}</p>}
         </div>
         {tab === 'deliverables' && (
           <div>
-            <Label htmlFor="eng-eng">Engineer</Label>
-            <Input id="eng-eng" value={engineer} onChange={(e) => setEngineer(e.target.value)} />
+            <Label htmlFor="eng-eng">Engineer <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+            <Input id="eng-eng" error={!!errors.engineer} {...register('engineer')} />
+            {errors.engineer && <p className="mt-1 text-caption text-destructive-600">{errors.engineer.message}</p>}
           </div>
         )}
         {tab === 'rfis' && (
           <div className="flex-1">
-            <Label htmlFor="eng-q">Pertanyaan</Label>
-            <Input id="eng-q" value={question} onChange={(e) => setQuestion(e.target.value)} />
+            <Label htmlFor="eng-q">Pertanyaan <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+            <Input id="eng-q" error={!!errors.question} {...register('question')} />
+            {errors.question && <p className="mt-1 text-caption text-destructive-600">{errors.question.message}</p>}
           </div>
         )}
         {tab === 'transmittals' && (
           <div>
-            <Label htmlFor="eng-recipient">Penerima</Label>
-            <Input
-              id="eng-recipient"
-              value={recipient}
-              onChange={(e) => setRecipient(e.target.value)}
-            />
+            <Label htmlFor="eng-recipient">Penerima <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+            <Input id="eng-recipient" error={!!errors.recipient} {...register('recipient')} />
+            {errors.recipient && <p className="mt-1 text-caption text-destructive-600">{errors.recipient.message}</p>}
           </div>
         )}
-        <Button onClick={submit} loading={isPending}>
+        <Button type="submit" loading={isPending}>
           Buat
         </Button>
       </div>
-    </div>
+    </form>
   );
 }
