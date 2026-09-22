@@ -5,6 +5,7 @@ import { usePostVendorInvoice, useVendorInvoices, type VendorInvoice } from '@/f
 import { InvoiceForm } from '@/features/finance';
 import { formatIdr } from '@/shared/lib/format';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
+import { useUrlPagination } from '@/shared/lib/use-url-state';
 
 const columnHelper = createColumnHelper<VendorInvoice>();
 
@@ -59,8 +60,8 @@ function PostButton({ inv }: { inv: VendorInvoice }) {
 }
 
 export function VendorInvoicePage() {
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
   const [showForm, setShowForm] = useState(false);
+  const { pagination, onPaginationChange } = useUrlPagination(PAGE_SIZE);
 
   const { data, isLoading, isError, refetch } = useVendorInvoices({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
 
@@ -84,7 +85,7 @@ export function VendorInvoicePage() {
           data={data?.items ?? []}
           rowCount={data?.total ?? 0}
           pagination={pagination}
-          onPaginationChange={setPagination}
+          onPaginationChange={onPaginationChange}
           isLoading={isLoading}
           isError={isError}
           onRetry={() => refetch()}

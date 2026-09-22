@@ -3,12 +3,13 @@ import { Button, DataGrid, Select, SelectContent, SelectItem, SelectTrigger, Sel
 import { useProgressClaims } from '@/features/finance';
 import { ClaimForm, progressClaimColumns, claimTypeLabel } from '@/features/finance/ui';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
+import { useUrlFilter, useUrlPagination } from '@/shared/lib/use-url-state';
 const CLAIM_TYPES = ['PROGRESS', 'COST', 'TIME', 'EOT', 'CONTRACTUAL'] as const;
 
 export function ProgressClaimPage() {
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
   const [showForm, setShowForm] = useState(false);
-  const [claimTypeFilter, setClaimTypeFilter] = useState('');
+  const [claimTypeFilter, setClaimTypeFilter] = useUrlFilter('claimType');
+  const { pagination, onPaginationChange } = useUrlPagination(PAGE_SIZE);
   const { data, isLoading, isError, refetch } = useProgressClaims({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize, claimType: claimTypeFilter || undefined });
 
   return (
@@ -19,7 +20,7 @@ export function ProgressClaimPage() {
           <p className="mt-1 text-body-sm text-neutral-500">Klaim progres pekerjaan ke klien — tipe PROGRESS/COST/TIME/EOT/KONTRACTUAL (FR-CMR-007)</p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={claimTypeFilter} onValueChange={(v) => { setClaimTypeFilter(v); setPagination({ pageIndex: 0, pageSize: PAGE_SIZE }); }}>
+          <Select value={claimTypeFilter} onValueChange={setClaimTypeFilter}>
             <SelectTrigger className="w-auto" aria-label="Filter tipe klaim"><SelectValue placeholder="Semua tipe" /></SelectTrigger>
             <SelectContent>
               {CLAIM_TYPES.map((t) => <SelectItem key={t} value={t}>{t} — {claimTypeLabel[t]}</SelectItem>)}
@@ -36,7 +37,7 @@ export function ProgressClaimPage() {
           data={data?.items ?? []}
           rowCount={data?.total ?? 0}
           pagination={pagination}
-          onPaginationChange={setPagination}
+          onPaginationChange={onPaginationChange}
           isLoading={isLoading}
           isError={isError}
           onRetry={() => refetch()}

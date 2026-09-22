@@ -4,6 +4,7 @@ import { Button, ConfirmActionButton, DataGrid, EmptyCell, Input, Label, Select,
 import { useCreatePo, usePos, usePrs, useReleasePo, type PurchaseOrder } from '@/features/procurement';
 import { formatIdr } from '@/shared/lib/format';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
+import { useUrlPagination } from '@/shared/lib/use-url-state';
 
 const columnHelper = createColumnHelper<PurchaseOrder>();
 
@@ -58,10 +59,10 @@ function ReleaseButton({ id, status }: { id: string; status: string }) {
 }
 
 export function PurchaseOrderPage() {
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
   const [showForm, setShowForm] = useState(false);
   const [requisitionId, setRequisitionId] = useState('');
   const [vendor, setVendor] = useState('');
+  const { pagination, onPaginationChange } = useUrlPagination(PAGE_SIZE);
 
   const { data, isLoading, isError, refetch } = usePos({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
   const prs = usePrs({ page: 1, pageSize: 100 });
@@ -128,7 +129,7 @@ export function PurchaseOrderPage() {
           data={data?.items ?? []}
           rowCount={data?.total ?? 0}
           pagination={pagination}
-          onPaginationChange={setPagination}
+          onPaginationChange={onPaginationChange}
           isLoading={isLoading}
           isError={isError}
           onRetry={() => refetch()}

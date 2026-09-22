@@ -3,6 +3,7 @@ import { Button, DataGrid } from '@aec/ui';
 import { useAccessReviews, useAudits, useLegalCases, useRisks, type AuditEngagement } from '@/features/governance';
 import { RiskForm, AuditForm, LegalForm, ReviewForm, AuditDetail, riskColumns, auditColumns, legalColumns, reviewColumns } from '@/features/governance/ui';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
+import { useUrlFilter, useUrlPagination } from '@/shared/lib/use-url-state';
 
 type Tab = 'risks' | 'audits' | 'legal' | 'reviews';
 
@@ -14,16 +15,16 @@ const TAB_LABELS: Record<Tab, string> = {
 };
 
 export function GovernancePage() {
-  const [tab, setTab] = useState<Tab>('risks');
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
+  const [tab, setTab] = useUrlFilter('tab', 'risks') as [Tab, (v: string) => void];
   const [showForm, setShowForm] = useState(false);
   const [selectedAudit, setSelectedAudit] = useState<AuditEngagement | null>(null);
+  const { pagination, onPaginationChange } = useUrlPagination(PAGE_SIZE);
   const risks = useRisks({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
   const audits = useAudits({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
   const legal = useLegalCases({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
   const reviews = useAccessReviews({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
 
-  const gridProps = { pagination, onPaginationChange: setPagination };
+  const gridProps = { pagination, onPaginationChange };
 
   const tabCount: Record<Tab, number> = {
     risks: risks.data?.total ?? 0,

@@ -3,12 +3,13 @@ import { Button, DataGrid, Select, SelectContent, SelectItem, SelectTrigger, Sel
 import { useAssignments, useEmployees } from '@/features/hcm';
 import { EmployeeForm, AssignmentForm, employeeColumns, assignmentColumns } from '@/features/hcm/ui';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
+import { useUrlFilter, useUrlPagination } from '@/shared/lib/use-url-state';
 
 export function EmployeesPage() {
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
   const [showForm, setShowForm] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useUrlFilter('status');
+  const { pagination, onPaginationChange } = useUrlPagination(PAGE_SIZE);
   const { data, isLoading, isError, refetch } = useEmployees({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize, status: statusFilter || undefined });
   const { data: assignData, isLoading: assignLoading } = useAssignments(selectedId ?? '');
 
@@ -22,7 +23,7 @@ export function EmployeesPage() {
           <p className="mt-1 text-body-sm text-neutral-500">Master karyawan + project assignment (FR-HCM-001/002/003)</p>
         </div>
         <div className="flex items-center gap-2">
-          <Select aria-label="Filter status" value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPagination({ pageIndex: 0, pageSize: PAGE_SIZE }); }}>
+          <Select aria-label="Filter status" value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger>
               <SelectValue placeholder="Semua status" />
             </SelectTrigger>
@@ -45,7 +46,7 @@ export function EmployeesPage() {
           data={data?.items ?? []}
           rowCount={data?.total ?? 0}
           pagination={pagination}
-          onPaginationChange={setPagination}
+          onPaginationChange={onPaginationChange}
           isLoading={isLoading}
           isError={isError}
           onRetry={() => refetch()}

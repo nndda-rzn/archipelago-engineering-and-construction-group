@@ -3,12 +3,13 @@ import { Button, DataGrid, Select, SelectContent, SelectItem, SelectTrigger, Sel
 import { useEquipment, type Equipment } from '@/features/hcm';
 import { EquipmentForm, EquipmentDetail, equipmentColumns } from '@/features/hcm/ui';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
+import { useUrlFilter, useUrlPagination } from '@/shared/lib/use-url-state';
 
 export function EquipmentPage() {
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useUrlFilter('status');
   const [showForm, setShowForm] = useState(false);
   const [selectedId, setSelectedId] = useState('');
+  const { pagination, onPaginationChange } = useUrlPagination(PAGE_SIZE);
 
   const { data, isLoading, isError, refetch } = useEquipment({
     page: pagination.pageIndex + 1,
@@ -51,7 +52,7 @@ export function EquipmentPage() {
           data={data?.items ?? []}
           rowCount={data?.total ?? 0}
           pagination={pagination}
-          onPaginationChange={setPagination}
+          onPaginationChange={onPaginationChange}
           isLoading={isLoading}
           isError={isError}
           onRetry={() => refetch()}

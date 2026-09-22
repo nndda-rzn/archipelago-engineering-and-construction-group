@@ -3,6 +3,7 @@ import { Button, DataGrid, Input, Label } from '@aec/ui';
 import { useCreateCorrectiveAction, useIncidents, useObservations, usePermits, type HseIncident } from '@/features/hse';
 import { ObservationForm, IncidentForm, PermitForm, observationColumns, incidentColumns, permitColumns, caColumns } from '@/features/hse/ui';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
+import { useUrlFilter, useUrlPagination } from '@/shared/lib/use-url-state';
 
 type Tab = 'observations' | 'incidents' | 'permits';
 
@@ -13,10 +14,10 @@ const TAB_LABELS: Record<Tab, string> = {
 };
 
 export function HsePage() {
-  const [tab, setTab] = useState<Tab>('observations');
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
+  const [tab, setTab] = useUrlFilter('tab', 'observations') as [Tab, (v: string) => void];
   const [showForm, setShowForm] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<HseIncident | null>(null);
+  const { pagination, onPaginationChange } = useUrlPagination(PAGE_SIZE);
   const obs = useObservations({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
   const incidents = useIncidents({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
   const permits = usePermits({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
@@ -25,7 +26,7 @@ export function HsePage() {
   const [caOwner, setCaOwner] = useState('');
   const [caDue, setCaDue] = useState('');
 
-  const gridProps = { pagination, onPaginationChange: setPagination };
+  const gridProps = { pagination, onPaginationChange };
 
   return (
     <div>

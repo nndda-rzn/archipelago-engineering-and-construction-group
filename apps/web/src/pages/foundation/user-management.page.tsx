@@ -4,12 +4,13 @@ import { Button, DataGrid, Input } from '@aec/ui';
 import { useUsers } from '@/entities/user';
 import { UserForm, userColumns } from '@/features/foundation/ui';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
+import { useUrlFilter, useUrlPagination } from '@/shared/lib/use-url-state';
 
 export function UserManagementPage() {
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useUrlFilter('q');
+  const { pagination, onPaginationChange } = useUrlPagination(PAGE_SIZE);
 
   const { data, isLoading, isError, refetch } = useUsers({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize, search: search || undefined });
 
@@ -26,11 +27,11 @@ export function UserManagementPage() {
       {showForm && <UserForm onDone={() => setShowForm(false)} />}
 
       <div className="mb-4 w-64">
-        <Input type="search" placeholder="Cari username, nama, email..." value={search} onChange={(e) => { setSearch(e.target.value); setPagination((p) => ({ ...p, pageIndex: 0 })); }} />
+        <Input type="search" placeholder="Cari username, nama, email..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-        <DataGrid columns={userColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={setPagination} sorting={sorting} onSortingChange={setSorting} isLoading={isLoading} isError={isError} onRetry={() => refetch()} emptyMessage="Belum ada user" exportFilename="users" />
+        <DataGrid columns={userColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={onPaginationChange} sorting={sorting} onSortingChange={setSorting} isLoading={isLoading} isError={isError} onRetry={() => refetch()} emptyMessage="Belum ada user" exportFilename="users" />
       </div>
     </div>
   );
