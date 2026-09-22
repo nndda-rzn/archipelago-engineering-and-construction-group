@@ -1,40 +1,11 @@
-import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm, Controller, useFieldArray, useWatch } from 'react-hook-form';
+import { z } from 'zod';
 import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useWarehouses } from '../model/warehouse.api';
 import { useCreateStockOpname } from '../model/stock-opname.api';
+const schema = z.object({ projectId: z.string().min(1, 'Project wajib dipilih'), warehouseId: z.string().min(1, 'Warehouse wajib dipilih'), lines: z.array(z.object({ description: z.string(), actualQuantity: z.coerce.number().min(0), unit: z.string() })).min(1).refine((v) => v.some((l) => l.description), 'Minimal satu baris valid') });
+type Values = z.infer<typeof schema>; const empty = { description: '', actualQuantity: 0, unit: 'EA' };
+export function OpnameForm({ onDone }: { onDone: () => void }) { const projects = useProjects({ page: 1, pageSize: 100 }); const warehouses = useWarehouses({ page: 1, pageSize: 100 }); const create = useCreateStockOpname(); const { register, handleSubmit, reset, control, formState: { errors } } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { projectId: '', warehouseId: '', lines: [empty] } }); const { fields, append, remove } = useFieldArray({ control, name: 'lines' }); const projectId = useWatch({ control, name: 'projectId' }); const projectWhs = (warehouses.data?.items ?? []).filter((w) => w.projectId === projectId || (w.warehouseType === 'CORPORATE' && !w.projectId)); const onSubmit = handleSubmit(({ projectId, warehouseId, lines }) => create.mutate({ projectId, warehouseId, remark: undefined, items: lines.filter((l) => l.description).map((l) => ({ description: l.description, bookQuantity: 0, actualQuantity: l.actualQuantity, unit: l.unit })) }, { onSuccess: () => { reset({ projectId, warehouseId, lines: [empty] }); onDone(); } })); return <form onSubmit={onSubmit} className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs"><div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><div><Label htmlFor="opn-project">Project <span aria-hidden="true" className="text-destructive-600">*</span></Label><Controller name="projectId" control={control} render={({ field }) => <Select value={field.value} onValueChange={(v) => { field.onChange(v); reset({ projectId: v, warehouseId: '', lines: [empty] }); }}><SelectTrigger id="opn-project"><SelectValue placeholder="Pilih project…" /></SelectTrigger><SelectContent>{(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}</SelectContent></Select>} />{errors.projectId && <p role="alert" className="text-caption text-destructive-600">{errors.projectId.message}</p>}</div><div><Label htmlFor="opn-wh">Warehouse <span aria-hidden="true" className="text-destructive-600">*</span></Label><Controller name="warehouseId" control={control} render={({ field }) => <Select value={field.value} onValueChange={field.onChange}><SelectTrigger id="opn-wh"><SelectValue placeholder="Pilih…" /></SelectTrigger><SelectContent>{projectWhs.map((w) => <SelectItem key={w.id} value={w.id}>{w.code} - {w.name}</SelectItem>)}</SelectContent></Select>} />{errors.warehouseId && <p role="alert" className="text-caption text-destructive-600">{errors.warehouseId.message}</p>}</div></div><div className="mt-4 overflow-hidden rounded-md border border-neutral-200"><table className="w-full text-left text-body"><thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500"><tr><th className="px-3 py-2">Deskripsi</th><th className="px-3 py-2">Unit</th><th className="px-3 py-2 text-right">Qty Fisik</th><th className="px-3 py-2"></th></tr></thead><tbody>{fields.map((field, index) => <tr key={field.id} className="border-t border-neutral-100"><td className="px-3 py-2"><Input placeholder="Deskripsi (stok book dihitung sistem)" {...register(`lines.${index}.description`)} className="h-8" /></td><td className="px-3 py-2"><Input placeholder="EA" {...register(`lines.${index}.unit`)} className="h-8 w-20" /></td><td className="px-3 py-2"><Input type="number" min={0} {...register(`lines.${index}.actualQuantity`)} className="h-8 w-28" /></td><td className="px-3 py-2 text-right"><Button type="button" variant="ghost" size="sm" onClick={() => remove(index)} disabled={fields.length === 1}>Hapus</Button></td></tr>)}</tbody></table></div><div className="mt-2"><Button type="button" variant="secondary" size="sm" onClick={() => append(empty)}>+ Tambah Baris</Button></div><div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Batal</Button><Button type="submit" loading={create.isPending}>Catat Opname</Button></div>{errors.lines?.root && <p role="alert" className="text-caption text-destructive-600">{errors.lines.root.message}</p>}<p className="mt-2 text-caption text-neutral-500">Selisih opname otomatis membuat Stock Adjustment DRAFT (perlu approve di halaman Adjustment).</p></form>; }
 
-export function OpnameForm({ onDone }: { onDone: () => void }) {
-  const [projectId, setProjectId] = useState('');
-  const [warehouseId, setWarehouseId] = useState('');
-  const [lines, setLines] = useState<{ description: string; actualQuantity: number; unit: string }[]>([{ description: '', actualQuantity: 0, unit: 'EA' }]);
-  const projects = useProjects({ page: 1, pageSize: 100 });
-  const warehouses = useWarehouses({ page: 1, pageSize: 100 });
-  const create = useCreateStockOpname();
-  const projectWhs = (warehouses.data?.items ?? []).filter((w) => w.projectId === projectId || (w.warehouseType === 'CORPORATE' && !w.projectId));
-  const updateLine = (index: number, patch: Partial<{ description: string; actualQuantity: number; unit: string }>) => setLines((prev) => prev.map((line, i) => i === index ? { ...line, ...patch } : line));
-  const onSubmit = () => {
-    if (!projectId || !warehouseId) return;
-    const items = lines.filter((l) => l.description).map((l) => ({ description: l.description, bookQuantity: 0, actualQuantity: l.actualQuantity, unit: l.unit }));
-    if (items.length === 0) return;
-    create.mutate({ projectId, warehouseId, remark: undefined, items }, { onSuccess: () => { setLines([{ description: '', actualQuantity: 0, unit: 'EA' }]); onDone(); } });
-  };
-
-  return (
-    <div className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div><Label htmlFor="opn-project">Project</Label><Select value={projectId} onValueChange={(v) => { setProjectId(v); setWarehouseId(''); }}><SelectTrigger id="opn-project"><SelectValue placeholder="Pilih project…" /></SelectTrigger><SelectContent>{(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}</SelectContent></Select></div>
-        <div><Label htmlFor="opn-wh">Warehouse</Label><Select value={warehouseId} onValueChange={setWarehouseId}><SelectTrigger id="opn-wh"><SelectValue placeholder="Pilih…" /></SelectTrigger><SelectContent>{projectWhs.map((w) => <SelectItem key={w.id} value={w.id}>{w.code} - {w.name}</SelectItem>)}</SelectContent></Select></div>
-      </div>
-      <div className="mt-4 overflow-hidden rounded-md border border-neutral-200">
-        <table className="w-full text-left text-body">
-          <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500"><tr><th className="px-3 py-2">Deskripsi</th><th className="px-3 py-2">Unit</th><th className="px-3 py-2 text-right">Qty Fisik</th><th className="px-3 py-2"></th></tr></thead>
-          <tbody>{lines.map((line, index) => <tr key={index} className="border-t border-neutral-100"><td className="px-3 py-2"><Input placeholder="Deskripsi (stok book dihitung sistem)" value={line.description} onChange={(e) => updateLine(index, { description: e.target.value })} className="h-8" /></td><td className="px-3 py-2"><Input placeholder="EA" value={line.unit} onChange={(e) => updateLine(index, { unit: e.target.value })} className="h-8 w-20" /></td><td className="px-3 py-2"><Input type="number" min={0} value={line.actualQuantity || ''} onChange={(e) => updateLine(index, { actualQuantity: Number(e.target.value) })} className="h-8 w-28" /></td><td className="px-3 py-2 text-right"><Button type="button" variant="ghost" size="sm" onClick={() => setLines((prev) => prev.filter((_, i) => i !== index))} disabled={lines.length === 1}>Hapus</Button></td></tr>)}</tbody>
-        </table>
-      </div>
-      <div className="mt-2"><Button type="button" variant="secondary" size="sm" onClick={() => setLines((prev) => [...prev, { description: '', actualQuantity: 0, unit: 'EA' }])}>+ Tambah Baris</Button></div>
-      <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Batal</Button><Button type="button" onClick={onSubmit} loading={create.isPending}>Catat Opname</Button></div>
-      <p className="mt-2 text-caption text-neutral-500">Selisih opname otomatis membuat Stock Adjustment DRAFT (perlu approve di halaman Adjustment).</p>
-    </div>
-  );
-}
