@@ -2,12 +2,8 @@ import { useNavigate, useSearch } from '@tanstack/react-router';
 
 type SearchRecord = Record<string, unknown>;
 
-function readSearch(): SearchRecord {
-  return useSearch({ strict: false }) as SearchRecord;
-}
-
 export function useUrlFilter(key: string, fallback = ''): [string, (value: string) => void] {
-  const search = readSearch();
+  const search = useSearch({ strict: false }) as SearchRecord;
   const navigate = useNavigate();
   const raw = search[key];
   const value = typeof raw === 'string' ? raw : fallback;
@@ -24,7 +20,7 @@ export function useUrlPagination(pageSize: number): {
   pagination: { pageIndex: number; pageSize: number };
   onPaginationChange: (next: { pageIndex: number; pageSize: number }) => void;
 } {
-  const search = readSearch();
+  const search = useSearch({ strict: false }) as SearchRecord;
   const navigate = useNavigate();
   const page = Math.max(1, Number(search.page) || 1);
   const onPaginationChange = (next: { pageIndex: number; pageSize: number }) => {
