@@ -1,104 +1,154 @@
-import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm, Controller } from 'react-hook-form';
+import { z } from 'zod';
+import { createEmployeeSchema, createProjectAssignmentSchema } from '@aec/api-contracts';
 import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useLegalEntities } from '@/entities/legal-entity';
 import { useProjects } from '@/entities/project';
 import { useCreateAssignment, useCreateEmployee } from '../model/hcm.api';
 import type { Employee } from '@aec/api-contracts';
 
+const employeeSchema = z.object({
+  legalEntityId: z.string().min(1, 'Legal entity wajib dipilih'),
+  name: createEmployeeSchema.shape.name,
+  position: createEmployeeSchema.shape.position,
+  grade: createEmployeeSchema.shape.grade,
+  department: createEmployeeSchema.shape.department,
+});
+type EmployeeValues = z.infer<typeof employeeSchema>;
+
 export function EmployeeForm({ onDone }: { onDone: () => void }) {
-  const [legalEntityId, setLegalEntityId] = useState('');
-  const [name, setName] = useState('');
-  const [position, setPosition] = useState('');
-  const [grade, setGrade] = useState('');
-  const [department, setDepartment] = useState('');
   const entities = useLegalEntities({ page: 1, pageSize: 100 });
   const create = useCreateEmployee();
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<EmployeeValues>({
+    resolver: zodResolver(employeeSchema),
+    defaultValues: { legalEntityId: '', name: '', position: '', grade: '', department: '' },
+  });
 
-  const onSubmit = () => {
-    if (!legalEntityId || !name || !position) return;
+  const onSubmit = handleSubmit((input) =>
     create.mutate(
       {
-        legalEntityId,
-        name,
-        position,
-        grade: grade || undefined,
-        department: department || undefined,
+        legalEntityId: input.legalEntityId,
+        name: input.name,
+        position: input.position,
+        grade: input.grade || undefined,
+        department: input.department || undefined,
       },
-      { onSuccess: () => { setName(''); setPosition(''); setGrade(''); setDepartment(''); onDone(); } },
-    );
-  };
+      { onSuccess: () => { reset(); onDone(); } },
+    )
+  );
 
   return (
-    <div className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+    <form onSubmit={onSubmit} className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="emp-entity">Legal Entity</Label>
-          <Select value={legalEntityId} onValueChange={setLegalEntityId}>
-            <SelectTrigger id="emp-entity">
-              <SelectValue placeholder="Pilih entity…" />
-            </SelectTrigger>
-            <SelectContent>
-              {(entities.data?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code} - {e.legalName}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <Label htmlFor="emp-entity">Legal Entity <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Controller name="legalEntityId" control={control} render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger id="emp-entity">
+                <SelectValue placeholder="Pilih entity…" />
+              </SelectTrigger>
+              <SelectContent>
+                {(entities.data?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code} - {e.legalName}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )} />
+          {errors.legalEntityId && <p className="mt-1 text-caption text-destructive-600">{errors.legalEntityId.message}</p>}
         </div>
-        <div><Label htmlFor="emp-name">Nama</Label><Input id="emp-name" value={name} onChange={(e) => setName(e.target.value)} /></div>
-        <div><Label htmlFor="emp-pos">Posisi</Label><Input id="emp-pos" placeholder="mis. Site Engineer" value={position} onChange={(e) => setPosition(e.target.value)} /></div>
-        <div><Label htmlFor="emp-grade">Grade</Label><Input id="emp-grade" placeholder="mis. E3" value={grade} onChange={(e) => setGrade(e.target.value)} /></div>
-        <div><Label htmlFor="emp-dept">Departemen</Label><Input id="emp-dept" placeholder="mis. Construction" value={department} onChange={(e) => setDepartment(e.target.value)} /></div>
+        <div>
+          <Label htmlFor="emp-name">Nama <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Input id="emp-name" error={!!errors.name} {...register('name')} />
+          {errors.name && <p className="mt-1 text-caption text-destructive-600">{errors.name.message}</p>}
+        </div>
+        <div>
+          <Label htmlFor="emp-pos">Posisi <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Input id="emp-pos" placeholder="mis. Site Engineer" error={!!errors.position} {...register('position')} />
+          {errors.position && <p className="mt-1 text-caption text-destructive-600">{errors.position.message}</p>}
+        </div>
+        <div>
+          <Label htmlFor="emp-grade">Grade</Label>
+          <Input id="emp-grade" placeholder="mis. E3" error={!!errors.grade} {...register('grade')} />
+          {errors.grade && <p className="mt-1 text-caption text-destructive-600">{errors.grade.message}</p>}
+        </div>
+        <div>
+          <Label htmlFor="emp-dept">Departemen</Label>
+          <Input id="emp-dept" placeholder="mis. Construction" error={!!errors.department} {...register('department')} />
+          {errors.department && <p className="mt-1 text-caption text-destructive-600">{errors.department.message}</p>}
+        </div>
       </div>
       <div className="mt-4 flex justify-end gap-2">
         <Button type="button" variant="ghost" onClick={onDone}>Batal</Button>
-        <Button type="button" onClick={onSubmit} loading={create.isPending}>Buat Employee</Button>
+        <Button type="submit" loading={create.isPending}>Buat Employee</Button>
       </div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600">Gagal membuat employee.</p>}
-    </div>
+      {create.isError && <p className="mt-2 text-caption text-destructive-600" role="alert">Gagal membuat employee.</p>}
+    </form>
   );
 }
 
+const assignmentSchema = z.object({
+  projectId: z.string().min(1, 'Project wajib dipilih'),
+  role: createProjectAssignmentSchema.shape.role,
+  allocationPercent: z.string().min(1, 'Alokasi wajib diisi')
+    .refine((v) => Number(v) >= 1 && Number(v) <= 100, 'Alokasi harus 1–100'),
+  exception: z.boolean(),
+});
+type AssignmentValues = z.infer<typeof assignmentSchema>;
+
 export function AssignmentForm({ employee }: { employee: Employee }) {
-  const [projectId, setProjectId] = useState('');
-  const [role, setRole] = useState('');
-  const [allocationPercent, setAllocationPercent] = useState('');
-  const [exception, setException] = useState(false);
   const projects = useProjects({ page: 1, pageSize: 100 });
   const create = useCreateAssignment();
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<AssignmentValues>({
+    resolver: zodResolver(assignmentSchema),
+    defaultValues: { projectId: '', role: '', allocationPercent: '', exception: false },
+  });
 
-  const onSubmit = () => {
-    if (!projectId || !allocationPercent) return;
+  const onSubmit = handleSubmit((input) =>
     create.mutate(
       {
         employeeId: employee.id,
-        projectId,
-        role: role || undefined,
-        allocationPercent: Number(allocationPercent),
-        exceptionApproved: exception || undefined,
+        projectId: input.projectId,
+        role: input.role || undefined,
+        allocationPercent: Number(input.allocationPercent),
+        exceptionApproved: input.exception || undefined,
       },
-      { onSuccess: () => { setProjectId(''); setRole(''); setAllocationPercent(''); setException(false); } },
-    );
-  };
+      { onSuccess: () => { reset(); } },
+    )
+  );
 
   return (
-    <div className="mt-4 flex flex-wrap items-end gap-2 border-t border-neutral-100 pt-4">
+    <form onSubmit={onSubmit} className="mt-4 flex flex-wrap items-end gap-2 border-t border-neutral-100 pt-4">
       <div>
-        <Label htmlFor="asg-project">Project</Label>
-        <Select value={projectId} onValueChange={setProjectId}>
-          <SelectTrigger id="asg-project">
-            <SelectValue placeholder="Pilih project…" />
-          </SelectTrigger>
-          <SelectContent>
-            {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <Label htmlFor="asg-project">Project <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+        <Controller name="projectId" control={control} render={({ field }) => (
+          <Select value={field.value} onValueChange={field.onChange}>
+            <SelectTrigger id="asg-project">
+              <SelectValue placeholder="Pilih project…" />
+            </SelectTrigger>
+            <SelectContent>
+              {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )} />
+        {errors.projectId && <p className="mt-1 text-caption text-destructive-600">{errors.projectId.message}</p>}
       </div>
-      <div><Label htmlFor="asg-role">Peran</Label><Input id="asg-role" placeholder="mis. Site Engineer" value={role} onChange={(e) => setRole(e.target.value)} /></div>
-      <div><Label htmlFor="asg-alloc">Alokasi (%)</Label><Input id="asg-alloc" type="number" min={1} max={100} placeholder="mis. 50" value={allocationPercent} onChange={(e) => setAllocationPercent(e.target.value)} /></div>
-      <label className="flex h-9 items-center gap-2 text-body-sm text-neutral-600">
-        <input type="checkbox" checked={exception} onChange={(e) => setException(e.target.checked)} />
-        Exception &gt;100%
-      </label>
-      <Button onClick={onSubmit} loading={create.isPending}>Tambah Assignment</Button>
-      {create.isError && <p className="text-caption text-destructive-600">Gagal (mungkin alokasi &gt;100% tanpa exception).</p>}
-    </div>
+      <div>
+        <Label htmlFor="asg-role">Peran</Label>
+        <Input id="asg-role" placeholder="mis. Site Engineer" error={!!errors.role} {...register('role')} />
+        {errors.role && <p className="mt-1 text-caption text-destructive-600">{errors.role.message}</p>}
+      </div>
+      <div>
+        <Label htmlFor="asg-alloc">Alokasi (%) <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+        <Input id="asg-alloc" type="number" min={1} max={100} placeholder="mis. 50" error={!!errors.allocationPercent} {...register('allocationPercent')} />
+        {errors.allocationPercent && <p className="mt-1 text-caption text-destructive-600">{errors.allocationPercent.message}</p>}
+      </div>
+      <Controller name="exception" control={control} render={({ field }) => (
+        <label className="flex h-9 items-center gap-2 text-body-sm text-neutral-600">
+          <input type="checkbox" checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />
+          Exception &gt;100%
+        </label>
+      )} />
+      <Button type="submit" loading={create.isPending}>Tambah Assignment</Button>
+      {create.isError && <p className="text-caption text-destructive-600" role="alert">Gagal (mungkin alokasi &gt;100% tanpa exception).</p>}
+    </form>
   );
 }
