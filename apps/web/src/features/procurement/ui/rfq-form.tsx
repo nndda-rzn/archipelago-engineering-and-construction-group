@@ -1,49 +1,61 @@
-import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
+import { z } from 'zod';
+import { createRfqSchema } from '@aec/api-contracts';
 import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useCreateRfq } from '../model/procurement.api';
 
-type RfqLine = { description: string; quantity: number; unit: string };
+const formSchema = z.object({
+  projectId: z.string().min(1, 'Project wajib dipilih'),
+  title: createRfqSchema.shape.title,
+  dueDate: z.string(),
+  lines: z.array(z.object({
+    description: z.string(),
+    quantity: z.number(),
+    unit: z.string(),
+  })).refine((lines) => lines.some((l) => l.description && l.quantity > 0), 'Minimal satu item dengan deskripsi & qty > 0'),
+});
+type FormValues = z.infer<typeof formSchema>;
 
 export function RfqForm({ onDone }: { onDone: () => void }) {
-  const [projectId, setProjectId] = useState('');
-  const [title, setTitle] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [lines, setLines] = useState<RfqLine[]>([]);
   const projects = useProjects({ page: 1, pageSize: 100 });
   const create = useCreateRfq();
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { projectId: '', title: '', dueDate: '', lines: [] },
+  });
+  const { fields, append, remove } = useFieldArray({ control, name: 'lines' });
 
-  const addLine = () => setLines((prev) => [...prev, { description: '', quantity: 1, unit: 'EA' }]);
-  const updateLine = (index: number, patch: Partial<RfqLine>) => setLines((prev) => prev.map((l, i) => (i === index ? { ...l, ...patch } : l)));
-  const removeLine = (index: number) => setLines((prev) => prev.filter((_, i) => i !== index));
-
-  const onSubmit = () => {
-    if (!projectId || !title) return;
-    const items = lines.filter((l) => l.description && l.quantity > 0);
-    if (items.length === 0) return;
+  const onSubmit = handleSubmit((input) => {
+    const items = input.lines.filter((l) => l.description && l.quantity > 0);
     create.mutate(
-      { projectId, title, dueDate: dueDate || undefined, items },
-      { onSuccess: () => { setTitle(''); setDueDate(''); setLines([]); onDone(); } },
+      { projectId: input.projectId, title: input.title, dueDate: input.dueDate || undefined, items },
+      { onSuccess: () => { reset(); onDone(); } },
     );
-  };
+  });
 
   return (
-    <div className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+    <form onSubmit={onSubmit} className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="rfq-project">Project</Label>
-          <Select value={projectId} onValueChange={setProjectId}>
-            <SelectTrigger id="rfq-project">
-              <SelectValue placeholder="Pilih project…" />
-            </SelectTrigger>
-            <SelectContent>
-              {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <Label htmlFor="rfq-project">Project <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Controller name="projectId" control={control} render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger id="rfq-project">
+                <SelectValue placeholder="Pilih project…" />
+              </SelectTrigger>
+              <SelectContent>
+                {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )} />
+          {errors.projectId && <p className="mt-1 text-caption text-destructive-600">{errors.projectId.message}</p>}
         </div>
         <div>
-          <Label htmlFor="rfq-title">Judul</Label>
-          <Input id="rfq-title" placeholder="Pengadaan material…" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <Label htmlFor="rfq-title">Judul <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Input id="rfq-title" placeholder="Pengadaan material…" error={!!errors.title} {...register('title')} />
+          {errors.title && <p className="mt-1 text-caption text-destructive-600">{errors.title.message}</p>}
         </div>
       </div>
 
@@ -58,26 +70,29 @@ export function RfqForm({ onDone }: { onDone: () => void }) {
             </tr>
           </thead>
           <tbody>
-            {lines.map((line, index) => (
-              <tr key={index} className="border-t border-neutral-100">
+            {fields.map((field, index) => (
+              <tr key={field.id} className="border-t border-neutral-100">
                 <td className="px-3 py-2">
-                  <Input value={line.description} placeholder="mis. Baja Profil" onChange={(e) => updateLine(index, { description: e.target.value })} className="h-8 w-full" />
+                  <Input placeholder="mis. Baja Profil" className="h-8 w-full" {...register(`lines.${index}.description`)} />
                 </td>
                 <td className="px-3 py-2">
-                  <Input type="number" min={0.01} value={line.quantity || ''} onChange={(e) => updateLine(index, { quantity: Number(e.target.value) })} className="h-8 w-24 text-right" />
+                  <Controller name={`lines.${index}.quantity`} control={control} render={({ field: f }) => (
+                    <Input type="number" min={0.01} className="h-8 w-24 text-right" value={f.value || ''} onChange={(e) => f.onChange(Number(e.target.value))} />
+                  )} />
                 </td>
                 <td className="px-3 py-2">
-                  <Input value={line.unit} onChange={(e) => updateLine(index, { unit: e.target.value })} className="h-8 w-20" />
+                  <Input className="h-8 w-20" {...register(`lines.${index}.unit`)} />
                 </td>
                 <td className="px-3 py-2 text-right">
-                  <Button type="button" variant="ghost" size="sm" onClick={() => removeLine(index)}>Hapus</Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)}>Hapus</Button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {lines.length === 0 && <p className="p-3 text-caption text-neutral-500">Belum ada item RFQ.</p>}
+        {fields.length === 0 && <p className="p-3 text-caption text-neutral-500">Belum ada item RFQ.</p>}
       </div>
+      {errors.lines && <p className="mt-2 text-caption text-destructive-600">{errors.lines.message}</p>}
 
       <div className="mt-3 flex items-center justify-between">
         <div>
@@ -85,19 +100,18 @@ export function RfqForm({ onDone }: { onDone: () => void }) {
           <input
             id="rfq-due"
             type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
+            {...register('dueDate')}
             className="mt-1 flex h-9 rounded-md border border-neutral-200 bg-white px-3 text-body focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
           />
         </div>
-        <Button type="button" variant="secondary" size="sm" onClick={addLine}>+ Tambah Item</Button>
+        <Button type="button" variant="secondary" size="sm" onClick={() => append({ description: '', quantity: 1, unit: 'EA' })}>+ Tambah Item</Button>
       </div>
 
       <div className="mt-4 flex justify-end gap-2">
         <Button type="button" variant="ghost" onClick={onDone}>Batal</Button>
-        <Button type="button" onClick={onSubmit} loading={create.isPending}>Buat RFQ DRAFT</Button>
+        <Button type="submit" loading={create.isPending}>Buat RFQ DRAFT</Button>
       </div>
       {create.isError && <p className="mt-2 text-caption text-destructive-600">Gagal membuat RFQ.</p>}
-    </div>
+    </form>
   );
 }

@@ -1,53 +1,69 @@
-import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm, Controller } from 'react-hook-form';
+import { z } from 'zod';
+import { createCashForecastSchema } from '@aec/api-contracts';
 import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateCashForecast } from '../model/treasury.api';
 import { useLegalEntities } from '@/entities/legal-entity';
 
+const formSchema = z.object({
+  legalEntityId: z.string().min(1, 'Entity wajib dipilih'),
+  period: createCashForecastSchema.shape.period,
+  receipt: z.string(),
+  ap: z.string(),
+  payroll: z.string(),
+});
+type FormValues = z.infer<typeof formSchema>;
+
 export function ForecastForm() {
   const { data: entities } = useLegalEntities({ page: 1, pageSize: 100 });
   const create = useCreateCashForecast();
-  const [legalEntityId, setLegalEntityId] = useState('');
-  const [period, setPeriod] = useState('');
-  const [receipt, setReceipt] = useState('');
-  const [ap, setAp] = useState('');
-  const [payroll, setPayroll] = useState('');
-  const onSubmit = () => {
-    if (!legalEntityId || !period) return;
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { legalEntityId: '', period: '', receipt: '', ap: '', payroll: '' },
+  });
+
+  const onSubmit = handleSubmit((input) =>
     create.mutate(
-      { legalEntityId, period, expectedReceipt: receipt ? Number(receipt) : undefined, expectedAp: ap ? Number(ap) : undefined, expectedPayroll: payroll ? Number(payroll) : undefined },
-      { onSuccess: () => { setPeriod(''); setReceipt(''); setAp(''); setPayroll(''); } },
-    );
-  };
+      { legalEntityId: input.legalEntityId, period: input.period, expectedReceipt: input.receipt ? Number(input.receipt) : undefined, expectedAp: input.ap ? Number(input.ap) : undefined, expectedPayroll: input.payroll ? Number(input.payroll) : undefined },
+      { onSuccess: () => { reset(); } },
+    )
+  );
+
   return (
-    <div className="mb-4 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+    <form onSubmit={onSubmit} className="mb-4 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="flex items-end gap-3">
         <div>
-          <Label htmlFor="cf-entity">Entity</Label>
-          <Select value={legalEntityId} onValueChange={setLegalEntityId}>
-            <SelectTrigger id="cf-entity"><SelectValue placeholder="Pilih…" /></SelectTrigger>
-            <SelectContent>
-              {(entities?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <Label htmlFor="cf-entity">Entity <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Controller name="legalEntityId" control={control} render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger id="cf-entity"><SelectValue placeholder="Pilih…" /></SelectTrigger>
+              <SelectContent>
+                {(entities?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )} />
+          {errors.legalEntityId && <p className="mt-1 text-caption text-destructive-600">{errors.legalEntityId.message}</p>}
         </div>
         <div>
-          <Label htmlFor="cf-period">Periode</Label>
-          <Input id="cf-period" value={period} onChange={(e) => setPeriod(e.target.value)} placeholder="2026-09" />
+          <Label htmlFor="cf-period">Periode <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Input id="cf-period" placeholder="2026-09" error={!!errors.period} {...register('period')} />
+          {errors.period && <p className="mt-1 text-caption text-destructive-600">{errors.period.message}</p>}
         </div>
         <div>
           <Label htmlFor="cf-receipt">Receipt</Label>
-          <Input id="cf-receipt" type="number" min={0} value={receipt} onChange={(e) => setReceipt(e.target.value)} className="w-32" />
+          <Input id="cf-receipt" type="number" min={0} className="w-32" {...register('receipt')} />
         </div>
         <div>
           <Label htmlFor="cf-ap">AP</Label>
-          <Input id="cf-ap" type="number" min={0} value={ap} onChange={(e) => setAp(e.target.value)} className="w-32" />
+          <Input id="cf-ap" type="number" min={0} className="w-32" {...register('ap')} />
         </div>
         <div>
           <Label htmlFor="cf-payroll">Payroll</Label>
-          <Input id="cf-payroll" type="number" min={0} value={payroll} onChange={(e) => setPayroll(e.target.value)} className="w-32" />
+          <Input id="cf-payroll" type="number" min={0} className="w-32" {...register('payroll')} />
         </div>
-        <Button onClick={onSubmit} loading={create.isPending}>Buat Forecast</Button>
+        <Button type="submit" loading={create.isPending}>Buat Forecast</Button>
       </div>
-    </div>
+    </form>
   );
 }
