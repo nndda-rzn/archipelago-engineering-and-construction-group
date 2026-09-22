@@ -1,6 +1,7 @@
 import { Badge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import type { StockTransfer } from '@aec/api-contracts';
+import { formatDateTime } from '@/shared/lib/format';
 
 const columnHelper = createColumnHelper<StockTransfer>();
 
@@ -10,5 +11,5 @@ export const stockTransferColumns = [
   columnHelper.accessor('toWarehouse', { header: 'Ke', cell: (i) => <span className="text-neutral-700">{i.getValue()?.code ?? '-'}</span> }),
   columnHelper.accessor('items', { header: 'Item', cell: (i) => <span className="tabular-nums text-neutral-600">{i.getValue().length} baris</span> }),
   columnHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={i.getValue() === 'POSTED' ? 'success' : 'default'}>{i.getValue()}</Badge> }),
-  columnHelper.accessor('createdAt', { header: 'Tanggal', cell: (i) => <span className="tabular-nums text-neutral-500">{new Date(i.getValue()).toLocaleString('id-ID')}</span> }),
+  columnHelper.accessor('createdAt', { header: 'Tanggal', cell: (i) => <span className="tabular-nums text-neutral-500">{formatDateTime(i.getValue())}</span> }),
 ];
