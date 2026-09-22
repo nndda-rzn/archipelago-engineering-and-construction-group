@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button } from '@aec/ui';
+import { Button, Input } from '@aec/ui';
 
 export function BudgetRow({
   code,
@@ -31,7 +31,7 @@ export function BudgetRow({
     >
       <span className="w-16 shrink-0 font-mono text-body-sm text-neutral-700">{code}</span>
       <span className="min-w-0 flex-1 truncate text-body-sm text-neutral-900">{name}</span>
-      <input
+      <Input
         type="number"
         inputMode="numeric"
         min={0}
@@ -42,7 +42,7 @@ export function BudgetRow({
           setValue(e.target.value);
           setTouched(true);
         }}
-        className="h-8 w-36 rounded-md border border-neutral-200 bg-white px-2 font-mono text-body-sm text-neutral-900 placeholder:text-neutral-400 hover:border-neutral-300 focus-visible:border-racing-red-400 focus-visible:ring-2 focus-visible:ring-racing-red-400/20"
+        className="h-8 w-36 font-mono text-body-sm"
       />
       <Button size="sm" variant="secondary" onClick={handleSave} disabled={saving || !touched || value === String(amount)}>
         {saving ? 'Menyimpan…' : 'Simpan'}
