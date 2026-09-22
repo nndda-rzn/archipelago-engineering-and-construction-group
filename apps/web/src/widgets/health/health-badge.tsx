@@ -27,7 +27,7 @@ export function HealthBadge() {
     <span className="flex items-center gap-2 text-sm text-neutral-700">
       <span className="inline-block h-2 w-2 rounded-full bg-semantic-success" />
       API sehat
-      <span className="text-xs text-neutral-400">
+      <span className="text-xs text-neutral-500">
         v{data.version} · {new Date(data.timestamp).toLocaleTimeString('id-ID')}
       </span>
     </span>

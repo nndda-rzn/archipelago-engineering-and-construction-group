@@ -88,7 +88,7 @@ export function RoleManagementPage() {
                   <Badge key={permission.code} variant="outline">{permission.code}</Badge>
                 ))}
                 {role.permissions.length === 0 && (
-                  <span className="text-caption text-neutral-400">Belum ada permission</span>
+                  <span className="text-caption text-neutral-500">Belum ada permission</span>
                 )}
               </div>
             </div>
