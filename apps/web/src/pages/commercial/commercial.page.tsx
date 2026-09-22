@@ -14,6 +14,7 @@ import {
   ContractForm,
 } from '@/features/commercial/ui';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
+import { useUrlFilter, useUrlPagination } from '@/shared/lib/use-url-state';
 
 type Tab = 'clients' | 'opportunities' | 'contracts';
 
@@ -30,15 +31,16 @@ const FORM: Record<Tab, React.ComponentType<{ onDone: () => void }>> = {
 };
 
 export function CommercialPage() {
-  const [tab, setTab] = useState<Tab>('clients');
-  const [page, setPage] = useState(1);
+  const [tab, setTab] = useUrlFilter('tab', 'clients') as [Tab, (v: string) => void];
+  const { pagination, onPaginationChange } = useUrlPagination(PAGE_SIZE);
   const [showForm, setShowForm] = useState(false);
 
+  const page = pagination.pageIndex + 1;
   const clients = useClients({ page, pageSize: PAGE_SIZE });
   const opportunities = useOpportunities({ page, pageSize: PAGE_SIZE });
   const contracts = useContracts({ page, pageSize: PAGE_SIZE });
 
-  const gridProps = { page, pageSize: PAGE_SIZE, onPageChange: setPage };
+  const gridProps = { pagination, onPaginationChange };
 
   const ActiveForm = showForm ? FORM[tab] : null;
 
@@ -55,7 +57,7 @@ export function CommercialPage() {
         {TABS.map(({ key, label }) => (
           <button
             key={key}
-            onClick={() => { setTab(key); setPage(1); setShowForm(false); }}
+            onClick={() => { setTab(key); setShowForm(false); }}
             className={`px-4 py-2 text-body font-medium transition-colors ${
               tab === key
                 ? 'border-b-2 border-primary-600 text-primary-600'

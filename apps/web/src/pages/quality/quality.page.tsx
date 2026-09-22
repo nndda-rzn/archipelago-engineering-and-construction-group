@@ -3,6 +3,7 @@ import { Button, DataGrid } from '@aec/ui';
 import { useItps, useInspections, useNcrs, usePunchItems } from '@/features/quality';
 import { ItpForm, InspectionForm, NcrForm, PunchForm, itpColumns, insColumns, ncrColumns, punchColumns } from '@/features/quality/ui';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
+import { useUrlFilter, useUrlPagination } from '@/shared/lib/use-url-state';
 
 type Tab = 'itp' | 'inspections' | 'ncrs' | 'punch';
 
@@ -14,15 +15,15 @@ const TAB_LABELS: Record<Tab, string> = {
 };
 
 export function QualityPage() {
-  const [tab, setTab] = useState<Tab>('itp');
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
+  const [tab, setTab] = useUrlFilter('tab', 'itp') as [Tab, (v: string) => void];
   const [showForm, setShowForm] = useState(false);
+  const { pagination, onPaginationChange } = useUrlPagination(PAGE_SIZE);
   const itps = useItps({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
   const inspections = useInspections({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
   const ncrs = useNcrs({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
   const punch = usePunchItems({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
 
-  const gridProps = { pagination, onPaginationChange: setPagination };
+  const gridProps = { pagination, onPaginationChange };
 
   const tabCount: Record<Tab, number> = {
     itp: itps.data?.total ?? 0,

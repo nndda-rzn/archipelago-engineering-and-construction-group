@@ -17,11 +17,12 @@ import {
   trmColumns,
 } from '@/features/engineering/ui';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
+import { useUrlFilter, useUrlPagination } from '@/shared/lib/use-url-state';
 
 export function EngineeringPage() {
-  const [tab, setTab] = useState<EngTab>('deliverables');
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
+  const [tab, setTab] = useUrlFilter('tab', 'deliverables') as [EngTab, (v: string) => void];
   const [showForm, setShowForm] = useState(false);
+  const { pagination, onPaginationChange } = useUrlPagination(PAGE_SIZE);
 
   const deliverables = useDeliverables({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
   const drawings = useDrawings({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
@@ -29,7 +30,7 @@ export function EngineeringPage() {
   const submittals = useSubmittals({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
   const transmittals = useTransmittals({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
 
-  const gridProps = { pagination, onPaginationChange: setPagination };
+  const gridProps = { pagination, onPaginationChange };
 
   return (
     <div className="p-6">

@@ -3,10 +3,11 @@ import { Button, DataGrid } from '@aec/ui';
 import { usePrs } from '@/features/procurement';
 import { PurchaseRequisitionForm, purchaseRequisitionColumns } from '@/features/procurement/ui';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
+import { useUrlPagination } from '@/shared/lib/use-url-state';
 
 export function PurchaseRequisitionPage() {
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
   const [showForm, setShowForm] = useState(false);
+  const { pagination, onPaginationChange } = useUrlPagination(PAGE_SIZE);
   const { data, isLoading, isError, refetch } = usePrs({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
 
   return (
@@ -20,7 +21,7 @@ export function PurchaseRequisitionPage() {
       </div>
       {showForm && <PurchaseRequisitionForm onDone={() => setShowForm(false)} />}
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-        <DataGrid columns={purchaseRequisitionColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={setPagination} isLoading={isLoading} isError={isError} onRetry={() => refetch()} emptyMessage="Belum ada PR" exportFilename="purchase-requisitions" />
+        <DataGrid columns={purchaseRequisitionColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={onPaginationChange} isLoading={isLoading} isError={isError} onRetry={() => refetch()} emptyMessage="Belum ada PR" exportFilename="purchase-requisitions" />
       </div>
     </div>
   );
