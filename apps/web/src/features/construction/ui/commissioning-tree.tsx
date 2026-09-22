@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, type BadgeVariant } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, type BadgeVariant } from '@aec/ui';
 import { useUpdateCommissioningStatus } from '../model/work-package.api';
 import type { CommissioningSystem } from '@aec/api-contracts';
 
@@ -26,7 +26,8 @@ function TreeRow({ node, depth, projectId }: { node: CommissioningSystem; depth:
         <span className="text-body-sm text-neutral-800">{node.name}</span>
         <Badge variant={commissioningStatusVariant[node.status]}>{statusLabel[node.status]}</Badge>
         <div className="ml-auto flex gap-1">
-          {node.status !== 'COMPLETED' && <Button size="sm" variant="secondary" onClick={() => updateStatus.mutate({ id: node.id, status: node.status === 'NOT_STARTED' ? 'IN_PROGRESS' : 'COMPLETED' })}>{node.status === 'NOT_STARTED' ? 'Mulai' : 'Selesai'}</Button>}
+          {node.status === 'NOT_STARTED' && <Button size="sm" variant="secondary" onClick={() => updateStatus.mutate({ id: node.id, status: 'IN_PROGRESS' })}>Mulai</Button>}
+          {node.status === 'IN_PROGRESS' && <ConfirmActionButton size="sm" variant="secondary" confirmTitle="Tandai selesai?" confirmDescription="Status commissioning akan berubah menjadi selesai." confirmLabel="Selesai" onConfirm={() => updateStatus.mutate({ id: node.id, status: 'COMPLETED' })}>Selesai</ConfirmActionButton>}
         </div>
       </div>
       {showChildren && node.children?.map((c) => <TreeRow key={c.id} node={c} depth={depth + 1} projectId={projectId} />)}

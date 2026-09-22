@@ -1,4 +1,4 @@
-import { Badge, Button } from '@aec/ui';
+import { Badge, ConfirmActionButton } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useRevokePermit } from '../model/hse.api';
 import type { PermitToWork } from '@aec/api-contracts';
@@ -9,7 +9,7 @@ const permitHelper = createColumnHelper<PermitToWork>();
 function RevokePermitCell({ permit }: { permit: PermitToWork }) {
   const revoke = useRevokePermit();
   if (permit.status !== 'ACTIVE') return null;
-  return <Button size="sm" variant="ghost" loading={revoke.isPending} onClick={() => revoke.mutate({ id: permit.id })}>Cabut</Button>;
+  return <ConfirmActionButton size="sm" variant="ghost" loading={revoke.isPending} confirmTitle="Cabut izin kerja?" confirmDescription="Permit to Work akan dicabut dan tidak berlaku lagi." confirmLabel="Cabut" onConfirm={() => revoke.mutate({ id: permit.id })}>Cabut</ConfirmActionButton>;
 }
 
 export const permitColumns = [

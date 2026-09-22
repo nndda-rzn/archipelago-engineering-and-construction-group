@@ -1,4 +1,4 @@
-import { Button, StatusBadge } from '@aec/ui';
+import { Button, ConfirmActionButton, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useRejectSubcontractProgress, useVerifySubcontractProgress } from '../model/subcontract.api';
 import type { Subcontract, SubcontractProgress } from '@aec/api-contracts';
@@ -75,9 +75,9 @@ function ProgressActions({ entry }: { entry: SubcontractProgress }) {
       <Button size="sm" variant="secondary" loading={verify.isPending} onClick={() => verify.mutate({ subcontractId: entry.subcontractId, progressId: entry.id })}>
         Verifikasi
       </Button>
-      <Button size="sm" variant="ghost" onClick={() => reject.mutate({ subcontractId: entry.subcontractId, progressId: entry.id })}>
+      <ConfirmActionButton size="sm" variant="ghost" confirmTitle="Tolak progress?" confirmDescription="Pengajuan progress akan ditolak." confirmLabel="Tolak" onConfirm={() => reject.mutate({ subcontractId: entry.subcontractId, progressId: entry.id })}>
         Tolak
-      </Button>
+      </ConfirmActionButton>
     </div>
   );
 }

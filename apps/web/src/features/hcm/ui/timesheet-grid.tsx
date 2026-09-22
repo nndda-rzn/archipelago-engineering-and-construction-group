@@ -1,4 +1,4 @@
-import { Badge, Button, type BadgeVariant } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, type BadgeVariant } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useApproveTimesheet } from '../model/hcm.api';
 import type { Timesheet } from '@aec/api-contracts';
@@ -25,5 +25,5 @@ export const timesheetColumns = [
 function TimesheetApproveButtons({ entry }: { entry: Timesheet }) {
   const approve = useApproveTimesheet();
   if (entry.status !== 'SUBMITTED') return null;
-  return <div className="flex items-center gap-1"><Button size="sm" variant="secondary" loading={approve.isPending} onClick={() => approve.mutate({ id: entry.id })}>Setujui</Button><Button size="sm" variant="ghost" onClick={() => approve.mutate({ id: entry.id, status: 'REJECTED' })}>Tolak</Button></div>;
+  return <div className="flex items-center gap-1"><Button size="sm" variant="secondary" loading={approve.isPending} onClick={() => approve.mutate({ id: entry.id })}>Setujui</Button><ConfirmActionButton size="sm" variant="ghost" confirmTitle="Tolak timesheet?" confirmDescription="Timesheet akan ditolak." confirmLabel="Tolak" onConfirm={() => approve.mutate({ id: entry.id, status: 'REJECTED' })}>Tolak</ConfirmActionButton></div>;
 }
