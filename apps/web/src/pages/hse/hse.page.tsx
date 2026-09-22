@@ -66,7 +66,7 @@ export function HsePage() {
 
       {tab === 'incidents' && (
         <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-          <DataGrid columns={incidentColumns} data={incidents.data?.items ?? []} rowCount={incidents.data?.total ?? 0} isLoading={incidents.isLoading} isError={incidents.isError} onRetry={() => incidents.refetch()} onRowClick={(row) => setSelectedIncident(row.original)} emptyMessage="Belum ada insiden" {...gridProps} />
+          <DataGrid columns={incidentColumns} data={incidents.data?.items ?? []} rowCount={incidents.data?.total ?? 0} isLoading={incidents.isLoading} isError={incidents.isError} onRetry={() => incidents.refetch()} onRowClick={(row) => setSelectedIncident(row.original)} selectedRowId={selectedIncident?.id} getRowId={(row) => row.id} emptyMessage="Belum ada insiden" {...gridProps} />
         </div>
       )}
 

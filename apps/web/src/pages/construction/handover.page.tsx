@@ -37,7 +37,7 @@ export function HandoverPage() {
       {!projectId && <p className="text-body-sm text-neutral-500">Pilih project untuk melihat handover.</p>}
       {projectId && (
         <>
-          <DataGrid columns={handoverColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={setPagination} isLoading={isLoading} isError={isError} onRetry={refetch} onRowClick={(row) => setSelected(row.original)} emptyMessage="Belum ada handover" />
+          <DataGrid columns={handoverColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={setPagination} isLoading={isLoading} isError={isError} onRetry={refetch} onRowClick={(row) => setSelected(row.original)} selectedRowId={selected?.id} getRowId={(row) => row.id} emptyMessage="Belum ada handover" />
           <p className="mt-2 text-caption text-neutral-500">Klik baris untuk detail & verifikasi dokumen.</p>
         </>
       )}

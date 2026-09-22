@@ -30,6 +30,10 @@ export interface DataGridProps<TData> {
   onSortingChange?: (sorting: SortingState) => void;
 
   onRowClick?: (row: Row<TData>) => void;
+  /** Baris yang sedang aktif/terpilih (highlight). Butuh `getRowId` agar cocok. */
+  selectedRowId?: string;
+  /** Id unik per baris agar `selectedRowId` dapat dicocokkan; default index TanStack. */
+  getRowId?: (originalRow: TData, index: number) => string;
 
   exportFilename?: string;
 
@@ -68,6 +72,8 @@ export function DataGrid<TData>({
   sorting,
   onSortingChange,
   onRowClick,
+  selectedRowId,
+  getRowId,
   exportFilename,
   density = 'compact',
   hideToolbar,
@@ -80,6 +86,7 @@ export function DataGrid<TData>({
   const table = useReactTable({
     data,
     columns,
+    getRowId,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: sorting !== undefined ? getSortedRowModel() : undefined,
     manualPagination: isServer,
@@ -198,19 +205,23 @@ export function DataGrid<TData>({
                 </td>
               </tr>
             ) : (
-              table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className={`border-b border-neutral-100 last:border-0 hover:bg-neutral-50 ${onRowClick ? 'cursor-pointer' : ''}`}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className={density === 'compact' ? 'px-2 py-1.5' : 'px-4 py-3'}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))
+              table.getRowModel().rows.map((row) => {
+                const isSelected = selectedRowId !== undefined && row.id === selectedRowId;
+                return (
+                  <tr
+                    key={row.id}
+                    aria-selected={selectedRowId !== undefined ? isSelected : undefined}
+                    className={`border-b border-neutral-100 last:border-0 ${isSelected ? 'bg-racing-red-50' : 'hover:bg-neutral-50'} ${onRowClick ? 'cursor-pointer' : ''}`}
+                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className={density === 'compact' ? 'px-2 py-1.5' : 'px-4 py-3'}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
