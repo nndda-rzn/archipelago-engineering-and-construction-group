@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from '@tanstack/react-router';
 import { ChevronDown, Menu, X } from 'lucide-react';
 import { cn } from '@aec/ui';
@@ -13,6 +13,52 @@ export function AppShell() {
     return Object.fromEntries(navGroups.map((g) => [g.label, saved[g.label] ?? g.defaultCollapsed ?? false]));
   });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const drawerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const panel = drawerRef.current;
+    if (!panel) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+
+    const getFocusable = () =>
+      Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((el) => el.offsetParent !== null);
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMobileOpen(false);
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const focusable = getFocusable();
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    const first = getFocusable()[0];
+    first?.focus();
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, [mobileOpen]);
 
   const navigateAndClose = () => {
     setMobileOpen(false);
@@ -121,7 +167,7 @@ export function AppShell() {
             onClick={() => setMobileOpen(false)}
             className="absolute inset-0 bg-neutral-950/40"
           />
-          <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-neutral-200 bg-white shadow-lg">
+          <aside ref={drawerRef} className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-neutral-200 bg-white shadow-lg">
             <div className="flex items-center justify-between pr-2">
               <div className="flex items-center gap-2 px-4 py-4" translate="no">
                 <span className="flex h-7 w-7 items-center justify-center rounded bg-racing-red-600 text-h2 font-bold text-white">A</span>
