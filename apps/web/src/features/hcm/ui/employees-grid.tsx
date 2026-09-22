@@ -1,4 +1,4 @@
-import { StatusBadge, Button } from '@aec/ui';
+import { StatusBadge, Button, ConfirmActionButton } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useChangeEmployeeStatus } from '../model/hcm.api';
 import type { Employee, ProjectAssignment } from '@aec/api-contracts';
@@ -49,13 +49,13 @@ function StatusButtons({ employee }: { employee: Employee }) {
           Aktifkan
         </Button>
       ) : (
-        <Button size="sm" variant="ghost" loading={change.isPending} onClick={() => change.mutate({ id: employee.id, status: 'INACTIVE' })}>
+        <ConfirmActionButton size="sm" variant="ghost" loading={change.isPending} confirmTitle="Nonaktifkan karyawan?" confirmDescription="Karyawan akan berstatus nonaktif." confirmLabel="Nonaktifkan" onConfirm={() => change.mutate({ id: employee.id, status: 'INACTIVE' })}>
           Nonaktifkan
-        </Button>
+        </ConfirmActionButton>
       )}
-      <Button size="sm" variant="ghost" className="text-destructive-600" loading={change.isPending} onClick={() => change.mutate({ id: employee.id, status: 'LEAVER' })}>
+      <ConfirmActionButton size="sm" variant="ghost" className="text-destructive-600" loading={change.isPending} confirmTitle="Ubah ke Leaver?" confirmDescription="Karyawan akan berstatus Leaver secara permanen dan kehilangan akses sistem." confirmLabel="Leaver" onConfirm={() => change.mutate({ id: employee.id, status: 'LEAVER' })}>
         Leaver
-      </Button>
+      </ConfirmActionButton>
     </div>
   );
 }

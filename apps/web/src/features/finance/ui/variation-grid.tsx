@@ -1,4 +1,4 @@
-import { Badge, Button, StatusBadge } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useApproveVariation, useRejectVariation } from '../model/variation.api';
 import type { Variation } from '@aec/api-contracts';
@@ -61,9 +61,9 @@ function ActionButtons({ variation }: { variation: Variation }) {
       <Button size="sm" variant="secondary" loading={approve.isPending} onClick={() => approve.mutate({ id: variation.id })}>
         Setujui
       </Button>
-      <Button size="sm" variant="ghost" onClick={() => reject.mutate({ id: variation.id })}>
+      <ConfirmActionButton size="sm" variant="ghost" confirmTitle="Tolak variation?" confirmDescription="Variation order akan ditolak." confirmLabel="Tolak" onConfirm={() => reject.mutate({ id: variation.id })}>
         Tolak
-      </Button>
+      </ConfirmActionButton>
     </div>
   );
 }

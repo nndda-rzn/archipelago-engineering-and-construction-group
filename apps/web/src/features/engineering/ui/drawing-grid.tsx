@@ -1,4 +1,4 @@
-import { Badge, Button } from '@aec/ui';
+import { Badge, ConfirmActionButton } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { usePublishDrawing } from '../model/engineering.api';
 import type { Drawing } from '@aec/api-contracts';
@@ -10,9 +10,9 @@ export function DrwPublishBtn({ row }: { row: Drawing }) {
   const publish = usePublishDrawing();
   if (row.status === 'PUBLISHED') return null;
   return (
-    <Button size="sm" variant="secondary" loading={publish.isPending} onClick={() => publish.mutate({ id: row.id })}>
+    <ConfirmActionButton size="sm" variant="secondary" loading={publish.isPending} confirmTitle="Publish drawing?" confirmDescription="Drawing yang dipublish bersifat immutable dan tidak dapat diubah." confirmLabel="Publish" onConfirm={() => publish.mutate({ id: row.id })}>
       Publish
-    </Button>
+    </ConfirmActionButton>
   );
 }
 

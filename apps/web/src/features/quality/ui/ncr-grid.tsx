@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, Input, StatusBadge } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, Input, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useDisposeNcr, useReinspectNcr } from '../model/quality.api';
 import type { Ncr } from '@aec/api-contracts';
@@ -28,9 +28,9 @@ function NcrActions({ ncr }: { ncr: Ncr }) {
           <Button size="sm" variant="secondary" loading={reinspect.isPending} onClick={() => reinspect.mutate({ id: ncr.id, result: 'PASS' })}>
             Re-inspeksi PASS
           </Button>
-          <Button size="sm" variant="ghost" loading={reinspect.isPending} onClick={() => reinspect.mutate({ id: ncr.id, result: 'FAIL' })}>
+          <ConfirmActionButton size="sm" variant="ghost" loading={reinspect.isPending} confirmTitle="Tandai gagal?" confirmDescription="NCR akan ditandai gagal inspeksi." confirmLabel="FAIL" onConfirm={() => reinspect.mutate({ id: ncr.id, result: 'FAIL' })}>
             FAIL
-          </Button>
+          </ConfirmActionButton>
         </>
       ) : null}
     </div>

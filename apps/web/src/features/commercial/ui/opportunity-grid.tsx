@@ -1,4 +1,4 @@
-import { Badge, Button } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useUpdateOpportunityStage } from '../model/commercial.api';
 import type { Opportunity } from '@aec/api-contracts';
@@ -22,9 +22,9 @@ export function OppAdvanceBtn({ opp }: { opp: Opportunity }) {
       <Button size="sm" variant="secondary" loading={update.isPending} onClick={() => update.mutate({ id: opp.id, stage: nextStage, probability: Math.min(opp.probability + 15, 100) })}>
         → {nextStage}
       </Button>
-      <Button size="sm" variant="ghost" loading={update.isPending} onClick={() => update.mutate({ id: opp.id, stage: 'LOST' })}>
+      <ConfirmActionButton size="sm" variant="ghost" loading={update.isPending} confirmTitle="Tandai Lost?" confirmDescription="Opportunity akan ditandai sebagai Lost." confirmLabel="Lost" onConfirm={() => update.mutate({ id: opp.id, stage: 'LOST' })}>
         Lost
-      </Button>
+      </ConfirmActionButton>
     </div>
   );
 }
