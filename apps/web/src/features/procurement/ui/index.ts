@@ -3,7 +3,6 @@ export { ratingColumns, VendorRatingGrid } from './vendor-rating-grid';
 export { CommercialEvalTable } from './commercial-eval-table';
 export { VendorPerformanceSummaryTable } from './vendor-performance-table';
 export { pcColumns } from './po-change-grid';
-export { statusVariant } from './procurement-status';
 export { PoChangeForm } from './po-change-form';
 export { VendorRatingForm } from './vendor-rating-form';
 export { BudgetCheckSection, PoChangeSection, VendorPerformanceSection } from './procurement-hardening-sections';

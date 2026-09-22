@@ -1,16 +1,8 @@
-import { Badge, Button, type BadgeVariant } from '@aec/ui';
+import { Badge, Button, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useApproveVariation, useRejectVariation } from '../model/variation.api';
 import type { Variation } from '@aec/api-contracts';
 import { formatIdr as fmt } from '@/shared/lib/format';
-
-type VariationStatus = 'POTENTIAL' | 'APPROVED' | 'REJECTED';
-
-const statusVariant: Record<VariationStatus, BadgeVariant> = {
-  POTENTIAL: 'default',
-  APPROVED: 'success',
-  REJECTED: 'warning',
-};
 
 const columnHelper = createColumnHelper<Variation>();
 
@@ -51,7 +43,7 @@ export const variationColumns = [
   }),
   columnHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={statusVariant[info.getValue() as VariationStatus]}>{info.getValue()}</Badge>,
+    cell: (info) => <StatusBadge status={info.getValue()} />,
   }),
   columnHelper.display({
     id: 'actions',

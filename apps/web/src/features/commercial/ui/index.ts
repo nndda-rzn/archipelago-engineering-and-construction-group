@@ -10,4 +10,3 @@ export * from './opportunity-grid';
 export * from './opportunity-form';
 export * from './contract-grid';
 export * from './contract-form';
-export { commercialStatusVariant } from './commercial-status';

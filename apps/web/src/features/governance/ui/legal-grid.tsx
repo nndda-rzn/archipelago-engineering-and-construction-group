@@ -1,9 +1,7 @@
-import { Badge, Button } from '@aec/ui';
+import { Badge, Button, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useUpdateLegalCaseStatus } from '../model/governance.api';
 import type { LegalCase } from '@aec/api-contracts';
-import { statusVariant } from './governance-status';
-import type { GovernanceStatus } from './governance-status';
 
 const legalHelper = createColumnHelper<LegalCase>();
 
@@ -23,6 +21,6 @@ export const legalColumns = [
   legalHelper.accessor('title', { header: 'Judul', cell: (info) => <span className="max-w-xs truncate text-neutral-800">{info.getValue()}</span> }),
   legalHelper.accessor('caseType', { header: 'Tipe', cell: (info) => <Badge variant="default">{info.getValue()}</Badge> }),
   legalHelper.accessor('counterpart', { header: 'Pihak Lawan', cell: (info) => <span className="text-neutral-600">{info.getValue() ?? '-'}</span> }),
-  legalHelper.accessor('status', { header: 'Status', cell: (info) => <Badge variant={statusVariant[info.getValue() as GovernanceStatus]}>{info.getValue()}</Badge> }),
+  legalHelper.accessor('status', { header: 'Status', cell: (info) => <StatusBadge status={info.getValue()} /> }),
   legalHelper.display({ id: 'actions', header: '', cell: ({ row }) => <LegalCaseActions legal={row.original} /> }),
 ];

@@ -1,15 +1,8 @@
 import { useState } from 'react';
-import { Badge, type BadgeVariant, Button, ConfirmActionButton, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, StatusBadge } from '@aec/ui';
 import { useAddWorkflowStep, usePublishWorkflow, useNewWorkflowVersion, type WorkflowDefinition } from '../model/approval.api';
 import { formatNumber } from '@/shared/lib/format';
 
-type WorkflowStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
-
-const statusVariant: Record<WorkflowStatus, BadgeVariant> = {
-  DRAFT: 'default',
-  ACTIVE: 'success',
-  ARCHIVED: 'warning',
-};
 
 const opLabel: Record<string, string> = {
   '>': '>', '<': '<', '>=': '≥', '<=': '≤', '==': '=',
@@ -51,7 +44,7 @@ export function WorkflowCard({ workflow }: { workflow: WorkflowDefinition }) {
         <div>
           <div className="flex items-center gap-2">
             <span className="font-mono text-body font-semibold text-neutral-900">{workflow.code}</span>
-            <Badge variant={statusVariant[workflow.status as WorkflowStatus]}>v{workflow.version} · {workflow.status}</Badge>
+            <StatusBadge status={workflow.status} label={`v${workflow.version} · ${workflow.status}`} />
           </div>
           <p className="mt-1 text-caption text-neutral-500">{workflow.transactionType} — {workflow.description ?? workflow.name}</p>
         </div>

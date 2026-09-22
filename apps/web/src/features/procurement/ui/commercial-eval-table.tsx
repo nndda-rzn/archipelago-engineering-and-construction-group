@@ -1,7 +1,6 @@
-import { Badge } from '@aec/ui';
+import { Badge, StatusBadge } from '@aec/ui';
 import type { CommercialEvaluation } from '@/features/procurement';
 import { formatIdr as fmt } from '@/shared/lib/format';
-import { statusVariant, type ProcurementStatus } from './procurement-status';
 
 export function CommercialEvalTable({ data }: { data: CommercialEvaluation }) {
   return (
@@ -26,7 +25,7 @@ export function CommercialEvalTable({ data }: { data: CommercialEvaluation }) {
               <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-600">{i.leadTimeDays} hari</td>
               <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-800">{i.normalizedScore.toLocaleString('id-ID')}</td>
               <td className="px-4 py-2">
-                <Badge variant={statusVariant[i.technicalStatus as ProcurementStatus]}>{i.technicalStatus}</Badge>
+                <StatusBadge status={i.technicalStatus} />
               </td>
               <td className="px-4 py-2">{i.isWinner ? <Badge variant="success">Winner</Badge> : '-'}</td>
             </tr>

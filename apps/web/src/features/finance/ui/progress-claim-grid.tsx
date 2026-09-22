@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, Input, type BadgeVariant } from '@aec/ui';
+import { Badge, Button, Input, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useCertifyClaim } from '../model/progress-claim.api';
 import type { ProgressClaim } from '@aec/api-contracts';
@@ -10,10 +10,6 @@ export const claimTypeLabel: Record<string, string> = {
 };
 
 export type ProgressClaimStatus = 'DRAFT' | 'CERTIFIED' | 'REJECTED' | 'REVISED';
-
-export const statusVariant: Record<ProgressClaimStatus, BadgeVariant> = {
-  DRAFT: 'default', CERTIFIED: 'success', REJECTED: 'warning', REVISED: 'warning',
-};
 
 const columnHelper = createColumnHelper<ProgressClaim>();
 
@@ -30,7 +26,7 @@ export const progressClaimColumns = [
   columnHelper.accessor('retentionRate', { header: 'Retensi', cell: (i) => { const rate = i.getValue(); const row = i.row.original; if (rate == null || row.status !== 'CERTIFIED') return '-'; return <span className="font-mono tabular-nums text-neutral-600">{row.retentionAmount != null ? `${fmt(row.retentionAmount)} (${rate}%)` : `${rate}%`}</span>; } }),
   columnHelper.accessor('netCertifiedAmount', { header: 'Net', cell: (i) => i.getValue() != null ? <span className="font-mono font-medium tabular-nums text-neutral-800">{fmt(i.getValue()!)}</span> : '-' }),
   columnHelper.accessor('cumulativeRecovered', { header: 'DP Kembali', cell: (i) => { const row = i.row.original; const value = i.getValue(); if (row.status !== 'CERTIFIED') return '-'; return value != null ? <span className="font-mono tabular-nums text-warning-700">{fmt(value)}</span> : '-'; } }),
-  columnHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={statusVariant[i.getValue() as ProgressClaimStatus]}>{i.getValue()}</Badge> }),
+  columnHelper.accessor('status', { header: 'Status', cell: (i) => <StatusBadge status={i.getValue()} /> }),
   columnHelper.display({ id: 'actions', header: '', cell: ({ row }) => <CertifyButton claim={row.original} /> }),
 ];
 

@@ -1,18 +1,10 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, ConfirmActionButton, DataGrid } from '@aec/ui';
+import { Button, ConfirmActionButton, DataGrid, StatusBadge } from '@aec/ui';
 import { usePostVendorInvoice, useVendorInvoices, type VendorInvoice } from '@/features/finance';
 import { InvoiceForm } from '@/features/finance';
 import { formatIdr } from '@/shared/lib/format';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
-
-const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
-  DRAFT: 'default',
-  MATCHED: 'success',
-  POSTED: 'warning',
-  REJECTED: 'default',
-  CANCELLED: 'default',
-};
 
 const columnHelper = createColumnHelper<VendorInvoice>();
 
@@ -39,7 +31,7 @@ const columns = [
   }),
   columnHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={statusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge>,
+    cell: (info) => <StatusBadge status={info.getValue()} />,
   }),
   columnHelper.display({
     id: 'actions',

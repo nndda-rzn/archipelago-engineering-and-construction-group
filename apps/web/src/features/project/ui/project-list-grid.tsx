@@ -1,13 +1,7 @@
-import { Badge, EmptyCell, type BadgeVariant } from '@aec/ui';
+import { EmptyCell, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import type { Project } from '@aec/api-contracts';
 import { formatIdr } from '@/shared/lib/format';
-
-type ProjectStatus = 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CLOSED';
-
-const statusVariant: Record<ProjectStatus, BadgeVariant> = {
-  PLANNING: 'info', ACTIVE: 'success', ON_HOLD: 'warning', COMPLETED: 'default', CLOSED: 'muted',
-};
 const helper = createColumnHelper<Project>();
 
 export const projectColumns = [
@@ -16,5 +10,5 @@ export const projectColumns = [
   helper.accessor('client', { header: 'Klien', cell: (i) => <span className="text-neutral-600">{i.getValue()}</span> }),
   helper.accessor('location', { header: 'Lokasi', cell: (i) => <span className="text-neutral-600">{i.getValue() ?? <EmptyCell />}</span> }),
   helper.accessor('contractValue', { header: 'Nilai Kontrak', cell: (i) => <span className="font-mono tabular-nums text-neutral-700">{i.getValue() != null ? formatIdr(i.getValue()!) : <EmptyCell />}</span> }),
-  helper.accessor('status', { header: 'Status', cell: ({ row }) => <Badge variant={statusVariant[row.original.status as ProjectStatus]}>{row.original.status}</Badge> }),
+  helper.accessor('status', { header: 'Status', cell: ({ row }) => <StatusBadge status={row.original.status} /> }),
 ];

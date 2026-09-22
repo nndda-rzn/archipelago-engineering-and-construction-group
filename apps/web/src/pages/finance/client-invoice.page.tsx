@@ -1,16 +1,9 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, ConfirmActionButton, DataGrid, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
+import { Button, ConfirmActionButton, DataGrid, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, StatusBadge } from '@aec/ui';
 import { useClientInvoices, useCreateClientInvoice, usePostClientInvoice, useProgressClaims, type ClientInvoice } from '@/features/finance';
 import { formatIdr as fmt } from '@/shared/lib/format';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
-
-const statusVariant: Record<string, 'default' | 'success' | 'warning'> = {
-  DRAFT: 'default',
-  POSTED: 'success',
-  PAID: 'success',
-  CANCELLED: 'warning',
-};
 
 const columnHelper = createColumnHelper<ClientInvoice>();
 
@@ -33,7 +26,7 @@ const columns = [
   }),
   columnHelper.accessor('status', {
     header: 'Status',
-    cell: (info) => <Badge variant={statusVariant[info.getValue()] ?? 'default'}>{info.getValue()}</Badge>,
+    cell: (info) => <StatusBadge status={info.getValue()} />,
   }),
   columnHelper.display({
     id: 'actions',

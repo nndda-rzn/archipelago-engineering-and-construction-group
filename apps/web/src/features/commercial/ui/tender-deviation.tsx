@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Badge, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
+import { Badge, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, StatusBadge } from '@aec/ui';
 import { useCreateDeviation } from '../model/tender.api';
 import type { ContractDeviation } from '@aec/api-contracts';
-import { statusVariant, type TenderStatus, ApproveDeviationBtn, RejectDeviationBtn } from './tender-grid';
+import { ApproveDeviationBtn, RejectDeviationBtn } from './tender-grid';
 import type { OppOption } from './tender-types';
 
 export function DeviationPanel({
@@ -74,7 +74,7 @@ export function DeviationPanel({
                 <td className="px-4 py-2 max-w-[200px] truncate text-neutral-600">{d.aecPosition}</td>
                 <td className="px-4 py-2"><Badge variant={d.risk === 'HIGH' ? 'warning' : 'default'}>{d.risk}</Badge></td>
                 <td className="px-4 py-2 text-neutral-600">{d.owner}</td>
-                <td className="px-4 py-2"><Badge variant={statusVariant[d.status as TenderStatus]}>{d.status}</Badge></td>
+                <td className="px-4 py-2"><StatusBadge status={d.status} /></td>
                 <td className="px-4 py-2">
                   {d.status === 'OPEN' && (
                     <div className="flex gap-1">

@@ -1,12 +1,6 @@
-import { Badge } from '@aec/ui';
+import { Badge, StatusBadge } from '@aec/ui';
 import { useExecutiveDashboard, useAnomalies, type Anomaly } from '@/features/analytics';
 import { formatIdr as fmt } from '@/shared/lib/format';
-
-const severityVariant: Record<string, 'default' | 'success' | 'warning'> = {
-  LOW: 'success',
-  MEDIUM: 'default',
-  HIGH: 'warning',
-};
 
 function KpiCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -22,7 +16,7 @@ function AnomalyRow({ anomaly }: { anomaly: Anomaly }) {
   return (
     <div className="flex items-center justify-between gap-4 border-b border-neutral-100 py-2 last:border-0">
       <div className="flex items-center gap-3">
-        <Badge variant={severityVariant[anomaly.severity] ?? 'default'}>{anomaly.severity}</Badge>
+        <StatusBadge status={anomaly.severity} />
         <span className="font-mono text-caption text-neutral-500">{anomaly.type}</span>
         {anomaly.projectCode && <span className="font-mono text-caption text-neutral-500">{anomaly.projectCode}</span>}
       </div>
