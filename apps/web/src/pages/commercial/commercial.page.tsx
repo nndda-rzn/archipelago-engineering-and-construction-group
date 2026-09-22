@@ -45,7 +45,7 @@ export function CommercialPage() {
   return (
     <div className="space-y-4 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-heading-2 font-semibold text-neutral-900">Commercial</h1>
+        <h1 className="text-h1 text-neutral-950">Commercial</h1>
         <Button onClick={() => setShowForm((v) => !v)}>
           {showForm ? 'Tutup' : '+ Baru'}
         </Button>

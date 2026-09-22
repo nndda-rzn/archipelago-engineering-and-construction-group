@@ -34,7 +34,7 @@ export function CreateDailyReportForm({ projectId, onDone }: { projectId: string
         <div><Label htmlFor="dr-equip">Equipment</Label><Input id="dr-equip" value={equipmentList} onChange={(e) => setEquipmentList(e.target.value)} placeholder="Opsional" /></div>
         <div><Label htmlFor="dr-mat">Material</Label><Input id="dr-mat" value={materialList} onChange={(e) => setMaterialList(e.target.value)} placeholder="Opsional" /></div>
       </div>
-      <div className="flex justify-end gap-2"><Button size="sm" variant="secondary" onClick={onDone}>Batal</Button><Button size="sm" onClick={submit} disabled={create.isPending || !summary.trim()}>{create.isPending ? 'Menyimpan...' : 'Submit Daily Report'}</Button></div>
+      <div className="flex justify-end gap-2"><Button size="sm" variant="secondary" onClick={onDone}>Batal</Button><Button size="sm" onClick={submit} loading={create.isPending} disabled={!summary.trim()}>Submit Daily Report</Button></div>
       {create.isError && <p className="text-body-sm text-destructive-600">Gagal menyimpan daily report.</p>}
     </div>
   );

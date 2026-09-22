@@ -18,6 +18,7 @@ export interface EntitySelectProps {
   disabled?: boolean;
   error?: boolean;
   className?: string;
+  id?: string;
 }
 
 export function EntitySelect({
@@ -30,6 +31,7 @@ export function EntitySelect({
   disabled,
   error,
   className,
+  id,
 }: EntitySelectProps) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
@@ -52,7 +54,7 @@ export function EntitySelect({
         if (o) setQuery('');
       }}
     >
-      <SelectTrigger error={error} disabled={disabled} className={className}>
+      <SelectTrigger id={id} error={error} disabled={disabled} className={className}>
         <SelectValue placeholder={placeholder}>{selectedLabel ?? placeholder}</SelectValue>
       </SelectTrigger>
       <SelectContent>

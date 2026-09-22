@@ -15,12 +15,12 @@ export function HandoverForm({ projectId, onDone }: { projectId: string; onDone:
   return (
     <div className="mb-6 space-y-3 rounded-md border border-neutral-200 bg-white p-4">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div><Label>Judul</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Handover Area A" /></div>
-        <div><Label>Tanggal</Label><Input type="date" value={handoverDate} onChange={(e) => setHandoverDate(e.target.value)} /></div>
-        <div><Label>Checklist</Label><Input value={checklist} onChange={(e) => setChecklist(e.target.value)} placeholder="Opsional" /></div>
+        <div><Label htmlFor="hand-title">Judul</Label><Input id="hand-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Handover Area A" /></div>
+        <div><Label htmlFor="hand-date">Tanggal</Label><Input id="hand-date" type="date" value={handoverDate} onChange={(e) => setHandoverDate(e.target.value)} /></div>
+        <div><Label htmlFor="hand-checklist">Checklist</Label><Input id="hand-checklist" value={checklist} onChange={(e) => setChecklist(e.target.value)} placeholder="Opsional" /></div>
       </div>
       <div className="space-y-2"><Label>Dokumen</Label>{docNames.map((doc, i) => <div key={i} className="flex gap-2"><Input value={doc} onChange={(e) => setDocNames(docNames.map((x, idx) => idx === i ? e.target.value : x))} /><Button size="sm" variant="secondary" onClick={() => setDocNames(docNames.filter((_, idx) => idx !== i))}>Hapus</Button></div>)}<Button size="sm" variant="secondary" onClick={() => setDocNames([...docNames, ''])}>+ Dokumen</Button></div>
-      <div className="flex justify-end gap-2"><Button size="sm" variant="secondary" onClick={onDone}>Batal</Button><Button size="sm" onClick={submit} disabled={create.isPending || !title.trim()}>{create.isPending ? 'Menyimpan...' : 'Buat Handover'}</Button></div>
+      <div className="flex justify-end gap-2"><Button size="sm" variant="secondary" onClick={onDone}>Batal</Button><Button size="sm" type="button" loading={create.isPending} disabled={!title.trim()} onClick={submit}>Buat Handover</Button></div>
     </div>
   );
 }
