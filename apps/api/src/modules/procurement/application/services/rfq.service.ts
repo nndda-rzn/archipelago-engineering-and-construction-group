@@ -15,34 +15,33 @@ export class RfqService {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
 
-    const seq = await this.prisma.$transaction(async (tx) => {
+    const rfq = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'RFQ' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'RFQ', prefix: `RFQ-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-    });
-
-    const rfq = await this.prisma.rfq.create({
-      data: {
-        rfqNumber: seq,
-        projectId: dto.projectId,
-        requisitionId: dto.requisitionId ?? null,
-        title: dto.title,
-        description: dto.description ?? null,
-        dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
-        createdBy: actorId,
-        items: {
-          create: dto.items.map((i) => ({
-            description: i.description,
-            quantity: Number(i.quantity),
-            unit: i.unit ?? 'EA',
-            wbsItemId: i.wbsItemId ?? null,
-          })),
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      return tx.rfq.create({
+        data: {
+          rfqNumber: seq,
+          projectId: dto.projectId,
+          requisitionId: dto.requisitionId ?? null,
+          title: dto.title,
+          description: dto.description ?? null,
+          dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+          createdBy: actorId,
+          items: {
+            create: dto.items.map((i) => ({
+              description: i.description,
+              quantity: Number(i.quantity),
+              unit: i.unit ?? 'EA',
+              wbsItemId: i.wbsItemId ?? null,
+            })),
+          },
         },
-      },
-      include: { items: true },
+        include: { items: true },
+      });
     });
 
     await this.audit.record({
@@ -50,7 +49,7 @@ export class RfqService {
       action: 'Rfq.CREATE',
       resource: 'Rfq',
       resourceId: rfq.id,
-      newValue: { rfqNumber: seq, title: dto.title, projectId: dto.projectId },
+      newValue: { rfqNumber: rfq.rfqNumber, title: dto.title, projectId: dto.projectId },
       source: 'api',
     });
 

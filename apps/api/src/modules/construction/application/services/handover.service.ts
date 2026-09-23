@@ -38,32 +38,31 @@ export class HandoverService {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
 
-    const seq = await this.prisma.$transaction(async (tx) => {
+    const items = dto.items ?? [];
+    const ho = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'HO' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'HO', prefix: `HO-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-    });
-
-    const items = dto.items ?? [];
-    const ho = await this.prisma.handoverPackage.create({
-      data: {
-        hoNumber: seq,
-        projectId,
-        title: dto.title,
-        handoverDate: dto.handoverDate ? new Date(dto.handoverDate) : null,
-        checklist: dto.checklist ?? null,
-        note: dto.note ?? null,
-        items: {
-          create: items.map((i) => ({
-            documentName: i.documentName,
-            isMandatory: i.isMandatory ?? true,
-          })),
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      return tx.handoverPackage.create({
+        data: {
+          hoNumber: seq,
+          projectId,
+          title: dto.title,
+          handoverDate: dto.handoverDate ? new Date(dto.handoverDate) : null,
+          checklist: dto.checklist ?? null,
+          note: dto.note ?? null,
+          items: {
+            create: items.map((i) => ({
+              documentName: i.documentName,
+              isMandatory: i.isMandatory ?? true,
+            })),
+          },
         },
-      },
-      include: { items: true },
+        include: { items: true },
+      });
     });
 
     await this.audit.record({

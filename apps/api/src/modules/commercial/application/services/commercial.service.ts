@@ -15,28 +15,27 @@ export class CommercialService {
   ) {}
 
   async createClient(dto: CreateClientDto, actorId: string) {
-    const seq = await this.prisma.$transaction(async (tx) => {
+    const client = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'CLT' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'CLT', prefix: `CLT-${new Date().getFullYear()}-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      return tx.client.create({
+        data: {
+          clientCode: seq,
+          name: dto.name,
+          industry: dto.industry ?? null,
+          contactPerson: dto.contactPerson ?? null,
+          email: dto.email ?? null,
+          phone: dto.phone ?? null,
+          country: dto.country ?? 'ID',
+        },
+      });
     });
 
-    const client = await this.prisma.client.create({
-      data: {
-        clientCode: seq,
-        name: dto.name,
-        industry: dto.industry ?? null,
-        contactPerson: dto.contactPerson ?? null,
-        email: dto.email ?? null,
-        phone: dto.phone ?? null,
-        country: dto.country ?? 'ID',
-      },
-    });
-
-    await this.audit.record({ userId: actorId, action: 'Client.CREATE', resource: 'Client', resourceId: client.id, newValue: { clientCode: seq, name: dto.name }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'Client.CREATE', resource: 'Client', resourceId: client.id, newValue: { clientCode: client.clientCode, name: dto.name }, source: 'api' });
     return client;
   }
 
@@ -55,31 +54,30 @@ export class CommercialService {
     const client = await this.prisma.client.findUnique({ where: { id: dto.clientId } });
     if (!client) throw new NotFoundException({ code: 'CLIENT_NOT_FOUND', message: 'Client tidak ditemukan' });
 
-    const seq = await this.prisma.$transaction(async (tx) => {
+    const opp = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'OPP' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'OPP', prefix: `OPP-${new Date().getFullYear()}-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      return tx.opportunity.create({
+        data: {
+          oppNumber: seq,
+          clientId: dto.clientId,
+          title: dto.title,
+          stage: dto.stage ?? 'LEAD',
+          probability: dto.probability ?? 10,
+          expectedValue: Number(dto.expectedValue),
+          expectedDate: dto.expectedDate ? new Date(dto.expectedDate) : null,
+          owner: dto.owner,
+          currency: dto.currency ?? 'IDR',
+        },
+        include: { client: { select: { name: true } } },
+      });
     });
 
-    const opp = await this.prisma.opportunity.create({
-      data: {
-        oppNumber: seq,
-        clientId: dto.clientId,
-        title: dto.title,
-        stage: dto.stage ?? 'LEAD',
-        probability: dto.probability ?? 10,
-        expectedValue: Number(dto.expectedValue),
-        expectedDate: dto.expectedDate ? new Date(dto.expectedDate) : null,
-        owner: dto.owner,
-        currency: dto.currency ?? 'IDR',
-      },
-      include: { client: { select: { name: true } } },
-    });
-
-    await this.audit.record({ userId: actorId, action: 'Opportunity.CREATE', resource: 'Opportunity', resourceId: opp.id, newValue: { oppNumber: seq, title: dto.title, expectedValue: Number(dto.expectedValue) }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'Opportunity.CREATE', resource: 'Opportunity', resourceId: opp.id, newValue: { oppNumber: opp.oppNumber, title: dto.title, expectedValue: Number(dto.expectedValue) }, source: 'api' });
     return opp;
   }
 
@@ -123,34 +121,33 @@ export class CommercialService {
       if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
     }
 
-    const seq = await this.prisma.$transaction(async (tx) => {
+    const contract = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'CTR' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'CTR', prefix: `CTR-${new Date().getFullYear()}-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      return tx.contract.create({
+        data: {
+          contractNumber: seq,
+          projectId: dto.projectId ?? null,
+          clientId: dto.clientId ?? '',
+          opportunityId: dto.opportunityId ?? null,
+          contractType: dto.contractType ?? 'LUMP_SUM',
+          title: dto.title,
+          value: Number(dto.value),
+          advanceTerm: dto.advanceTerm ?? 0,
+          retentionTerm: dto.retentionTerm ?? 0,
+          signedDate: dto.signedDate ? new Date(dto.signedDate) : null,
+          startDate: dto.startDate ? new Date(dto.startDate) : null,
+          endDate: dto.endDate ? new Date(dto.endDate) : null,
+        },
+        include: { client: { select: { name: true } }, project: { select: { code: true } } },
+      });
     });
 
-    const contract = await this.prisma.contract.create({
-      data: {
-        contractNumber: seq,
-        projectId: dto.projectId ?? null,
-        clientId: dto.clientId ?? '',
-        opportunityId: dto.opportunityId ?? null,
-        contractType: dto.contractType ?? 'LUMP_SUM',
-        title: dto.title,
-        value: Number(dto.value),
-        advanceTerm: dto.advanceTerm ?? 0,
-        retentionTerm: dto.retentionTerm ?? 0,
-        signedDate: dto.signedDate ? new Date(dto.signedDate) : null,
-        startDate: dto.startDate ? new Date(dto.startDate) : null,
-        endDate: dto.endDate ? new Date(dto.endDate) : null,
-      },
-      include: { client: { select: { name: true } }, project: { select: { code: true } } },
-    });
-
-    await this.audit.record({ userId: actorId, action: 'Contract.CREATE', resource: 'Contract', resourceId: contract.id, newValue: { contractNumber: seq, title: dto.title, value: Number(dto.value) }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'Contract.CREATE', resource: 'Contract', resourceId: contract.id, newValue: { contractNumber: contract.contractNumber, title: dto.title, value: Number(dto.value) }, source: 'api' });
     return contract;
   }
 

@@ -21,39 +21,38 @@ export class PurchaseOrderService {
       throw new ConflictException({ code: 'PR_NOT_APPROVED', message: 'PR harus APPROVED sebelum jadi PO' });
     }
 
-    const seq = await this.prisma.$transaction(async (tx) => {
-      const s = await tx.numberSequence.upsert({
-        where: { code: 'PO' },
-        update: { nextNumber: { increment: 1 } },
-        create: { code: 'PO', prefix: `PO-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
-      });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-    });
-
     const totalAmount = pr.items.reduce(
       (sum, i) => sum + Number(i.estimatedTotal ?? (Number(i.estimatedUnitPrice ?? 0) * Number(i.quantity))),
       0,
     );
 
-    const po = await this.prisma.purchaseOrder.create({
-      data: {
-        poNumber: seq,
-        projectId: pr.projectId,
-        requisitionId: pr.id,
-        vendor: dto.vendor,
-        currency: dto.currency ?? 'IDR',
-        totalAmount,
-        items: {
-          create: pr.items.map((i) => ({
-            description: i.description,
-            quantity: i.quantity,
-            unit: i.unit,
-            unitPrice: Number(i.estimatedUnitPrice ?? 0),
-            totalPrice: Number(i.estimatedTotal ?? (Number(i.estimatedUnitPrice ?? 0) * Number(i.quantity))),
-          })),
+    const po = await this.prisma.$transaction(async (tx) => {
+      const s = await tx.numberSequence.upsert({
+        where: { code: 'PO' },
+        update: { nextNumber: { increment: 1 } },
+        create: { code: 'PO', prefix: `PO-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
+      });
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      return tx.purchaseOrder.create({
+        data: {
+          poNumber: seq,
+          projectId: pr.projectId,
+          requisitionId: pr.id,
+          vendor: dto.vendor,
+          currency: dto.currency ?? 'IDR',
+          totalAmount,
+          items: {
+            create: pr.items.map((i) => ({
+              description: i.description,
+              quantity: i.quantity,
+              unit: i.unit,
+              unitPrice: Number(i.estimatedUnitPrice ?? 0),
+              totalPrice: Number(i.estimatedTotal ?? (Number(i.estimatedUnitPrice ?? 0) * Number(i.quantity))),
+            })),
+          },
         },
-      },
-      include: { items: true },
+        include: { items: true },
+      });
     });
 
     await this.audit.record({

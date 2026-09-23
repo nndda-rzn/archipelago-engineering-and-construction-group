@@ -26,16 +26,14 @@ export class StockOpnameService {
       }
     }
 
-    const seq = await this.prisma.$transaction(async (tx) => {
-      const s = await tx.numberSequence.upsert({
+    const opname = await this.prisma.$transaction(async (tx) => {
+      const seqRow = await tx.numberSequence.upsert({
         where: { code: 'OPN' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'OPN', prefix: `OPN-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-    });
+      const seq = `${seqRow.prefix}${String(seqRow.nextNumber - 1).padStart(6, '0')}`;
 
-    const opname = await this.prisma.$transaction(async (tx) => {
       const items = await Promise.all(
         dto.items.map(async (i) => {
           const agg = await tx.stockLedgerEntry.aggregate({
@@ -101,7 +99,7 @@ export class StockOpnameService {
       action: 'StockOpname.CREATE',
       resource: 'StockOpname',
       resourceId: opname.id,
-      newValue: { opnameNumber: seq, itemCount: opname.items.length, differenceCount: opname.items.filter((i) => Number(i.difference) !== 0).length },
+      newValue: { opnameNumber: opname.opnameNumber, itemCount: opname.items.length, differenceCount: opname.items.filter((i) => Number(i.difference) !== 0).length },
       source: 'api',
     });
 

@@ -69,32 +69,31 @@ export class VendorInvoiceService {
     const taxAmount = dto.taxAmount != null ? Number(dto.taxAmount) : 0;
     const totalAmount = amount + taxAmount;
 
-    const seq = await this.prisma.$transaction(async (tx) => {
+    const invoice = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'INV' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'INV', prefix: `INV-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-    });
-
-    const invoice = await this.prisma.vendorInvoice.create({
-      data: {
-        invoiceNumber: seq,
-        poId: po.id,
-        projectId: po.projectId,
-        vendor: po.vendor,
-        vendorInvoiceNo: dto.vendorInvoiceNo,
-        invoiceDate: dto.invoiceDate ? new Date(dto.invoiceDate) : new Date(),
-        taxAmount,
-        amount,
-        totalAmount,
-        status: 'MATCHED',
-        matchedAt: new Date(),
-        remark: dto.remark ?? null,
-        items: { create: items },
-      },
-      include: { items: true },
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      return tx.vendorInvoice.create({
+        data: {
+          invoiceNumber: seq,
+          poId: po.id,
+          projectId: po.projectId,
+          vendor: po.vendor,
+          vendorInvoiceNo: dto.vendorInvoiceNo,
+          invoiceDate: dto.invoiceDate ? new Date(dto.invoiceDate) : new Date(),
+          taxAmount,
+          amount,
+          totalAmount,
+          status: 'MATCHED',
+          matchedAt: new Date(),
+          remark: dto.remark ?? null,
+          items: { create: items },
+        },
+        include: { items: true },
+      });
     });
 
     await this.audit.record({
@@ -102,7 +101,7 @@ export class VendorInvoiceService {
       action: 'VendorInvoice.CREATE',
       resource: 'VendorInvoice',
       resourceId: invoice.id,
-      newValue: { invoiceNumber: seq, vendorInvoiceNo: dto.vendorInvoiceNo, totalAmount: Number(totalAmount), poNumber: po.poNumber },
+      newValue: { invoiceNumber: invoice.invoiceNumber, vendorInvoiceNo: dto.vendorInvoiceNo, totalAmount: Number(totalAmount), poNumber: po.poNumber },
       source: 'api',
     });
 

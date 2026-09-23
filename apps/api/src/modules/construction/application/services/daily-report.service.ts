@@ -35,43 +35,42 @@ export class DailyReportService {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
 
-    const seq = await this.prisma.$transaction(async (tx) => {
+    const manpowerLines = dto.manpowerLines ?? [];
+    const manpowerTotal = manpowerLines.reduce((sum, l) => sum + l.manpowerCount, 0);
+
+    const report = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'DR' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'DR', prefix: `DR-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-    });
-
-    const manpowerLines = dto.manpowerLines ?? [];
-    const manpowerTotal = manpowerLines.reduce((sum, l) => sum + l.manpowerCount, 0);
-
-    const report = await this.prisma.constructionDailyReport.create({
-      data: {
-        drNumber: seq,
-        projectId,
-        reportDate: dto.reportDate ? new Date(dto.reportDate) : new Date(),
-        weather: dto.weather ?? null,
-        temperatureC: dto.temperatureC ?? null,
-        summary: dto.summary,
-        issues: dto.issues ?? null,
-        hseNote: dto.hseNote ?? null,
-        qualityNote: dto.qualityNote ?? null,
-        manpowerTotal,
-        equipmentList: dto.equipmentList ?? null,
-        materialList: dto.materialList ?? null,
-        reportedBy: actorId,
-        manpowerLines: {
-          create: manpowerLines.map((l) => ({
-            trade: l.trade,
-            manpowerCount: l.manpowerCount,
-            hoursWorked: l.hoursWorked,
-            note: l.note ?? null,
-          })),
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      return tx.constructionDailyReport.create({
+        data: {
+          drNumber: seq,
+          projectId,
+          reportDate: dto.reportDate ? new Date(dto.reportDate) : new Date(),
+          weather: dto.weather ?? null,
+          temperatureC: dto.temperatureC ?? null,
+          summary: dto.summary,
+          issues: dto.issues ?? null,
+          hseNote: dto.hseNote ?? null,
+          qualityNote: dto.qualityNote ?? null,
+          manpowerTotal,
+          equipmentList: dto.equipmentList ?? null,
+          materialList: dto.materialList ?? null,
+          reportedBy: actorId,
+          manpowerLines: {
+            create: manpowerLines.map((l) => ({
+              trade: l.trade,
+              manpowerCount: l.manpowerCount,
+              hoursWorked: l.hoursWorked,
+              note: l.note ?? null,
+            })),
+          },
         },
-      },
-      include: { manpowerLines: true },
+        include: { manpowerLines: true },
+      });
     });
 
     await this.audit.record({
