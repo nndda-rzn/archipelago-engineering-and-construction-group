@@ -20,23 +20,27 @@ export class EquipmentUtilizationService {
       throw new BadRequestException({ code: 'INVALID_UTILIZATION', message: 'Operating hours tidak boleh melebihi available' });
     }
 
-    const util = await this.prisma.equipmentUtilization.create({
-      data: {
-        equipmentId,
-        projectId: dto.projectId ?? null,
-        utilizationDate: dto.utilizationDate ? new Date(dto.utilizationDate) : new Date(),
-        availableHours: available,
-        operatingHours: operating,
-        description: dto.description ?? null,
-      },
-    });
-
-    if (operating > 0) {
-      await this.prisma.equipment.update({
-        where: { id: equipmentId },
-        data: { currentMeter: { increment: operating } },
+    const util = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.equipmentUtilization.create({
+        data: {
+          equipmentId,
+          projectId: dto.projectId ?? null,
+          utilizationDate: dto.utilizationDate ? new Date(dto.utilizationDate) : new Date(),
+          availableHours: available,
+          operatingHours: operating,
+          description: dto.description ?? null,
+        },
       });
-    }
+
+      if (operating > 0) {
+        await tx.equipment.update({
+          where: { id: equipmentId },
+          data: { currentMeter: { increment: operating } },
+        });
+      }
+
+      return created;
+    });
 
     await this.audit.record({
       userId: actorId,

@@ -97,12 +97,16 @@ export class RfqService {
       return { rfqItemId: item.rfqItemId, unitPrice: Number(item.unitPrice), totalPrice };
     });
 
-    const quote = await this.prisma.rfqQuote.create({
-      data: { rfqId, vendor: dto.vendor, leadTimeDays: dto.leadTimeDays ?? null, remark: dto.remark ?? null, totalAmount, items: { create: items } },
-      include: { items: true },
-    });
+    const quote = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.rfqQuote.create({
+        data: { rfqId, vendor: dto.vendor, leadTimeDays: dto.leadTimeDays ?? null, remark: dto.remark ?? null, totalAmount, items: { create: items } },
+        include: { items: true },
+      });
 
-    await this.prisma.rfq.update({ where: { id: rfqId }, data: { status: 'QUOTED' } });
+      await tx.rfq.update({ where: { id: rfqId }, data: { status: 'QUOTED' } });
+
+      return created;
+    });
 
     await this.audit.record({
       userId: actorId,

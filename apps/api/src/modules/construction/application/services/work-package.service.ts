@@ -189,20 +189,24 @@ export class WorkPackageService {
       });
     }
 
-    const progress = await this.prisma.workPackageProgress.create({
-      data: {
-        workPackageId: id,
-        physicalProgress: dto.physicalProgress,
-        achievedQty: dto.achievedQty,
-        note: dto.note ?? null,
-        measuredBy: dto.measuredBy,
-        progressDate: dto.progressDate ? new Date(dto.progressDate) : new Date(),
-      },
-    });
+    const progress = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.workPackageProgress.create({
+        data: {
+          workPackageId: id,
+          physicalProgress: dto.physicalProgress,
+          achievedQty: dto.achievedQty,
+          note: dto.note ?? null,
+          measuredBy: dto.measuredBy,
+          progressDate: dto.progressDate ? new Date(dto.progressDate) : new Date(),
+        },
+      });
 
-    if (Number(dto.physicalProgress) >= 100 && wp.status === 'IN_PROGRESS') {
-      await this.prisma.constructionWorkPackage.update({ where: { id }, data: { status: 'COMPLETED' } });
-    }
+      if (Number(dto.physicalProgress) >= 100 && wp.status === 'IN_PROGRESS') {
+        await tx.constructionWorkPackage.update({ where: { id }, data: { status: 'COMPLETED' } });
+      }
+
+      return created;
+    });
 
     await this.audit.record({
       userId: actorId,

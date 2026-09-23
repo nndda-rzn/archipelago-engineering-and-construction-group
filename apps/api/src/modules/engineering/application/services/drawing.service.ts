@@ -35,13 +35,15 @@ export class DrawingService {
     if (!drawing) throw new NotFoundException({ code: 'DRAWING_NOT_FOUND', message: 'Drawing tidak ditemukan' });
 
     const revision = dto.revision ?? String(Number(drawing.currentRevision) + 1);
-    await this.prisma.drawingRevision.create({
-      data: { drawingId: id, revision, description: dto.description ?? null, publishedBy: actorId },
-    });
-    const updated = await this.prisma.drawing.update({
-      where: { id },
-      data: { currentRevision: revision, status: 'PUBLISHED', isIFC: dto.isIFC ?? drawing.isIFC },
-      include: { revisions: { orderBy: { publishedAt: 'desc' } } },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await tx.drawingRevision.create({
+        data: { drawingId: id, revision, description: dto.description ?? null, publishedBy: actorId },
+      });
+      return tx.drawing.update({
+        where: { id },
+        data: { currentRevision: revision, status: 'PUBLISHED', isIFC: dto.isIFC ?? drawing.isIFC },
+        include: { revisions: { orderBy: { publishedAt: 'desc' } } },
+      });
     });
     await this.audit.record({ userId: actorId, action: 'Drawing.PUBLISH', resource: 'Drawing', resourceId: id, newValue: { drawingNumber: drawing.drawingNumber, revision, isIFC: dto.isIFC ?? drawing.isIFC }, source: 'api' });
     return updated;
