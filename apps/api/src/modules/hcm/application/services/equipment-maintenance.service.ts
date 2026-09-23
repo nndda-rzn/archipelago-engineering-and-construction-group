@@ -1,6 +1,8 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
+import { CacheService } from '@/shared/cache/cache.service';
+import { invalidateAnalytics } from '@/shared/cache/analytics-cache';
 import type { CreateEquipmentPmDto, CreateEquipmentBreakdownDto } from '../../presentation/dto/equipment.dto';
 
 @Injectable()
@@ -8,6 +10,7 @@ export class EquipmentMaintenanceService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(CacheService) private readonly cache: CacheService,
   ) {}
 
   async createPm(equipmentId: string, dto: CreateEquipmentPmDto, actorId: string) {
@@ -34,6 +37,8 @@ export class EquipmentMaintenanceService {
       source: 'api',
     });
 
+    await invalidateAnalytics(this.cache);
+
     return pm;
   }
 
@@ -59,6 +64,8 @@ export class EquipmentMaintenanceService {
       newValue: { equipmentId },
       source: 'api',
     });
+
+    await invalidateAnalytics(this.cache);
 
     return done;
   }

@@ -2,6 +2,8 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
+import { CacheService } from '@/shared/cache/cache.service';
+import { invalidateAnalytics } from '@/shared/cache/analytics-cache';
 import type { CreateProjectDto, ListProjectQueryDto } from '../../presentation/dto/project.dto';
 
 @Injectable()
@@ -9,6 +11,7 @@ export class ProjectService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(CacheService) private readonly cache: CacheService,
   ) {}
 
   async findAll(query: ListProjectQueryDto) {
@@ -81,6 +84,8 @@ export class ProjectService {
       newValue: { code: project.code, name: project.name, client: project.client },
       source: 'api',
     });
+
+    await invalidateAnalytics(this.cache);
 
     return project;
   }

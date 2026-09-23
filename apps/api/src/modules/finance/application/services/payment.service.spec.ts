@@ -17,6 +17,7 @@ describe('PaymentService', () => {
   let service: PaymentService;
   const audit = { record: jest.fn() };
   const gl = { postPaymentJournal: jest.fn() };
+  const cache = { del: jest.fn() };
 
   interface PrismaMock {
     project: { findUnique: jest.Mock };
@@ -34,7 +35,7 @@ describe('PaymentService', () => {
       paymentItem: { groupBy: jest.fn() },
       $transaction: jest.fn(),
     };
-    service = new PaymentService(prisma as never, audit as never, gl as never);
+    service = new PaymentService(prisma as never, audit as never, gl as never, cache as never);
   });
 
   const dto = (over: Partial<CreatePaymentDto> = {}): CreatePaymentDto => ({

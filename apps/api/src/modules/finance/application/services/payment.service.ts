@@ -3,6 +3,8 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { GlHelper } from './shared/gl.helper';
+import { CacheService } from '@/shared/cache/cache.service';
+import { invalidateAnalytics } from '@/shared/cache/analytics-cache';
 import type { CreatePaymentDto, ListPaymentQueryDto } from '../../presentation/dto/finance.dto';
 
 @Injectable()
@@ -11,6 +13,7 @@ export class PaymentService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(GlHelper) private readonly gl: GlHelper,
+    @Inject(CacheService) private readonly cache: CacheService,
   ) {}
 
   async createPayment(dto: CreatePaymentDto, actorId: string) {
@@ -140,6 +143,8 @@ export class PaymentService {
       { id: payment.id, paymentNumber: payment.paymentNumber, legalEntityId: payment.project.legalEntityId, totalAmount: Number(payment.totalAmount) },
       actorId,
     );
+
+    await invalidateAnalytics(this.cache);
 
     return paid;
   }

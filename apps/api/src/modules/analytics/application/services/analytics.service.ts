@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { CacheService } from '@/shared/cache/cache.service';
+import { ANALYTICS_CACHE_KEYS } from '@/shared/cache/analytics-cache';
 
 @Injectable()
 export class AnalyticsService {
@@ -10,7 +11,7 @@ export class AnalyticsService {
   ) {}
 
   async executive() {
-    return this.cache.wrap('analytics:executive', 30, async () => {
+    return this.cache.wrap(ANALYTICS_CACHE_KEYS.executive, 30, async () => {
     const [projects, budgetAgg, vendorInvoiceAgg, paymentAgg, collectionAgg, clientInvoiceAgg] = await this.prisma.$transaction([
       this.prisma.project.findMany({ select: { id: true, code: true, name: true, status: true, contractValue: true, advanceAmount: true } }),
       this.prisma.budgetItem.aggregate({ _sum: { amount: true } }),
@@ -59,7 +60,7 @@ export class AnalyticsService {
   }
 
   async anomalies() {
-    return this.cache.wrap('analytics:anomalies', 60, async () => {
+    return this.cache.wrap(ANALYTICS_CACHE_KEYS.anomalies, 60, async () => {
     const anomalies: Array<{ type: string; severity: 'LOW' | 'MEDIUM' | 'HIGH'; projectCode?: string; message: string }> = [];
 
     const budgetAgg = await this.prisma.budgetItem.groupBy({ by: ['projectId'], _sum: { amount: true } });
@@ -115,7 +116,7 @@ export class AnalyticsService {
   }
 
   async cashFlow() {
-    return this.cache.wrap('analytics:cash-flow', 60, async () => {
+    return this.cache.wrap(ANALYTICS_CACHE_KEYS.cashFlow, 60, async () => {
     const [collections, payments] = await this.prisma.$transaction([
       this.prisma.collection.findMany({ where: { status: 'POSTED' }, select: { totalAmount: true, collectedAt: true } }),
       this.prisma.payment.findMany({ where: { status: 'PAID' }, select: { totalAmount: true, paymentDate: true } }),
@@ -147,7 +148,7 @@ export class AnalyticsService {
   }
 
   async aging() {
-    return this.cache.wrap('analytics:aging', 60, async () => {
+    return this.cache.wrap(ANALYTICS_CACHE_KEYS.aging, 60, async () => {
     const today = new Date();
     const bucket = (d: Date): string => {
       const days = Math.floor((today.getTime() - d.getTime()) / 86400000);
@@ -196,7 +197,7 @@ export class AnalyticsService {
   }
 
   async projectCostSummary() {
-    return this.cache.wrap('analytics:project-cost-summary', 60, async () => {
+    return this.cache.wrap(ANALYTICS_CACHE_KEYS.projectCostSummary, 60, async () => {
     const projects = await this.prisma.project.findMany({ select: { id: true, code: true, name: true, contractValue: true } });
     const [budgetAgg, vendorInvoiceAgg, clientInvoiceAgg] = await Promise.all([
       this.prisma.budgetItem.groupBy({ by: ['projectId'], _sum: { amount: true } }),

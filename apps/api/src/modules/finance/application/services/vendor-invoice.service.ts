@@ -3,6 +3,8 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { GlHelper } from './shared/gl.helper';
+import { CacheService } from '@/shared/cache/cache.service';
+import { invalidateAnalytics } from '@/shared/cache/analytics-cache';
 import type { CreateVendorInvoiceDto, ListVendorInvoiceQueryDto } from '../../presentation/dto/finance.dto';
 
 @Injectable()
@@ -11,6 +13,7 @@ export class VendorInvoiceService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(GlHelper) private readonly gl: GlHelper,
+    @Inject(CacheService) private readonly cache: CacheService,
   ) {}
 
   async createVendorInvoice(dto: CreateVendorInvoiceDto, actorId: string) {
@@ -141,6 +144,8 @@ export class VendorInvoiceService {
       },
       actorId,
     );
+
+    await invalidateAnalytics(this.cache);
 
     return posted;
   }

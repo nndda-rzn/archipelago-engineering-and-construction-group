@@ -3,6 +3,8 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { SequenceHelper } from '@/shared/utils/sequence.helper';
+import { CacheService } from '@/shared/cache/cache.service';
+import { invalidateAnalytics } from '@/shared/cache/analytics-cache';
 import type { CreateIncidentDto, ListIncidentQueryDto } from '../../presentation/dto/hse.dto';
 
 @Injectable()
@@ -11,6 +13,7 @@ export class HseIncidentService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
+    @Inject(CacheService) private readonly cache: CacheService,
   ) {}
 
   async createIncident(dto: CreateIncidentDto, actorId: string) {
@@ -28,6 +31,7 @@ export class HseIncidentService {
       include: { project: { select: { code: true, name: true } } },
     });
     await this.audit.record({ userId: actorId, action: 'HseIncident.CREATE', resource: 'HseIncident', resourceId: incident.id, newValue: { incidentNumber, severity: incident.severity, type: incident.type }, source: 'api' });
+    await invalidateAnalytics(this.cache);
     return incident;
   }
 
@@ -39,6 +43,7 @@ export class HseIncidentService {
     }
     const updated = await this.prisma.hseIncident.update({ where: { id }, data: { rootCause: dto.rootCause ?? incident.rootCause, status: 'INVESTIGATING' } });
     await this.audit.record({ userId: actorId, action: 'HseIncident.INVESTIGATE', resource: 'HseIncident', resourceId: id, newValue: { incidentNumber: incident.incidentNumber }, source: 'api' });
+    await invalidateAnalytics(this.cache);
     return updated;
   }
 
@@ -50,6 +55,7 @@ export class HseIncidentService {
     }
     const resolved = await this.prisma.hseIncident.update({ where: { id }, data: { status: 'RESOLVED', resolvedAt: new Date() } });
     await this.audit.record({ userId: actorId, action: 'HseIncident.RESOLVE', resource: 'HseIncident', resourceId: id, newValue: { incidentNumber: incident.incidentNumber }, source: 'api' });
+    await invalidateAnalytics(this.cache);
     return resolved;
   }
 

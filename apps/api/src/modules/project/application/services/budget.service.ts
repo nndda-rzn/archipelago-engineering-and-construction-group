@@ -1,6 +1,8 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
+import { CacheService } from '@/shared/cache/cache.service';
+import { invalidateAnalytics } from '@/shared/cache/analytics-cache';
 import type { PublishBudgetDto, UpsertBudgetItemDto } from '../../presentation/dto/budget.dto';
 
 @Injectable()
@@ -8,6 +10,7 @@ export class BudgetService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(CacheService) private readonly cache: CacheService,
   ) {}
 
   async findAll(projectId: string) {
@@ -81,6 +84,8 @@ export class BudgetService {
       source: 'api',
     });
 
+    await invalidateAnalytics(this.cache);
+
     return item;
   }
 
@@ -107,6 +112,8 @@ export class BudgetService {
       newValue: { projectId, items: draftItems.length, total },
       source: 'api',
     });
+
+    await invalidateAnalytics(this.cache);
 
     return { projectId, published: draftItems.length, totalBudget: total };
   }
