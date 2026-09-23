@@ -773,6 +773,7 @@ model VendorInvoice {
   @@index([poId])
   @@index([projectId])
   @@index([status])
+  @@index([projectId, status])
 }
 
 model VendorInvoiceItem {
@@ -816,6 +817,7 @@ model Payment {
 
   @@index([projectId])
   @@index([status])
+  @@index([projectId, status])
 }
 
 model PaymentItem {
@@ -940,6 +942,7 @@ model ProgressClaim {
   @@index([status])
   @@index([claimType])
   @@index([workPackageId])
+  @@index([projectId, status])
 }
 
 // FR-FIN-009: Client Invoice — faktur AR ke klien (dari claim CERTIFIED)
@@ -968,6 +971,7 @@ model ClientInvoice {
   @@index([projectId])
   @@index([claimId])
   @@index([status])
+  @@index([projectId, status])
 }
 
 // FR-FIN-010: Collection — penerimaan pembayaran dari klien (AR settlement)
@@ -992,6 +996,7 @@ model Collection {
 
   @@index([projectId])
   @@index([status])
+  @@index([projectId, status])
 }
 
 model CollectionItem {
@@ -1071,6 +1076,7 @@ model ProjectVariation {
 
   @@index([projectId])
   @@index([status])
+  @@index([projectId, status])
 }
 
 // FR-CMR-008: Subcontract — subkontraktor, pembayaran berdasarkan verified progress
@@ -1095,6 +1101,7 @@ model Subcontract {
 
   @@index([projectId])
   @@index([status])
+  @@index([projectId, status])
 }
 
 // FR-CMR-008: verified progress — pembayaran subkon mengikuti progress yang diverifikasi
