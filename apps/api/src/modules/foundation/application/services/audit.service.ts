@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
+import { decodeCursor, encodeCursor, keysetWhere } from '@/shared/utils/keyset-cursor';
 
 export interface AuditEntry {
   userId: string;
@@ -41,25 +42,44 @@ export class AuditService {
     }
   }
 
-  async findAll(query: { page?: number; pageSize?: number; action?: string; resource?: string }) {
+  async findAll(query: { page?: number; pageSize?: number; action?: string; resource?: string; cursor?: string; take?: number }) {
     const page = Number(query.page) || 1;
     const pageSize = Math.min(Number(query.pageSize) || 50, 200);
 
-    const where: Prisma.AuditLogWhereInput = {
+    const baseWhere: Prisma.AuditLogWhereInput = {
       ...(query.action ? { action: { contains: query.action, mode: 'insensitive' as const } } : {}),
       ...(query.resource ? { resource: { contains: query.resource, mode: 'insensitive' as const } } : {}),
     };
 
+    // Mode keyset: audit log tumbuh tak terbatas -> OFFSET makin lambat.
+    if (query.cursor) {
+      const take = Math.min(Number(query.take) || pageSize, 200);
+      const decoded = decodeCursor(query.cursor);
+      const where = decoded ? keysetWhere(baseWhere, decoded) : baseWhere;
+      const rows = await this.prisma.auditLog.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: take + 1,
+      });
+      const hasMore = rows.length > take;
+      const items = hasMore ? rows.slice(0, take) : rows;
+      const last = items.length > 0 ? items[items.length - 1] : undefined;
+      const nextCursor = hasMore && last ? encodeCursor({ createdAt: last.createdAt, id: last.id }) : null;
+      return { items, nextCursor };
+    }
+
     const [items, total] = await this.prisma.$transaction([
       this.prisma.auditLog.findMany({
-        where,
+        where: baseWhere,
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      this.prisma.auditLog.count({ where }),
+      this.prisma.auditLog.count({ where: baseWhere }),
     ]);
 
-    return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+    const last = items.length > 0 ? items[items.length - 1] : undefined;
+    const nextCursor = items.length === pageSize && last ? encodeCursor({ createdAt: last.createdAt, id: last.id }) : null;
+    return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize), nextCursor };
   }
 }

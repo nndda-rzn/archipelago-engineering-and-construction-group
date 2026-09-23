@@ -10,6 +10,8 @@ class ListAuditQueryDto {
   pageSize?: number;
   action?: string;
   resource?: string;
+  cursor?: string;
+  take?: number;
 }
 
 @Controller('audit-logs')
