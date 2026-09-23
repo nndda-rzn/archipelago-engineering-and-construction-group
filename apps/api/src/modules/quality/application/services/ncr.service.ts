@@ -3,6 +3,8 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { SequenceHelper } from '@/shared/utils/sequence.helper';
+import { CacheService } from '@/shared/cache/cache.service';
+import { invalidateAnalytics } from '@/shared/cache/analytics-cache';
 import type { CreateNcrDto, DisposeNcrDto, ListNcrQueryDto, ReinspectNcrDto } from '../../presentation/dto/quality.dto';
 
 @Injectable()
@@ -11,6 +13,7 @@ export class NcrService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
+    @Inject(CacheService) private readonly cache: CacheService,
   ) {}
 
   async createNcr(dto: CreateNcrDto, actorId: string) {
@@ -28,6 +31,7 @@ export class NcrService {
       include: { workPackage: { select: { wpNumber: true, title: true } } },
     });
     await this.audit.record({ userId: actorId, action: 'Ncr.CREATE', resource: 'Ncr', resourceId: ncr.id, newValue: { ncrNumber, severity: ncr.severity, category: ncr.category }, source: 'api' });
+    await invalidateAnalytics(this.cache);
     return ncr;
   }
 
@@ -39,6 +43,7 @@ export class NcrService {
     }
     const updated = await this.prisma.ncr.update({ where: { id }, data: { status: 'UNDER_REVIEW', rootCause: dto.rootCause ?? ncr.rootCause, correctiveAction: dto.correctiveAction ?? ncr.correctiveAction } });
     await this.audit.record({ userId: actorId, action: 'Ncr.DISPOSE', resource: 'Ncr', resourceId: id, newValue: { ncrNumber: ncr.ncrNumber }, source: 'api' });
+    await invalidateAnalytics(this.cache);
     return updated;
   }
 
@@ -53,6 +58,7 @@ export class NcrService {
     }
     const updated = await this.prisma.ncr.update({ where: { id }, data: { reinspectionResult: dto.result, status: dto.result === 'PASS' ? 'CLOSED' : 'UNDER_REVIEW', closedAt: dto.result === 'PASS' ? new Date() : null } });
     await this.audit.record({ userId: actorId, action: 'Ncr.REINSPECT', resource: 'Ncr', resourceId: id, newValue: { result: dto.result, status: updated.status }, source: 'api' });
+    await invalidateAnalytics(this.cache);
     return updated;
   }
 

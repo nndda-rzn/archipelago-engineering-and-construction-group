@@ -3,6 +3,8 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { SequenceHelper } from '@/shared/utils/sequence.helper';
+import { CacheService } from '@/shared/cache/cache.service';
+import { invalidateAnalytics } from '@/shared/cache/analytics-cache';
 import type { ClosePunchItemDto, CreatePunchItemDto, ListPunchItemQueryDto } from '../../presentation/dto/quality.dto';
 
 @Injectable()
@@ -11,6 +13,7 @@ export class PunchListService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(SequenceHelper) private readonly seq: SequenceHelper,
+    @Inject(CacheService) private readonly cache: CacheService,
   ) {}
 
   async createPunchItem(dto: CreatePunchItemDto, actorId: string) {
@@ -25,6 +28,7 @@ export class PunchListService {
       },
     });
     await this.audit.record({ userId: actorId, action: 'PunchListItem.CREATE', resource: 'PunchListItem', resourceId: item.id, newValue: { punchNumber }, source: 'api' });
+    await invalidateAnalytics(this.cache);
     return item;
   }
 
@@ -36,6 +40,7 @@ export class PunchListService {
     }
     const updated = await this.prisma.punchListItem.update({ where: { id }, data: { status: 'CLOSED', closedAt: new Date(), closedBy: actorId } });
     await this.audit.record({ userId: actorId, action: 'PunchListItem.CLOSE', resource: 'PunchListItem', resourceId: id, newValue: { punchNumber: item.punchNumber }, source: 'api' });
+    await invalidateAnalytics(this.cache);
     return updated;
   }
 

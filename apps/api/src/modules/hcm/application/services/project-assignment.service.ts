@@ -1,6 +1,8 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
+import { CacheService } from '@/shared/cache/cache.service';
+import { invalidateAnalytics } from '@/shared/cache/analytics-cache';
 import type { CreateProjectAssignmentDto, EndAssignmentDto } from '../../presentation/dto/hcm.dto';
 
 @Injectable()
@@ -8,6 +10,7 @@ export class ProjectAssignmentService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(CacheService) private readonly cache: CacheService,
   ) {}
 
   async createAssignment(employeeId: string, dto: CreateProjectAssignmentDto, actorId: string) {
@@ -54,6 +57,8 @@ export class ProjectAssignmentService {
       source: 'api',
     });
 
+    await invalidateAnalytics(this.cache);
+
     return assignment;
   }
 
@@ -79,6 +84,8 @@ export class ProjectAssignmentService {
       newValue: { employeeId, endDate: ended.endDate },
       source: 'api',
     });
+
+    await invalidateAnalytics(this.cache);
 
     return ended;
   }
