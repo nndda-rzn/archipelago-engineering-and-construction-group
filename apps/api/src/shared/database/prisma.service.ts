@@ -17,7 +17,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     const poolTimeout = Number(url.searchParams.get('pool_timeout') ?? process.env.DATABASE_POOL_TIMEOUT ?? 10);
 
     super({
-      adapter: new PrismaPg({ connectionString }),
+      adapter: new PrismaPg({
+        connectionString,
+        max: connectionLimit,
+        connectionTimeoutMillis: poolTimeout * 1000,
+      }),
       log: [
         { emit: 'event', level: 'query' },
         { emit: 'event', level: 'error' },
@@ -36,7 +40,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       this.logger.error(`Prisma error: ${e.message}${e.target ? ` (${e.target})` : ''}`);
     });
 
-    this.logger.log(`Prisma connected (pool=${connectionLimit}, pool_timeout=${poolTimeout}s, slow_threshold=${slowQueryMs}ms)`);
+    this.logger.log(`Prisma connected (pool max=${connectionLimit}, connect_timeout=${poolTimeout}s, slow_threshold=${slowQueryMs}ms)`);
   }
 
   async onModuleInit() {
