@@ -14,18 +14,20 @@ export class RfiService {
   ) {}
 
   async createRfi(dto: CreateRfiDto, actorId: string) {
-    const number = await this.seq.next('RFI', `RFI-${new Date().getFullYear()}-`);
-    const rfi = await this.prisma.rfi.create({
-      data: {
-        rfiNumber: number,
-        projectId: dto.projectId ?? null,
-        title: dto.title,
-        question: dto.question,
-        createdBy: actorId,
-      },
-      include: { project: { select: { code: true } } },
+    const rfi = await this.prisma.$transaction(async (tx) => {
+      const number = await this.seq.next('RFI', `RFI-${new Date().getFullYear()}-`, tx);
+      return tx.rfi.create({
+        data: {
+          rfiNumber: number,
+          projectId: dto.projectId ?? null,
+          title: dto.title,
+          question: dto.question,
+          createdBy: actorId,
+        },
+        include: { project: { select: { code: true } } },
+      });
     });
-    await this.audit.record({ userId: actorId, action: 'Rfi.CREATE', resource: 'Rfi', resourceId: rfi.id, newValue: { rfiNumber: number, title: dto.title }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'Rfi.CREATE', resource: 'Rfi', resourceId: rfi.id, newValue: { rfiNumber: rfi.rfiNumber, title: dto.title }, source: 'api' });
     return rfi;
   }
 

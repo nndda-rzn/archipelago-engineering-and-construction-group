@@ -14,19 +14,20 @@ export class EquipmentMasterService {
   ) {}
 
   async createEquipment(dto: CreateEquipmentDto, actorId: string) {
-    const seq = await this.seq.next('EQ', `EQ-${new Date().getFullYear()}-`);
-
-    const equipment = await this.prisma.equipment.create({
-      data: {
-        equipmentNumber: seq,
-        name: dto.name,
-        category: dto.category ?? 'HEAVY',
-        serialNumber: dto.serialNumber ?? null,
-        owner: dto.owner ?? 'COMPANY',
-        acquisitionDate: dto.acquisitionDate ? new Date(dto.acquisitionDate) : null,
-        currentMeter: dto.currentMeter ?? 0,
-        legalEntityId: dto.legalEntityId ?? null,
-      },
+    const equipment = await this.prisma.$transaction(async (tx) => {
+      const seq = await this.seq.next('EQ', `EQ-${new Date().getFullYear()}-`, tx);
+      return tx.equipment.create({
+        data: {
+          equipmentNumber: seq,
+          name: dto.name,
+          category: dto.category ?? 'HEAVY',
+          serialNumber: dto.serialNumber ?? null,
+          owner: dto.owner ?? 'COMPANY',
+          acquisitionDate: dto.acquisitionDate ? new Date(dto.acquisitionDate) : null,
+          currentMeter: dto.currentMeter ?? 0,
+          legalEntityId: dto.legalEntityId ?? null,
+        },
+      });
     });
 
     await this.audit.record({
@@ -34,7 +35,7 @@ export class EquipmentMasterService {
       action: 'Equipment.CREATE',
       resource: 'Equipment',
       resourceId: equipment.id,
-      newValue: { equipmentNumber: seq, name: dto.name, category: dto.category ?? 'HEAVY' },
+      newValue: { equipmentNumber: equipment.equipmentNumber, name: dto.name, category: dto.category ?? 'HEAVY' },
       source: 'api',
     });
 

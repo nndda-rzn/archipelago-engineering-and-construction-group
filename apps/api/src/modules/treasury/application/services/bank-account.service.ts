@@ -17,22 +17,23 @@ export class BankAccountService {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
     if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });
 
-    const accountCode = await this.seq.next('BANK', `BANK-${new Date().getFullYear()}-`);
-
-    const account = await this.prisma.bankAccount.create({
-      data: {
-        accountCode,
-        legalEntityId: dto.legalEntityId,
-        bankCode: dto.bankCode,
-        bankName: dto.bankName,
-        accountNumber: dto.accountNumber,
-        accountName: dto.accountName,
-        currency: dto.currency ?? 'IDR',
-        openingBalance: dto.openingBalance ?? 0,
-      },
+    const account = await this.prisma.$transaction(async (tx) => {
+      const accountCode = await this.seq.next('BANK', `BANK-${new Date().getFullYear()}-`, tx);
+      return tx.bankAccount.create({
+        data: {
+          accountCode,
+          legalEntityId: dto.legalEntityId,
+          bankCode: dto.bankCode,
+          bankName: dto.bankName,
+          accountNumber: dto.accountNumber,
+          accountName: dto.accountName,
+          currency: dto.currency ?? 'IDR',
+          openingBalance: dto.openingBalance ?? 0,
+        },
+      });
     });
 
-    await this.audit.record({ userId: actorId, action: 'BankAccount.CREATE', resource: 'BankAccount', resourceId: account.id, newValue: { accountCode, bankName: dto.bankName, accountNumber: dto.accountNumber }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'BankAccount.CREATE', resource: 'BankAccount', resourceId: account.id, newValue: { accountCode: account.accountCode, bankName: dto.bankName, accountNumber: dto.accountNumber }, source: 'api' });
     return account;
   }
 

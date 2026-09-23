@@ -14,17 +14,19 @@ export class DrawingService {
   ) {}
 
   async createDrawing(dto: CreateDrawingDto, actorId: string) {
-    const number = await this.seq.next('DRW', `DRW-${new Date().getFullYear()}-`);
-    const drawing = await this.prisma.drawing.create({
-      data: {
-        drawingNumber: number,
-        projectId: dto.projectId ?? null,
-        title: dto.title,
-        discipline: dto.discipline ?? 'PIPING',
-      },
-      include: { project: { select: { code: true } } },
+    const drawing = await this.prisma.$transaction(async (tx) => {
+      const number = await this.seq.next('DRW', `DRW-${new Date().getFullYear()}-`, tx);
+      return tx.drawing.create({
+        data: {
+          drawingNumber: number,
+          projectId: dto.projectId ?? null,
+          title: dto.title,
+          discipline: dto.discipline ?? 'PIPING',
+        },
+        include: { project: { select: { code: true } } },
+      });
     });
-    await this.audit.record({ userId: actorId, action: 'Drawing.CREATE', resource: 'Drawing', resourceId: drawing.id, newValue: { drawingNumber: number, title: dto.title }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'Drawing.CREATE', resource: 'Drawing', resourceId: drawing.id, newValue: { drawingNumber: drawing.drawingNumber, title: dto.title }, source: 'api' });
     return drawing;
   }
 

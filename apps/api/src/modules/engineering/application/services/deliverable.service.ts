@@ -14,20 +14,22 @@ export class DeliverableService {
   ) {}
 
   async createDeliverable(dto: CreateDeliverableDto, actorId: string) {
-    const number = await this.seq.next('DLV', `DLV-${new Date().getFullYear()}-`);
-    const item = await this.prisma.deliverable.create({
-      data: {
-        deliverableNumber: number,
-        projectId: dto.projectId ?? null,
-        title: dto.title,
-        discipline: dto.discipline ?? 'PIPING',
-        engineer: dto.engineer,
-        plannedDate: dto.plannedDate ? new Date(dto.plannedDate) : null,
-        forecastDate: dto.forecastDate ? new Date(dto.forecastDate) : null,
-      },
-      include: { project: { select: { code: true } } },
+    const item = await this.prisma.$transaction(async (tx) => {
+      const number = await this.seq.next('DLV', `DLV-${new Date().getFullYear()}-`, tx);
+      return tx.deliverable.create({
+        data: {
+          deliverableNumber: number,
+          projectId: dto.projectId ?? null,
+          title: dto.title,
+          discipline: dto.discipline ?? 'PIPING',
+          engineer: dto.engineer,
+          plannedDate: dto.plannedDate ? new Date(dto.plannedDate) : null,
+          forecastDate: dto.forecastDate ? new Date(dto.forecastDate) : null,
+        },
+        include: { project: { select: { code: true } } },
+      });
     });
-    await this.audit.record({ userId: actorId, action: 'Deliverable.CREATE', resource: 'Deliverable', resourceId: item.id, newValue: { deliverableNumber: number, title: dto.title }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'Deliverable.CREATE', resource: 'Deliverable', resourceId: item.id, newValue: { deliverableNumber: item.deliverableNumber, title: dto.title }, source: 'api' });
     return item;
   }
 

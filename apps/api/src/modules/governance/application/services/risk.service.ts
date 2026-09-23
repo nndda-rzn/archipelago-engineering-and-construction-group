@@ -15,24 +15,26 @@ export class RiskService {
 
   async createRisk(dto: CreateRiskDto, actorId: string) {
     const score = Number(dto.likelihood) * Number(dto.impact);
-    const riskNumber = await this.seq.next('RSK', `RSK-${new Date().getFullYear()}-`);
 
-    const risk = await this.prisma.risk.create({
-      data: {
-        riskNumber,
-        projectId: dto.projectId ?? null,
-        title: dto.title,
-        category: dto.category ?? 'TECHNICAL',
-        likelihood: Number(dto.likelihood),
-        impact: Number(dto.impact),
-        score,
-        owner: dto.owner,
-        mitigation: dto.mitigation ?? null,
-      },
-      include: { project: { select: { code: true, name: true } } },
+    const risk = await this.prisma.$transaction(async (tx) => {
+      const riskNumber = await this.seq.next('RSK', `RSK-${new Date().getFullYear()}-`, tx);
+      return tx.risk.create({
+        data: {
+          riskNumber,
+          projectId: dto.projectId ?? null,
+          title: dto.title,
+          category: dto.category ?? 'TECHNICAL',
+          likelihood: Number(dto.likelihood),
+          impact: Number(dto.impact),
+          score,
+          owner: dto.owner,
+          mitigation: dto.mitigation ?? null,
+        },
+        include: { project: { select: { code: true, name: true } } },
+      });
     });
 
-    await this.audit.record({ userId: actorId, action: 'Risk.CREATE', resource: 'Risk', resourceId: risk.id, newValue: { riskNumber, score, category: risk.category }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'Risk.CREATE', resource: 'Risk', resourceId: risk.id, newValue: { riskNumber: risk.riskNumber, score, category: risk.category }, source: 'api' });
     return risk;
   }
 

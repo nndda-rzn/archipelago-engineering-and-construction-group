@@ -23,13 +23,15 @@ export class EstimateService {
 
     const last = await this.prisma.estimate.findFirst({ where: { opportunityId }, orderBy: { version: 'desc' } });
     const version = (last?.version ?? 0) + 1;
-    const estimateNumber = await this.seq.next('EST', `EST-${new Date().getFullYear()}-`);
 
-    const estimate = await this.prisma.estimate.create({
-      data: { estimateNumber, opportunityId, version, description: dto.description ?? null, totalAmount: dto.totalAmount, createdBy: actorId },
+    const estimate = await this.prisma.$transaction(async (tx) => {
+      const estimateNumber = await this.seq.next('EST', `EST-${new Date().getFullYear()}-`, tx);
+      return tx.estimate.create({
+        data: { estimateNumber, opportunityId, version, description: dto.description ?? null, totalAmount: dto.totalAmount, createdBy: actorId },
+      });
     });
 
-    await this.audit.record({ userId: actorId, action: 'Estimate.CREATE', resource: 'Estimate', resourceId: estimate.id, newValue: { estimateNumber, version, totalAmount: Number(dto.totalAmount) }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'Estimate.CREATE', resource: 'Estimate', resourceId: estimate.id, newValue: { estimateNumber: estimate.estimateNumber, version, totalAmount: Number(dto.totalAmount) }, source: 'api' });
     return estimate;
   }
 

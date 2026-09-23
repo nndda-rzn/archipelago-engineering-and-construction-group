@@ -17,17 +17,19 @@ export class PunchListService {
   ) {}
 
   async createPunchItem(dto: CreatePunchItemDto, actorId: string) {
-    const punchNumber = await this.seq.next('PUN', `PUN-${new Date().getFullYear()}-`);
-    const item = await this.prisma.punchListItem.create({
-      data: {
-        punchNumber,
-        projectId: dto.projectId ?? null,
-        workPackageId: dto.workPackageId ?? null,
-        handoverPackageId: dto.handoverPackageId ?? null,
-        description: dto.description,
-      },
+    const item = await this.prisma.$transaction(async (tx) => {
+      const punchNumber = await this.seq.next('PUN', `PUN-${new Date().getFullYear()}-`, tx);
+      return tx.punchListItem.create({
+        data: {
+          punchNumber,
+          projectId: dto.projectId ?? null,
+          workPackageId: dto.workPackageId ?? null,
+          handoverPackageId: dto.handoverPackageId ?? null,
+          description: dto.description,
+        },
+      });
     });
-    await this.audit.record({ userId: actorId, action: 'PunchListItem.CREATE', resource: 'PunchListItem', resourceId: item.id, newValue: { punchNumber }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'PunchListItem.CREATE', resource: 'PunchListItem', resourceId: item.id, newValue: { punchNumber: item.punchNumber }, source: 'api' });
     await invalidateAnalytics(this.cache);
     return item;
   }

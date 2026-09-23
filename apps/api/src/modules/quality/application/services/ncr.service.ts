@@ -17,20 +17,22 @@ export class NcrService {
   ) {}
 
   async createNcr(dto: CreateNcrDto, actorId: string) {
-    const ncrNumber = await this.seq.next('NCR', `NCR-${new Date().getFullYear()}-`);
-    const ncr = await this.prisma.ncr.create({
-      data: {
-        ncrNumber,
-        projectId: dto.projectId ?? null,
-        workPackageId: dto.workPackageId ?? null,
-        category: dto.category ?? 'WORKMANSHIP',
-        severity: dto.severity ?? 'MINOR',
-        description: dto.description,
-        reinspectionRequired: dto.reinspectionRequired ?? true,
-      },
-      include: { workPackage: { select: { wpNumber: true, title: true } } },
+    const ncr = await this.prisma.$transaction(async (tx) => {
+      const ncrNumber = await this.seq.next('NCR', `NCR-${new Date().getFullYear()}-`, tx);
+      return tx.ncr.create({
+        data: {
+          ncrNumber,
+          projectId: dto.projectId ?? null,
+          workPackageId: dto.workPackageId ?? null,
+          category: dto.category ?? 'WORKMANSHIP',
+          severity: dto.severity ?? 'MINOR',
+          description: dto.description,
+          reinspectionRequired: dto.reinspectionRequired ?? true,
+        },
+        include: { workPackage: { select: { wpNumber: true, title: true } } },
+      });
     });
-    await this.audit.record({ userId: actorId, action: 'Ncr.CREATE', resource: 'Ncr', resourceId: ncr.id, newValue: { ncrNumber, severity: ncr.severity, category: ncr.category }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'Ncr.CREATE', resource: 'Ncr', resourceId: ncr.id, newValue: { ncrNumber: ncr.ncrNumber, severity: ncr.severity, category: ncr.category }, source: 'api' });
     await invalidateAnalytics(this.cache);
     return ncr;
   }

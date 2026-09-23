@@ -17,23 +17,24 @@ export class EmployeeMasterService {
     const legalEntity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
     if (!legalEntity) throw new NotFoundException({ code: 'LEGAL_ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });
 
-    const seq = await this.seq.next('EMP', `EMP-${new Date().getFullYear()}-`);
-
-    const employee = await this.prisma.employee.create({
-      data: {
-        employeeNumber: seq,
-        userId: dto.userId ?? null,
-        legalEntityId: dto.legalEntityId,
-        name: dto.name,
-        position: dto.position,
-        grade: dto.grade ?? null,
-        department: dto.department ?? null,
-        location: dto.location ?? null,
-        costCenter: dto.costCenter ?? null,
-        managerId: dto.managerId ?? null,
-        joinDate: dto.joinDate ? new Date(dto.joinDate) : null,
-      },
-      include: { legalEntity: { select: { code: true, legalName: true } }, manager: { select: { name: true } } },
+    const employee = await this.prisma.$transaction(async (tx) => {
+      const seq = await this.seq.next('EMP', `EMP-${new Date().getFullYear()}-`, tx);
+      return tx.employee.create({
+        data: {
+          employeeNumber: seq,
+          userId: dto.userId ?? null,
+          legalEntityId: dto.legalEntityId,
+          name: dto.name,
+          position: dto.position,
+          grade: dto.grade ?? null,
+          department: dto.department ?? null,
+          location: dto.location ?? null,
+          costCenter: dto.costCenter ?? null,
+          managerId: dto.managerId ?? null,
+          joinDate: dto.joinDate ? new Date(dto.joinDate) : null,
+        },
+        include: { legalEntity: { select: { code: true, legalName: true } }, manager: { select: { name: true } } },
+      });
     });
 
     await this.audit.record({
@@ -41,7 +42,7 @@ export class EmployeeMasterService {
       action: 'Employee.CREATE',
       resource: 'Employee',
       resourceId: employee.id,
-      newValue: { employeeNumber: seq, name: dto.name, position: dto.position },
+      newValue: { employeeNumber: employee.employeeNumber, name: dto.name, position: dto.position },
       source: 'api',
     });
 

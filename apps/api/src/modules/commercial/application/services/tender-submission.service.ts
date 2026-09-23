@@ -24,23 +24,24 @@ export class TenderSubmissionService {
       }
     }
 
-    const submissionNumber = await this.seq.next('TSB', `TSB-${new Date().getFullYear()}-`);
-
-    const submission = await this.prisma.tenderSubmission.create({
-      data: {
-        submissionNumber,
-        opportunityId: dto.opportunityId,
-        estimateId: dto.estimateId ?? null,
-        channel: dto.channel ?? 'ELECTRONIC',
-        packageVersion: dto.packageVersion ?? null,
-        submittedAt: dto.submittedAt ? new Date(dto.submittedAt) : new Date(),
-        submittedBy: actorId,
-        acknowledgement: dto.acknowledgement ?? null,
-        fileHash: dto.fileHash ?? null,
-      },
+    const submission = await this.prisma.$transaction(async (tx) => {
+      const submissionNumber = await this.seq.next('TSB', `TSB-${new Date().getFullYear()}-`, tx);
+      return tx.tenderSubmission.create({
+        data: {
+          submissionNumber,
+          opportunityId: dto.opportunityId,
+          estimateId: dto.estimateId ?? null,
+          channel: dto.channel ?? 'ELECTRONIC',
+          packageVersion: dto.packageVersion ?? null,
+          submittedAt: dto.submittedAt ? new Date(dto.submittedAt) : new Date(),
+          submittedBy: actorId,
+          acknowledgement: dto.acknowledgement ?? null,
+          fileHash: dto.fileHash ?? null,
+        },
+      });
     });
 
-    await this.audit.record({ userId: actorId, action: 'TenderSubmission.CREATE', resource: 'TenderSubmission', resourceId: submission.id, newValue: { submissionNumber, channel: dto.channel ?? 'ELECTRONIC', packageVersion: dto.packageVersion ?? null }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'TenderSubmission.CREATE', resource: 'TenderSubmission', resourceId: submission.id, newValue: { submissionNumber: submission.submissionNumber, channel: dto.channel ?? 'ELECTRONIC', packageVersion: dto.packageVersion ?? null }, source: 'api' });
     return submission;
   }
 
