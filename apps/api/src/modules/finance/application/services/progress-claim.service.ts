@@ -30,30 +30,29 @@ export class ProgressClaimService {
       physicalProgressAtClaim = dto.physicalProgressAtClaim ?? Number(wp.progress[0]?.physicalProgress ?? 0);
     }
 
-    const seq = await this.prisma.$transaction(async (tx) => {
+    const claim = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'CLM' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'CLM', prefix: `CLM-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-    });
-
-    const claim = await this.prisma.progressClaim.create({
-      data: {
-        claimNumber: seq,
-        projectId: dto.projectId,
-        claimDate: dto.claimDate ? new Date(dto.claimDate) : new Date(),
-        period: dto.period ?? null,
-        description: dto.description ?? null,
-        amount: Number(dto.amount),
-        claimType: dto.claimType ?? 'PROGRESS',
-        requestedExtensionDays: dto.requestedExtensionDays ?? null,
-        workPackageId: dto.workPackageId ?? null,
-        physicalProgressAtClaim,
-        billableProgress: dto.billableProgress ?? null,
-      },
-      include: { workPackage: { select: { wpNumber: true, title: true } } },
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      return tx.progressClaim.create({
+        data: {
+          claimNumber: seq,
+          projectId: dto.projectId,
+          claimDate: dto.claimDate ? new Date(dto.claimDate) : new Date(),
+          period: dto.period ?? null,
+          description: dto.description ?? null,
+          amount: Number(dto.amount),
+          claimType: dto.claimType ?? 'PROGRESS',
+          requestedExtensionDays: dto.requestedExtensionDays ?? null,
+          workPackageId: dto.workPackageId ?? null,
+          physicalProgressAtClaim,
+          billableProgress: dto.billableProgress ?? null,
+        },
+        include: { workPackage: { select: { wpNumber: true, title: true } } },
+      });
     });
 
     await this.audit.record({
@@ -62,7 +61,7 @@ export class ProgressClaimService {
       resource: 'ProgressClaim',
       resourceId: claim.id,
       newValue: {
-        claimNumber: seq,
+        claimNumber: claim.claimNumber,
         amount: Number(dto.amount),
         claimType: dto.claimType ?? 'PROGRESS',
         requestedExtensionDays: dto.requestedExtensionDays ?? null,

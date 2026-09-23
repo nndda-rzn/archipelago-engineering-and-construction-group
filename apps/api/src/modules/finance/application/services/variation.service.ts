@@ -15,27 +15,26 @@ export class VariationService {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
 
-    const seq = await this.prisma.$transaction(async (tx) => {
+    const variation = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'VR' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'VR', prefix: `VR-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-    });
-
-    const variation = await this.prisma.projectVariation.create({
-      data: {
-        variationNumber: seq,
-        projectId: dto.projectId,
-        title: dto.title,
-        description: dto.description ?? null,
-        type: dto.type ?? 'ADDITIVE',
-        amountChange: Number(dto.amountChange),
-        scheduleImpactDays: dto.scheduleImpactDays ?? null,
-        createdBy: actorId,
-      },
-      include: { project: { select: { code: true, name: true } } },
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      return tx.projectVariation.create({
+        data: {
+          variationNumber: seq,
+          projectId: dto.projectId,
+          title: dto.title,
+          description: dto.description ?? null,
+          type: dto.type ?? 'ADDITIVE',
+          amountChange: Number(dto.amountChange),
+          scheduleImpactDays: dto.scheduleImpactDays ?? null,
+          createdBy: actorId,
+        },
+        include: { project: { select: { code: true, name: true } } },
+      });
     });
 
     await this.audit.record({
@@ -43,7 +42,7 @@ export class VariationService {
       action: 'Variation.CREATE',
       resource: 'Variation',
       resourceId: variation.id,
-      newValue: { variationNumber: seq, title: dto.title, amountChange: Number(dto.amountChange), type: dto.type ?? 'ADDITIVE' },
+      newValue: { variationNumber: variation.variationNumber, title: dto.title, amountChange: Number(dto.amountChange), type: dto.type ?? 'ADDITIVE' },
       source: 'api',
     });
 

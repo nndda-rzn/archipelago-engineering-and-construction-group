@@ -58,29 +58,28 @@ export class WorkPackageService {
       throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: 'WBS tidak ditemukan di project ini' });
     }
 
-    const seq = await this.prisma.$transaction(async (tx) => {
+    const wp = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'WP' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'WP', prefix: `WP-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-    });
-
-    const wp = await this.prisma.constructionWorkPackage.create({
-      data: {
-        wpNumber: seq,
-        projectId,
-        wbsItemId: dto.wbsItemId,
-        title: dto.title,
-        description: dto.description ?? null,
-        scope: dto.scope ?? null,
-        plannedQty: dto.plannedQty,
-        unit: dto.unit ?? 'EA',
-        startDate: dto.startDate ? new Date(dto.startDate) : null,
-        endDate: dto.endDate ? new Date(dto.endDate) : null,
-        requiresIFC: dto.requiresIFC ?? false,
-      },
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      return tx.constructionWorkPackage.create({
+        data: {
+          wpNumber: seq,
+          projectId,
+          wbsItemId: dto.wbsItemId,
+          title: dto.title,
+          description: dto.description ?? null,
+          scope: dto.scope ?? null,
+          plannedQty: dto.plannedQty,
+          unit: dto.unit ?? 'EA',
+          startDate: dto.startDate ? new Date(dto.startDate) : null,
+          endDate: dto.endDate ? new Date(dto.endDate) : null,
+          requiresIFC: dto.requiresIFC ?? false,
+        },
+      });
     });
 
     await this.audit.record({

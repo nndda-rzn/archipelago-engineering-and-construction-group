@@ -47,34 +47,33 @@ export class PurchaseRequisitionService {
       });
     }
 
-    const seq = await this.prisma.$transaction(async (tx) => {
+    const pr = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'PR' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'PR', prefix: `PR-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-    });
-
-    const pr = await this.prisma.purchaseRequisition.create({
-      data: {
-        prNumber: seq,
-        projectId: dto.projectId,
-        wbsItemId: dto.wbsItemId ?? null,
-        requestedBy: dto.requestedBy,
-        description: dto.description ?? null,
-        estimatedTotal,
-        items: {
-          create: dto.items.map((item) => ({
-            description: item.description,
-            quantity: item.quantity,
-            unit: item.unit ?? 'EA',
-            estimatedUnitPrice: item.estimatedUnitPrice ?? null,
-            estimatedTotal: item.estimatedUnitPrice != null ? Number(item.estimatedUnitPrice) * Number(item.quantity) : null,
-          })),
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      return tx.purchaseRequisition.create({
+        data: {
+          prNumber: seq,
+          projectId: dto.projectId,
+          wbsItemId: dto.wbsItemId ?? null,
+          requestedBy: dto.requestedBy,
+          description: dto.description ?? null,
+          estimatedTotal,
+          items: {
+            create: dto.items.map((item) => ({
+              description: item.description,
+              quantity: item.quantity,
+              unit: item.unit ?? 'EA',
+              estimatedUnitPrice: item.estimatedUnitPrice ?? null,
+              estimatedTotal: item.estimatedUnitPrice != null ? Number(item.estimatedUnitPrice) * Number(item.quantity) : null,
+            })),
+          },
         },
-      },
-      include: { items: true },
+        include: { items: true },
+      });
     });
 
     await this.audit.record({

@@ -11,16 +11,13 @@ export class ProcurementHardeningService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  private async nextNumber(code: string, prefix: string): Promise<string> {
-    const seq = await this.prisma.$transaction(async (tx) => {
-      const s = await tx.numberSequence.upsert({
-        where: { code },
-        update: { nextNumber: { increment: 1 } },
-        create: { code, prefix, nextNumber: 2 },
-      });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+  private async issueNumber(tx: Prisma.TransactionClient, code: string, prefix: string): Promise<string> {
+    const s = await tx.numberSequence.upsert({
+      where: { code },
+      update: { nextNumber: { increment: 1 } },
+      create: { code, prefix, nextNumber: 2 },
     });
-    return seq;
+    return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
   }
 
   async createPoChange(poId: string, dto: CreatePoChangeDto, actorId: string) {
@@ -30,18 +27,19 @@ export class ProcurementHardeningService {
       throw new ConflictException({ code: 'PO_CANCELLED', message: 'PO dibatalkan — tidak bisa diubah' });
     }
 
-    const changeNumber = await this.nextNumber('POC', `POC-${new Date().getFullYear()}-`);
-
-    const change = await this.prisma.purchaseOrderChange.create({
-      data: {
-        changeNumber,
-        purchaseOrderId: poId,
-        version: po.version,
-        previousTotal: po.totalAmount,
-        newTotal: dto.newTotal,
-        reason: dto.reason,
-        createdBy: actorId,
-      },
+    const change = await this.prisma.$transaction(async (tx) => {
+      const changeNumber = await this.issueNumber(tx, 'POC', `POC-${new Date().getFullYear()}-`);
+      return tx.purchaseOrderChange.create({
+        data: {
+          changeNumber,
+          purchaseOrderId: poId,
+          version: po.version,
+          previousTotal: po.totalAmount,
+          newTotal: dto.newTotal,
+          reason: dto.reason,
+          createdBy: actorId,
+        },
+      });
     });
 
     await this.audit.record({
@@ -49,7 +47,7 @@ export class ProcurementHardeningService {
       action: 'PoChange.CREATE',
       resource: 'PurchaseOrderChange',
       resourceId: change.id,
-      newValue: { changeNumber, poNumber: po.poNumber, previousTotal: Number(po.totalAmount), newTotal: Number(dto.newTotal) },
+      newValue: { changeNumber: change.changeNumber, poNumber: po.poNumber, previousTotal: Number(po.totalAmount), newTotal: Number(dto.newTotal) },
       source: 'api',
     });
 

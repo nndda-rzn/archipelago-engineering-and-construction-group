@@ -34,27 +34,26 @@ export class ClientInvoiceService {
     const tax = Number(dto.taxAmount ?? 0);
     const total = amount + tax;
 
-    const seq = await this.prisma.$transaction(async (tx) => {
+    const invoice = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'CINV' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'CINV', prefix: `CINV-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-    });
-
-    const invoice = await this.prisma.clientInvoice.create({
-      data: {
-        invoiceNumber: seq,
-        projectId: claim.projectId,
-        claimId: claim.id,
-        client: claim.project.client,
-        invoiceDate: dto.invoiceDate ? new Date(dto.invoiceDate) : new Date(),
-        amount,
-        taxAmount: tax > 0 ? tax : null,
-        totalAmount: total,
-        remark: dto.remark ?? null,
-      },
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      return tx.clientInvoice.create({
+        data: {
+          invoiceNumber: seq,
+          projectId: claim.projectId,
+          claimId: claim.id,
+          client: claim.project.client,
+          invoiceDate: dto.invoiceDate ? new Date(dto.invoiceDate) : new Date(),
+          amount,
+          taxAmount: tax > 0 ? tax : null,
+          totalAmount: total,
+          remark: dto.remark ?? null,
+        },
+      });
     });
 
     await this.audit.record({
@@ -62,7 +61,7 @@ export class ClientInvoiceService {
       action: 'ClientInvoice.CREATE',
       resource: 'ClientInvoice',
       resourceId: invoice.id,
-      newValue: { invoiceNumber: seq, amount, taxAmount: tax, totalAmount: total, claimNumber: claim.claimNumber },
+      newValue: { invoiceNumber: invoice.invoiceNumber, amount, taxAmount: tax, totalAmount: total, claimNumber: claim.claimNumber },
       source: 'api',
     });
 

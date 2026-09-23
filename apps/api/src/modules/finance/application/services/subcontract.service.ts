@@ -17,29 +17,28 @@ export class SubcontractService {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
 
-    const seq = await this.prisma.$transaction(async (tx) => {
+    const subcon = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'SC' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'SC', prefix: `SC-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-    });
-
-    const subcon = await this.prisma.subcontract.create({
-      data: {
-        subconNumber: seq,
-        projectId: dto.projectId,
-        vendor: dto.vendor,
-        title: dto.title,
-        description: dto.description ?? null,
-        contractValue: Number(dto.contractValue),
-        currency: dto.currency ?? 'IDR',
-        startDate: dto.startDate ? new Date(dto.startDate) : null,
-        endDate: dto.endDate ? new Date(dto.endDate) : null,
-        createdBy: actorId,
-      },
-      include: { project: { select: { code: true, name: true } } },
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      return tx.subcontract.create({
+        data: {
+          subconNumber: seq,
+          projectId: dto.projectId,
+          vendor: dto.vendor,
+          title: dto.title,
+          description: dto.description ?? null,
+          contractValue: Number(dto.contractValue),
+          currency: dto.currency ?? 'IDR',
+          startDate: dto.startDate ? new Date(dto.startDate) : null,
+          endDate: dto.endDate ? new Date(dto.endDate) : null,
+          createdBy: actorId,
+        },
+        include: { project: { select: { code: true, name: true } } },
+      });
     });
 
     await this.audit.record({
@@ -47,7 +46,7 @@ export class SubcontractService {
       action: 'Subcontract.CREATE',
       resource: 'Subcontract',
       resourceId: subcon.id,
-      newValue: { subconNumber: seq, vendor: dto.vendor, contractValue: Number(dto.contractValue) },
+      newValue: { subconNumber: subcon.subconNumber, vendor: dto.vendor, contractValue: Number(dto.contractValue) },
       source: 'api',
     });
 

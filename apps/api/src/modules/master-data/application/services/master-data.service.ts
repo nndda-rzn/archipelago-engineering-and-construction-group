@@ -14,29 +14,28 @@ export class MasterDataService {
   ) {}
 
   async createVendor(dto: CreateVendorDto, actorId: string) {
-    const seq = await this.prisma.$transaction(async (tx) => {
+    const vendor = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'VND' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'VND', prefix: `VND-${new Date().getFullYear()}-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      return tx.vendor.create({
+        data: {
+          vendorCode: seq,
+          name: dto.name,
+          taxId: dto.taxId ?? null,
+          category: dto.category ?? 'MATERIAL',
+          contactPerson: dto.contactPerson ?? null,
+          email: dto.email ?? null,
+          phone: dto.phone ?? null,
+          address: dto.address ?? null,
+        },
+      });
     });
 
-    const vendor = await this.prisma.vendor.create({
-      data: {
-        vendorCode: seq,
-        name: dto.name,
-        taxId: dto.taxId ?? null,
-        category: dto.category ?? 'MATERIAL',
-        contactPerson: dto.contactPerson ?? null,
-        email: dto.email ?? null,
-        phone: dto.phone ?? null,
-        address: dto.address ?? null,
-      },
-    });
-
-    await this.audit.record({ userId: actorId, action: 'Vendor.CREATE', resource: 'Vendor', resourceId: vendor.id, newValue: { vendorCode: seq, name: dto.name }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'Vendor.CREATE', resource: 'Vendor', resourceId: vendor.id, newValue: { vendorCode: vendor.vendorCode, name: dto.name }, source: 'api' });
     return vendor;
   }
 
