@@ -7,7 +7,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useCreatePr } from '../model/procurement.api';
 import { useProjects } from '@/entities/project';
 import { useWbsTree } from '@/entities/wbs';
-import { useUnsavedGuard } from '@/shared/lib/unsaved-guard';
+import { UnsavedGuard } from '@/shared/lib/unsaved-guard';
 
 const formSchema = z.object({
   projectId: z.string().min(1, 'Project wajib dipilih'),
@@ -27,7 +27,7 @@ const emptyItem = { description: '', quantity: '1', unit: 'EA', estimatedUnitPri
 export function PurchaseRequisitionForm({ onDone }: { onDone: () => void }) {
   const projects = useProjects({ page: 1, pageSize: 100 });
   const create = useCreatePr();
-  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, reset, control, formState: { errors, isDirty } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: { projectId: '', wbsItemId: '', requestedBy: '', items: [{ ...emptyItem }] },
   });
@@ -35,9 +35,6 @@ export function PurchaseRequisitionForm({ onDone }: { onDone: () => void }) {
 
   const watched = useWatch({ control });
   const projectId = watched.projectId ?? '';
-  const requestedBy = watched.requestedBy ?? '';
-  const watchedItems = watched.items ?? [];
-  useUnsavedGuard(projectId !== '' || requestedBy !== '' || watchedItems.some((i) => (i?.description ?? '').trim() !== ''));
 
   const { data: wbsTree } = useWbsTree(projectId);
 
@@ -51,6 +48,7 @@ export function PurchaseRequisitionForm({ onDone }: { onDone: () => void }) {
 
   return (
     <form onSubmit={onSubmit} className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+      <UnsavedGuard dirty={isDirty} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div>
           <Label htmlFor="pr-project">Project <span aria-hidden="true" className="text-destructive-600">*</span></Label>

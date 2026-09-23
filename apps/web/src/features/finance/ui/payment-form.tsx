@@ -6,6 +6,7 @@ import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger,
 import { useProjects } from '@/entities/project';
 import { useVendorInvoices, useCreatePayment } from '../model/finance.api';
 import { formatIdr } from '@/shared/lib/format';
+import { UnsavedGuard } from '@/shared/lib/unsaved-guard';
 
 const formSchema = z.object({
   projectId: z.string().min(1, 'Project wajib dipilih'),
@@ -25,7 +26,7 @@ export function PaymentForm({ onDone }: { onDone: () => void }) {
   const postedInvoices = (invoices.data?.items ?? []).filter((inv) => inv.status === 'POSTED');
   const create = useCreatePayment();
 
-  const { register, handleSubmit, reset, control, setValue, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, reset, control, setValue, formState: { errors, isDirty } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: { projectId: '', vendor: '', bankAccount: '', reference: '', items: [] },
   });
@@ -44,6 +45,7 @@ export function PaymentForm({ onDone }: { onDone: () => void }) {
 
   return (
     <form onSubmit={onSubmit} className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+      <UnsavedGuard dirty={isDirty} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="pay-project">Project <span aria-hidden="true" className="text-destructive-600">*</span></Label>
