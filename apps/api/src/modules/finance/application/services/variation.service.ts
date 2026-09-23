@@ -2,6 +2,8 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
+import { CacheService } from '@/shared/cache/cache.service';
+import { invalidateAnalytics } from '@/shared/cache/analytics-cache';
 import type { CreateVariationDto, ListVariationQueryDto } from '../../presentation/dto/finance.dto';
 
 @Injectable()
@@ -9,6 +11,7 @@ export class VariationService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(CacheService) private readonly cache: CacheService,
   ) {}
 
   async createVariation(dto: CreateVariationDto, actorId: string) {
@@ -87,6 +90,10 @@ export class VariationService {
       },
       source: 'api',
     });
+
+    // approveVariation mengubah project.contractValue -> memengaruhi cache analytics
+    // (executive.totalContractValue, anomalies BUDGET_OVERRUN, projectCostSummary.contractValue).
+    await invalidateAnalytics(this.cache);
 
     return approved;
   }
