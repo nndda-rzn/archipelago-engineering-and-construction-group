@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { stockLedgerEntrySchema, stockSummarySchema } from '@aec/api-contracts';
-import { getJson } from '@/shared/lib/http';
+import { getJson, downloadFile } from '@/shared/lib/http';
 import { type PaginationParams } from '@/shared/lib/pagination';
 
 export const ledgerKeys = { all: ['stock-ledger'] as const, list: (params: PaginationParams & { projectId?: string }) => [...ledgerKeys.all, 'list', params] as const, summary: (projectId: string | null) => [...ledgerKeys.all, 'summary', projectId] as const };
@@ -27,4 +27,14 @@ export function useStockSummary(projectId: string | null) {
     },
     enabled: !!projectId,
   });
+}
+
+/** Unduh seluruh ledger (server-side streaming, mengikuti filter), bukan hanya halaman aktif. */
+export function exportStockLedger(filters?: { projectId?: string; warehouseId?: string; wbsItemId?: string }) {
+  const qs = new URLSearchParams();
+  if (filters?.projectId) qs.set('projectId', filters.projectId);
+  if (filters?.warehouseId) qs.set('warehouseId', filters.warehouseId);
+  if (filters?.wbsItemId) qs.set('wbsItemId', filters.wbsItemId);
+  const suffix = qs.toString() ? `?${qs}` : '';
+  return downloadFile(`/stock-ledger/export.csv${suffix}`, 'stock-ledger.csv');
 }

@@ -1,8 +1,10 @@
-import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Post, Query, Req, Res, StreamableFile, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
 import { Permission } from '@/shared/permissions/permissions';
+import { contentDisposition } from '@/shared/export/csv';
 import {
   CreateGoodsReceiptDto,
   CreateMaterialIssueDto,
@@ -119,6 +121,14 @@ export class InventoryController {
   @Permissions(Permission.StockLedgerView)
   listStockLedger(@Query() query: ListStockLedgerQueryDto) {
     return this.ledger.listStockLedger(query);
+  }
+
+  @Get('stock-ledger/export.csv')
+  @Permissions(Permission.StockLedgerView)
+  exportStockLedger(@Query() query: ListStockLedgerQueryDto, @Res({ passthrough: true }) res: Response) {
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', contentDisposition('stock-ledger'));
+    return new StreamableFile(this.ledger.exportCsvStream(query));
   }
 
   @Get('projects/:projectId/stock-summary')

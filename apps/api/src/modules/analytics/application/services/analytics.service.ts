@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { Readable } from 'node:stream';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { CacheService } from '@/shared/cache/cache.service';
 import { ANALYTICS_CACHE_KEYS } from '@/shared/cache/analytics-cache';
+import { toCsvLines } from '@/shared/export/csv';
 
 @Injectable()
 export class AnalyticsService {
@@ -227,5 +229,42 @@ export class AnalyticsService {
 
     return { items, generatedAt: new Date().toISOString() };
     });
+  }
+
+  /** Export Aging AP/AR sebagai CSV streaming. Menggunakan hasil cached (TTL pendek) agar konsisten & hemat. */
+  async exportAgingCsv(): Promise<Readable> {
+    const data = await this.aging();
+    async function* rows(): AsyncGenerator<string[]> {
+      yield ['section', 'bucket', 'amount'];
+      for (const r of data.ar) yield ['AR', r.bucket, String(r.amount)];
+      for (const r of data.ap) yield ['AP', r.bucket, String(r.amount)];
+    }
+    return Readable.from(toCsvLines(rows()));
+  }
+
+  /** Export Cash Flow (series bulanan) sebagai CSV streaming. */
+  async exportCashFlowCsv(): Promise<Readable> {
+    const data = await this.cashFlow();
+    async function* rows(): AsyncGenerator<string[]> {
+      yield ['month', 'cashIn', 'cashOut', 'net'];
+      for (const r of data.series) yield [r.month, String(r.cashIn), String(r.cashOut), String(r.net)];
+    }
+    return Readable.from(toCsvLines(rows()));
+  }
+
+  /** Export Project Cost Summary sebagai CSV streaming. */
+  async exportProjectCostSummaryCsv(): Promise<Readable> {
+    const data = await this.projectCostSummary();
+    async function* rows(): AsyncGenerator<string[]> {
+      yield ['projectCode', 'projectName', 'contractValue', 'budget', 'cost', 'revenue', 'margin', 'budgetUsagePct'];
+      for (const r of data.items) {
+        yield [
+          r.projectCode, r.projectName,
+          String(r.contractValue), String(r.budget), String(r.cost), String(r.revenue),
+          String(r.margin), String(r.budgetUsagePct),
+        ];
+      }
+    }
+    return Readable.from(toCsvLines(rows()));
   }
 }

@@ -81,6 +81,38 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
   return res.text().then((text) => JSON.parse(text, jsonReviver)) as Promise<T>;
 }
 
+/**
+ * Unduh berkas biner (mis. CSV export server-side) dengan header Authorization.
+ * Menyimpan respons sebagai Blob dan memicu download; nama file diambil dari
+ * Content-Disposition bila ada.
+ */
+export async function downloadFile(path: string, fallbackFilename: string): Promise<void> {
+  const res = await fetch(`${API_BASE}${path}`, { headers: AUTH_HEADERS() });
+
+  if (!res.ok) {
+    if (res.status === 401) handleUnauthorized();
+    const body = (await res.json().catch(() => null)) as { error?: { code?: string; message?: string } } | null;
+    throw new ApiError(
+      body?.error?.message ?? `Unduh gagal: ${res.status}`,
+      body?.error?.code ?? 'HTTP_ERROR',
+    );
+  }
+
+  const disposition = res.headers.get('Content-Disposition') ?? '';
+  const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition);
+  const filename = match?.[1] ? decodeURIComponent(match[1]) : fallbackFilename;
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 const TOKEN_KEY = 'aec_token';
 const SESSION_KEY = 'aec_session';
 
