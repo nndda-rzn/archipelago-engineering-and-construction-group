@@ -336,4 +336,17 @@ export class ListStockLedgerQueryDto {
   @IsOptional()
   @IsString()
   warehouseId?: string;
+
+  /** Keyset pagination: bila diisi, `page` diabaikan dan hasil memakai cursor. */
+  @IsOptional()
+  @IsString()
+  cursor?: string;
+
+  /** Jumlah baris saat mode cursor (<=200). Fallback ke pageSize. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  take?: number;
 }

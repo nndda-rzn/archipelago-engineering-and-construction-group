@@ -1,6 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
+import { decodeCursor, encodeCursor, keysetWhere } from '@/shared/utils/keyset-cursor';
 import type { ListStockLedgerQueryDto } from '../../presentation/dto/inventory.dto';
 
 @Injectable()
@@ -11,24 +12,64 @@ export class StockLedgerService {
     const page = Number(query.page) || 1;
     const pageSize = Math.min(Number(query.pageSize) || 50, 200);
 
-    const where: Prisma.StockLedgerEntryWhereInput = {
+    const baseWhere: Prisma.StockLedgerEntryWhereInput = {
       ...(query.projectId ? { projectId: query.projectId } : {}),
       ...(query.wbsItemId ? { wbsItemId: query.wbsItemId } : {}),
       ...(query.warehouseId ? { warehouseId: query.warehouseId } : {}),
     };
 
+    const include = { project: { select: { code: true } }, wbsItem: { select: { code: true, name: true } }, warehouse: { select: { code: true, name: true } } } as const;
+
+    // Mode keyset: stabil & efisien untuk tabel yang tumbuh tak terbatas (ledger).
+    if (query.cursor) {
+      const take = Math.min(Number(query.take) || pageSize, 200);
+      const decoded = decodeCursor(query.cursor);
+      if (!decoded) {
+        // Cursor rusak -> fallback halaman pertama keyset (tanpa error ke client).
+        const rows = await this.prisma.stockLedgerEntry.findMany({
+          where: baseWhere,
+          include,
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          take: take + 1,
+        });
+        return this.keysetResult(rows, take);
+      }
+
+      const rows = await this.prisma.stockLedgerEntry.findMany({
+        where: keysetWhere(baseWhere, decoded),
+        include,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: take + 1,
+      });
+      return this.keysetResult(rows, take);
+    }
+
     const [items, total] = await this.prisma.$transaction([
       this.prisma.stockLedgerEntry.findMany({
-        where,
-        include: { project: { select: { code: true } }, wbsItem: { select: { code: true, name: true } }, warehouse: { select: { code: true, name: true } } },
+        where: baseWhere,
+        include,
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      this.prisma.stockLedgerEntry.count({ where }),
+      this.prisma.stockLedgerEntry.count({ where: baseWhere }),
     ]);
 
-    return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+    const last = items.length > 0 ? items[items.length - 1] : undefined;
+    const nextCursor = items.length === pageSize && last ? this.cursorOf(last) : null;
+    return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize), nextCursor };
+  }
+
+  private cursorOf(row: { createdAt: Date; id: string }): string {
+    return encodeCursor({ createdAt: row.createdAt, id: row.id });
+  }
+
+  private keysetResult<T extends { createdAt: Date; id: string }>(rows: T[], take: number) {
+    const hasMore = rows.length > take;
+    const items = hasMore ? rows.slice(0, take) : rows;
+    const last = items.length > 0 ? items[items.length - 1] : undefined;
+    const nextCursor = hasMore && last ? this.cursorOf(last) : null;
+    return { items, nextCursor };
   }
 
   async stockSummary(projectId: string) {
