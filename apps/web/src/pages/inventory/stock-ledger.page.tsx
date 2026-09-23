@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button, DataGrid } from '@aec/ui';
-import { useStockLedger, useStockSummary, useWarehouses } from '@/features/inventory';
+import { Download } from 'lucide-react';
+import { useStockLedger, useStockSummary, useWarehouses, exportStockLedger } from '@/features/inventory';
 import { WarehouseForm, ledgerColumns } from '@/features/inventory';
 import { formatIdr } from '@/shared/lib/format';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
@@ -9,11 +10,21 @@ export function StockLedgerPage() {
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
   const [showWarehouseForm, setShowWarehouseForm] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const { data, isLoading, isError, refetch } = useStockLedger({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
   const warehouses = useWarehouses({ page: 1, pageSize: 100 });
   const projectWh = (warehouses.data?.items ?? []).find((w) => w.warehouseType === 'PROJECT');
   const summary = useStockSummary(showSummary ? projectWh?.projectId ?? null : null);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportStockLedger();
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div>
@@ -23,6 +34,10 @@ export function StockLedgerPage() {
           <p className="mt-1 text-body-sm text-neutral-500">Semua perubahan stok berasal dari movement (FR-INV-001)</p>
         </div>
         <div className="flex gap-2">
+          <Button size="sm" variant="secondary" onClick={handleExport} disabled={exporting}>
+            <Download className="h-3.5 w-3.5" aria-hidden="true" />
+            {exporting ? 'Menyiapkan…' : 'Unduh CSV'}
+          </Button>
           <Button size="sm" variant="secondary" onClick={() => setShowSummary((s) => !s)}>
             {showSummary ? 'Sembunyikan Ringkasan' : 'Ringkasan Stok'}
           </Button>
@@ -75,7 +90,6 @@ export function StockLedgerPage() {
           isError={isError}
           onRetry={() => refetch()}
           emptyMessage="Belum ada stock movement"
-          exportFilename="stock-ledger"
         />
       </div>
     </div>

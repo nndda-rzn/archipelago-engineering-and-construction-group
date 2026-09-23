@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Badge, Button, DataGrid } from '@aec/ui';
-import { Printer } from 'lucide-react';
-import { useCashFlow, useAging, useProjectCostSummary, type AgingBucket, type ProjectCostSummaryItem } from '@/features/analytics';
+import { Download, Printer } from 'lucide-react';
+import { useCashFlow, useAging, useProjectCostSummary, exportAnalytics, type AgingBucket, type ProjectCostSummaryItem } from '@/features/analytics';
 import { CashFlowChart } from '@/widgets/dashboard-charts';
 import { formatIdr as fmt } from '@/shared/lib/format';
 
@@ -56,10 +57,28 @@ const pcsColumns = [
   }),
 ];
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children, onExport }: { title: string; children: React.ReactNode; onExport?: () => Promise<void> }) {
+  const [busy, setBusy] = useState(false);
+  const handleExport = async () => {
+    if (!onExport) return;
+    setBusy(true);
+    try {
+      await onExport();
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-      <h2 className="mb-3 text-h2 text-neutral-950">{title}</h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-h2 text-neutral-950">{title}</h2>
+        {onExport && (
+          <Button size="sm" variant="secondary" className="no-print" onClick={handleExport} disabled={busy}>
+            <Download className="h-3.5 w-3.5" aria-hidden="true" />
+            {busy ? 'Menyiapkan…' : 'Unduh CSV'}
+          </Button>
+        )}
+      </div>
       {children}
     </div>
   );
@@ -86,7 +105,7 @@ export function ReportingPage() {
       </div>
 
       <div className="space-y-6">
-        <Section title="Cash Flow">
+        <Section title="Cash Flow" onExport={exportAnalytics.cashFlow}>
           {cashFlow.isLoading ? (
             <p className="text-body text-neutral-500">Memuat…</p>
           ) : cashFlow.data ? (
@@ -102,15 +121,15 @@ export function ReportingPage() {
         </Section>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <Section title={`Aging AR (Total ${fmt(total(aging.data?.ar ?? []))})`}>
+          <Section title={`Aging AR (Total ${fmt(total(aging.data?.ar ?? []))})`} onExport={exportAnalytics.aging}>
             <DataGrid columns={bucketColumns('Piutang')} data={aging.data?.ar ?? []} isLoading={aging.isLoading} emptyMessage="Tidak ada piutang" />
           </Section>
-          <Section title={`Aging AP (Total ${fmt(total(aging.data?.ap ?? []))})`}>
+          <Section title={`Aging AP (Total ${fmt(total(aging.data?.ap ?? []))})`} onExport={exportAnalytics.aging}>
             <DataGrid columns={bucketColumns('Hutang')} data={aging.data?.ap ?? []} isLoading={aging.isLoading} emptyMessage="Tidak ada hutang" />
           </Section>
         </div>
 
-        <Section title="Project Cost Summary">
+        <Section title="Project Cost Summary" onExport={exportAnalytics.projectCostSummary}>
           <DataGrid columns={pcsColumns} data={costSummary.data?.items ?? []} isLoading={costSummary.isLoading} emptyMessage="Belum ada project" />
         </Section>
       </div>

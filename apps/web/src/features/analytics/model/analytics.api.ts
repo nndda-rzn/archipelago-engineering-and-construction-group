@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { executiveDashboardSchema, anomalyListSchema, cashFlowSchema, agingSchema, projectCostSummarySchema } from '@aec/api-contracts';
-import { getJson } from '@/shared/lib/http';
+import { getJson, downloadFile } from '@/shared/lib/http';
 
 export const analyticsKeys = {
   all: ['analytics'] as const,
@@ -60,3 +60,10 @@ export function useProjectCostSummary() {
     },
   });
 }
+
+/** Unduh CSV server-side (seluruh data, bukan hanya halaman aktif di layar). */
+export const exportAnalytics = {
+  aging: () => downloadFile('/analytics/aging/export.csv', 'aging-ar-ap.csv'),
+  cashFlow: () => downloadFile('/analytics/cash-flow/export.csv', 'cash-flow.csv'),
+  projectCostSummary: () => downloadFile('/analytics/project-cost-summary/export.csv', 'project-cost-summary.csv'),
+};

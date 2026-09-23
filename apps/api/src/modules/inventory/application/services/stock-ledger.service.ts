@@ -1,8 +1,21 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
+import { Readable } from 'node:stream';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { decodeCursor, encodeCursor, keysetWhere } from '@/shared/utils/keyset-cursor';
+import { toCsvLines } from '@/shared/export/csv';
 import type { ListStockLedgerQueryDto } from '../../presentation/dto/inventory.dto';
+
+const EXPORT_BATCH = 500;
+const EXPORT_HEADER = [
+  'projectCode', 'wbsCode', 'wbsName', 'warehouseCode', 'warehouseName',
+  'movementType', 'documentType', 'reference', 'description',
+  'quantity', 'unit', 'unitPrice', 'totalValue', 'balanceAfter', 'createdAt',
+] as const;
+
+type LedgerExportRow = Prisma.StockLedgerEntryGetPayload<{
+  include: { project: { select: { code: true } }; wbsItem: { select: { code: true; name: true } }; warehouse: { select: { code: true; name: true } } };
+}>;
 
 @Injectable()
 export class StockLedgerService {
@@ -58,6 +71,58 @@ export class StockLedgerService {
     const last = items.length > 0 ? items[items.length - 1] : undefined;
     const nextCursor = items.length === pageSize && last ? this.cursorOf(last) : null;
     return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize), nextCursor };
+  }
+
+  /**
+   * Export seluruh ledger yang cocok filter sebagai CSV streaming (bukan hanya halaman aktif).
+   * Iterasi keyset (`createdAt desc, id desc`) batch 500, `Readable.from(generator)` -> memori O(batch).
+   */
+  exportCsvStream(query: ListStockLedgerQueryDto): Readable {
+    const baseWhere: Prisma.StockLedgerEntryWhereInput = {
+      ...(query.projectId ? { projectId: query.projectId } : {}),
+      ...(query.wbsItemId ? { wbsItemId: query.wbsItemId } : {}),
+      ...(query.warehouseId ? { warehouseId: query.warehouseId } : {}),
+    };
+    return Readable.from(toCsvLines(this.ledgerExportRows(baseWhere)));
+  }
+
+  /** Iterasi keyset seluruh ledger (batch 500) menghasilkan baris CSV. */
+  private async *ledgerExportRows(where: Prisma.StockLedgerEntryWhereInput): AsyncGenerator<string[]> {
+    const include = { project: { select: { code: true } }, wbsItem: { select: { code: true, name: true } }, warehouse: { select: { code: true, name: true } } } as const;
+
+    yield [...EXPORT_HEADER];
+    let cursor: { createdAt: Date; id: string } | null = null;
+    for (;;) {
+      const pageRows: LedgerExportRow[] = await this.prisma.stockLedgerEntry.findMany({
+        where: cursor ? keysetWhere(where, cursor) : where,
+        include,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: EXPORT_BATCH,
+      });
+      if (pageRows.length === 0) break;
+      for (const r of pageRows) {
+        yield [
+          r.project?.code ?? '',
+          r.wbsItem?.code ?? '',
+          r.wbsItem?.name ?? '',
+          r.warehouse?.code ?? '',
+          r.warehouse?.name ?? '',
+          r.movementType,
+          r.documentType,
+          r.reference ?? '',
+          r.description ?? '',
+          r.quantity.toString(),
+          r.unit,
+          r.unitPrice != null ? r.unitPrice.toString() : '',
+          r.totalValue != null ? r.totalValue.toString() : '',
+          r.balanceAfter.toString(),
+          r.createdAt.toISOString(),
+        ];
+      }
+      const last = pageRows[pageRows.length - 1];
+      cursor = last ? { createdAt: last.createdAt, id: last.id } : null;
+      if (pageRows.length < EXPORT_BATCH) break;
+    }
   }
 
   private cursorOf(row: { createdAt: Date; id: string }): string {
