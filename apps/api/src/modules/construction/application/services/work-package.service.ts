@@ -104,10 +104,8 @@ export class WorkPackageService {
     if (wp.requiresIFC) {
       const ifcCount = await this.prisma.drawing.count({ where: { projectId: wp.projectId, isIFC: true } });
       if (ifcCount === 0) {
-        await this.prisma.constructionWorkPackage.update({
-          where: { id },
-          data: { readyStatus: 'BLOCKED', readyNote: 'Current IFC belum tersedia (FR-CON-002)' },
-        });
+        // Guard murni: tidak menulis apa pun saat gagal. Status BLOCKED/READY pada WP
+        // dipersist oleh endpoint readiness() (GET .../readiness), bukan oleh start() yang gagal.
         throw new ConflictException({ code: 'READINESS_GATE_BLOCKED', message: 'Work package butuh current IFC — belum tersedia (FR-CON-002)' });
       }
     }
