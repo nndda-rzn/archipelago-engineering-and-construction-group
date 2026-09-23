@@ -17,10 +17,21 @@ export class CollectionService {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
 
+    const invoiceIds = dto.items.map((i) => i.clientInvoiceId);
+    const invoices = await this.prisma.clientInvoice.findMany({ where: { id: { in: invoiceIds } } });
+    const invoiceMap = new Map(invoices.map((inv) => [inv.id, inv]));
+
+    const collectedGroups = await this.prisma.collectionItem.groupBy({
+      by: ['clientInvoiceId'],
+      where: { clientInvoiceId: { in: invoiceIds }, collection: { status: { not: 'CANCELLED' } } },
+      _sum: { amount: true },
+    });
+    const collectedMap = new Map(collectedGroups.map((g) => [g.clientInvoiceId, Number(g._sum.amount ?? 0)]));
+
     let totalAmount = 0;
     const items: Array<{ clientInvoiceId: string; amount: number }> = [];
     for (const item of dto.items) {
-      const invoice = await this.prisma.clientInvoice.findUnique({ where: { id: item.clientInvoiceId } });
+      const invoice = invoiceMap.get(item.clientInvoiceId);
       if (!invoice) throw new NotFoundException({ code: 'CLIENT_INVOICE_NOT_FOUND', message: 'Client invoice tidak ditemukan' });
       if (invoice.status !== 'POSTED') {
         throw new ConflictException({ code: 'INVOICE_NOT_POSTED', message: `Client invoice ${invoice.invoiceNumber} harus POSTED` });
@@ -29,11 +40,7 @@ export class CollectionService {
         throw new ConflictException({ code: 'INVOICE_PROJECT_MISMATCH', message: 'Invoice bukan milik project ini' });
       }
 
-      const collectedAgg = await this.prisma.collectionItem.aggregate({
-        where: { clientInvoiceId: invoice.id, collection: { status: { not: 'CANCELLED' } } },
-        _sum: { amount: true },
-      });
-      const open = Number(invoice.totalAmount) - Number(collectedAgg._sum.amount ?? 0);
+      const open = Number(invoice.totalAmount) - (collectedMap.get(invoice.id) ?? 0);
       if (Number(item.amount) > open + 0.001) {
         throw new ConflictException({
           code: 'EXCEED_AR_OPEN',
@@ -44,27 +51,26 @@ export class CollectionService {
       items.push({ clientInvoiceId: invoice.id, amount: Number(item.amount) });
     }
 
-    const seq = await this.prisma.$transaction(async (tx) => {
+    const collection = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'COL' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'COL', prefix: `COL-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-    });
-
-    const collection = await this.prisma.collection.create({
-      data: {
-        collectionNumber: seq,
-        projectId: dto.projectId,
-        client: dto.client,
-        bankAccount: dto.bankAccount ?? null,
-        reference: dto.reference ?? null,
-        remark: dto.remark ?? null,
-        totalAmount,
-        items: { create: items },
-      },
-      include: { items: true },
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      return tx.collection.create({
+        data: {
+          collectionNumber: seq,
+          projectId: dto.projectId,
+          client: dto.client,
+          bankAccount: dto.bankAccount ?? null,
+          reference: dto.reference ?? null,
+          remark: dto.remark ?? null,
+          totalAmount,
+          items: { create: items },
+        },
+        include: { items: true },
+      });
     });
 
     await this.audit.record({
@@ -72,7 +78,7 @@ export class CollectionService {
       action: 'Collection.CREATE',
       resource: 'Collection',
       resourceId: collection.id,
-      newValue: { collectionNumber: seq, totalAmount: Number(totalAmount), client: dto.client },
+      newValue: { collectionNumber: collection.collectionNumber, totalAmount: Number(totalAmount), client: dto.client },
       source: 'api',
     });
 
