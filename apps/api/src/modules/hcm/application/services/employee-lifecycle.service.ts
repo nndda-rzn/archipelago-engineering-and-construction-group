@@ -19,20 +19,24 @@ export class EmployeeLifecycleService {
       throw new BadRequestException({ code: 'INVALID_STATUS', message: `Status tidak valid: ${status}` });
     }
 
-    const updated = await this.prisma.employee.update({
-      where: { id },
-      data: {
-        status,
-        leaveDate: status === 'LEAVER' ? (dto.leaveDate ? new Date(dto.leaveDate) : new Date()) : null,
-      },
-    });
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const emp = await tx.employee.update({
+        where: { id },
+        data: {
+          status,
+          leaveDate: status === 'LEAVER' ? (dto.leaveDate ? new Date(dto.leaveDate) : new Date()) : null,
+        },
+      });
 
-    if (status === 'LEAVER' && employee.user) {
-      await this.prisma.user.update({ where: { id: employee.user.id }, data: { status: 'BLOCKED' } });
-    }
-    if (status === 'ACTIVE' && employee.user) {
-      await this.prisma.user.update({ where: { id: employee.user.id }, data: { status: 'ACTIVE' } });
-    }
+      if (status === 'LEAVER' && employee.user) {
+        await tx.user.update({ where: { id: employee.user.id }, data: { status: 'BLOCKED' } });
+      }
+      if (status === 'ACTIVE' && employee.user) {
+        await tx.user.update({ where: { id: employee.user.id }, data: { status: 'ACTIVE' } });
+      }
+
+      return emp;
+    });
 
     await this.audit.record({
       userId: actorId,

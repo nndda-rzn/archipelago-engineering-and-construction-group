@@ -83,17 +83,21 @@ export class EquipmentMaintenanceService {
     const equipment = await this.prisma.equipment.findUnique({ where: { id: equipmentId } });
     if (!equipment) throw new NotFoundException({ code: 'EQUIPMENT_NOT_FOUND', message: 'Equipment tidak ditemukan' });
 
-    const breakdown = await this.prisma.equipmentBreakdown.create({
-      data: {
-        equipmentId,
-        breakdownDate: dto.breakdownDate ? new Date(dto.breakdownDate) : new Date(),
-        downtimeHours: Number(dto.downtimeHours),
-        costImpact: dto.costImpact ?? 0,
-        description: dto.description ?? null,
-      },
-    });
+    const breakdown = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.equipmentBreakdown.create({
+        data: {
+          equipmentId,
+          breakdownDate: dto.breakdownDate ? new Date(dto.breakdownDate) : new Date(),
+          downtimeHours: Number(dto.downtimeHours),
+          costImpact: dto.costImpact ?? 0,
+          description: dto.description ?? null,
+        },
+      });
 
-    await this.prisma.equipment.update({ where: { id: equipmentId }, data: { status: 'BREAKDOWN' } });
+      await tx.equipment.update({ where: { id: equipmentId }, data: { status: 'BREAKDOWN' } });
+
+      return created;
+    });
 
     await this.audit.record({
       userId: actorId,
@@ -116,15 +120,19 @@ export class EquipmentMaintenanceService {
       throw new ConflictException({ code: 'NOT_OPEN', message: `Hanya OPEN yang bisa di-resolve (${bd.status})` });
     }
 
-    const resolved = await this.prisma.equipmentBreakdown.update({
-      where: { id: breakdownId },
-      data: { status: 'RESOLVED', resolvedAt: new Date() },
-    });
+    const resolved = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.equipmentBreakdown.update({
+        where: { id: breakdownId },
+        data: { status: 'RESOLVED', resolvedAt: new Date() },
+      });
 
-    const openCount = await this.prisma.equipmentBreakdown.count({ where: { equipmentId, status: 'OPEN' } });
-    if (openCount === 0) {
-      await this.prisma.equipment.update({ where: { id: equipmentId }, data: { status: 'AVAILABLE' } });
-    }
+      const openCount = await tx.equipmentBreakdown.count({ where: { equipmentId, status: 'OPEN' } });
+      if (openCount === 0) {
+        await tx.equipment.update({ where: { id: equipmentId }, data: { status: 'AVAILABLE' } });
+      }
+
+      return updated;
+    });
 
     await this.audit.record({
       userId: actorId,

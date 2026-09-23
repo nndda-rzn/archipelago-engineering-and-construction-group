@@ -65,24 +65,28 @@ export class UserService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
-    const user = await this.prisma.user.create({
-      data: {
-        username: dto.username,
-        email: dto.email,
-        displayName: dto.displayName,
-        passwordHash,
-        legalEntityId: dto.legalEntityId,
-      },
-    });
 
-    if (dto.roleCode) {
-      const role = await this.prisma.role.findUnique({ where: { code: dto.roleCode } });
+    const role = dto.roleCode ? await this.prisma.role.findUnique({ where: { code: dto.roleCode } }) : null;
+
+    const user = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          username: dto.username,
+          email: dto.email,
+          displayName: dto.displayName,
+          passwordHash,
+          legalEntityId: dto.legalEntityId,
+        },
+      });
+
       if (role) {
-        await this.prisma.userRole.create({
-          data: { userId: user.id, roleId: role.id, effectiveFrom: new Date() },
+        await tx.userRole.create({
+          data: { userId: created.id, roleId: role.id, effectiveFrom: new Date() },
         });
       }
-    }
+
+      return created;
+    });
 
     await this.audit.record({
       userId: actorId,
