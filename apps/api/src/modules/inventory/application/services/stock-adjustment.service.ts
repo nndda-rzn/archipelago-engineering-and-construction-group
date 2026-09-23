@@ -20,41 +20,47 @@ export class StockAdjustmentService {
     const warehouse = await this.prisma.warehouse.findUnique({ where: { id: dto.warehouseId } });
     if (!warehouse) throw new NotFoundException({ code: 'WAREHOUSE_NOT_FOUND', message: 'Warehouse tidak ditemukan' });
 
-    for (const item of dto.items) {
-      if (!item.wbsItemId) continue;
-      const wbs = await this.prisma.wbsItem.findUnique({ where: { id: item.wbsItemId } });
-      if (!wbs || wbs.projectId !== dto.projectId) {
-        throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: `WBS ${item.wbsItemId} tidak ada di project ini` });
+    const wbsIds = dto.items.map((i) => i.wbsItemId).filter((id): id is string => Boolean(id));
+    if (wbsIds.length > 0) {
+      const wbsItems = await this.prisma.wbsItem.findMany({
+        where: { id: { in: wbsIds }, projectId: dto.projectId },
+        select: { id: true },
+      });
+      const validWbsIds = new Set(wbsItems.map((w) => w.id));
+      for (const item of dto.items) {
+        if (!item.wbsItemId) continue;
+        if (!validWbsIds.has(item.wbsItemId)) {
+          throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: `WBS ${item.wbsItemId} tidak ada di project ini` });
+        }
       }
     }
 
-    const seq = await this.prisma.$transaction(async (tx) => {
+    const adjustment = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'ADJ' },
         update: { nextNumber: { increment: 1 } },
         create: { code: 'ADJ', prefix: `ADJ-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
       });
-      return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-    });
-
-    const adjustment = await this.prisma.stockAdjustment.create({
-      data: {
-        adjustmentNumber: seq,
-        projectId: dto.projectId,
-        warehouseId: dto.warehouseId,
-        reasonCode: dto.reasonCode,
-        reason: dto.reason ?? null,
-        adjustedBy: actorId,
-        items: {
-          create: dto.items.map((i) => ({
-            description: i.description,
-            quantity: Number(i.quantity),
-            unit: i.unit ?? 'EA',
-            wbsItemId: i.wbsItemId ?? null,
-          })),
+      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+      return tx.stockAdjustment.create({
+        data: {
+          adjustmentNumber: seq,
+          projectId: dto.projectId,
+          warehouseId: dto.warehouseId,
+          reasonCode: dto.reasonCode,
+          reason: dto.reason ?? null,
+          adjustedBy: actorId,
+          items: {
+            create: dto.items.map((i) => ({
+              description: i.description,
+              quantity: Number(i.quantity),
+              unit: i.unit ?? 'EA',
+              wbsItemId: i.wbsItemId ?? null,
+            })),
+          },
         },
-      },
-      include: { items: true },
+        include: { items: true },
+      });
     });
 
     await this.audit.record({
@@ -62,7 +68,7 @@ export class StockAdjustmentService {
       action: 'StockAdjustment.CREATE',
       resource: 'StockAdjustment',
       resourceId: adjustment.id,
-      newValue: { adjustmentNumber: seq, reasonCode: dto.reasonCode, status: 'DRAFT' },
+      newValue: { adjustmentNumber: adjustment.adjustmentNumber, reasonCode: dto.reasonCode, status: 'DRAFT' },
       source: 'api',
     });
 
