@@ -17,20 +17,22 @@ export class HseIncidentService {
   ) {}
 
   async createIncident(dto: CreateIncidentDto, actorId: string) {
-    const incidentNumber = await this.seq.next('INC', `INC-${new Date().getFullYear()}-`);
-    const incident = await this.prisma.hseIncident.create({
-      data: {
-        incidentNumber,
-        projectId: dto.projectId ?? null,
-        incidentDate: dto.incidentDate ? new Date(dto.incidentDate) : new Date(),
-        type: dto.type ?? 'NEAR_MISS',
-        severity: dto.severity ?? 'MEDIUM',
-        description: dto.description,
-        reportedBy: actorId,
-      },
-      include: { project: { select: { code: true, name: true } } },
+    const incident = await this.prisma.$transaction(async (tx) => {
+      const incidentNumber = await this.seq.next('INC', `INC-${new Date().getFullYear()}-`, tx);
+      return tx.hseIncident.create({
+        data: {
+          incidentNumber,
+          projectId: dto.projectId ?? null,
+          incidentDate: dto.incidentDate ? new Date(dto.incidentDate) : new Date(),
+          type: dto.type ?? 'NEAR_MISS',
+          severity: dto.severity ?? 'MEDIUM',
+          description: dto.description,
+          reportedBy: actorId,
+        },
+        include: { project: { select: { code: true, name: true } } },
+      });
     });
-    await this.audit.record({ userId: actorId, action: 'HseIncident.CREATE', resource: 'HseIncident', resourceId: incident.id, newValue: { incidentNumber, severity: incident.severity, type: incident.type }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'HseIncident.CREATE', resource: 'HseIncident', resourceId: incident.id, newValue: { incidentNumber: incident.incidentNumber, severity: incident.severity, type: incident.type }, source: 'api' });
     await invalidateAnalytics(this.cache);
     return incident;
   }

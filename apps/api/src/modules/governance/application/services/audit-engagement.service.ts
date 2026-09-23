@@ -14,11 +14,13 @@ export class AuditEngagementService {
   ) {}
 
   async createAudit(dto: CreateAuditDto, actorId: string) {
-    const auditNumber = await this.seq.next('AUD', `AUD-${new Date().getFullYear()}-`);
-    const auditRecord = await this.prisma.auditEngagement.create({
-      data: { auditNumber, title: dto.title, scope: dto.scope ?? null, plannedAt: new Date(), auditor: actorId },
+    const auditRecord = await this.prisma.$transaction(async (tx) => {
+      const auditNumber = await this.seq.next('AUD', `AUD-${new Date().getFullYear()}-`, tx);
+      return tx.auditEngagement.create({
+        data: { auditNumber, title: dto.title, scope: dto.scope ?? null, plannedAt: new Date(), auditor: actorId },
+      });
     });
-    await this.audit.record({ userId: actorId, action: 'AuditEngagement.CREATE', resource: 'AuditEngagement', resourceId: auditRecord.id, newValue: { auditNumber, title: dto.title }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'AuditEngagement.CREATE', resource: 'AuditEngagement', resourceId: auditRecord.id, newValue: { auditNumber: auditRecord.auditNumber, title: dto.title }, source: 'api' });
     return auditRecord;
   }
 

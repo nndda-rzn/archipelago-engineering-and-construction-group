@@ -14,19 +14,21 @@ export class SafetyObservationService {
   ) {}
 
   async createObservation(dto: CreateObservationDto, actorId: string) {
-    const obsNumber = await this.seq.next('OBS', `OBS-${new Date().getFullYear()}-`);
-    const obs = await this.prisma.safetyObservation.create({
-      data: {
-        observationNumber: obsNumber,
-        projectId: dto.projectId ?? null,
-        observationDate: dto.observationDate ? new Date(dto.observationDate) : new Date(),
-        type: dto.type ?? 'UNSAFE',
-        description: dto.description,
-        observedBy: actorId,
-      },
-      include: { project: { select: { code: true, name: true } } },
+    const obs = await this.prisma.$transaction(async (tx) => {
+      const obsNumber = await this.seq.next('OBS', `OBS-${new Date().getFullYear()}-`, tx);
+      return tx.safetyObservation.create({
+        data: {
+          observationNumber: obsNumber,
+          projectId: dto.projectId ?? null,
+          observationDate: dto.observationDate ? new Date(dto.observationDate) : new Date(),
+          type: dto.type ?? 'UNSAFE',
+          description: dto.description,
+          observedBy: actorId,
+        },
+        include: { project: { select: { code: true, name: true } } },
+      });
     });
-    await this.audit.record({ userId: actorId, action: 'SafetyObservation.CREATE', resource: 'SafetyObservation', resourceId: obs.id, newValue: { observationNumber: obsNumber, type: obs.type }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'SafetyObservation.CREATE', resource: 'SafetyObservation', resourceId: obs.id, newValue: { observationNumber: obs.observationNumber, type: obs.type }, source: 'api' });
     return obs;
   }
 

@@ -17,20 +17,22 @@ export class PermitToWorkService {
     if (dto.validFrom && dto.validTo && new Date(dto.validTo) <= new Date(dto.validFrom)) {
       throw new BadRequestException({ code: 'INVALID_PERIOD', message: 'validTo harus setelah validFrom' });
     }
-    const permitNumber = await this.seq.next('PTW', `PTW-${new Date().getFullYear()}-`);
-    const permit = await this.prisma.permitToWork.create({
-      data: {
-        permitNumber,
-        projectId: dto.projectId ?? null,
-        area: dto.area,
-        description: dto.description ?? null,
-        validFrom: new Date(dto.validFrom),
-        validTo: new Date(dto.validTo),
-        issuedTo: dto.issuedTo,
-      },
-      include: { project: { select: { code: true, name: true } } },
+    const permit = await this.prisma.$transaction(async (tx) => {
+      const permitNumber = await this.seq.next('PTW', `PTW-${new Date().getFullYear()}-`, tx);
+      return tx.permitToWork.create({
+        data: {
+          permitNumber,
+          projectId: dto.projectId ?? null,
+          area: dto.area,
+          description: dto.description ?? null,
+          validFrom: new Date(dto.validFrom),
+          validTo: new Date(dto.validTo),
+          issuedTo: dto.issuedTo,
+        },
+        include: { project: { select: { code: true, name: true } } },
+      });
     });
-    await this.audit.record({ userId: actorId, action: 'PermitToWork.CREATE', resource: 'PermitToWork', resourceId: permit.id, newValue: { permitNumber, area: dto.area }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'PermitToWork.CREATE', resource: 'PermitToWork', resourceId: permit.id, newValue: { permitNumber: permit.permitNumber, area: dto.area }, source: 'api' });
     return permit;
   }
 

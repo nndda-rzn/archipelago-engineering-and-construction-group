@@ -14,17 +14,19 @@ export class SubmittalService {
   ) {}
 
   async createSubmittal(dto: CreateSubmittalDto, actorId: string) {
-    const number = await this.seq.next('SUB', `SUB-${new Date().getFullYear()}-`);
-    const item = await this.prisma.submittal.create({
-      data: {
-        submittalNumber: number,
-        projectId: dto.projectId ?? null,
-        title: dto.title,
-        dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
-      },
-      include: { project: { select: { code: true } } },
+    const item = await this.prisma.$transaction(async (tx) => {
+      const number = await this.seq.next('SUB', `SUB-${new Date().getFullYear()}-`, tx);
+      return tx.submittal.create({
+        data: {
+          submittalNumber: number,
+          projectId: dto.projectId ?? null,
+          title: dto.title,
+          dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+        },
+        include: { project: { select: { code: true } } },
+      });
     });
-    await this.audit.record({ userId: actorId, action: 'Submittal.CREATE', resource: 'Submittal', resourceId: item.id, newValue: { submittalNumber: number, title: dto.title }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'Submittal.CREATE', resource: 'Submittal', resourceId: item.id, newValue: { submittalNumber: item.submittalNumber, title: dto.title }, source: 'api' });
     return item;
   }
 

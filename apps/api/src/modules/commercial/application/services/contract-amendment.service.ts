@@ -19,20 +19,21 @@ export class ContractAmendmentService {
       throw new ConflictException({ code: 'NOT_EXECUTED', message: 'Amendment hanya untuk kontrak EXECUTED' });
     }
 
-    const amendmentNumber = await this.seq.next('AMD', `AMD-${new Date().getFullYear()}-`);
-
-    const amendment = await this.prisma.contractAmendment.create({
-      data: {
-        amendmentNumber,
-        contractId,
-        title: dto.title,
-        description: dto.description ?? null,
-        amountChange: dto.amountChange,
-        signedDate: dto.signedDate ? new Date(dto.signedDate) : null,
-      },
+    const amendment = await this.prisma.$transaction(async (tx) => {
+      const amendmentNumber = await this.seq.next('AMD', `AMD-${new Date().getFullYear()}-`, tx);
+      return tx.contractAmendment.create({
+        data: {
+          amendmentNumber,
+          contractId,
+          title: dto.title,
+          description: dto.description ?? null,
+          amountChange: dto.amountChange,
+          signedDate: dto.signedDate ? new Date(dto.signedDate) : null,
+        },
+      });
     });
 
-    await this.audit.record({ userId: actorId, action: 'ContractAmendment.CREATE', resource: 'ContractAmendment', resourceId: amendment.id, newValue: { amendmentNumber, contractNumber: contract.contractNumber, amountChange: Number(dto.amountChange) }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'ContractAmendment.CREATE', resource: 'ContractAmendment', resourceId: amendment.id, newValue: { amendmentNumber: amendment.amendmentNumber, contractNumber: contract.contractNumber, amountChange: Number(dto.amountChange) }, source: 'api' });
     return amendment;
   }
 

@@ -14,20 +14,22 @@ export class LegalCaseService {
   ) {}
 
   async createLegalCase(dto: CreateLegalCaseDto, actorId: string) {
-    const caseNumber = await this.seq.next('LGL', `LGL-${new Date().getFullYear()}-`);
-    const legalCase = await this.prisma.legalCase.create({
-      data: {
-        caseNumber,
-        projectId: dto.projectId ?? null,
-        legalEntityId: dto.legalEntityId ?? null,
-        title: dto.title,
-        caseType: dto.caseType ?? 'CONTRACT',
-        counterpart: dto.counterpart ?? null,
-        description: dto.description ?? null,
-      },
-      include: { project: { select: { code: true } } },
+    const legalCase = await this.prisma.$transaction(async (tx) => {
+      const caseNumber = await this.seq.next('LGL', `LGL-${new Date().getFullYear()}-`, tx);
+      return tx.legalCase.create({
+        data: {
+          caseNumber,
+          projectId: dto.projectId ?? null,
+          legalEntityId: dto.legalEntityId ?? null,
+          title: dto.title,
+          caseType: dto.caseType ?? 'CONTRACT',
+          counterpart: dto.counterpart ?? null,
+          description: dto.description ?? null,
+        },
+        include: { project: { select: { code: true } } },
+      });
     });
-    await this.audit.record({ userId: actorId, action: 'LegalCase.CREATE', resource: 'LegalCase', resourceId: legalCase.id, newValue: { caseNumber, title: dto.title, caseType: legalCase.caseType }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'LegalCase.CREATE', resource: 'LegalCase', resourceId: legalCase.id, newValue: { caseNumber: legalCase.caseNumber, title: dto.title, caseType: legalCase.caseType }, source: 'api' });
     return legalCase;
   }
 

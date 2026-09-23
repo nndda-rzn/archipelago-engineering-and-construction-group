@@ -14,18 +14,20 @@ export class InspectionService {
   ) {}
 
   async createInspection(dto: CreateInspectionDto, actorId: string) {
-    const inspectionNumber = await this.seq.next('INS', `INS-${new Date().getFullYear()}-`);
-    const ins = await this.prisma.inspectionRequest.create({
-      data: {
-        inspectionNumber,
-        projectId: dto.projectId ?? null,
-        workPackageId: dto.workPackageId ?? null,
-        itpId: dto.itpId ?? null,
-        description: dto.description,
-      },
-      include: { workPackage: { select: { wpNumber: true, title: true } } },
+    const ins = await this.prisma.$transaction(async (tx) => {
+      const inspectionNumber = await this.seq.next('INS', `INS-${new Date().getFullYear()}-`, tx);
+      return tx.inspectionRequest.create({
+        data: {
+          inspectionNumber,
+          projectId: dto.projectId ?? null,
+          workPackageId: dto.workPackageId ?? null,
+          itpId: dto.itpId ?? null,
+          description: dto.description,
+        },
+        include: { workPackage: { select: { wpNumber: true, title: true } } },
+      });
     });
-    await this.audit.record({ userId: actorId, action: 'InspectionRequest.CREATE', resource: 'InspectionRequest', resourceId: ins.id, newValue: { inspectionNumber }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'InspectionRequest.CREATE', resource: 'InspectionRequest', resourceId: ins.id, newValue: { inspectionNumber: ins.inspectionNumber }, source: 'api' });
     return ins;
   }
 

@@ -22,20 +22,21 @@ export class IntercompanyService {
     if (!from) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Entity asal tidak ditemukan' });
     if (!to) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Entity tujuan tidak ditemukan' });
 
-    const transactionNumber = await this.seq.next('IC', `IC-${new Date().getFullYear()}-`);
-
-    const ic = await this.prisma.intercompanyTransaction.create({
-      data: {
-        transactionNumber,
-        fromEntityId: dto.fromEntityId,
-        toEntityId: dto.toEntityId,
-        amount: dto.amount,
-        currency: dto.currency ?? 'IDR',
-        description: dto.description ?? null,
-      },
+    const ic = await this.prisma.$transaction(async (tx) => {
+      const transactionNumber = await this.seq.next('IC', `IC-${new Date().getFullYear()}-`, tx);
+      return tx.intercompanyTransaction.create({
+        data: {
+          transactionNumber,
+          fromEntityId: dto.fromEntityId,
+          toEntityId: dto.toEntityId,
+          amount: dto.amount,
+          currency: dto.currency ?? 'IDR',
+          description: dto.description ?? null,
+        },
+      });
     });
 
-    await this.audit.record({ userId: actorId, action: 'Intercompany.CREATE', resource: 'IntercompanyTransaction', resourceId: ic.id, newValue: { transactionNumber, from: from.code, to: to.code, amount: Number(dto.amount) }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'Intercompany.CREATE', resource: 'IntercompanyTransaction', resourceId: ic.id, newValue: { transactionNumber: ic.transactionNumber, from: from.code, to: to.code, amount: Number(dto.amount) }, source: 'api' });
     return ic;
   }
 

@@ -17,23 +17,24 @@ export class BankGuaranteeService {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
     if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });
 
-    const guaranteeNumber = await this.seq.next('BG', `BG-${new Date().getFullYear()}-`);
-
-    const bg = await this.prisma.bankGuarantee.create({
-      data: {
-        guaranteeNumber,
-        legalEntityId: dto.legalEntityId,
-        projectId: dto.projectId ?? null,
-        guaranteeType: dto.guaranteeType ?? 'BID',
-        beneficiary: dto.beneficiary,
-        bankName: dto.bankName,
-        amount: dto.amount,
-        currency: dto.currency ?? 'IDR',
-        expiryDate: dto.expiryDate ? new Date(dto.expiryDate) : null,
-      },
+    const bg = await this.prisma.$transaction(async (tx) => {
+      const guaranteeNumber = await this.seq.next('BG', `BG-${new Date().getFullYear()}-`, tx);
+      return tx.bankGuarantee.create({
+        data: {
+          guaranteeNumber,
+          legalEntityId: dto.legalEntityId,
+          projectId: dto.projectId ?? null,
+          guaranteeType: dto.guaranteeType ?? 'BID',
+          beneficiary: dto.beneficiary,
+          bankName: dto.bankName,
+          amount: dto.amount,
+          currency: dto.currency ?? 'IDR',
+          expiryDate: dto.expiryDate ? new Date(dto.expiryDate) : null,
+        },
+      });
     });
 
-    await this.audit.record({ userId: actorId, action: 'BankGuarantee.CREATE', resource: 'BankGuarantee', resourceId: bg.id, newValue: { guaranteeNumber, guaranteeType: dto.guaranteeType ?? 'BID', amount: Number(dto.amount) }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'BankGuarantee.CREATE', resource: 'BankGuarantee', resourceId: bg.id, newValue: { guaranteeNumber: bg.guaranteeNumber, guaranteeType: dto.guaranteeType ?? 'BID', amount: Number(dto.amount) }, source: 'api' });
     return bg;
   }
 

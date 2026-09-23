@@ -14,11 +14,13 @@ export class AccessReviewService {
   ) {}
 
   async createAccessReview(dto: CreateAccessReviewDto, actorId: string) {
-    const reviewNumber = await this.seq.next('ACR', `ACR-${new Date().getFullYear()}-`);
-    const review = await this.prisma.accessReview.create({
-      data: { reviewNumber, period: dto.period },
+    const review = await this.prisma.$transaction(async (tx) => {
+      const reviewNumber = await this.seq.next('ACR', `ACR-${new Date().getFullYear()}-`, tx);
+      return tx.accessReview.create({
+        data: { reviewNumber, period: dto.period },
+      });
     });
-    await this.audit.record({ userId: actorId, action: 'AccessReview.CREATE', resource: 'AccessReview', resourceId: review.id, newValue: { reviewNumber, period: dto.period }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'AccessReview.CREATE', resource: 'AccessReview', resourceId: review.id, newValue: { reviewNumber: review.reviewNumber, period: dto.period }, source: 'api' });
     return review;
   }
 

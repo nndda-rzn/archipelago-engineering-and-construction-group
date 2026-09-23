@@ -22,22 +22,23 @@ export class PaymentProposalService {
       if (!bank) throw new NotFoundException({ code: 'BANK_NOT_FOUND', message: 'Rekening tidak ditemukan' });
     }
 
-    const proposalNumber = await this.seq.next('PP', `PP-${new Date().getFullYear()}-`);
-
-    const proposal = await this.prisma.paymentProposal.create({
-      data: {
-        proposalNumber,
-        legalEntityId: dto.legalEntityId,
-        bankAccountId: dto.bankAccountId ?? null,
-        vendor: dto.vendor,
-        currency: dto.currency ?? 'IDR',
-        totalAmount: dto.totalAmount,
-        invoiceIds: dto.invoiceIds ?? [],
-        remark: dto.remark ?? null,
-      },
+    const proposal = await this.prisma.$transaction(async (tx) => {
+      const proposalNumber = await this.seq.next('PP', `PP-${new Date().getFullYear()}-`, tx);
+      return tx.paymentProposal.create({
+        data: {
+          proposalNumber,
+          legalEntityId: dto.legalEntityId,
+          bankAccountId: dto.bankAccountId ?? null,
+          vendor: dto.vendor,
+          currency: dto.currency ?? 'IDR',
+          totalAmount: dto.totalAmount,
+          invoiceIds: dto.invoiceIds ?? [],
+          remark: dto.remark ?? null,
+        },
+      });
     });
 
-    await this.audit.record({ userId: actorId, action: 'PaymentProposal.CREATE', resource: 'PaymentProposal', resourceId: proposal.id, newValue: { proposalNumber, vendor: dto.vendor, totalAmount: Number(dto.totalAmount) }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'PaymentProposal.CREATE', resource: 'PaymentProposal', resourceId: proposal.id, newValue: { proposalNumber: proposal.proposalNumber, vendor: dto.vendor, totalAmount: Number(dto.totalAmount) }, source: 'api' });
     return proposal;
   }
 

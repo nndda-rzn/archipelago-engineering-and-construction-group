@@ -24,24 +24,25 @@ export class CashForecastService {
     const projectCf = dto.projectCashFlow ?? 0;
     const net = receipt + loan - ap - payroll - tax + projectCf;
 
-    const forecastCode = await this.seq.next('CF', `CF-${new Date().getFullYear()}-`);
-
-    const forecast = await this.prisma.cashForecast.create({
-      data: {
-        forecastCode,
-        legalEntityId: dto.legalEntityId,
-        period: dto.period,
-        expectedReceipt: receipt,
-        expectedAp: ap,
-        expectedPayroll: payroll,
-        expectedLoan: loan,
-        expectedTax: tax,
-        projectCashFlow: projectCf,
-        netForecast: Math.round(net * 100) / 100,
-      },
+    const forecast = await this.prisma.$transaction(async (tx) => {
+      const forecastCode = await this.seq.next('CF', `CF-${new Date().getFullYear()}-`, tx);
+      return tx.cashForecast.create({
+        data: {
+          forecastCode,
+          legalEntityId: dto.legalEntityId,
+          period: dto.period,
+          expectedReceipt: receipt,
+          expectedAp: ap,
+          expectedPayroll: payroll,
+          expectedLoan: loan,
+          expectedTax: tax,
+          projectCashFlow: projectCf,
+          netForecast: Math.round(net * 100) / 100,
+        },
+      });
     });
 
-    await this.audit.record({ userId: actorId, action: 'CashForecast.CREATE', resource: 'CashForecast', resourceId: forecast.id, newValue: { forecastCode, period: dto.period, net: Math.round(net * 100) / 100 }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'CashForecast.CREATE', resource: 'CashForecast', resourceId: forecast.id, newValue: { forecastCode: forecast.forecastCode, period: dto.period, net: Math.round(net * 100) / 100 }, source: 'api' });
     return forecast;
   }
 

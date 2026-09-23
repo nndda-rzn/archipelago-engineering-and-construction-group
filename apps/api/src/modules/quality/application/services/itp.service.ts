@@ -14,18 +14,20 @@ export class ItpService {
   ) {}
 
   async createItp(dto: CreateItpDto, actorId: string) {
-    const itpNumber = await this.seq.next('ITP', `ITP-${new Date().getFullYear()}-`);
-    const itp = await this.prisma.itp.create({
-      data: {
-        itpNumber,
-        projectId: dto.projectId ?? null,
-        workPackageId: dto.workPackageId ?? null,
-        title: dto.title,
-        description: dto.description ?? null,
-      },
-      include: { workPackage: { select: { wpNumber: true, title: true } } },
+    const itp = await this.prisma.$transaction(async (tx) => {
+      const itpNumber = await this.seq.next('ITP', `ITP-${new Date().getFullYear()}-`, tx);
+      return tx.itp.create({
+        data: {
+          itpNumber,
+          projectId: dto.projectId ?? null,
+          workPackageId: dto.workPackageId ?? null,
+          title: dto.title,
+          description: dto.description ?? null,
+        },
+        include: { workPackage: { select: { wpNumber: true, title: true } } },
+      });
     });
-    await this.audit.record({ userId: actorId, action: 'Itp.CREATE', resource: 'Itp', resourceId: itp.id, newValue: { itpNumber, title: dto.title }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'Itp.CREATE', resource: 'Itp', resourceId: itp.id, newValue: { itpNumber: itp.itpNumber, title: dto.title }, source: 'api' });
     return itp;
   }
 

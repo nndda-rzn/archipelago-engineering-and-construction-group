@@ -14,19 +14,21 @@ export class TransmittalService {
   ) {}
 
   async createTransmittal(dto: CreateTransmittalDto, actorId: string) {
-    const number = await this.seq.next('TRM', `TRM-${new Date().getFullYear()}-`);
-    const item = await this.prisma.transmittal.create({
-      data: {
-        transmittalNumber: number,
-        projectId: dto.projectId ?? null,
-        recipient: dto.recipient,
-        subject: dto.subject,
-        documentList: dto.documentList ?? null,
-        sentBy: actorId,
-      },
-      include: { project: { select: { code: true } } },
+    const item = await this.prisma.$transaction(async (tx) => {
+      const number = await this.seq.next('TRM', `TRM-${new Date().getFullYear()}-`, tx);
+      return tx.transmittal.create({
+        data: {
+          transmittalNumber: number,
+          projectId: dto.projectId ?? null,
+          recipient: dto.recipient,
+          subject: dto.subject,
+          documentList: dto.documentList ?? null,
+          sentBy: actorId,
+        },
+        include: { project: { select: { code: true } } },
+      });
     });
-    await this.audit.record({ userId: actorId, action: 'Transmittal.CREATE', resource: 'Transmittal', resourceId: item.id, newValue: { transmittalNumber: number, subject: dto.subject }, source: 'api' });
+    await this.audit.record({ userId: actorId, action: 'Transmittal.CREATE', resource: 'Transmittal', resourceId: item.id, newValue: { transmittalNumber: item.transmittalNumber, subject: dto.subject }, source: 'api' });
     return item;
   }
 
