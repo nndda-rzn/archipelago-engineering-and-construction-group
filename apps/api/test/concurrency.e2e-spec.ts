@@ -663,4 +663,173 @@ describe('Concurrency guards (e2e)', () => {
     expect(statuses([c1, c2])).toEqual([201, 409]);
     expect((c1.status === 409 ? c1 : c2).body.error.code).toBe('NOT_DRAFT');
   });
+
+  /** Buat + publish definisi PurchaseOrder 2 step tanpa kondisi (keduanya selalu berlaku). */
+  const publishTwoStepPoWorkflow = async () => {
+    const created = await request(app.getHttpServer())
+      .post('/api/v1/approvals/workflows')
+      .set('Authorization', auth(adminToken))
+      .send({ code: 'PO_MULTISTEP_E2E', name: 'PO Multi-step E2E', transactionType: 'PurchaseOrder' });
+    expect(created.status).toBe(201);
+    const definitionId = created.body.id as string;
+
+    for (const [stepOrder, approverRoleCode] of [[1, 'PROCUREMENT_MANAGER'], [2, 'SUPER_ADMIN']] as const) {
+      const step = await request(app.getHttpServer())
+        .post(`/api/v1/approvals/workflows/${definitionId}/steps`)
+        .set('Authorization', auth(adminToken))
+        .send({ stepOrder, name: `Step ${stepOrder}`, approverRoleCode });
+      expect(step.status).toBe(201);
+    }
+
+    const published = await request(app.getHttpServer())
+      .post(`/api/v1/approvals/workflows/${definitionId}/publish`)
+      .set('Authorization', auth(adminToken))
+      .send({ newVersionName: 'PO Multi-step E2E v1' });
+    expect(published.status).toBe(201);
+    expect(published.body.status).toBe('ACTIVE');
+    return definitionId;
+  };
+
+  /** PR yang sudah APPROVED (alur 1-step biasa) supaya bisa dibuatkan PO. */
+  const approvedRequisition = async (wbsItemId: string, description: string) => {
+    const pr = await request(app.getHttpServer())
+      .post('/api/v1/purchase-requisitions')
+      .set('Authorization', auth(buyerToken))
+      .send({ projectId, wbsItemId, requestedBy: 'e2e-multistep', items: [{ description, quantity: 1, unit: 'EA', estimatedUnitPrice: 1_000 }] });
+    expect(pr.status).toBe(201);
+
+    const submit = await request(app.getHttpServer())
+      .post('/api/v1/approvals/submit')
+      .set('Authorization', auth(buyerToken))
+      .send({ transactionType: 'PurchaseRequisition', transactionId: pr.body.id, approverRoleCode: 'PROCUREMENT_MANAGER' });
+    expect(submit.status).toBe(201);
+    expect(submit.body.totalSteps).toBe(1);
+
+    const decided = await request(app.getHttpServer())
+      .post('/api/v1/approvals/decide')
+      .set('Authorization', auth(adminToken)).send({ taskId: submit.body.id, decision: 'APPROVE' });
+    expect(decided.status).toBe(201);
+    return pr.body.id as string;
+  };
+
+  it('T21: alur approval 2 step — APPROVED hanya setelah step kedua, task step 2 baru ada setelah step 1', async () => {
+    const prisma = app.get(PrismaService);
+    const wbsMultistep = await createWbs(app, adminToken, projectId, '8', 'Concurrency Multistep');
+    expect((await setBudgetItem(app, adminToken, projectId, wbsMultistep, 100_000_000)).status).toBe(201);
+    expect((await publishBudget(app, adminToken, projectId)).status).toBe(201);
+
+    await publishTwoStepPoWorkflow();
+
+    const prId = await approvedRequisition(wbsMultistep, 'multistep po');
+    const po = await request(app.getHttpServer())
+      .post('/api/v1/purchase-orders')
+      .set('Authorization', auth(adminToken))
+      .send({ requisitionId: prId, vendor: 'Vendor Multistep' });
+    expect(po.status).toBe(201);
+    const poId = po.body.id as string;
+
+    // Submit: stepPlan berisi 2 step; hanya step 1 yang dibuat.
+    const submit = await request(app.getHttpServer())
+      .post('/api/v1/approvals/submit')
+      .set('Authorization', auth(buyerToken))
+      .send({ transactionType: 'PurchaseOrder', transactionId: poId, approverRoleCode: 'PROCUREMENT_MANAGER' });
+    expect(submit.status).toBe(201);
+    expect(submit.body.totalSteps).toBe(2);
+    expect(submit.body.currentStepOrder).toBe(1);
+    expect(submit.body.status).toBe('PENDING');
+
+    const afterSubmit = await prisma.approvalTask.count({ where: { transactionType: 'PurchaseOrder', transactionId: poId } });
+    expect(afterSubmit).toBe(1);
+
+    // Step 1 APPROVED -> step 2 dibuat, transaksi BELUM APPROVED.
+    const step1 = await request(app.getHttpServer())
+      .post('/api/v1/approvals/decide')
+      .set('Authorization', auth(adminToken)).send({ taskId: submit.body.id, decision: 'APPROVE' });
+    expect(step1.status).toBe(201);
+    expect(step1.body.stepOrder).toBe(1);
+    expect(step1.body.nextTaskId).toBeTruthy();
+
+    const midway = await prisma.purchaseOrder.findUniqueOrThrow({ where: { id: poId } });
+    expect(midway.status).toBe('SUBMITTED'); // inti multi-step: belum APPROVED
+
+    const detail = await request(app.getHttpServer())
+      .get(`/api/v1/approvals/instances/PurchaseOrder/${poId}`)
+      .set('Authorization', auth(adminToken));
+    expect(detail.status).toBe(200);
+    expect(detail.body.instance.status).toBe('PENDING');
+    expect(detail.body.steps.map((s: { status: string }) => s.status)).toEqual(['APPROVED', 'PENDING']);
+    expect(detail.body.activeTaskId).toBe(step1.body.nextTaskId);
+
+    // PO belum boleh di-release sebelum step terakhir.
+    expect((await request(app.getHttpServer()).post(`/api/v1/purchase-orders/${poId}/release`)
+      .set('Authorization', auth(adminToken))).status).toBe(409);
+
+    // Step 2 APPROVED -> final.
+    const step2 = await request(app.getHttpServer())
+      .post('/api/v1/approvals/decide')
+      .set('Authorization', auth(adminToken)).send({ taskId: step1.body.nextTaskId, decision: 'APPROVE' });
+    expect(step2.status).toBe(201);
+    expect(step2.body.stepOrder).toBe(2);
+    expect(step2.body.nextTaskId).toBeNull();
+
+    const finalPo = await prisma.purchaseOrder.findUniqueOrThrow({ where: { id: poId } });
+    expect(finalPo.status).toBe('APPROVED');
+    const instance = await prisma.approvalInstance.findUniqueOrThrow({
+      where: { transactionType_transactionId: { transactionType: 'PurchaseOrder', transactionId: poId } },
+    });
+    expect(instance.status).toBe('APPROVED');
+    expect(instance.completedAt).not.toBeNull();
+  });
+
+  it('T22: reject di step pertama menghentikan alur — step kedua tidak pernah dibuat', async () => {
+    const prisma = app.get(PrismaService);
+
+    // PO_MULTISTEP_E2E masih ACTIVE dari T21 (publish meng-archive PO_APPROVAL, bukan sebaliknya).
+    const prId = await approvedRequisition(wbsApproval, 'multistep reject');
+    const po = await request(app.getHttpServer())
+      .post('/api/v1/purchase-orders')
+      .set('Authorization', auth(adminToken))
+      .send({ requisitionId: prId, vendor: 'Vendor Reject' });
+    expect(po.status).toBe(201);
+    const poId = po.body.id as string;
+
+    const submit = await request(app.getHttpServer())
+      .post('/api/v1/approvals/submit')
+      .set('Authorization', auth(buyerToken))
+      .send({ transactionType: 'PurchaseOrder', transactionId: poId, approverRoleCode: 'PROCUREMENT_MANAGER' });
+    expect(submit.status).toBe(201);
+    expect(submit.body.totalSteps).toBe(2);
+
+    const reject = await request(app.getHttpServer())
+      .post('/api/v1/approvals/decide')
+      .set('Authorization', auth(adminToken))
+      .send({ taskId: submit.body.id, decision: 'REJECT', comment: 'harga terlalu tinggi' });
+    expect(reject.status).toBe(201);
+    expect(reject.body.status).toBe('REJECTED');
+    expect(reject.body.nextTaskId).toBeNull();
+
+    // Alur berhenti: tidak ada task step 2, instance + transaksi final REJECTED.
+    const tasks = await prisma.approvalTask.findMany({
+      where: { transactionType: 'PurchaseOrder', transactionId: poId },
+      orderBy: { stepOrder: 'asc' },
+    });
+    expect(tasks.map((t) => t.stepOrder)).toEqual([1]);
+    expect(tasks[0]!.status).toBe('REJECTED');
+
+    const instance = await prisma.approvalInstance.findUniqueOrThrow({
+      where: { transactionType_transactionId: { transactionType: 'PurchaseOrder', transactionId: poId } },
+    });
+    expect(instance.status).toBe('REJECTED');
+    expect(instance.completedAt).not.toBeNull();
+
+    const finalPo = await prisma.purchaseOrder.findUniqueOrThrow({ where: { id: poId } });
+    expect(finalPo.status).toBe('REJECTED');
+
+    const detail = await request(app.getHttpServer())
+      .get(`/api/v1/approvals/instances/PurchaseOrder/${poId}`)
+      .set('Authorization', auth(adminToken));
+    expect(detail.body.activeTaskId).toBeNull();
+    // Step 2 tetap terlihat di plan, tetapi tidak pernah punya task.
+    expect(detail.body.steps[1]).toMatchObject({ stepOrder: 2, taskId: null });
+  });
 });

@@ -39,6 +39,12 @@ export class ApprovalController {
     return this.task.decide(dto, request.user?.sub ?? 'system');
   }
 
+  @Get('instances/:transactionType/:transactionId')
+  @Permissions(Permission.ApprovalView)
+  getInstance(@Param('transactionType') transactionType: string, @Param('transactionId') transactionId: string) {
+    return this.task.getInstance(transactionType, transactionId);
+  }
+
   @Get('workflows')
   @Permissions(Permission.WorkflowView)
   listDefinitions() {

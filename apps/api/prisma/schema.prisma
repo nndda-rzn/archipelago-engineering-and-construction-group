@@ -608,12 +608,40 @@ model WorkflowStep {
   @@index([definitionId])
 }
 
-// FR-FND-007: Approval step untuk transaksi (DRAFT → SUBMITTED → APPROVED/REJECTED)
+// FR-FND-007: instance approval per dokumen (multi-step). Menyatukan rangkaian step
+// satu transaksi; `stepPlan` snapshot langkah berlaku saat submit (pin versi definisi).
+model ApprovalInstance {
+  id                String    @id @default(cuid())
+  transactionType   String // "PurchaseRequisition" | "PurchaseOrder" | "Budget" | ...
+  transactionId     String
+  transactionCode   String?
+  definitionId      String? // definisi yang dipakai (pin versi saat submit)
+  definitionVersion Int?
+  requesterId       String // pembuat transaksi (BR-003)
+  status            String    @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
+  currentStepOrder  Int       @default(1)
+  stepPlan          Json? // snapshot: [{ stepOrder, name, approverRoleCode }]
+  startedAt         DateTime  @default(now())
+  completedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  tasks ApprovalTask[]
+
+  @@unique([transactionType, transactionId])
+  @@index([status])
+}
+
+// FR-FND-007: satu task per STEP. Hanya step aktif berstatus PENDING; step berikutnya
+// dibuat saat step sebelumnya APPROVED, sehingga step lanjutan tidak bisa di-approve dini.
 model ApprovalTask {
-  id               String    @id @default(cuid())
-  transactionType  String // "PurchaseRequisition" | "PurchaseOrder" | "Budget" | ...
+  id               String           @id @default(cuid())
+  instanceId       String
+  instance         ApprovalInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  transactionType  String // didenormalisasi agar query/audit lama tetap jalan
   transactionId    String
   transactionCode  String? // no. dokumen (PR-..., PO-...) untuk display
+  stepOrder        Int       @default(1)
   stepName         String    @default("approval")
   status           String    @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
   requesterId      String // pembuat transaksi (BR-003: bukan approver)
@@ -624,7 +652,7 @@ model ApprovalTask {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  @@unique([transactionType, transactionId])
+  @@unique([instanceId, stepOrder])
   @@index([status])
   @@index([approverRoleCode])
 }
