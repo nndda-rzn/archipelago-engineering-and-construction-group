@@ -77,6 +77,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
         return { status: HttpStatus.BAD_REQUEST, code: 'INVALID_DATA', message: 'Nilai terlalu panjang atau tidak valid' };
       case 'P2014':
         return { status: HttpStatus.CONFLICT, code: 'RELATION_VIOLATION', message: 'Relasi data tidak valid' };
+      case 'P2034':
+        return { status: HttpStatus.CONFLICT, code: 'RETRY_CONFLICT', message: 'Konflik transaksi bersamaan, silakan coba lagi' };
       default:
         this.logger.error(`Unhandled Prisma error code=${e.code}`, e.stack);
         return { status: HttpStatus.INTERNAL_SERVER_ERROR, code: 'INTERNAL_ERROR', message: 'Terjadi kesalahan internal' };
