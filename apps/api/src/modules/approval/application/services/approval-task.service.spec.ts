@@ -160,33 +160,67 @@ describe('ApprovalTaskService (state machine + BR-003)', () => {
       await expectCode(service.decide(decideDto(), 'u-stranger'), 'NOT_APPROVER');
     });
 
-    it('APPROVE -> status APPROVED + transaksi APPROVED', async () => {
+    it('APPROVE -> status APPROVED + transaksi APPROVED (CAS updateMany)', async () => {
       prisma.approvalTask.findUnique.mockResolvedValue({ id: 'task-1', status: 'PENDING', requesterId: 'u-req', approverRoleCode: 'MANAGER', transactionType: 'PurchaseRequisition', transactionId: 'pr-1' });
       prisma.role.findUnique.mockResolvedValue({ id: 'role-mgr' });
       prisma.userRole.findFirst.mockResolvedValue({ userId: 'u-appr' });
 
-      const tx = { approvalTask: { update: jest.fn().mockResolvedValue({ id: 'task-1', status: 'APPROVED' }) }, purchaseRequisition: { update: jest.fn() } };
+      const tx = {
+        approvalTask: {
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+          findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'task-1', status: 'APPROVED' }),
+        },
+        purchaseRequisition: { update: jest.fn() },
+      };
       prisma.$transaction.mockImplementation((cb: (t: typeof tx) => unknown) => cb(tx));
 
       const result = await service.decide(decideDto({ decision: 'APPROVE' }), 'u-appr');
 
-      expect(tx.approvalTask.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'APPROVED', approverId: 'u-appr' }) }));
+      expect(tx.approvalTask.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'task-1', status: 'PENDING' },
+          data: expect.objectContaining({ status: 'APPROVED', approverId: 'u-appr' }),
+        }),
+      );
       expect(evaluator.updateTransactionStatus).toHaveBeenCalledWith(tx, 'PurchaseRequisition', 'pr-1', 'APPROVED');
       expect(result.status).toBe('APPROVED');
       expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ action: 'APPROVAL.APPROVE' }));
     });
 
-    it('REJECT -> status REJECTED + transaksi REJECTED', async () => {
+    it('APPROVE tapi CAS count=0 (sudah diputuskan paralel) -> Conflict TASK_NOT_PENDING', async () => {
       prisma.approvalTask.findUnique.mockResolvedValue({ id: 'task-1', status: 'PENDING', requesterId: 'u-req', approverRoleCode: 'MANAGER', transactionType: 'PurchaseRequisition', transactionId: 'pr-1' });
       prisma.role.findUnique.mockResolvedValue({ id: 'role-mgr' });
       prisma.userRole.findFirst.mockResolvedValue({ userId: 'u-appr' });
 
-      const tx = { approvalTask: { update: jest.fn().mockResolvedValue({ id: 'task-1', status: 'REJECTED' }) }, purchaseRequisition: { update: jest.fn() } };
+      const tx = {
+        approvalTask: { updateMany: jest.fn().mockResolvedValue({ count: 0 }), findUniqueOrThrow: jest.fn() },
+        purchaseRequisition: { update: jest.fn() },
+      };
+      prisma.$transaction.mockImplementation((cb: (t: typeof tx) => unknown) => cb(tx));
+
+      await expectCode(service.decide(decideDto({ decision: 'APPROVE' }), 'u-appr'), 'TASK_NOT_PENDING');
+      expect(evaluator.updateTransactionStatus).not.toHaveBeenCalled();
+    });
+
+    it('REJECT -> status REJECTED + transaksi REJECTED (CAS updateMany)', async () => {
+      prisma.approvalTask.findUnique.mockResolvedValue({ id: 'task-1', status: 'PENDING', requesterId: 'u-req', approverRoleCode: 'MANAGER', transactionType: 'PurchaseRequisition', transactionId: 'pr-1' });
+      prisma.role.findUnique.mockResolvedValue({ id: 'role-mgr' });
+      prisma.userRole.findFirst.mockResolvedValue({ userId: 'u-appr' });
+
+      const tx = {
+        approvalTask: {
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+          findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'task-1', status: 'REJECTED' }),
+        },
+        purchaseRequisition: { update: jest.fn() },
+      };
       prisma.$transaction.mockImplementation((cb: (t: typeof tx) => unknown) => cb(tx));
 
       const result = await service.decide(decideDto({ decision: 'REJECT', comment: 'budget kurang' }), 'u-appr');
 
-      expect(tx.approvalTask.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'REJECTED', comment: 'budget kurang' }) }));
+      expect(tx.approvalTask.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ status: 'REJECTED', comment: 'budget kurang' }) }),
+      );
       expect(evaluator.updateTransactionStatus).toHaveBeenCalledWith(tx, 'PurchaseRequisition', 'pr-1', 'REJECTED');
       expect(result.status).toBe('REJECTED');
       expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ action: 'APPROVAL.REJECT' }));

@@ -109,12 +109,16 @@ export class ApprovalTaskService {
     const nextStatus = decision === 'APPROVE' ? 'APPROVED' : 'REJECTED';
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      const decided = await tx.approvalTask.update({
-        where: { id: taskId },
+      // Compare-and-set: guard `status: 'PENDING'` membuat dua approver paralel tidak bisa
+      // sama-sama menang. Pre-check di atas hanya jalur cepat untuk pesan error yang spesifik.
+      const cas = await tx.approvalTask.updateMany({
+        where: { id: taskId, status: 'PENDING' },
         data: { status: nextStatus, approverId: actorId, comment: comment ?? null, decidedAt: new Date() },
       });
+      if (cas.count === 0) throw new ConflictException({ code: 'TASK_NOT_PENDING', message: 'Task sudah diputuskan' });
+
       await this.evaluator.updateTransactionStatus(tx, task.transactionType, task.transactionId, nextStatus);
-      return decided;
+      return tx.approvalTask.findUniqueOrThrow({ where: { id: taskId } });
     });
 
     await this.audit.record({

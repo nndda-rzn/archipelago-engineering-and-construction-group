@@ -97,10 +97,15 @@ export class PurchaseOrderService {
       throw new ConflictException({ code: 'PO_NOT_APPROVED', message: 'PO harus APPROVED sebelum release' });
     }
 
-    const released = await this.prisma.purchaseOrder.update({
-      where: { id },
+    // Compare-and-set pada status: cegah double-release saat dua approve/release paralel.
+    const cas = await this.prisma.purchaseOrder.updateMany({
+      where: { id, status: 'APPROVED' },
       data: { status: 'RELEASED', issuedAt: new Date(), releasedBy: actorId },
     });
+    if (cas.count === 0) {
+      throw new ConflictException({ code: 'PO_NOT_APPROVED', message: 'PO sudah di-release atau bukan APPROVED' });
+    }
+    const released = await this.prisma.purchaseOrder.findUniqueOrThrow({ where: { id } });
 
     await this.audit.record({
       userId: actorId,
