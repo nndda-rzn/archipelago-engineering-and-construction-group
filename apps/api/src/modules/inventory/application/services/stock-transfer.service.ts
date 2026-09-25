@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { StockLedgerWriter } from '@/shared/inventory/stock-ledger-writer';
+import { withSerializableRetry } from '@/shared/database/serializable-tx';
 import type { CreateStockTransferDto, ListStockTransferQueryDto } from '../../presentation/dto/inventory.dto';
 
 @Injectable()
@@ -49,87 +50,94 @@ export class StockTransferService {
     }, new Map());
 
     const bucketKeys = [...stockBuckets.values()];
-    const stockAggs = await this.prisma.stockLedgerEntry.groupBy({
-      by: ['projectId', 'warehouseId', 'wbsItemId'],
-      where: {
-        OR: bucketKeys.map((b) => ({ projectId: b.projectId, warehouseId: b.warehouseId, wbsItemId: b.wbsItemId })),
-      },
-      _sum: { quantity: true },
-    });
-    const stockMap = new Map(stockAggs.map((a) => [`${a.projectId}|${a.wbsItemId ?? 'NULL'}|${a.warehouseId}`, Number(a._sum.quantity ?? 0)]));
 
-    for (const b of bucketKeys) {
-      const onHand = stockMap.get(b.key) ?? 0;
-      if (b.requiredQty > onHand) {
-        throw new ConflictException({
-          code: 'INSUFFICIENT_STOCK',
-          message: `Stok tidak cukup di ${fromWh.code} (tersedia ${onHand})`,
-        });
-      }
-    }
-
-    const transfer = await this.prisma.$transaction(async (tx) => {
-      const s = await tx.numberSequence.upsert({
-        where: { code: 'ST' },
-        update: { nextNumber: { increment: 1 } },
-        create: { code: 'ST', prefix: `ST-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
-      });
-      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-
-      const created = await tx.stockTransfer.create({
-        data: {
-          transferNumber: seq,
-          projectId: dto.projectId,
-          fromWarehouseId: dto.fromWarehouseId,
-          toWarehouseId: dto.toWarehouseId,
-          transferredBy: actorId,
-          remark: dto.remark ?? null,
-          items: {
-            create: dto.items.map((i) => ({
-              description: i.description,
-              quantity: Number(i.quantity),
-              unit: i.unit ?? 'EA',
-              wbsItemId: i.wbsItemId ?? null,
-            })),
+    // Cek saldo + tulis dalam SATU transaksi Serializable: menutup TOCTOU — dua transfer
+    // paralel tidak bisa sama-sama lolos cek saldo yang sama.
+    const transfer = await withSerializableRetry(
+      this.prisma,
+      async (tx) => {
+        const stockAggs = await tx.stockLedgerEntry.groupBy({
+          by: ['projectId', 'warehouseId', 'wbsItemId'],
+          where: {
+            OR: bucketKeys.map((b) => ({ projectId: b.projectId, warehouseId: b.warehouseId, wbsItemId: b.wbsItemId })),
           },
-        },
-        include: { items: true },
-      });
+          _sum: { quantity: true },
+        });
+        const stockMap = new Map(stockAggs.map((a) => [`${a.projectId}|${a.wbsItemId ?? 'NULL'}|${a.warehouseId}`, Number(a._sum.quantity ?? 0)]));
 
-      const ledgerLines = created.items.flatMap((item) => [
-        {
-          projectId: dto.projectId,
-          wbsItemId: item.wbsItemId ?? null,
-          warehouseId: dto.fromWarehouseId,
-          documentType: 'TRANSFER_OUT',
-          documentId: item.id,
-          reference: seq,
-          description: `Transfer ke ${toWh.code}`,
-          movementType: 'TRANSFER_OUT' as const,
-          quantity: Number(item.quantity),
-          unit: item.unit,
-          unitPrice: null,
-          totalValue: null,
-        },
-        {
-          projectId: dto.projectId,
-          wbsItemId: item.wbsItemId ?? null,
-          warehouseId: dto.toWarehouseId,
-          documentType: 'TRANSFER_IN',
-          documentId: item.id,
-          reference: seq,
-          description: `Transfer dari ${fromWh.code}`,
-          movementType: 'TRANSFER_IN' as const,
-          quantity: Number(item.quantity),
-          unit: item.unit,
-          unitPrice: null,
-          totalValue: null,
-        },
-      ]);
-      await this.ledger.write(tx, ledgerLines);
+        for (const b of bucketKeys) {
+          const onHand = stockMap.get(b.key) ?? 0;
+          if (b.requiredQty > onHand) {
+            throw new ConflictException({
+              code: 'INSUFFICIENT_STOCK',
+              message: `Stok tidak cukup di ${fromWh.code} (tersedia ${onHand})`,
+            });
+          }
+        }
 
-      return created;
-    });
+        const s = await tx.numberSequence.upsert({
+          where: { code: 'ST' },
+          update: { nextNumber: { increment: 1 } },
+          create: { code: 'ST', prefix: `ST-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
+        });
+        const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+
+        const created = await tx.stockTransfer.create({
+          data: {
+            transferNumber: seq,
+            projectId: dto.projectId,
+            fromWarehouseId: dto.fromWarehouseId,
+            toWarehouseId: dto.toWarehouseId,
+            transferredBy: actorId,
+            remark: dto.remark ?? null,
+            items: {
+              create: dto.items.map((i) => ({
+                description: i.description,
+                quantity: Number(i.quantity),
+                unit: i.unit ?? 'EA',
+                wbsItemId: i.wbsItemId ?? null,
+              })),
+            },
+          },
+          include: { items: true },
+        });
+
+        const ledgerLines = created.items.flatMap((item) => [
+          {
+            projectId: dto.projectId,
+            wbsItemId: item.wbsItemId ?? null,
+            warehouseId: dto.fromWarehouseId,
+            documentType: 'TRANSFER_OUT',
+            documentId: item.id,
+            reference: seq,
+            description: `Transfer ke ${toWh.code}`,
+            movementType: 'TRANSFER_OUT' as const,
+            quantity: Number(item.quantity),
+            unit: item.unit,
+            unitPrice: null,
+            totalValue: null,
+          },
+          {
+            projectId: dto.projectId,
+            wbsItemId: item.wbsItemId ?? null,
+            warehouseId: dto.toWarehouseId,
+            documentType: 'TRANSFER_IN',
+            documentId: item.id,
+            reference: seq,
+            description: `Transfer dari ${fromWh.code}`,
+            movementType: 'TRANSFER_IN' as const,
+            quantity: Number(item.quantity),
+            unit: item.unit,
+            unitPrice: null,
+            totalValue: null,
+          },
+        ]);
+        await this.ledger.write(tx, ledgerLines);
+
+        return created;
+      },
+      { label: 'StockTransfer.create' },
+    );
 
     await this.audit.record({
       userId: actorId,

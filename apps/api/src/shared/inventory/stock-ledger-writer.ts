@@ -49,7 +49,8 @@ export class StockLedgerWriter {
       data: lines.map((l) => {
         const key = `${l.projectId}|${l.wbsItemId ?? 'NULL'}|${l.warehouseId}`;
         const sign = ['OUT', 'TRANSFER_OUT'].includes(l.movementType) ? -1 : 1;
-        const running = (balances[key] ?? 0) + sign * l.quantity;
+        const signedQty = sign * l.quantity;
+        const running = (balances[key] ?? 0) + signedQty;
         balances[key] = running;
         return {
           projectId: l.projectId,
@@ -60,7 +61,10 @@ export class StockLedgerWriter {
           reference: l.reference,
           description: l.description,
           movementType: l.movementType,
-          quantity: l.quantity,
+          // `quantity` BERTANDA (positif IN / negatif OUT) — selaras schema & semua
+          // pembaca yang menghitung saldo via `_sum(quantity)`. Menyimpan qty mentah
+          // membuat saldo tidak pernah berkurang (guard stok keluar jadi no-op).
+          quantity: signedQty,
           unit: l.unit,
           unitPrice: l.unitPrice,
           totalValue: l.totalValue,

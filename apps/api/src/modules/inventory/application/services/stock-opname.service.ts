@@ -34,23 +34,26 @@ export class StockOpnameService {
       });
       const seq = `${seqRow.prefix}${String(seqRow.nextNumber - 1).padStart(6, '0')}`;
 
-      const items = await Promise.all(
-        dto.items.map(async (i) => {
-          const agg = await tx.stockLedgerEntry.aggregate({
-            where: { projectId: dto.projectId, warehouseId: dto.warehouseId, wbsItemId: i.wbsItemId ?? null },
-            _sum: { quantity: true },
-          });
-          const book = Number(agg._sum.quantity ?? 0);
-          return {
-            description: i.description,
-            bookQuantity: book,
-            actualQuantity: Number(i.actualQuantity),
-            difference: Number(i.actualQuantity) - book,
-            unit: i.unit ?? 'EA',
-            wbsItemId: i.wbsItemId ?? null,
-          };
-        }),
-      );
+      // Satu groupBy untuk seluruh bucket, bukan aggregate per item (menghindari N+1 dan
+      // memperpendek transaksi — penting di bawah serializable agar retry tidak membengkak).
+      const bookAgg = await tx.stockLedgerEntry.groupBy({
+        by: ['wbsItemId'],
+        where: { projectId: dto.projectId, warehouseId: dto.warehouseId },
+        _sum: { quantity: true },
+      });
+      const bookMap = new Map(bookAgg.map((a) => [a.wbsItemId ?? 'NULL', Number(a._sum.quantity ?? 0)]));
+
+      const items = dto.items.map((i) => {
+        const book = bookMap.get(i.wbsItemId ?? 'NULL') ?? 0;
+        return {
+          description: i.description,
+          bookQuantity: book,
+          actualQuantity: Number(i.actualQuantity),
+          difference: Number(i.actualQuantity) - book,
+          unit: i.unit ?? 'EA',
+          wbsItemId: i.wbsItemId ?? null,
+        };
+      });
 
       const created = await tx.stockOpname.create({
         data: {
@@ -64,31 +67,39 @@ export class StockOpnameService {
         include: { items: true },
       });
 
+      // Satu upsert untuk seluruh adjustment (increment = jumlah diff), lalu nomor berurutan.
       const diffs = created.items.filter((i) => Number(i.difference) !== 0);
-      for (const item of diffs) {
+      if (diffs.length > 0) {
         const adjSeq = await tx.numberSequence.upsert({
           where: { code: 'ADJ' },
-          update: { nextNumber: { increment: 1 } },
-          create: { code: 'ADJ', prefix: `ADJ-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
+          update: { nextNumber: { increment: diffs.length } },
+          create: { code: 'ADJ', prefix: `ADJ-${new Date().getFullYear()}-EPC-`, nextNumber: 1 + diffs.length },
         });
-        await tx.stockAdjustment.create({
-          data: {
-            adjustmentNumber: `${adjSeq.prefix}${String(adjSeq.nextNumber - 1).padStart(6, '0')}`,
-            projectId: dto.projectId,
-            warehouseId: dto.warehouseId,
-            reasonCode: Number(item.difference) > 0 ? 'SURPLUS' : 'LOSS',
-            reason: `Reconciliation opname ${seq}: ${item.description}`,
-            adjustedBy: actorId,
-            items: {
-              create: {
-                description: item.description,
-                quantity: Number(item.difference),
-                unit: item.unit,
-                wbsItemId: item.wbsItemId,
+        // `nextNumber` setelah increment menunjuk nomor berikutnya-yang-akan-dipakai; nomor
+        // pertama yang baru terpakai = nextNumber - diffs.length.
+        const firstNumber = adjSeq.nextNumber - diffs.length;
+        let offset = 0;
+        for (const item of diffs) {
+          await tx.stockAdjustment.create({
+            data: {
+              adjustmentNumber: `${adjSeq.prefix}${String(firstNumber + offset).padStart(6, '0')}`,
+              projectId: dto.projectId,
+              warehouseId: dto.warehouseId,
+              reasonCode: Number(item.difference) > 0 ? 'SURPLUS' : 'LOSS',
+              reason: `Reconciliation opname ${seq}: ${item.description}`,
+              adjustedBy: actorId,
+              items: {
+                create: {
+                  description: item.description,
+                  quantity: Number(item.difference),
+                  unit: item.unit,
+                  wbsItemId: item.wbsItemId,
+                },
               },
             },
-          },
-        });
+          });
+          offset += 1;
+        }
       }
 
       return created;

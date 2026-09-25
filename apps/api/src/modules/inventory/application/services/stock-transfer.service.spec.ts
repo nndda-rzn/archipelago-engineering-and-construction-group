@@ -18,6 +18,11 @@ describe('StockTransferService', () => {
   const audit = { record: jest.fn() };
   const ledger = { write: jest.fn() };
 
+  interface TxMock {
+    stockLedgerEntry: { groupBy: jest.Mock };
+    numberSequence: { upsert: jest.Mock };
+    stockTransfer: { create: jest.Mock };
+  }
   interface PrismaMock {
     project: { findUnique: jest.Mock };
     warehouse: { findUnique: jest.Mock };
@@ -26,15 +31,27 @@ describe('StockTransferService', () => {
     $transaction: jest.Mock;
   }
   let prisma: PrismaMock;
+  let tx: TxMock;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    tx = {
+      stockLedgerEntry: { groupBy: jest.fn() },
+      numberSequence: { upsert: jest.fn().mockResolvedValue({ prefix: 'ST-2026-EPC-', nextNumber: 7 }) },
+      stockTransfer: {
+        create: jest.fn().mockResolvedValue({
+          id: 'st-1',
+          transferNumber: 'ST-2026-EPC-000006',
+          items: [{ id: 'item-1', quantity: 10, unit: 'EA', wbsItemId: null }],
+        }),
+      },
+    };
     prisma = {
       project: { findUnique: jest.fn() },
       warehouse: { findUnique: jest.fn() },
       wbsItem: { findMany: jest.fn() },
       stockLedgerEntry: { groupBy: jest.fn() },
-      $transaction: jest.fn(),
+      $transaction: jest.fn((cb: (t: TxMock) => unknown) => cb(tx)),
     };
     service = new StockTransferService(prisma as never, audit as never, ledger as never);
   });
@@ -51,7 +68,7 @@ describe('StockTransferService', () => {
     prisma.project.findUnique.mockResolvedValue({ id: 'proj-1' });
     prisma.warehouse.findUnique.mockResolvedValueOnce({ id: 'wh-a', code: 'WH-A' });
     prisma.warehouse.findUnique.mockResolvedValueOnce({ id: 'wh-b', code: 'WH-B' });
-    prisma.stockLedgerEntry.groupBy.mockResolvedValue([{ projectId: 'proj-1', warehouseId: 'wh-a', wbsItemId: null, _sum: { quantity: 100 } }]);
+    tx.stockLedgerEntry.groupBy.mockResolvedValue([{ projectId: 'proj-1', warehouseId: 'wh-a', wbsItemId: null, _sum: { quantity: 100 } }]);
   };
 
   it('warehouse asal == tujuan -> BadRequest SAME_WAREHOUSE', async () => {
@@ -78,30 +95,20 @@ describe('StockTransferService', () => {
     await expectCode(service.createStockTransfer(dto({ items: [{ description: 'Besi', quantity: 1, wbsItemId: 'wbs-1' }] }), 'user-1'), 'WBS_NOT_FOUND');
   });
 
-  it('stok tidak cukup -> Conflict INSUFFICIENT_STOCK', async () => {
+  it('stok tidak cukup -> Conflict INSUFFICIENT_STOCK (cek di dalam tx)', async () => {
     primeHappyPath();
-    prisma.stockLedgerEntry.groupBy.mockResolvedValue([{ projectId: 'proj-1', warehouseId: 'wh-a', wbsItemId: null, _sum: { quantity: 5 } }]);
+    tx.stockLedgerEntry.groupBy.mockResolvedValue([{ projectId: 'proj-1', warehouseId: 'wh-a', wbsItemId: null, _sum: { quantity: 5 } }]);
     await expectCode(service.createStockTransfer(dto({ items: [{ description: 'Besi', quantity: 10 }] }), 'user-1'), 'INSUFFICIENT_STOCK');
   });
 
   it('valid -> satu transaksi atomic (seq + create + ledger dalam tx), audit tercatat', async () => {
     primeHappyPath();
 
-    const tx = {
-      numberSequence: { upsert: jest.fn().mockResolvedValue({ prefix: 'ST-2026-EPC-', nextNumber: 7 }) },
-      stockTransfer: {
-        create: jest.fn().mockResolvedValue({
-          id: 'st-1',
-          transferNumber: 'ST-2026-EPC-000006',
-          items: [{ id: 'item-1', quantity: 10, unit: 'EA', wbsItemId: null }],
-        }),
-      },
-    };
-    prisma.$transaction.mockImplementation((cb: (t: typeof tx) => unknown) => cb(tx));
-
     const result = await service.createStockTransfer(dto(), 'user-1');
 
+    // Cek saldo + seq + create + ledger semua dalam satu $transaction
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(tx.stockLedgerEntry.groupBy).toHaveBeenCalled();
     expect(tx.numberSequence.upsert).toHaveBeenCalled();
     expect(tx.stockTransfer.create).toHaveBeenCalledWith(
       expect.objectContaining({
