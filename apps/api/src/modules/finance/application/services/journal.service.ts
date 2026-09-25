@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { GlHelper } from './shared/gl.helper';
+import { assertPeriodOpen } from '@/shared/utils/period';
 import type { CreateJournalDto, ListJournalQueryDto } from '../../presentation/dto/finance.dto';
 
 @Injectable()
@@ -52,13 +53,17 @@ export class JournalService {
       throw new ConflictException({ code: 'UNBALANCED_JOURNAL', message: `Journal tidak balance: debit ${totalDebit} vs credit ${totalCredit}` });
     }
 
+    const journalDate = dto.date ? new Date(dto.date) : new Date();
+
     const journal = await this.prisma.$transaction(async (tx) => {
+      // Periode CLOSED/LOCKED tidak menerima jurnal baru (koreksi diarahkan ke periode terbuka).
+      await assertPeriodOpen(tx, dto.legalEntityId, journalDate);
       const seq = await this.gl.generateJournalNumber(tx);
       return tx.journal.create({
         data: {
           journalNumber: seq,
           legalEntityId: dto.legalEntityId,
-          date: dto.date ? new Date(dto.date) : new Date(),
+          date: journalDate,
           source: 'MANUAL',
           reference: dto.reference ?? null,
           description: dto.description,
@@ -93,9 +98,19 @@ export class JournalService {
       throw new ConflictException({ code: 'UNBALANCED_JOURNAL', message: `Journal tidak balance: debit ${totalDebit} vs credit ${totalCredit}` });
     }
 
-    const posted = await this.prisma.journal.update({
-      where: { id },
-      data: { status: 'POSTED', postedAt: new Date(), postedBy: actorId },
+    // Posting jurnal manual memindahkan DRAFT → POSTED pada periode tanggal jurnal itu.
+    // Guard periode + CAS dalam SATU transaksi: dua post paralel tidak bisa sama-sama menang,
+    // dan periode yang dikunci di tengah jalan tidak bisa disisipi jurnal baru.
+    const posted = await this.prisma.$transaction(async (tx) => {
+      await assertPeriodOpen(tx, journal.legalEntityId, journal.date);
+      const cas = await tx.journal.updateMany({
+        where: { id, status: 'DRAFT' },
+        data: { status: 'POSTED', postedAt: new Date(), postedBy: actorId },
+      });
+      if (cas.count === 0) {
+        throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa diposting (${journal.status})` });
+      }
+      return tx.journal.findUniqueOrThrow({ where: { id } });
     });
 
     await this.audit.record({

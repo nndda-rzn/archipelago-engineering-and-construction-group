@@ -5,7 +5,16 @@ import { AuditService } from '@/modules/foundation';
 import { GlHelper } from './shared/gl.helper';
 import { CacheService } from '@/shared/cache/cache.service';
 import { invalidateAnalytics } from '@/shared/cache/analytics-cache';
+import { withSerializableRetry } from '@/shared/database/serializable-tx';
+import { toCents, fromCents } from '@/shared/utils/money';
 import type { CreatePaymentDto, ListPaymentQueryDto } from '../../presentation/dto/finance.dto';
+
+/**
+ * Status payment yang membuat alokasi AP MENGIKAT saldo invoice (keputusan D1).
+ * `DRAFT` sengaja tidak termasuk: draft adalah usulan, belum mengikat.
+ * Konsekuensinya penjaga saldo yang menentukan ada di `approvePayment`, bukan hanya di create.
+ */
+const COMMITTED_AP_STATUSES = ['APPROVED', 'PAID'];
 
 @Injectable()
 export class PaymentService {
@@ -28,16 +37,24 @@ export class PaymentService {
 
     const paidGroups = await this.prisma.paymentItem.groupBy({
       by: ['invoiceId'],
-      where: { invoiceId: { in: invoiceIds }, payment: { status: { in: ['APPROVED', 'PAID'] } } },
+      where: { invoiceId: { in: invoiceIds }, payment: { status: { in: COMMITTED_AP_STATUSES } } },
       _sum: { amount: true },
     });
-    const paidMap = new Map(paidGroups.map((g) => [g.invoiceId, Number(g._sum.amount ?? 0)]));
+    const paidMap = new Map(paidGroups.map((g) => [g.invoiceId, toCents(g._sum.amount)]));
 
-    let totalAmount = 0;
-    const items: Array<{ invoiceId: string; amount: number }> = [];
+    // Akumulasi per invoice SEBELUM dibandingkan dengan saldo. Memvalidasi baris satu per satu
+    // terhadap saldo awal yang sama membuat dua baris invoice yang sama (mis. 80 + 80 pada open
+    // 100) sama-sama lolos. Satu baris hasil agregasi juga menjaga PaymentItem tetap satu per invoice.
+    const requestedMap = new Map<string, number>();
     for (const item of dto.items) {
-      const invoice = invoiceMap.get(item.invoiceId);
-      if (!invoice) throw new NotFoundException({ code: 'INVOICE_NOT_FOUND', message: `Invoice ${item.invoiceId} tidak ditemukan` });
+      requestedMap.set(item.invoiceId, (requestedMap.get(item.invoiceId) ?? 0) + toCents(item.amount));
+    }
+
+    let totalCents = 0;
+    const items: Array<{ invoiceId: string; amount: number }> = [];
+    for (const [invoiceId, requestedCents] of requestedMap) {
+      const invoice = invoiceMap.get(invoiceId);
+      if (!invoice) throw new NotFoundException({ code: 'INVOICE_NOT_FOUND', message: `Invoice ${invoiceId} tidak ditemukan` });
       if (invoice.status !== 'POSTED') {
         throw new ConflictException({ code: 'INVOICE_NOT_POSTED', message: `Invoice ${invoice.invoiceNumber} harus POSTED sebelum dibayar` });
       }
@@ -45,16 +62,19 @@ export class PaymentService {
         throw new ConflictException({ code: 'INVOICE_PROJECT_MISMATCH', message: 'Invoice bukan milik project ini' });
       }
 
-      const open = Number(invoice.totalAmount) - (paidMap.get(invoice.id) ?? 0);
-      if (Number(item.amount) > open + 0.001) {
+      // Pemeriksaan di sini bersifat lebih awal (early feedback). Penjaga yang MENGIKAT ada di
+      // approvePayment, karena pada tahap DRAFT alokasi belum dihitung sebagai komitmen.
+      const openCents = toCents(invoice.totalAmount) - (paidMap.get(invoice.id) ?? 0);
+      if (requestedCents > openCents) {
         throw new ConflictException({
           code: 'EXCEED_AP_OPEN',
-          message: `Pembayaran melebihi AP open invoice ${invoice.invoiceNumber} (open ${open})`,
+          message: `Pembayaran melebihi AP open invoice ${invoice.invoiceNumber} (open ${fromCents(openCents)})`,
         });
       }
-      totalAmount += Number(item.amount);
-      items.push({ invoiceId: invoice.id, amount: Number(item.amount) });
+      totalCents += requestedCents;
+      items.push({ invoiceId: invoice.id, amount: fromCents(requestedCents) });
     }
+    const totalAmount = fromCents(totalCents);
 
     const payment = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
@@ -92,16 +112,78 @@ export class PaymentService {
   }
 
   async approvePayment(id: string, actorId: string) {
-    const payment = await this.prisma.payment.findUnique({ where: { id } });
+    const payment = await this.prisma.payment.findUnique({
+      where: { id },
+      include: { items: true, project: { select: { id: true } } },
+    });
     if (!payment) throw new NotFoundException({ code: 'PAYMENT_NOT_FOUND', message: 'Payment tidak ditemukan' });
     if (payment.status !== 'DRAFT') {
       throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa di-approve (${payment.status})` });
     }
 
-    const approved = await this.prisma.payment.update({
-      where: { id },
-      data: { status: 'APPROVED', approvedBy: actorId, approvedAt: new Date() },
-    });
+    // Penjaga AP yang MENGIKAT (keputusan D1): pada tahap DRAFT alokasi belum dihitung sebagai
+    // komitmen, sehingga pemeriksaan saldo di create tidak cukup — dua payment DRAFT paralel
+    // untuk invoice yang sama masing-masing lolos di sana. Di sini baca saldo dan tulis
+    // transisi dalam SATU transaksi Serializable supaya hanya satu yang menang.
+    const approved = await withSerializableRetry(
+      this.prisma,
+      async (tx) => {
+        const invoiceIds = payment.items.map((item) => item.invoiceId);
+
+        const invoices = await tx.vendorInvoice.findMany({
+          where: { id: { in: invoiceIds } },
+          select: { id: true, invoiceNumber: true, totalAmount: true, status: true, projectId: true },
+        });
+        const invoiceMap = new Map(invoices.map((inv) => [inv.id, inv]));
+
+        const committedGroups = await tx.paymentItem.groupBy({
+          by: ['invoiceId'],
+          where: {
+            invoiceId: { in: invoiceIds },
+            payment: { status: { in: COMMITTED_AP_STATUSES } },
+          },
+          _sum: { amount: true },
+        });
+        const committedMap = new Map(committedGroups.map((g) => [g.invoiceId, toCents(g._sum.amount)]));
+
+        // Kebutuhan dikumpulkan per invoice: satu payment biasanya satu baris per invoice,
+        // tetapi agregasi membuat guard ini tetap benar bila bentuknya berubah.
+        const requestedMap = new Map<string, number>();
+        for (const item of payment.items) {
+          requestedMap.set(item.invoiceId, (requestedMap.get(item.invoiceId) ?? 0) + toCents(item.amount));
+        }
+
+        for (const [invoiceId, requestedCents] of requestedMap) {
+          const invoice = invoiceMap.get(invoiceId);
+          if (!invoice) throw new NotFoundException({ code: 'INVOICE_NOT_FOUND', message: `Invoice ${invoiceId} tidak ditemukan` });
+          if (invoice.status !== 'POSTED') {
+            throw new ConflictException({ code: 'INVOICE_NOT_POSTED', message: `Invoice ${invoice.invoiceNumber} harus POSTED sebelum dibayar` });
+          }
+          if (invoice.projectId !== payment.projectId) {
+            throw new ConflictException({ code: 'INVOICE_PROJECT_MISMATCH', message: 'Invoice bukan milik project ini' });
+          }
+
+          const openCents = toCents(invoice.totalAmount) - (committedMap.get(invoiceId) ?? 0);
+          if (requestedCents > openCents) {
+            throw new ConflictException({
+              code: 'EXCEED_AP_OPEN',
+              message: `Approval melebihi AP open invoice ${invoice.invoiceNumber} (open ${fromCents(openCents)})`,
+            });
+          }
+        }
+
+        const cas = await tx.payment.updateMany({
+          where: { id, status: 'DRAFT' },
+          data: { status: 'APPROVED', approvedBy: actorId, approvedAt: new Date() },
+        });
+        if (cas.count === 0) {
+          throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa di-approve (${payment.status})` });
+        }
+
+        return tx.payment.findUniqueOrThrow({ where: { id } });
+      },
+      { label: 'Payment.approve' },
+    );
 
     await this.audit.record({
       userId: actorId,
@@ -125,10 +207,27 @@ export class PaymentService {
       throw new ConflictException({ code: 'NOT_APPROVED', message: `Hanya APPROVED yang bisa dibayar (${payment.status})` });
     }
 
-    const paid = await this.prisma.payment.update({
-      where: { id },
-      data: { status: 'PAID', paidBy: actorId, paymentDate: new Date() },
-    });
+    const paid = await withSerializableRetry(
+      this.prisma,
+      async (tx) => {
+        await this.gl.postPaymentJournal(
+          tx,
+          { id: payment.id, paymentNumber: payment.paymentNumber, legalEntityId: payment.project.legalEntityId, totalAmount: Number(payment.totalAmount) },
+          actorId,
+        );
+
+        const cas = await tx.payment.updateMany({
+          where: { id, status: 'APPROVED' },
+          data: { status: 'PAID', paidBy: actorId, paymentDate: new Date() },
+        });
+        if (cas.count === 0) {
+          throw new ConflictException({ code: 'NOT_APPROVED', message: `Hanya APPROVED yang bisa dibayar (${payment.status})` });
+        }
+
+        return tx.payment.findUniqueOrThrow({ where: { id } });
+      },
+      { label: 'Payment.pay' },
+    );
 
     await this.audit.record({
       userId: actorId,
@@ -138,11 +237,6 @@ export class PaymentService {
       newValue: { paymentNumber: payment.paymentNumber, totalAmount: Number(payment.totalAmount) },
       source: 'api',
     });
-
-    await this.gl.postPaymentJournal(
-      { id: payment.id, paymentNumber: payment.paymentNumber, legalEntityId: payment.project.legalEntityId, totalAmount: Number(payment.totalAmount) },
-      actorId,
-    );
 
     await invalidateAnalytics(this.cache);
 

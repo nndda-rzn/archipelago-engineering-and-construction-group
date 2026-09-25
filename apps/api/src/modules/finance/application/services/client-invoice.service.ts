@@ -5,6 +5,7 @@ import { AuditService } from '@/modules/foundation';
 import { GlHelper } from './shared/gl.helper';
 import { CacheService } from '@/shared/cache/cache.service';
 import { invalidateAnalytics } from '@/shared/cache/analytics-cache';
+import { withSerializableRetry } from '@/shared/database/serializable-tx';
 import type { CreateClientInvoiceDto, ListClientInvoiceQueryDto } from '../../presentation/dto/finance.dto';
 
 @Injectable()
@@ -78,10 +79,34 @@ export class ClientInvoiceService {
       throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa diposting (${invoice.status})` });
     }
 
-    const posted = await this.prisma.clientInvoice.update({
-      where: { id },
-      data: { status: 'POSTED', postedAt: new Date(), postedBy: actorId },
-    });
+    const posted = await withSerializableRetry(
+      this.prisma,
+      async (tx) => {
+        await this.gl.postClientInvoiceJournal(
+          tx,
+          {
+            id: invoice.id,
+            invoiceNumber: invoice.invoiceNumber,
+            legalEntityId: invoice.project.legalEntityId,
+            amount: Number(invoice.amount),
+            taxAmount: invoice.taxAmount != null ? Number(invoice.taxAmount) : null,
+            totalAmount: Number(invoice.totalAmount),
+          },
+          actorId,
+        );
+
+        const cas = await tx.clientInvoice.updateMany({
+          where: { id, status: 'DRAFT' },
+          data: { status: 'POSTED', postedAt: new Date(), postedBy: actorId },
+        });
+        if (cas.count === 0) {
+          throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa diposting (${invoice.status})` });
+        }
+
+        return tx.clientInvoice.findUniqueOrThrow({ where: { id } });
+      },
+      { label: 'ClientInvoice.post' },
+    );
 
     await this.audit.record({
       userId: actorId,
@@ -91,18 +116,6 @@ export class ClientInvoiceService {
       newValue: { invoiceNumber: invoice.invoiceNumber, totalAmount: Number(invoice.totalAmount) },
       source: 'api',
     });
-
-    await this.gl.postClientInvoiceJournal(
-      {
-        id: invoice.id,
-        invoiceNumber: invoice.invoiceNumber,
-        legalEntityId: invoice.project.legalEntityId,
-        amount: Number(invoice.amount),
-        taxAmount: invoice.taxAmount != null ? Number(invoice.taxAmount) : null,
-        totalAmount: Number(invoice.totalAmount),
-      },
-      actorId,
-    );
 
     await invalidateAnalytics(this.cache);
 

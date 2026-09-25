@@ -12,6 +12,13 @@ export class CacheService {
       lazyConnect: true,
       maxRetriesPerRequest: 1,
       enableReadyCheck: false,
+      // Cache bersifat best-effort (semua operasi sudah dibungkus try/catch). Bila Redis tidak
+      // tersedia, kita ingin gagal CEPAT: tanpa ini ioredis mengantre perintah dan menunggu
+      // connectTimeout (~10 dtk) untuk tiap perintah, sehingga setiap endpoint yang memanggil
+      // invalidateAnalytics tertahan ~10 dtk. `enableOfflineQueue: false` membuat perintah
+      // ditolak seketika saat koneksi belum siap, bukan menggantung.
+      enableOfflineQueue: false,
+      connectTimeout: 2_000,
     });
     this.client.on('error', (err) => this.logger.warn(`Redis error: ${err.message}`));
   }

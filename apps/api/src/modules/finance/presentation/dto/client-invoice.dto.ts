@@ -4,7 +4,9 @@ import { IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator'
 export class CreateClientInvoiceDto {
   @IsString() claimId!: string;
   @IsOptional() @IsString() invoiceDate?: string;
-  @Type(() => Number) @IsNumber() @Min(0) taxAmount?: number;
+  // `taxAmount` opsional (service memakai `dto.taxAmount ?? 0`). Tanpa @IsOptional(),
+  // permintaan tanpa PPN ditolak 400 padahal field-nya memang boleh kosong.
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) taxAmount?: number;
   @IsOptional() @IsString() @MaxLength(500) remark?: string;
 }
 

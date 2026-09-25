@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsNumber, IsOptional, IsString, Length, MaxLength, Min, ValidateNested } from 'class-validator';
+import { ArrayUnique, IsArray, IsNumber, IsOptional, IsString, Length, MaxLength, Min, ValidateNested } from 'class-validator';
 
 export class PaymentItemDto {
   @IsString() invoiceId!: string;
@@ -12,7 +12,15 @@ export class CreatePaymentDto {
   @IsOptional() @IsString() @MaxLength(100) bankAccount?: string;
   @IsOptional() @IsString() @MaxLength(100) reference?: string;
   @IsOptional() @IsString() @MaxLength(500) remark?: string;
-  @IsArray() @ValidateNested({ each: true }) @Type(() => PaymentItemDto) items!: PaymentItemDto[];
+  // Satu invoice = satu baris. Penggabungan ganda tetap dijaga di service, tetapi menolak
+  // duplikat di sini membuat API langsung memberi pesan yang jelas alih-alih "kelebihan bayar".
+  @IsArray()
+  @ArrayUnique((item: PaymentItemDto) => item.invoiceId, {
+    message: 'Setiap invoice hanya boleh muncul satu kali; gabungkan nominalnya dalam satu baris',
+  })
+  @ValidateNested({ each: true })
+  @Type(() => PaymentItemDto)
+  items!: PaymentItemDto[];
 }
 
 export class ListPaymentQueryDto {

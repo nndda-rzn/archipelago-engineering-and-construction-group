@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsNumber, IsOptional, IsString, Length, MaxLength, Min, ValidateNested } from 'class-validator';
+import { ArrayUnique, IsArray, IsNumber, IsOptional, IsString, Length, MaxLength, Min, ValidateNested } from 'class-validator';
 
 export class CollectionItemDto {
   @IsString() clientInvoiceId!: string;
@@ -12,7 +12,15 @@ export class CreateCollectionDto {
   @IsOptional() @IsString() @MaxLength(100) bankAccount?: string;
   @IsOptional() @IsString() @MaxLength(100) reference?: string;
   @IsOptional() @IsString() @MaxLength(500) remark?: string;
-  @IsArray() @ValidateNested({ each: true }) @Type(() => CollectionItemDto) items!: CollectionItemDto[];
+  // Satu client invoice = satu baris. Penggabungan ganda tetap dijaga di service, tetapi menolak
+  // duplikat di sini membuat API langsung memberi pesan yang jelas alih-alih "kelebihan terima".
+  @IsArray()
+  @ArrayUnique((item: CollectionItemDto) => item.clientInvoiceId, {
+    message: 'Setiap client invoice hanya boleh muncul satu kali; gabungkan nominalnya dalam satu baris',
+  })
+  @ValidateNested({ each: true })
+  @Type(() => CollectionItemDto)
+  items!: CollectionItemDto[];
 }
 
 export class ListCollectionQueryDto {

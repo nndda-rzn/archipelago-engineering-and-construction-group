@@ -40,6 +40,9 @@ export class CreateWorkflowDefinitionDto {
   @IsIn(['PurchaseRequisition', 'PurchaseOrder'])
   transactionType!: string;
 
+  // `status` opsional (service memakai `dto.status ?? 'DRAFT'`). Tanpa @IsOptional(),
+  // pembuatan workflow definition tanpa status eksplisit ditolak 400.
+  @IsOptional()
   @IsIn(['DRAFT', 'ACTIVE'])
   status?: string;
 }

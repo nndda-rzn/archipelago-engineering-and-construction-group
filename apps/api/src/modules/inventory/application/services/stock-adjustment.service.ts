@@ -88,19 +88,33 @@ export class StockAdjustmentService {
           throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa di-approve (${adjustment.status})` });
         }
 
-        const hasNegative = adjustment.items.some((item) => Number(item.quantity) < 0);
-        if (hasNegative) {
+        // Pengurangan digabung per bucket SEBELUM dibandingkan saldo. Memeriksa tiap baris
+        // terhadap saldo awal yang sama membuat dua baris -6 pada stok 10 sama-sama lolos.
+        // Kebijakan konservatif: penambahan pada dokumen yang sama TIDAK dipakai mengimbangi
+        // pengurangan, karena ledger ditulis berurutan dan `balanceAfter` bisa sempat negatif.
+        // (Bila bisnis ingin netting, itu keputusan D2 tersendiri.)
+        const decrementByBucket = new Map<string, number>();
+        for (const item of adjustment.items) {
+          const qty = Number(item.quantity);
+          if (qty >= 0) continue;
+          const key = item.wbsItemId ?? 'NULL';
+          decrementByBucket.set(key, (decrementByBucket.get(key) ?? 0) + Math.abs(qty));
+        }
+
+        if (decrementByBucket.size > 0) {
           const agg = await tx.stockLedgerEntry.groupBy({
             by: ['wbsItemId'],
             where: { projectId: adjustment.projectId, warehouseId: adjustment.warehouseId },
             _sum: { quantity: true },
           });
           const onHand = new Map(agg.map((a) => [a.wbsItemId ?? 'NULL', Number(a._sum.quantity ?? 0)]));
-          for (const item of adjustment.items) {
-            if (Number(item.quantity) >= 0) continue;
-            const avail = onHand.get(item.wbsItemId ?? 'NULL') ?? 0;
-            if (Math.abs(Number(item.quantity)) > avail) {
-              throw new ConflictException({ code: 'INSUFFICIENT_STOCK', message: `Adjustment "${item.description}" melebihi stok tersedia` });
+          for (const [key, decrement] of decrementByBucket) {
+            const avail = onHand.get(key) ?? 0;
+            if (decrement > avail) {
+              throw new ConflictException({
+                code: 'INSUFFICIENT_STOCK',
+                message: `Pengurangan adjustment melebihi stok tersedia (butuh ${decrement}, tersedia ${avail})`,
+              });
             }
           }
         }

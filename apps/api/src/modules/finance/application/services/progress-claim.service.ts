@@ -4,6 +4,7 @@ import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { CacheService } from '@/shared/cache/cache.service';
 import { invalidateAnalytics } from '@/shared/cache/analytics-cache';
+import { withSerializableRetry } from '@/shared/database/serializable-tx';
 import type { CreateProgressClaimDto, CertifyClaimDto, ListProgressClaimQueryDto } from '../../presentation/dto/finance.dto';
 
 @Injectable()
@@ -79,50 +80,89 @@ export class ProgressClaimService {
   }
 
   async certifyClaim(id: string, dto: CertifyClaimDto, actorId: string) {
-    const claim = await this.prisma.progressClaim.findUnique({
-      where: { id },
-      include: { project: { select: { advanceAmount: true, advanceRecoveryRate: true } } },
-    });
-    if (!claim) throw new NotFoundException({ code: 'CLAIM_NOT_FOUND', message: 'Claim tidak ditemukan' });
-    if (claim.status !== 'DRAFT') {
-      throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa disertifikasi (${claim.status})` });
-    }
+    // Pembacaan di luar transaksi hanya untuk respons "tidak ditemukan" yang cepat. Semua
+    // nilai yang MENENTUKAN keputusan (status, agregat recovery) dibaca ulang di dalam
+    // transaksi supaya tidak ada celah baca-luar → tulis (T4).
+    const exists = await this.prisma.progressClaim.findUnique({ where: { id }, select: { id: true } });
+    if (!exists) throw new NotFoundException({ code: 'CLAIM_NOT_FOUND', message: 'Claim tidak ditemukan' });
 
     const certifiedAmount = Number(dto.certifiedAmount);
     const retentionRate = dto.retentionRate ?? 0;
     const retentionAmount = Math.round(certifiedAmount * retentionRate) / 100;
     const netCertifiedAmount = Math.round((certifiedAmount - retentionAmount) * 100) / 100;
 
-    const advanceAmount = claim.project.advanceAmount != null ? Number(claim.project.advanceAmount) : 0;
-    const recoveryRate = Number(claim.project.advanceRecoveryRate ?? 0);
-    let recoveryAmount = 0;
-    let cumulativeRecovered: number | null = null;
-    if (advanceAmount > 0 && recoveryRate > 0) {
-      const { _sum } = await this.prisma.progressClaim.aggregate({
-        where: { projectId: claim.projectId, status: 'CERTIFIED', id: { not: claim.id } },
-        _sum: { recoveryAmount: true },
-      });
-      const recoveredSoFar = Number(_sum.recoveryAmount ?? 0);
-      const remaining = Math.round((advanceAmount - recoveredSoFar) * 100) / 100;
-      recoveryAmount = Math.min(Math.round(netCertifiedAmount * recoveryRate) / 100, remaining, netCertifiedAmount);
-      cumulativeRecovered = Math.round((recoveredSoFar + recoveryAmount) * 100) / 100;
-    }
+    const result = await withSerializableRetry(
+      this.prisma,
+      async (tx) => {
+        const claim = await tx.progressClaim.findUnique({
+          where: { id },
+          include: { project: { select: { advanceAmount: true, advanceRecoveryRate: true } } },
+        });
+        if (!claim) throw new NotFoundException({ code: 'CLAIM_NOT_FOUND', message: 'Claim tidak ditemukan' });
+        if (claim.status !== 'DRAFT') {
+          throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa disertifikasi (${claim.status})` });
+        }
 
-    const certified = await this.prisma.progressClaim.update({
-      where: { id },
-      data: {
-        status: 'CERTIFIED',
-        certifiedAmount,
-        retentionRate,
-        retentionAmount,
-        netCertifiedAmount,
-        recoveryAmount: recoveryAmount > 0 || advanceAmount > 0 ? recoveryAmount : null,
-        cumulativeRecovered,
-        certifiedBy: actorId,
-        certifiedAt: new Date(),
-        remark: dto.remark ?? null,
+        // T10: nilai sertifikasi tidak boleh melebihi nilai klaim. Sertifikasi lebih tinggi
+        // dari yang diklaim adalah galat data (dan jalan pintas inflasi), bukan penyesuaian.
+        if (certifiedAmount > Number(claim.amount)) {
+          throw new ConflictException({
+            code: 'CERTIFIED_EXCEEDS_CLAIM',
+            message: `Nilai sertifikasi (${certifiedAmount}) melebihi nilai klaim (${Number(claim.amount)})`,
+          });
+        }
+
+        const advanceAmount = claim.project.advanceAmount != null ? Number(claim.project.advanceAmount) : 0;
+        const recoveryRate = Number(claim.project.advanceRecoveryRate ?? 0);
+        let recoveryAmount = 0;
+        let cumulativeRecovered: number | null = null;
+        if (advanceAmount > 0 && recoveryRate > 0) {
+          // Agregat recovery dibaca DI DALAM transaksi: dua sertifikasi paralel untuk project
+          // yang sama tidak bisa sama-sama melihat sisa DP yang penuh dan melebih-recover.
+          const { _sum } = await tx.progressClaim.aggregate({
+            where: { projectId: claim.projectId, status: 'CERTIFIED', id: { not: claim.id } },
+            _sum: { recoveryAmount: true },
+          });
+          const recoveredSoFar = Number(_sum.recoveryAmount ?? 0);
+          const remaining = Math.round((advanceAmount - recoveredSoFar) * 100) / 100;
+          // Data lama yang sudah melebih-recover DP adalah kegagalan keras, bukan
+          // sesuatu untuk "diperbaiki" diam-diam dengan recovery negatif.
+          if (remaining < 0) {
+            throw new ConflictException({
+              code: 'ADVANCE_OVER_RECOVERED',
+              message: `Recovery DP project sudah melebihi uang muka (terkumpul ${recoveredSoFar} > ${advanceAmount})`,
+            });
+          }
+          // recoveryAmount <= remaining menjamin cumulativeRecovered tidak pernah melebihi DP.
+          recoveryAmount = Math.min(Math.round(netCertifiedAmount * recoveryRate) / 100, remaining, netCertifiedAmount);
+          cumulativeRecovered = Math.round((recoveredSoFar + recoveryAmount) * 100) / 100;
+        }
+
+        // CAS: dua sertifikasi paralel untuk claim yang sama — hanya satu yang boleh menang.
+        const cas = await tx.progressClaim.updateMany({
+          where: { id, status: 'DRAFT' },
+          data: {
+            status: 'CERTIFIED',
+            certifiedAmount,
+            retentionRate,
+            retentionAmount,
+            netCertifiedAmount,
+            recoveryAmount: recoveryAmount > 0 || advanceAmount > 0 ? recoveryAmount : null,
+            cumulativeRecovered,
+            certifiedBy: actorId,
+            certifiedAt: new Date(),
+            remark: dto.remark ?? null,
+          },
+        });
+        if (cas.count === 0) {
+          throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa disertifikasi (${claim.status})` });
+        }
+
+        const certified = await tx.progressClaim.findUniqueOrThrow({ where: { id } });
+        return { certified, claimNumber: claim.claimNumber, recoveryAmount, cumulativeRecovered };
       },
-    });
+      { label: 'ProgressClaim.certify' },
+    );
 
     await this.audit.record({
       userId: actorId,
@@ -130,20 +170,20 @@ export class ProgressClaimService {
       resource: 'ProgressClaim',
       resourceId: id,
       newValue: {
-        claimNumber: claim.claimNumber,
+        claimNumber: result.claimNumber,
         certifiedAmount,
         retentionRate,
         retentionAmount,
         netCertifiedAmount,
-        recoveryAmount,
-        cumulativeRecovered,
+        recoveryAmount: result.recoveryAmount,
+        cumulativeRecovered: result.cumulativeRecovered,
       },
       source: 'api',
     });
 
     await invalidateAnalytics(this.cache);
 
-    return certified;
+    return result.certified;
   }
 
   async listProgressClaims(query: ListProgressClaimQueryDto) {

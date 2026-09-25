@@ -2,8 +2,14 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
+import { journalPeriodWhere, parsePeriod, periodRange } from '@/shared/utils/period';
 import type { CompletePeriodStepDto, CreatePeriodCloseDto } from '../../presentation/dto/finance-closure.dto';
 
+/**
+ * Where-clause jurnal POSTED untuk **laporan ad-hoc** dengan rentang tanggal eksplisit
+ * (mis. income statement `from`/`to`). Ini BUKAN untuk penutupan periode — penutupan
+ * memakai `journalPeriodWhere` yang mengikat ke satu bulan buku.
+ */
 export function periodWhere(legalEntityId: string, from?: string, to?: string): Prisma.JournalWhereInput {
   return {
     legalEntityId,
@@ -27,10 +33,14 @@ export class PeriodCloseService {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
     if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });
 
+    // Validasi format lebih awal; parsePeriod melempar INVALID_PERIOD bila bukan YYYY-MM.
+    parsePeriod(dto.period);
+
     const existing = await this.prisma.periodClose.findUnique({ where: { legalEntityId_period: { legalEntityId: dto.legalEntityId, period: dto.period } } });
     if (existing) throw new ConflictException({ code: 'PERIOD_ALREADY_OPENED', message: `Periode ${dto.period} sudah dibuka` });
 
-    const journalCount = await this.prisma.journal.count({ where: periodWhere(dto.legalEntityId) });
+    // Hitung HANYA jurnal dalam rentang periode tersebut (sebelumnya tanpa batas tanggal).
+    const journalCount = await this.prisma.journal.count({ where: journalPeriodWhere(dto.legalEntityId, dto.period) });
 
     const close = await this.prisma.periodClose.create({
       data: {
@@ -74,15 +84,29 @@ export class PeriodCloseService {
     if (incomplete.length > 0) {
       throw new ConflictException({ code: 'STEPS_PENDING', message: `Step belum selesai: ${incomplete.join(', ')}` });
     }
-    const draftCount = await this.prisma.journal.count({ where: { legalEntityId: close.legalEntityId, status: 'DRAFT' } });
+
+    // Draft dihitung HANYA untuk periode ini. Sebelumnya seluruh draft legal entity ikut dihitung,
+    // sehingga draft bulan lain memblokir penutupan bulan berjalan (T6).
+    const { gte, lt } = periodRange(close.period);
+    const draftCount = await this.prisma.journal.count({
+      where: { legalEntityId: close.legalEntityId, status: 'DRAFT', date: { gte, lt } },
+    });
     if (draftCount > 0) {
-      throw new ConflictException({ code: 'JOURNAL_DRAFT_PENDING', message: `${draftCount} journal masih DRAFT — post dulu sebelum close` });
+      throw new ConflictException({ code: 'JOURNAL_DRAFT_PENDING', message: `${draftCount} journal masih DRAFT pada periode ${close.period} — post dulu sebelum close` });
     }
-    const journalCount = await this.prisma.journal.count({ where: periodWhere(close.legalEntityId) });
-    const closed = await this.prisma.periodClose.update({
-      where: { id },
+
+    const journalCount = await this.prisma.journal.count({ where: journalPeriodWhere(close.legalEntityId, close.period) });
+
+    // CAS: dua close paralel tidak boleh sama-sama menutup. Status diperiksa di dalam guard.
+    const cas = await this.prisma.periodClose.updateMany({
+      where: { id, status: 'IN_PROGRESS' },
       data: { status: 'CLOSED', journalCount, closedBy: actorId, closedAt: new Date() },
     });
+    if (cas.count === 0) {
+      throw new ConflictException({ code: 'NOT_IN_PROGRESS', message: `Period close harus IN_PROGRESS (${close.status})` });
+    }
+    const closed = await this.prisma.periodClose.findUniqueOrThrow({ where: { id } });
+
     await this.audit.record({ userId: actorId, action: 'PeriodClose.CLOSE', resource: 'PeriodClose', resourceId: id, newValue: { period: close.period, journalCount }, source: 'api' });
     return closed;
   }
@@ -93,7 +117,17 @@ export class PeriodCloseService {
     if (close.status !== 'CLOSED') {
       throw new ConflictException({ code: 'NOT_CLOSED', message: `Hanya CLOSED yang bisa dikunci (${close.status})` });
     }
-    const locked = await this.prisma.periodClose.update({ where: { id }, data: { status: 'LOCKED' } });
+
+    // CAS: dua lock paralel tidak boleh sama-sama menang.
+    const cas = await this.prisma.periodClose.updateMany({
+      where: { id, status: 'CLOSED' },
+      data: { status: 'LOCKED' },
+    });
+    if (cas.count === 0) {
+      throw new ConflictException({ code: 'NOT_CLOSED', message: `Hanya CLOSED yang bisa dikunci (${close.status})` });
+    }
+    const locked = await this.prisma.periodClose.findUniqueOrThrow({ where: { id } });
+
     await this.audit.record({ userId: actorId, action: 'PeriodClose.LOCK', resource: 'PeriodClose', resourceId: id, newValue: { period: close.period }, source: 'api' });
     return locked;
   }

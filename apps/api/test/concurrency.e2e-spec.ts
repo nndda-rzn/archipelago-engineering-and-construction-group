@@ -36,26 +36,39 @@ describe('Concurrency guards (e2e)', () => {
 
   // Fixture khusus suite ini.
   let projectId: string;
+  let legalEntityId: string;
   let warehouseId: string;
   let wbsBudget: string; // WBS untuk test budget PR (T13) — budget di-publish di test itu.
   let wbsIssue: string; // WBS untuk test material issue (T1).
   let wbsApproval: string; // WBS untuk test approval task (T9).
   let wbsAdj: string; // WBS untuk test stock adjustment (T2).
   let wbsInvoice: string;
+  let wbsGl: string; // WBS untuk test akun GL hilang (T14).
+  let wbsDup: string; // WBS untuk test agregasi baris bucket sama (T15).
+  // Project terpisah untuk uji reservasi AP/AR (T17/T18) supaya tidak berebut status budget.
+  let projectApAr: string;
+  let wbsApAr: string;
+  let warehouseApAr: string;
 
   beforeAll(async () => {
     app = await createTestApp();
     adminToken = await loginAs(app, 'admin@aec.local', 'Admin123!');
     buyerToken = await loginAs(app, 'buyer@aec.local', 'Buyer123!');
 
-    const legalEntityId = await getFirstLegalEntityId(app, adminToken);
+    legalEntityId = await getFirstLegalEntityId(app, adminToken);
     projectId = await createProject(app, adminToken, legalEntityId, 'PRJ-E2E-CONC');
     wbsBudget = await createWbs(app, adminToken, projectId, '1', 'Concurrency Budget');
     wbsIssue = await createWbs(app, adminToken, projectId, '2', 'Concurrency Issue');
     wbsApproval = await createWbs(app, adminToken, projectId, '3', 'Concurrency Approval');
     wbsAdj = await createWbs(app, adminToken, projectId, '4', 'Concurrency Adjustment');
     wbsInvoice = await createWbs(app, adminToken, projectId, '5', 'Concurrency Invoice');
+    wbsGl = await createWbs(app, adminToken, projectId, '6', 'Concurrency GL Account');
+    wbsDup = await createWbs(app, adminToken, projectId, '7', 'Concurrency Duplicate Lines');
     warehouseId = await createWarehouse(app, adminToken, projectId, 'WH-E2E-CONC', 'Warehouse Concurrency');
+
+    projectApAr = await createProject(app, adminToken, legalEntityId, 'PRJ-E2E-APAR');
+    wbsApAr = await createWbs(app, adminToken, projectApAr, '1', 'AP AR Reservation');
+    warehouseApAr = await createWarehouse(app, adminToken, projectApAr, 'WH-E2E-APAR', 'Warehouse AP AR');
   });
 
   afterAll(async () => {
@@ -247,5 +260,407 @@ describe('Concurrency guards (e2e)', () => {
       where: { source: 'INVOICE', sourceId: accepted.body.id },
     });
     expect(journals).toBe(1);
+  });
+
+  it('T14: akun GL AP tidak aktif -> post 409 GL_ACCOUNT_MISSING, status tetap MATCHED, tanpa jurnal', async () => {
+    const prisma = app.get(PrismaService);
+    const budget = await setBudgetItem(app, adminToken, projectId, wbsGl, 1_000_000);
+    expect(budget.status).toBe(201);
+    expect((await publishBudget(app, adminToken, projectId)).status).toBe(201);
+
+    const pr = await request(app.getHttpServer()).post('/api/v1/purchase-requisitions')
+      .set('Authorization', auth(buyerToken))
+      .send({ projectId, wbsItemId: wbsGl, requestedBy: 'gl-test',
+        items: [{ description: 'gl material', quantity: 1, unit: 'EA', estimatedUnitPrice: 100 }] });
+    expect(pr.status).toBe(201);
+    const submitted = await request(app.getHttpServer()).post('/api/v1/approvals/submit')
+      .set('Authorization', auth(buyerToken))
+      .send({ transactionType: 'PurchaseRequisition', transactionId: pr.body.id, approverRoleCode: 'PROCUREMENT_MANAGER' });
+    expect(submitted.status).toBe(201);
+    expect((await request(app.getHttpServer()).post('/api/v1/approvals/decide')
+      .set('Authorization', auth(adminToken)).send({ taskId: submitted.body.id, decision: 'APPROVE' })).status).toBe(201);
+
+    const po = await request(app.getHttpServer()).post('/api/v1/purchase-orders')
+      .set('Authorization', auth(adminToken)).send({ requisitionId: pr.body.id, vendor: 'Vendor GL' });
+    expect(po.status).toBe(201);
+    const poApproval = await request(app.getHttpServer()).post('/api/v1/approvals/submit')
+      .set('Authorization', auth(buyerToken))
+      .send({ transactionType: 'PurchaseOrder', transactionId: po.body.id, approverRoleCode: 'PROCUREMENT_MANAGER' });
+    expect(poApproval.status).toBe(201);
+    expect((await request(app.getHttpServer()).post('/api/v1/approvals/decide')
+      .set('Authorization', auth(adminToken)).send({ taskId: poApproval.body.id, decision: 'APPROVE' })).status).toBe(201);
+    expect((await request(app.getHttpServer()).post(`/api/v1/purchase-orders/${po.body.id}/release`)
+      .set('Authorization', auth(adminToken))).status).toBe(201);
+
+    const gr = await request(app.getHttpServer()).post('/api/v1/goods-receipts')
+      .set('Authorization', auth(adminToken))
+      .send({ poId: po.body.id, warehouseId,
+        items: [{ poItemId: po.body.items[0].id, quantity: 1, wbsItemId: wbsGl }] });
+    expect(gr.status).toBe(201);
+
+    const invoice = await request(app.getHttpServer()).post('/api/v1/vendor-invoices')
+      .set('Authorization', auth(adminToken))
+      .send({ poId: po.body.id, vendorInvoiceNo: 'INVOICE-GL',
+        items: [{ poItemId: po.body.items[0].id, quantity: 1, unitPrice: 100 }] });
+    expect(invoice.status).toBe(201);
+    expect(invoice.body.status).toBe('MATCHED');
+    const invoiceId = invoice.body.id as string;
+
+    const apAccounts = await prisma.chartOfAccount.findMany({
+      where: { legalEntityId, code: { startsWith: '210' } },
+      select: { id: true },
+    });
+    expect(apAccounts.length).toBeGreaterThan(0);
+
+    try {
+      // Akun AP dinonaktifkan → posting wajib GAGAL, bukan diam-diam tanpa jurnal.
+      await prisma.chartOfAccount.updateMany({
+        where: { legalEntityId, code: { startsWith: '210' } },
+        data: { isActive: false },
+      });
+
+      const post = await request(app.getHttpServer())
+        .post(`/api/v1/vendor-invoices/${invoiceId}/post`)
+        .set('Authorization', auth(adminToken));
+
+      expect(post.status).toBe(409);
+      expect(post.body.error.code).toBe('GL_ACCOUNT_MISSING');
+
+      // Bukti invariant: status tidak berubah dan tidak ada jurnal setengah jadi.
+      const after = await prisma.vendorInvoice.findUniqueOrThrow({ where: { id: invoiceId } });
+      expect(after.status).toBe('MATCHED');
+      expect(await prisma.journal.count({ where: { source: 'INVOICE', sourceId: invoiceId } })).toBe(0);
+    } finally {
+      await prisma.chartOfAccount.updateMany({
+        where: { legalEntityId, code: { startsWith: '210' } },
+        data: { isActive: true },
+      });
+    }
+
+    // Kontrol positif: setelah akun dipulihkan, post yang sama berhasil dan berjurnal tepat 1.
+    const retryPost = await request(app.getHttpServer())
+      .post(`/api/v1/vendor-invoices/${invoiceId}/post`)
+      .set('Authorization', auth(adminToken));
+    expect(retryPost.status).toBe(201);
+    expect(retryPost.body.status).toBe('POSTED');
+    expect(await prisma.journal.count({ where: { source: 'INVOICE', sourceId: invoiceId } })).toBe(1);
+  });
+
+  it('T15: dua baris bucket stok SAMA yang totalnya melebihi saldo -> 409 INSUFFICIENT_STOCK', async () => {
+    // Seed stok 10 pada bucket khusus lewat adjustment positif yang di-approve.
+    const adj = await request(app.getHttpServer())
+      .post('/api/v1/stock-adjustments')
+      .set('Authorization', auth(adminToken))
+      .send({
+        projectId,
+        warehouseId,
+        reasonCode: 'SURPLUS',
+        items: [{ description: 'seed stok dup', quantity: 10, unit: 'EA', wbsItemId: wbsDup }],
+      });
+    expect(adj.status).toBe(201);
+    expect((await request(app.getHttpServer())
+      .post(`/api/v1/stock-adjustments/${adj.body.id}/approve`)
+      .set('Authorization', auth(adminToken))).status).toBe(201);
+
+    // Dua baris 8 + 8 pada bucket yang sama. Tiap baris (8) masih <= stok (10), sehingga
+    // tanpa agregasi per bucket keduanya lolos dan saldo menjadi -6.
+    const issue = await request(app.getHttpServer())
+      .post('/api/v1/material-issues')
+      .set('Authorization', auth(adminToken))
+      .send({
+        projectId,
+        warehouseId,
+        issuedTo: 'e2e-dup-bucket',
+        items: [
+          { description: 'dup A', quantity: 8, unit: 'EA', wbsItemId: wbsDup },
+          { description: 'dup B', quantity: 8, unit: 'EA', wbsItemId: wbsDup },
+        ],
+      });
+
+    expect(issue.status).toBe(409);
+    expect(issue.body.error.code).toBe('INSUFFICIENT_STOCK');
+
+    // Bukti: tidak ada dokumen setengah jadi dan saldo bucket tidak berkurang.
+    expect(await app.get(PrismaService).materialIssue.count({
+      where: { projectId, issuedTo: 'e2e-dup-bucket' },
+    })).toBe(0);
+  });
+
+  it('T16: ID invoice duplikat dalam satu request ditolak validasi DTO -> 400', async () => {
+    const payment = await request(app.getHttpServer())
+      .post('/api/v1/payments')
+      .set('Authorization', auth(adminToken))
+      .send({
+        projectId,
+        vendor: 'PT Duplikat',
+        items: [
+          { invoiceId: 'inv-sama', amount: 80 },
+          { invoiceId: 'inv-sama', amount: 80 },
+        ],
+      });
+
+    expect(payment.status).toBe(400);
+
+    const collection = await request(app.getHttpServer())
+      .post('/api/v1/collections')
+      .set('Authorization', auth(adminToken))
+      .send({
+        projectId,
+        client: 'PT Klien Duplikat',
+        items: [
+          { clientInvoiceId: 'cinv-sama', amount: 80 },
+          { clientInvoiceId: 'cinv-sama', amount: 80 },
+        ],
+      });
+
+    expect(collection.status).toBe(400);
+  });
+
+  it('T17: dua payment DRAFT invoice sama -> satu approve menang, satu EXCEED_AP_OPEN', async () => {
+    // Siapkan rantai PO → GR → vendor invoice POSTED dengan total 100.
+    const budget = await setBudgetItem(app, adminToken, projectApAr, wbsApAr, 1_000_000);
+    expect(budget.status).toBe(201);
+    expect((await publishBudget(app, adminToken, projectApAr)).status).toBe(201);
+
+    const pr = await request(app.getHttpServer()).post('/api/v1/purchase-requisitions')
+      .set('Authorization', auth(buyerToken))
+      .send({ projectId: projectApAr, wbsItemId: wbsApAr, requestedBy: 'ap-approval-test',
+        items: [{ description: 'ap material', quantity: 1, unit: 'EA', estimatedUnitPrice: 100 }] });
+    expect(pr.status).toBe(201);
+    const submitted = await request(app.getHttpServer()).post('/api/v1/approvals/submit')
+      .set('Authorization', auth(buyerToken))
+      .send({ transactionType: 'PurchaseRequisition', transactionId: pr.body.id, approverRoleCode: 'PROCUREMENT_MANAGER' });
+    expect(submitted.status).toBe(201);
+    expect((await request(app.getHttpServer()).post('/api/v1/approvals/decide')
+      .set('Authorization', auth(adminToken)).send({ taskId: submitted.body.id, decision: 'APPROVE' })).status).toBe(201);
+
+    const po = await request(app.getHttpServer()).post('/api/v1/purchase-orders')
+      .set('Authorization', auth(adminToken)).send({ requisitionId: pr.body.id, vendor: 'Vendor AP' });
+    expect(po.status).toBe(201);
+    const poApproval = await request(app.getHttpServer()).post('/api/v1/approvals/submit')
+      .set('Authorization', auth(buyerToken))
+      .send({ transactionType: 'PurchaseOrder', transactionId: po.body.id, approverRoleCode: 'PROCUREMENT_MANAGER' });
+    expect(poApproval.status).toBe(201);
+    expect((await request(app.getHttpServer()).post('/api/v1/approvals/decide')
+      .set('Authorization', auth(adminToken)).send({ taskId: poApproval.body.id, decision: 'APPROVE' })).status).toBe(201);
+    expect((await request(app.getHttpServer()).post(`/api/v1/purchase-orders/${po.body.id}/release`)
+      .set('Authorization', auth(adminToken))).status).toBe(201);
+
+    const gr = await request(app.getHttpServer()).post('/api/v1/goods-receipts')
+      .set('Authorization', auth(adminToken))
+      .send({ poId: po.body.id, warehouseId: warehouseApAr,
+        items: [{ poItemId: po.body.items[0].id, quantity: 1, wbsItemId: wbsApAr }] });
+    expect(gr.status).toBe(201);
+
+    const invoice = await request(app.getHttpServer()).post('/api/v1/vendor-invoices')
+      .set('Authorization', auth(adminToken))
+      .send({ poId: po.body.id, vendorInvoiceNo: 'INVOICE-AP-APPROVAL',
+        items: [{ poItemId: po.body.items[0].id, quantity: 1, unitPrice: 100 }] });
+    expect(invoice.status).toBe(201);
+    expect(invoice.body.totalAmount).toBe(100);
+
+    const postInvoice = await request(app.getHttpServer())
+      .post(`/api/v1/vendor-invoices/${invoice.body.id}/post`)
+      .set('Authorization', auth(adminToken));
+    expect(postInvoice.status).toBe(201);
+    expect(postInvoice.body.status).toBe('POSTED');
+
+    // Dua payment DRAFT masing-masing 80 pada invoice open 100. Keduanya BOLEH dibuat:
+    // sesuai D1, DRAFT belum mengikat saldo — jadi penjaga create tidak menolaknya.
+    const makePayment = (reference: string) =>
+      request(app.getHttpServer()).post('/api/v1/payments')
+        .set('Authorization', auth(adminToken))
+        .send({ projectId: projectApAr, vendor: 'Vendor AP', reference,
+          items: [{ invoiceId: invoice.body.id, amount: 80 }] });
+
+    const [payA, payB] = await Promise.all([makePayment('AP-A'), makePayment('AP-B')]);
+    expect(statuses([payA, payB])).toEqual([201, 201]);
+
+    // Approve paralel: hanya satu boleh mengikat 80 dari sisa 100.
+    const approve = (paymentId: string) =>
+      request(app.getHttpServer()).post(`/api/v1/payments/${paymentId}/approve`)
+        .set('Authorization', auth(adminToken));
+
+    const [apprA, apprB] = await Promise.all([approve(payA.body.id), approve(payB.body.id)]);
+    expect(statuses([apprA, apprB])).toEqual([201, 409]);
+
+    const failed = apprA.status === 409 ? apprA : apprB;
+    expect(failed.body.error.code).toBe('EXCEED_AP_OPEN');
+
+    // Bukti: total alokasi APPROVED tidak melebihi nilai invoice.
+    const approved = await app.get(PrismaService).payment.findMany({
+      where: { items: { some: { invoiceId: invoice.body.id } }, status: 'APPROVED' },
+      include: { items: true },
+    });
+    const committed = approved.reduce((sum, p) => sum + p.items.reduce((s, i) => s + Number(i.amount), 0), 0);
+    expect(committed).toBeLessThanOrEqual(100);
+  });
+
+  it('T18: dua collection DRAFT invoice sama -> satu posting menang, satu EXCEED_AR_OPEN', async () => {
+    // Siapkan claim CERTIFIED -> client invoice POSTED dengan total 100.
+    const claim = await request(app.getHttpServer()).post('/api/v1/progress-claims')
+      .set('Authorization', auth(adminToken))
+      .send({ projectId: projectApAr, amount: 100, claimType: 'PROGRESS', description: 'AR reservation test' });
+    expect(claim.status).toBe(201);
+
+    const certified = await request(app.getHttpServer())
+      .post(`/api/v1/progress-claims/${claim.body.id}/certify`)
+      .set('Authorization', auth(adminToken))
+      .send({ certifiedAmount: 100, retentionRate: 0 });
+    expect(certified.status).toBe(201);
+    expect(certified.body.status).toBe('CERTIFIED');
+
+    const clientInvoice = await request(app.getHttpServer()).post('/api/v1/client-invoices')
+      .set('Authorization', auth(adminToken))
+      .send({ claimId: claim.body.id });
+    expect(clientInvoice.status).toBe(201);
+    expect(clientInvoice.body.totalAmount).toBe(100);
+
+    const postClientInvoice = await request(app.getHttpServer())
+      .post(`/api/v1/client-invoices/${clientInvoice.body.id}/post`)
+      .set('Authorization', auth(adminToken));
+    expect(postClientInvoice.status).toBe(201);
+    expect(postClientInvoice.body.status).toBe('POSTED');
+
+    // Dua collection DRAFT masing-masing 80. Sesuai D1, DRAFT belum mengikat AR,
+    // sehingga keduanya lolos pemeriksaan awal saat create.
+    const makeCollection = (reference: string) =>
+      request(app.getHttpServer()).post('/api/v1/collections')
+        .set('Authorization', auth(adminToken))
+        .send({ projectId: projectApAr, client: 'Klien AP AR', reference,
+          items: [{ clientInvoiceId: clientInvoice.body.id, amount: 80 }] });
+
+    const [colA, colB] = await Promise.all([makeCollection('AR-A'), makeCollection('AR-B')]);
+    expect(statuses([colA, colB])).toEqual([201, 201]);
+
+    const post = (collectionId: string) =>
+      request(app.getHttpServer()).post(`/api/v1/collections/${collectionId}/post`)
+        .set('Authorization', auth(adminToken));
+
+    const [postA, postB] = await Promise.all([post(colA.body.id), post(colB.body.id)]);
+    expect(statuses([postA, postB])).toEqual([201, 409]);
+
+    const failed = postA.status === 409 ? postA : postB;
+    expect(failed.body.error.code).toBe('EXCEED_AR_OPEN');
+
+    // Bukti: hanya satu collection POSTED dan hanya satu jurnal COLLECTION untuk yang menang.
+    const won = postA.status === 201 ? colA.body.id : colB.body.id;
+    const prisma = app.get(PrismaService);
+    expect(await prisma.journal.count({ where: { source: 'COLLECTION', sourceId: won } })).toBe(1);
+    const postedCollections = await prisma.collection.findMany({
+      where: { items: { some: { clientInvoiceId: clientInvoice.body.id } }, status: 'POSTED' },
+      include: { items: true },
+    });
+    const committed = postedCollections.reduce((sum, c) => sum + c.items.reduce((s, i) => s + Number(i.amount), 0), 0);
+    expect(committed).toBeLessThanOrEqual(100);
+  });
+
+  it('T19: posting jurnal ke periode LOCKED ditolak 409 PERIOD_LOCKED, periode terbuka tetap menerima', async () => {
+    const prisma = app.get(PrismaService);
+
+    // Akun untuk jurnal manual (debit kas, credit pendapatan) diambil langsung dari fixture.
+    const accounts = await prisma.chartOfAccount.findMany({
+      where: { legalEntityId, isActive: true },
+      select: { id: true, code: true },
+    });
+    const debitAccountId = accounts.find((a) => a.code.startsWith('1100'))?.id;
+    const creditAccountId = accounts.find((a) => a.code.startsWith('4100'))?.id;
+    expect(debitAccountId).toBeDefined();
+    expect(creditAccountId).toBeDefined();
+
+    // Periode LAMPAU (2026-08) sengaja dipakai supaya kunci tidak mengganggu auto-posting lain
+    // yang memakai tanggal hari ini (September 2026).
+    const LOCKED_PERIOD = '2026-08';
+
+    const start = await request(app.getHttpServer()).post('/api/v1/period-closes')
+      .set('Authorization', auth(adminToken))
+      .send({ legalEntityId, period: LOCKED_PERIOD });
+    expect(start.status).toBe(201);
+    const periodCloseId = start.body.id as string;
+
+    for (const step of ['cutoff', 'accrual', 'depreciation', 'revaluation', 'reconciliation', 'closing']) {
+      const res = await request(app.getHttpServer()).post(`/api/v1/period-closes/${periodCloseId}/step`)
+        .set('Authorization', auth(adminToken)).send({ step });
+      expect(res.status).toBe(201);
+    }
+    expect((await request(app.getHttpServer()).post(`/api/v1/period-closes/${periodCloseId}/close`)
+      .set('Authorization', auth(adminToken))).status).toBe(201);
+    expect((await request(app.getHttpServer()).post(`/api/v1/period-closes/${periodCloseId}/lock`)
+      .set('Authorization', auth(adminToken))).status).toBe(201);
+
+    const manualJournal = (date: string, description: string) =>
+      request(app.getHttpServer()).post('/api/v1/journals')
+        .set('Authorization', auth(adminToken))
+        .send({
+          legalEntityId,
+          date,
+          description,
+          lines: [
+            { accountId: debitAccountId, debit: 100, credit: 0 },
+            { accountId: creditAccountId, debit: 0, credit: 100 },
+          ],
+        });
+
+    // Posting bertanggal di periode terkunci -> ditolak, tanpa jurnal tersimpan.
+    const before = await prisma.journal.count({ where: { legalEntityId, source: 'MANUAL' } });
+    const locked = await manualJournal(`${LOCKED_PERIOD}-15`, 'harus ditolak (periode terkunci)');
+    expect(locked.status).toBe(409);
+    expect(locked.body.error.code).toBe('PERIOD_LOCKED');
+    expect(await prisma.journal.count({ where: { legalEntityId, source: 'MANUAL' } })).toBe(before);
+
+    // Kontrol positif: periode terbuka (bulan berjalan) tetap menerima jurnal.
+    const open = await manualJournal('2026-09-15', 'periode terbuka');
+    expect(open.status).toBe(201);
+  });
+
+  it('T20: sertifikasi claim atomik — claim sama tidak dua kali, recovery DP tidak melebihi', async () => {
+    const prisma = app.get(PrismaService);
+
+    // Project khusus dengan DP: 100 uang muka, recovery 100% dari netCertified.
+    const claimProject = await createProject(app, adminToken, legalEntityId, 'PRJ-E2E-CLAIM');
+    await prisma.project.update({
+      where: { id: claimProject },
+      data: { advanceAmount: 100, advanceRecoveryRate: 100 },
+    });
+
+    const makeClaim = (description: string) =>
+      request(app.getHttpServer()).post('/api/v1/progress-claims')
+        .set('Authorization', auth(adminToken))
+        .send({ projectId: claimProject, amount: 100, claimType: 'PROGRESS', description });
+
+    const certify = (claimId: string, certifiedAmount = 100) =>
+      request(app.getHttpServer()).post(`/api/v1/progress-claims/${claimId}/certify`)
+        .set('Authorization', auth(adminToken))
+        .send({ certifiedAmount, retentionRate: 0 });
+
+    // (a) Batas recovery: claim A menyerap seluruh DP; claim B mendapat recovery 0.
+    const a = await makeClaim('claim-dp-A');
+    const b = await makeClaim('claim-dp-B');
+    expect(a.status).toBe(201);
+    expect(b.status).toBe(201);
+
+    const rA = await certify(a.body.id);
+    expect(rA.status).toBe(201);
+    expect(Number(rA.body.recoveryAmount)).toBe(100);
+
+    const rB = await certify(b.body.id);
+    expect(rB.status).toBe(201);
+    expect(Number(rB.body.recoveryAmount ?? 0)).toBe(0);
+    expect(Number(rB.body.cumulativeRecovered)).toBe(100);
+
+    // Invariant: total recovery seluruh claim CERTIFIED project ini tidak melebihi DP.
+    const certified = await prisma.progressClaim.findMany({
+      where: { projectId: claimProject, status: 'CERTIFIED' },
+      select: { recoveryAmount: true },
+    });
+    const totalRecovery = certified.reduce((s, c) => s + Number(c.recoveryAmount ?? 0), 0);
+    expect(totalRecovery).toBeLessThanOrEqual(100);
+
+    // (b) Dua sertifikasi PARALEL untuk claim yang SAMA -> tepat satu menang.
+    const same = await makeClaim('claim-sama');
+    expect(same.status).toBe(201);
+    const [c1, c2] = await Promise.all([certify(same.body.id), certify(same.body.id)]);
+    expect(statuses([c1, c2])).toEqual([201, 409]);
+    expect((c1.status === 409 ? c1 : c2).body.error.code).toBe('NOT_DRAFT');
   });
 });

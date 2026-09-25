@@ -68,15 +68,26 @@ export class MaterialIssueService {
           available.set(`${key}|value`, qty > 0 ? value / qty : 0);
         }
 
-        const issuedItems = dto.items.map((item) => {
+        // Kebutuhan digabung per bucket SEBELUM dibandingkan saldo: memeriksa tiap baris terhadap
+        // saldo yang sama membuat dua baris pada bucket yang sama (mis. 8 + 8 pada stok 10)
+        // sama-sama lolos dan menghasilkan saldo negatif.
+        const requiredByBucket = new Map<string, number>();
+        for (const item of dto.items) {
           const key = `${item.wbsItemId ?? 'NULL'}|${dto.warehouseId}`;
+          requiredByBucket.set(key, (requiredByBucket.get(key) ?? 0) + Number(item.quantity));
+        }
+        for (const [key, required] of requiredByBucket) {
           const onHand = available.get(key) ?? 0;
-          if (Number(item.quantity) > onHand) {
+          if (required > onHand) {
             throw new ConflictException({
               code: 'INSUFFICIENT_STOCK',
-              message: `Stok tidak cukup untuk "${item.description}" (tersedia ${onHand} ${item.unit ?? 'EA'})`,
+              message: `Stok tidak cukup untuk material yang diminta (butuh ${required}, tersedia ${onHand})`,
             });
           }
+        }
+
+        const issuedItems = dto.items.map((item) => {
+          const key = `${item.wbsItemId ?? 'NULL'}|${dto.warehouseId}`;
           const avgPrice = available.get(`${key}|value`) ?? 0;
           return {
             description: item.description,
