@@ -1,6 +1,8 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { createTestApp, loginAs, auth, getFirstProjectId, getFirstWbs, getWbsIds, setBudgetItem, publishBudget } from './app.helper';
+import { createTestApp, loginAs, auth, getProjectIdByCode, getFirstWbs, setBudgetItem, publishBudget } from './app.helper';
+
+const SEED_PROJECT_CODE = 'PRJ-EPC-2027-014';
 
 describe('Critical path (e2e)', () => {
   let app: INestApplication;
@@ -34,7 +36,7 @@ describe('Critical path (e2e)', () => {
   });
 
   it('PR estimasi melebihi sisa budget -> 409 BUDGET_EXCEEDED', async () => {
-    const projectId = await getFirstProjectId(app, adminToken);
+    const projectId = await getProjectIdByCode(app, adminToken, SEED_PROJECT_CODE);
     const wbsItemId = await getFirstWbs(app, adminToken, projectId);
 
     const budgetSet = await setBudgetItem(app, adminToken, projectId, wbsItemId, 100_000_000);
@@ -57,7 +59,7 @@ describe('Critical path (e2e)', () => {
   });
 
   it('PR dalam budget -> 201', async () => {
-    const projectId = await getFirstProjectId(app, adminToken);
+    const projectId = await getProjectIdByCode(app, adminToken, SEED_PROJECT_CODE);
     const wbsItemId = await getFirstWbs(app, adminToken, projectId, 1);
 
     const budgetSet = await setBudgetItem(app, adminToken, projectId, wbsItemId, 100_000_000);
@@ -79,7 +81,7 @@ describe('Critical path (e2e)', () => {
   });
 
   it('decimal roundtrip: nominal dikembalikan sebagai number (bukan string)', async () => {
-    const projectId = await getFirstProjectId(app, adminToken);
+    const projectId = await getProjectIdByCode(app, adminToken, SEED_PROJECT_CODE);
     const wbsItemId = await getFirstWbs(app, adminToken, projectId, 2);
 
     const budgetSet = await setBudgetItem(app, adminToken, projectId, wbsItemId, 12345678.5);

@@ -40,12 +40,12 @@ import { TreasuryModule } from './modules/treasury';
       {
         name: 'short',
         ttl: 1000,
-        limit: 3,
+        limit: Number(process.env.THROTTLE_LIMIT_SHORT ?? 3),
       },
       {
         name: 'medium',
         ttl: 10000,
-        limit: 20,
+        limit: Number(process.env.THROTTLE_LIMIT_MEDIUM ?? 20),
       },
       {
         name: 'long',
