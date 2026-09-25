@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { StockLedgerWriter } from '@/shared/inventory/stock-ledger-writer';
+import { withSerializableRetry } from '@/shared/database/serializable-tx';
 import type { CreateStockAdjustmentDto } from '../../presentation/dto/inventory.dto';
 
 @Injectable()
@@ -76,48 +77,59 @@ export class StockAdjustmentService {
   }
 
   async approveStockAdjustment(id: string, actorId: string) {
-    const adjustment = await this.prisma.stockAdjustment.findUnique({ where: { id }, include: { items: true } });
-    if (!adjustment) throw new NotFoundException({ code: 'ADJUSTMENT_NOT_FOUND', message: 'Adjustment tidak ditemukan' });
-    if (adjustment.status !== 'DRAFT') {
-      throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa di-approve (${adjustment.status})` });
-    }
-
-    for (const item of adjustment.items) {
-      if (Number(item.quantity) < 0) {
-        const agg = await this.prisma.stockLedgerEntry.aggregate({
-          where: { projectId: adjustment.projectId, warehouseId: adjustment.warehouseId, wbsItemId: item.wbsItemId ?? null },
-          _sum: { quantity: true },
-        });
-        if (Number(item.quantity) < 0 && Math.abs(Number(item.quantity)) > Number(agg._sum.quantity ?? 0)) {
-          throw new ConflictException({ code: 'INSUFFICIENT_STOCK', message: `Adjustment "${item.description}" melebihi stok tersedia` });
+    // Status-check + validasi stok + tulis dalam SATU transaksi Serializable: menutup
+    // (a) double-approve dan (b) oversell saat adjustment negatif disetujui (TOCTOU).
+    const approved = await withSerializableRetry(
+      this.prisma,
+      async (tx) => {
+        const adjustment = await tx.stockAdjustment.findUnique({ where: { id }, include: { items: true } });
+        if (!adjustment) throw new NotFoundException({ code: 'ADJUSTMENT_NOT_FOUND', message: 'Adjustment tidak ditemukan' });
+        if (adjustment.status !== 'DRAFT') {
+          throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa di-approve (${adjustment.status})` });
         }
-      }
-    }
 
-    const approved = await this.prisma.$transaction(async (tx) => {
-      const updated = await tx.stockAdjustment.update({
-        where: { id },
-        data: { status: 'APPROVED', approvedBy: actorId, approvedAt: new Date() },
-        include: { items: true },
-      });
+        const hasNegative = adjustment.items.some((item) => Number(item.quantity) < 0);
+        if (hasNegative) {
+          const agg = await tx.stockLedgerEntry.groupBy({
+            by: ['wbsItemId'],
+            where: { projectId: adjustment.projectId, warehouseId: adjustment.warehouseId },
+            _sum: { quantity: true },
+          });
+          const onHand = new Map(agg.map((a) => [a.wbsItemId ?? 'NULL', Number(a._sum.quantity ?? 0)]));
+          for (const item of adjustment.items) {
+            if (Number(item.quantity) >= 0) continue;
+            const avail = onHand.get(item.wbsItemId ?? 'NULL') ?? 0;
+            if (Math.abs(Number(item.quantity)) > avail) {
+              throw new ConflictException({ code: 'INSUFFICIENT_STOCK', message: `Adjustment "${item.description}" melebihi stok tersedia` });
+            }
+          }
+        }
 
-      await this.ledger.write(tx, updated.items.map((item) => ({
-        projectId: adjustment.projectId,
-        wbsItemId: item.wbsItemId ?? null,
-        warehouseId: adjustment.warehouseId,
-        documentType: 'ADJUSTMENT',
-        documentId: item.id,
-        reference: adjustment.adjustmentNumber,
-        description: `Adjustment ${adjustment.reasonCode}`,
-        movementType: Number(item.quantity) >= 0 ? 'IN' as const : 'OUT' as const,
-        quantity: Math.abs(Number(item.quantity)),
-        unit: item.unit,
-        unitPrice: null,
-        totalValue: null,
-      })));
+        const updated = await tx.stockAdjustment.update({
+          where: { id },
+          data: { status: 'APPROVED', approvedBy: actorId, approvedAt: new Date() },
+          include: { items: true },
+        });
 
-      return updated;
-    });
+        await this.ledger.write(tx, updated.items.map((item) => ({
+          projectId: adjustment.projectId,
+          wbsItemId: item.wbsItemId ?? null,
+          warehouseId: adjustment.warehouseId,
+          documentType: 'ADJUSTMENT',
+          documentId: item.id,
+          reference: adjustment.adjustmentNumber,
+          description: `Adjustment ${adjustment.reasonCode}`,
+          movementType: Number(item.quantity) >= 0 ? 'IN' as const : 'OUT' as const,
+          quantity: Math.abs(Number(item.quantity)),
+          unit: item.unit,
+          unitPrice: null,
+          totalValue: null,
+        })));
+
+        return updated;
+      },
+      { label: 'StockAdjustment.approve' },
+    );
 
     await this.audit.record({
       userId: actorId,

@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { StockLedgerWriter } from '@/shared/inventory/stock-ledger-writer';
+import { withSerializableRetry } from '@/shared/database/serializable-tx';
 import type { CreateMaterialIssueDto, ListMaterialIssueQueryDto } from '../../presentation/dto/inventory.dto';
 
 @Injectable()
@@ -23,49 +24,22 @@ export class MaterialIssueService {
       throw new ConflictException({ code: 'WAREHOUSE_PROJECT_MISMATCH', message: 'Warehouse bukan milik project ini' });
     }
 
-    for (const item of dto.items) {
-      if (!item.wbsItemId) continue;
-      const wbs = await this.prisma.wbsItem.findUnique({ where: { id: item.wbsItemId } });
-      if (!wbs || wbs.projectId !== dto.projectId) {
-        throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: `WBS ${item.wbsItemId} tidak ada di project ini` });
-      }
-    }
-
-    const available = new Map<string, number>();
-    for (const item of dto.items) {
-      const key = `${item.wbsItemId ?? 'NULL'}|${dto.warehouseId}`;
-      if (available.has(key)) continue;
-      const agg = await this.prisma.stockLedgerEntry.aggregate({
-        where: { projectId: dto.projectId, warehouseId: dto.warehouseId, wbsItemId: item.wbsItemId ?? null },
-        _sum: { quantity: true, totalValue: true },
+    const wbsIds = dto.items.map((i) => i.wbsItemId).filter((id): id is string => Boolean(id));
+    if (wbsIds.length > 0) {
+      const wbsItems = await this.prisma.wbsItem.findMany({
+        where: { id: { in: wbsIds }, projectId: dto.projectId },
+        select: { id: true },
       });
-      available.set(key, Number(agg._sum.quantity ?? 0));
-
-      const qty = Number(agg._sum.quantity ?? 0);
-      const value = Number(agg._sum.totalValue ?? 0);
-      available.set(`${key}|value`, qty > 0 ? value / qty : 0);
+      const validWbsIds = new Set(wbsItems.map((w) => w.id));
+      for (const item of dto.items) {
+        if (item.wbsItemId && !validWbsIds.has(item.wbsItemId)) {
+          throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: `WBS ${item.wbsItemId} tidak ada di project ini` });
+        }
+      }
     }
 
-    const issuedItems = dto.items.map((item) => {
-      const key = `${item.wbsItemId ?? 'NULL'}|${dto.warehouseId}`;
-      const onHand = available.get(key) ?? 0;
-      if (Number(item.quantity) > onHand) {
-        throw new ConflictException({
-          code: 'INSUFFICIENT_STOCK',
-          message: `Stok tidak cukup untuk "${item.description}" (tersedia ${onHand} ${item.unit ?? 'EA'})`,
-        });
-      }
-      const avgPrice = available.get(`${key}|value`) ?? 0;
-      return {
-        description: item.description,
-        quantity: Number(item.quantity),
-        unit: item.unit ?? 'EA',
-        wbsItemId: item.wbsItemId ?? null,
-        unitPrice: avgPrice,
-        totalValue: avgPrice * Number(item.quantity),
-      };
-    });
-
+    // Nomor dokumen di transaksi pendek terpisah. Gap nomor saat create gagal = disengaja
+    // (menghindari row-lock sequence di dalam transaksi Serializable).
     const seq = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
         where: { code: 'MI' },
@@ -75,38 +49,78 @@ export class MaterialIssueService {
       return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
     });
 
-    const issue = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.materialIssue.create({
-        data: {
-          issueNumber: seq,
+    // Baca saldo + validasi + tulis dalam SATU transaksi Serializable: menutup TOCTOU —
+    // dua issue paralel tidak bisa sama-sama lolos cek stok yang sama.
+    const issue = await withSerializableRetry(
+      this.prisma,
+      async (tx) => {
+        const available = new Map<string, number>();
+        for (const item of dto.items) {
+          const key = `${item.wbsItemId ?? 'NULL'}|${dto.warehouseId}`;
+          if (available.has(key)) continue;
+          const agg = await tx.stockLedgerEntry.aggregate({
+            where: { projectId: dto.projectId, warehouseId: dto.warehouseId, wbsItemId: item.wbsItemId ?? null },
+            _sum: { quantity: true, totalValue: true },
+          });
+          const qty = Number(agg._sum.quantity ?? 0);
+          const value = Number(agg._sum.totalValue ?? 0);
+          available.set(key, qty);
+          available.set(`${key}|value`, qty > 0 ? value / qty : 0);
+        }
+
+        const issuedItems = dto.items.map((item) => {
+          const key = `${item.wbsItemId ?? 'NULL'}|${dto.warehouseId}`;
+          const onHand = available.get(key) ?? 0;
+          if (Number(item.quantity) > onHand) {
+            throw new ConflictException({
+              code: 'INSUFFICIENT_STOCK',
+              message: `Stok tidak cukup untuk "${item.description}" (tersedia ${onHand} ${item.unit ?? 'EA'})`,
+            });
+          }
+          const avgPrice = available.get(`${key}|value`) ?? 0;
+          return {
+            description: item.description,
+            quantity: Number(item.quantity),
+            unit: item.unit ?? 'EA',
+            wbsItemId: item.wbsItemId ?? null,
+            unitPrice: avgPrice,
+            totalValue: avgPrice * Number(item.quantity),
+          };
+        });
+
+        const created = await tx.materialIssue.create({
+          data: {
+            issueNumber: seq,
+            projectId: dto.projectId,
+            warehouseId: dto.warehouseId,
+            issuedTo: dto.issuedTo,
+            issueReason: dto.issueReason ?? 'CONSTRUCTION',
+            issuedBy: actorId,
+            remark: dto.remark ?? null,
+            items: { create: issuedItems },
+          },
+          include: { items: true },
+        });
+
+        await this.ledger.write(tx, created.items.map((item) => ({
           projectId: dto.projectId,
+          wbsItemId: item.wbsItemId ?? null,
           warehouseId: dto.warehouseId,
-          issuedTo: dto.issuedTo,
-          issueReason: dto.issueReason ?? 'CONSTRUCTION',
-          issuedBy: actorId,
-          remark: dto.remark ?? null,
-          items: { create: issuedItems },
-        },
-        include: { items: true },
-      });
+          documentType: 'ISSUE',
+          documentId: item.id,
+          reference: seq,
+          description: `Material issue ke ${dto.issuedTo}`,
+          movementType: 'OUT' as const,
+          quantity: Number(item.quantity),
+          unit: item.unit,
+          unitPrice: item.unitPrice != null ? Number(item.unitPrice) : null,
+          totalValue: item.totalValue != null ? Number(item.totalValue) : null,
+        })));
 
-      await this.ledger.write(tx, created.items.map((item) => ({
-        projectId: dto.projectId,
-        wbsItemId: item.wbsItemId ?? null,
-        warehouseId: dto.warehouseId,
-        documentType: 'ISSUE',
-        documentId: item.id,
-        reference: seq,
-        description: `Material issue ke ${dto.issuedTo}`,
-        movementType: 'OUT' as const,
-        quantity: Number(item.quantity),
-        unit: item.unit,
-        unitPrice: item.unitPrice != null ? Number(item.unitPrice) : null,
-        totalValue: item.totalValue != null ? Number(item.totalValue) : null,
-      })));
-
-      return created;
-    });
+        return created;
+      },
+      { label: 'MaterialIssue.create' },
+    );
 
     await this.audit.record({
       userId: actorId,

@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { StockLedgerWriter } from '@/shared/inventory/stock-ledger-writer';
+import { withSerializableRetry } from '@/shared/database/serializable-tx';
 import type { CreateGoodsReceiptDto, ListGoodsReceiptQueryDto } from '../../presentation/dto/inventory.dto';
 
 @Injectable()
@@ -30,29 +31,6 @@ export class GoodsReceiptService {
     }
 
     const poItemMap = new Map(po.items.map((i) => [i.id, i]));
-    const receivedSoFar = await this.prisma.goodsReceiptItem.groupBy({
-      by: ['poItemId'],
-      where: { poItemId: { in: dto.items.map((i) => i.poItemId) }, goodsReceipt: { status: { not: 'CANCELLED' } } },
-      _sum: { quantity: true },
-    });
-    const receivedMap = new Map(receivedSoFar.map((r) => [r.poItemId, Number(r._sum.quantity ?? 0)]));
-
-    const items = dto.items.map((item) => {
-      const poItem = poItemMap.get(item.poItemId);
-      if (!poItem) throw new NotFoundException({ code: 'PO_ITEM_NOT_FOUND', message: `Item PO ${item.poItemId} tidak ada` });
-      const outstanding = Number(poItem.quantity) - (receivedMap.get(item.poItemId) ?? 0);
-      if (Number(item.quantity) > outstanding) {
-        throw new ConflictException({
-          code: 'OVER_RECEIPT',
-          message: `Qty melebihi sisa outstanding item "${poItem.description}" (sisa ${outstanding} ${poItem.unit})`,
-        });
-      }
-      return {
-        poItem,
-        quantity: Number(item.quantity),
-        wbsItemId: item.wbsItemId ?? poItem.wbsItemId ?? null,
-      };
-    });
 
     const seq = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
@@ -63,46 +41,76 @@ export class GoodsReceiptService {
       return `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
     });
 
-    const gr = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.goodsReceipt.create({
-        data: {
-          grNumber: seq,
-          poId: po.id,
-          projectId: po.projectId,
-          warehouseId: dto.warehouseId,
-          receivedBy: actorId,
-          remark: dto.remark ?? null,
-          items: {
-            create: items.map((i) => ({
-              poItemId: i.poItem.id,
-              description: i.poItem.description,
-              quantity: i.quantity,
-              unit: i.poItem.unit,
-              unitPrice: i.poItem.unitPrice,
-              wbsItemId: i.wbsItemId,
-            })),
+    // Cek outstanding + tulis dalam SATU transaksi Serializable: menutup TOCTOU — dua goods
+    // receipt paralel tidak bisa sama-sama melebihi sisa qty PO.
+    const gr = await withSerializableRetry(
+      this.prisma,
+      async (tx) => {
+        const receivedSoFar = await tx.goodsReceiptItem.groupBy({
+          by: ['poItemId'],
+          where: { poItemId: { in: dto.items.map((i) => i.poItemId) }, goodsReceipt: { status: { not: 'CANCELLED' } } },
+          _sum: { quantity: true },
+        });
+        const receivedMap = new Map(receivedSoFar.map((r) => [r.poItemId, Number(r._sum.quantity ?? 0)]));
+
+        const items = dto.items.map((item) => {
+          const poItem = poItemMap.get(item.poItemId);
+          if (!poItem) throw new NotFoundException({ code: 'PO_ITEM_NOT_FOUND', message: `Item PO ${item.poItemId} tidak ada` });
+          const outstanding = Number(poItem.quantity) - (receivedMap.get(item.poItemId) ?? 0);
+          if (Number(item.quantity) > outstanding) {
+            throw new ConflictException({
+              code: 'OVER_RECEIPT',
+              message: `Qty melebihi sisa outstanding item "${poItem.description}" (sisa ${outstanding} ${poItem.unit})`,
+            });
+          }
+          return {
+            poItem,
+            quantity: Number(item.quantity),
+            wbsItemId: item.wbsItemId ?? poItem.wbsItemId ?? null,
+          };
+        });
+
+        const created = await tx.goodsReceipt.create({
+          data: {
+            grNumber: seq,
+            poId: po.id,
+            projectId: po.projectId,
+            warehouseId: dto.warehouseId,
+            receivedBy: actorId,
+            remark: dto.remark ?? null,
+            items: {
+              create: items.map((i) => ({
+                poItemId: i.poItem.id,
+                description: i.poItem.description,
+                quantity: i.quantity,
+                unit: i.poItem.unit,
+                unitPrice: i.poItem.unitPrice,
+                wbsItemId: i.wbsItemId,
+              })),
+            },
           },
-        },
-        include: { items: true },
-      });
+          include: { items: true },
+        });
 
-      await this.ledger.write(tx, created.items.map((item) => ({
-        projectId: po.projectId,
-        wbsItemId: item.wbsItemId ?? null,
-        warehouseId: dto.warehouseId,
-        documentType: 'GR',
-        documentId: item.id,
-        reference: seq,
-        description: `Goods receipt dari ${po.poNumber}`,
-        movementType: 'IN' as const,
-        quantity: Number(item.quantity),
-        unit: item.unit,
-        unitPrice: item.unitPrice != null ? Number(item.unitPrice) : null,
-        totalValue: item.unitPrice != null ? Number(item.unitPrice) * Number(item.quantity) : null,
-      })));
+        await this.ledger.write(tx, created.items.map((item) => ({
+          projectId: po.projectId,
+          wbsItemId: item.wbsItemId ?? null,
+          warehouseId: dto.warehouseId,
+          documentType: 'GR',
+          documentId: item.id,
+          reference: seq,
+          description: `Goods receipt dari ${po.poNumber}`,
+          movementType: 'IN' as const,
+          quantity: Number(item.quantity),
+          unit: item.unit,
+          unitPrice: item.unitPrice != null ? Number(item.unitPrice) : null,
+          totalValue: item.unitPrice != null ? Number(item.unitPrice) * Number(item.quantity) : null,
+        })));
 
-      return created;
-    });
+        return created;
+      },
+      { label: 'GoodsReceipt.create' },
+    );
 
     await this.audit.record({
       userId: actorId,

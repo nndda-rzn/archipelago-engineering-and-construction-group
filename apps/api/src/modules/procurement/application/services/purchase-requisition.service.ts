@@ -2,6 +2,7 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
+import { withSerializableRetry } from '@/shared/database/serializable-tx';
 import type { CreatePrDto, ListPrQueryDto } from '../../presentation/dto/procurement.dto';
 
 @Injectable()
@@ -11,12 +12,31 @@ export class PurchaseRequisitionService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  private async budgetCheck(projectId: string, estimatedTotal: number) {
+  /**
+   * Hitung sisa budget. Bisa dijalankan pada `this.prisma` (read-only) atau pada `tx`
+   * (di dalam transaksi Serializable saat validasi sebelum tulis).
+   *
+   * PR yang sudah memiliki PO RELEASED TIDAK dihitung lagi di `existingPr`: nilainya sudah
+   * masuk `commitment` lewat PO. Tanpa pengecualian ini, PR-terkonversi + PO-nya dihitung
+   * dua kali sehingga `remaining` terlalu kecil (false BUDGET_EXCEEDED).
+   */
+  private async budgetCheck(
+    projectId: string,
+    estimatedTotal: number,
+    client: Pick<Prisma.TransactionClient, 'budgetItem' | 'purchaseOrder' | 'subcontract' | 'purchaseRequisition'> = this.prisma,
+  ) {
     const [budgetAgg, poAgg, subconAgg, prAgg] = await Promise.all([
-      this.prisma.budgetItem.aggregate({ where: { projectId, status: 'PUBLISHED' }, _sum: { amount: true } }),
-      this.prisma.purchaseOrder.aggregate({ where: { projectId, status: 'RELEASED' }, _sum: { totalAmount: true } }),
-      this.prisma.subcontract.aggregate({ where: { projectId, status: 'ACTIVE' }, _sum: { contractValue: true } }),
-      this.prisma.purchaseRequisition.aggregate({ where: { projectId, status: { not: 'CANCELLED' } }, _sum: { estimatedTotal: true } }),
+      client.budgetItem.aggregate({ where: { projectId, status: 'PUBLISHED' }, _sum: { amount: true } }),
+      client.purchaseOrder.aggregate({ where: { projectId, status: 'RELEASED' }, _sum: { totalAmount: true } }),
+      client.subcontract.aggregate({ where: { projectId, status: 'ACTIVE' }, _sum: { contractValue: true } }),
+      client.purchaseRequisition.aggregate({
+        where: {
+          projectId,
+          status: { not: 'CANCELLED' },
+          purchaseOrders: { none: { status: 'RELEASED' } },
+        },
+        _sum: { estimatedTotal: true },
+      }),
     ]);
 
     const budget = Number(budgetAgg._sum?.amount ?? 0);
@@ -39,53 +59,61 @@ export class PurchaseRequisitionService {
     }
 
     const estimatedTotal = dto.items.reduce((sum, item) => sum + (Number(item.estimatedUnitPrice ?? 0) * Number(item.quantity)), 0);
-    const check = await this.budgetCheck(dto.projectId, estimatedTotal);
-    if (!check.within) {
-      throw new ConflictException({
-        code: 'BUDGET_EXCEEDED',
-        message: `Estimasi PR ${estimatedTotal.toLocaleString('id-ID')} melebihi sisa budget ${check.remaining.toLocaleString('id-ID')} (FR-PRO-002)`,
-      });
-    }
 
-    const pr = await this.prisma.$transaction(async (tx) => {
-      const s = await tx.numberSequence.upsert({
-        where: { code: 'PR' },
-        update: { nextNumber: { increment: 1 } },
-        create: { code: 'PR', prefix: `PR-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
-      });
-      const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
-      return tx.purchaseRequisition.create({
-        data: {
-          prNumber: seq,
-          projectId: dto.projectId,
-          wbsItemId: dto.wbsItemId ?? null,
-          requestedBy: dto.requestedBy,
-          description: dto.description ?? null,
-          estimatedTotal,
-          items: {
-            create: dto.items.map((item) => ({
-              description: item.description,
-              quantity: item.quantity,
-              unit: item.unit ?? 'EA',
-              estimatedUnitPrice: item.estimatedUnitPrice ?? null,
-              estimatedTotal: item.estimatedUnitPrice != null ? Number(item.estimatedUnitPrice) * Number(item.quantity) : null,
-            })),
+    // Cek budget + tulis dalam SATU transaksi Serializable: menutup TOCTOU — dua PR paralel
+    // tidak bisa sama-sama lolos cek budget yang sama (budget overcommit).
+    const pr = await withSerializableRetry(
+      this.prisma,
+      async (tx) => {
+        const check = await this.budgetCheck(dto.projectId, estimatedTotal, tx);
+        if (!check.within) {
+          throw new ConflictException({
+            code: 'BUDGET_EXCEEDED',
+            message: `Estimasi PR ${estimatedTotal.toLocaleString('id-ID')} melebihi sisa budget ${check.remaining.toLocaleString('id-ID')} (FR-PRO-002)`,
+          });
+        }
+
+        const s = await tx.numberSequence.upsert({
+          where: { code: 'PR' },
+          update: { nextNumber: { increment: 1 } },
+          create: { code: 'PR', prefix: `PR-${new Date().getFullYear()}-EPC-`, nextNumber: 2 },
+        });
+        const seq = `${s.prefix}${String(s.nextNumber - 1).padStart(6, '0')}`;
+        const created = await tx.purchaseRequisition.create({
+          data: {
+            prNumber: seq,
+            projectId: dto.projectId,
+            wbsItemId: dto.wbsItemId ?? null,
+            requestedBy: dto.requestedBy,
+            description: dto.description ?? null,
+            estimatedTotal,
+            items: {
+              create: dto.items.map((item) => ({
+                description: item.description,
+                quantity: item.quantity,
+                unit: item.unit ?? 'EA',
+                estimatedUnitPrice: item.estimatedUnitPrice ?? null,
+                estimatedTotal: item.estimatedUnitPrice != null ? Number(item.estimatedUnitPrice) * Number(item.quantity) : null,
+              })),
+            },
           },
-        },
-        include: { items: true },
-      });
-    });
+          include: { items: true },
+        });
+        return { pr: created, budgetRemaining: check.remaining };
+      },
+      { label: 'PurchaseRequisition.create' },
+    );
 
     await this.audit.record({
       userId: actorId,
       action: 'PR.CREATE',
       resource: 'PurchaseRequisition',
-      resourceId: pr.id,
-      newValue: { prNumber: pr.prNumber, projectId: dto.projectId, estimatedTotal, budgetRemaining: check.remaining },
+      resourceId: pr.pr.id,
+      newValue: { prNumber: pr.pr.prNumber, projectId: dto.projectId, estimatedTotal, budgetRemaining: pr.budgetRemaining },
       source: 'api',
     });
 
-    return pr;
+    return pr.pr;
   }
 
   async budgetStatus(projectId: string) {
