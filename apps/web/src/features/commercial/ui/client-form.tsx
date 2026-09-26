@@ -9,7 +9,7 @@ const formSchema = z.object({
   name: createClientSchema.shape.name,
   industry: z.string().max(100),
   contactPerson: z.string().max(200),
-  email: z.union([z.literal(''), z.string().email('Email tidak valid')]),
+  email: z.union([z.literal(''), z.string().email('Invalid email')]),
 });
 type FormValues = z.infer<typeof formSchema>;
 
@@ -31,16 +31,16 @@ export function ClientForm({ onDone }: { onDone: () => void }) {
     <form onSubmit={onSubmit} className="mb-4 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="flex items-end gap-3">
         <div className="flex-1">
-          <Label htmlFor="clt-name">Nama Client <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="clt-name">Client Name <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="clt-name" error={!!errors.name} {...register('name')} />
           {errors.name && <p className="mt-1 text-caption text-destructive-600">{errors.name.message}</p>}
         </div>
         <div>
-          <Label htmlFor="clt-industry">Industri</Label>
+          <Label htmlFor="clt-industry">Industry</Label>
           <Input id="clt-industry" {...register('industry')} />
         </div>
         <div>
-          <Label htmlFor="clt-contact">Kontak</Label>
+          <Label htmlFor="clt-contact">Contact</Label>
           <Input id="clt-contact" {...register('contactPerson')} />
         </div>
         <div>
@@ -48,7 +48,7 @@ export function ClientForm({ onDone }: { onDone: () => void }) {
           <Input id="clt-email" type="email" error={!!errors.email} {...register('email')} />
           {errors.email && <p className="mt-1 text-caption text-destructive-600">{errors.email.message}</p>}
         </div>
-        <Button type="submit" loading={create.isPending}>Buat Client</Button>
+        <Button type="submit" loading={create.isPending}>Create Client</Button>
       </div>
     </form>
   );

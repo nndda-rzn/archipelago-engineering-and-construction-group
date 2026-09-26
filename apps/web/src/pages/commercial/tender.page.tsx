@@ -43,7 +43,7 @@ export function TenderPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-h1 text-neutral-950">Tender & Bid</h1>
-        <p className="mt-1 text-body-sm text-neutral-500">Bid/No-Bid, estimate versioning, pricing scenario, deviation, submission, amendment (Fase 11C)</p>
+        <p className="mt-1 text-body-sm text-neutral-500">Bid/No-Bid, estimate versioning, pricing scenario, deviation, submission, amendment (Phase 11C)</p>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -64,7 +64,7 @@ export function TenderPage() {
         <>
           <BidForm opportunities={oppOptions} />
           <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-            <DataGrid columns={bidColumns} data={bids.data?.items ?? []} rowCount={bids.data?.total ?? 0} isLoading={bids.isLoading} isError={bids.isError} onRetry={() => bids.refetch()} emptyMessage="Belum ada bid decision" {...gridProps} />
+            <DataGrid columns={bidColumns} data={bids.data?.items ?? []} rowCount={bids.data?.total ?? 0} isLoading={bids.isLoading} isError={bids.isError} onRetry={() => bids.refetch()} emptyMessage="No bid decisions yet" {...gridProps} />
           </div>
         </>
       )}
@@ -93,7 +93,7 @@ export function TenderPage() {
         <>
           <SubmissionForm opportunities={oppOptions} />
           <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-            <DataGrid columns={submissionColumns} data={submissions.data?.items ?? []} rowCount={submissions.data?.total ?? 0} isLoading={submissions.isLoading} isError={submissions.isError} onRetry={() => submissions.refetch()} emptyMessage="Belum ada submission" {...gridProps} />
+            <DataGrid columns={submissionColumns} data={submissions.data?.items ?? []} rowCount={submissions.data?.total ?? 0} isLoading={submissions.isLoading} isError={submissions.isError} onRetry={() => submissions.refetch()} emptyMessage="No submissions yet" {...gridProps} />
           </div>
         </>
       )}

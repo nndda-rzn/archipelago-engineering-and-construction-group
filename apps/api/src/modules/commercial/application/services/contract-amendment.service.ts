@@ -14,9 +14,9 @@ export class ContractAmendmentService {
 
   async createContractAmendment(contractId: string, dto: CreateContractAmendmentDto, actorId: string) {
     const contract = await this.prisma.contract.findUnique({ where: { id: contractId } });
-    if (!contract) throw new NotFoundException({ code: 'CONTRACT_NOT_FOUND', message: 'Kontrak tidak ditemukan' });
+    if (!contract) throw new NotFoundException({ code: 'CONTRACT_NOT_FOUND', message: 'Contract not found' });
     if (contract.status !== 'EXECUTED' && contract.status !== 'AMENDED') {
-      throw new ConflictException({ code: 'NOT_EXECUTED', message: 'Amendment hanya untuk kontrak EXECUTED' });
+      throw new ConflictException({ code: 'NOT_EXECUTED', message: 'Amendments are only allowed for EXECUTED contracts' });
     }
 
     const amendment = await this.prisma.$transaction(async (tx) => {
@@ -39,7 +39,7 @@ export class ContractAmendmentService {
 
   async executeAmendment(id: string, actorId: string) {
     const amendment = await this.prisma.contractAmendment.findUnique({ where: { id }, include: { contract: true } });
-    if (!amendment) throw new NotFoundException({ code: 'AMENDMENT_NOT_FOUND', message: 'Amendment tidak ditemukan' });
+    if (!amendment) throw new NotFoundException({ code: 'AMENDMENT_NOT_FOUND', message: 'Amendment not found' });
     if (amendment.status !== 'DRAFT') {
       throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa dieksekusi (${amendment.status})` });
     }

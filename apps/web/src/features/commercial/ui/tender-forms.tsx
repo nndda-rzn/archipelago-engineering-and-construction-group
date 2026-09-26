@@ -6,9 +6,9 @@ import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger,
 import { useCreateBidDecision, useCreateTenderSubmission } from '../model/tender.api';
 import type { OppOption } from './tender-types';
 
-const bidSchema = z.object({ oppId: z.string().min(1, 'Opportunity wajib dipilih'), decision: createBidDecisionSchema.shape.decision, rationale: createBidDecisionSchema.shape.rationale });
+const bidSchema = z.object({ oppId: z.string().min(1, 'Opportunity is required'), decision: createBidDecisionSchema.shape.decision, rationale: createBidDecisionSchema.shape.rationale });
 type BidValues = z.infer<typeof bidSchema>;
-const submissionSchema = z.object({ opportunityId: z.string().min(1, 'Opportunity wajib dipilih'), channel: createTenderSubmissionSchema.shape.channel, packageVersion: createTenderSubmissionSchema.shape.packageVersion, fileHash: createTenderSubmissionSchema.shape.fileHash });
+const submissionSchema = z.object({ opportunityId: z.string().min(1, 'Opportunity is required'), channel: createTenderSubmissionSchema.shape.channel, packageVersion: createTenderSubmissionSchema.shape.packageVersion, fileHash: createTenderSubmissionSchema.shape.fileHash });
 type SubmissionValues = z.infer<typeof submissionSchema>;
 
 export function BidForm({ opportunities }: { opportunities: OppOption[] }) {
@@ -22,7 +22,7 @@ export function BidForm({ opportunities }: { opportunities: OppOption[] }) {
           <Label htmlFor="bid-opp">Opportunity <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="oppId" control={control} render={({ field }) => <Select value={field.value} onValueChange={field.onChange}>
             <SelectTrigger id="bid-opp">
-              <SelectValue placeholder="Pilih…" />
+              <SelectValue placeholder="Select…" />
             </SelectTrigger>
             <SelectContent>
               {opportunities.map((o) => <SelectItem key={o.id} value={o.id}>{o.oppNumber} · {o.title}</SelectItem>)}
@@ -31,7 +31,7 @@ export function BidForm({ opportunities }: { opportunities: OppOption[] }) {
           {errors.oppId && <p role="alert" className="mt-1 text-caption text-destructive-600">{errors.oppId.message}</p>}
         </div>
         <div>
-          <Label htmlFor="bid-dec">Keputusan <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="bid-dec">Decision <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="decision" control={control} render={({ field }) => <Select value={field.value} onValueChange={field.onChange}>
             <SelectTrigger id="bid-dec">
               <SelectValue />
@@ -42,10 +42,10 @@ export function BidForm({ opportunities }: { opportunities: OppOption[] }) {
           </Select>} />
         </div>
         <div className="flex-1">
-          <Label htmlFor="bid-rat">Alasan</Label>
+          <Label htmlFor="bid-rat">Reason</Label>
           <Input id="bid-rat" {...register('rationale')} />
         </div>
-        <Button type="submit" loading={create.isPending}>Simpan Keputusan</Button>
+        <Button type="submit" loading={create.isPending}>Save Decision</Button>
       </div>
     </form>
   );
@@ -62,7 +62,7 @@ export function SubmissionForm({ opportunities }: { opportunities: OppOption[] }
           <Label htmlFor="ts-opp">Opportunity <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="opportunityId" control={control} render={({ field }) => <Select value={field.value} onValueChange={field.onChange}>
             <SelectTrigger id="ts-opp">
-              <SelectValue placeholder="Pilih…" />
+              <SelectValue placeholder="Select…" />
             </SelectTrigger>
             <SelectContent>
               {opportunities.map((o) => <SelectItem key={o.id} value={o.id}>{o.oppNumber} · {o.title}</SelectItem>)}
@@ -82,14 +82,14 @@ export function SubmissionForm({ opportunities }: { opportunities: OppOption[] }
           </Select>} />
         </div>
         <div>
-          <Label htmlFor="ts-pkg">Versi Paket</Label>
+          <Label htmlFor="ts-pkg">Package Version</Label>
           <Input id="ts-pkg" {...register('packageVersion')} placeholder="v1.2" />
         </div>
         <div className="flex-1">
           <Label htmlFor="ts-hash">File Hash</Label>
           <Input id="ts-hash" {...register('fileHash')} placeholder="sha256:..." />
         </div>
-        <Button type="submit" loading={create.isPending}>Catat Submission</Button>
+        <Button type="submit" loading={create.isPending}>Record Submission</Button>
       </div>
     </form>
   );

@@ -18,10 +18,10 @@ export function AmendmentPanel({
     <div className="space-y-4">
       <div className="flex items-end gap-3 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
         <div className="w-72">
-          <Label htmlFor="amd-contract">Kontrak</Label>
+          <Label htmlFor="amd-contract">Contract</Label>
           <Select value={contractId} onValueChange={setContractId}>
             <SelectTrigger id="amd-contract">
-              <SelectValue placeholder="Pilih…" />
+              <SelectValue placeholder="Select…" />
             </SelectTrigger>
             <SelectContent>
               {contracts.map((c) => <SelectItem key={c.id} value={c.id}>{c.contractNumber} · {c.title}</SelectItem>)}
@@ -29,20 +29,20 @@ export function AmendmentPanel({
           </Select>
         </div>
         <div className="flex-1">
-          <Label htmlFor="amd-title">Judul</Label>
+          <Label htmlFor="amd-title">Title</Label>
           <Input id="amd-title" value={title} onChange={(e) => setTitle(e.target.value)} />
         </div>
         <div>
-          <Label htmlFor="amd-chg">Perubahan</Label>
+          <Label htmlFor="amd-chg">Change</Label>
           <Input id="amd-chg" type="number" value={amountChange} onChange={(e) => setAmountChange(e.target.value)} className="w-36" placeholder="+/−" />
         </div>
         <Button onClick={() => { if (contractId && title && amountChange) create.mutate({ title, amountChange: Number(amountChange) }, { onSuccess: () => { setTitle(''); setAmountChange(''); } }); }} loading={create.isPending}>
-          Buat Amendment
+          Create Amendment
         </Button>
       </div>
 
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-        <DataGrid columns={amendmentColumns} data={loading ? [] : amendments} rowCount={loading ? 0 : amendments.length} isLoading={loading} isError={false} emptyMessage="Belum ada amendment" />
+        <DataGrid columns={amendmentColumns} data={loading ? [] : amendments} rowCount={loading ? 0 : amendments.length} isLoading={loading} isError={false} emptyMessage="No amendments yet" />
       </div>
     </div>
   );

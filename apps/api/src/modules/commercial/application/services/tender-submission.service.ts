@@ -15,12 +15,12 @@ export class TenderSubmissionService {
 
   async createTenderSubmission(dto: CreateTenderSubmissionDto, actorId: string) {
     const opp = await this.prisma.opportunity.findUnique({ where: { id: dto.opportunityId } });
-    if (!opp) throw new NotFoundException({ code: 'OPPORTUNITY_NOT_FOUND', message: 'Opportunity tidak ditemukan' });
+    if (!opp) throw new NotFoundException({ code: 'OPPORTUNITY_NOT_FOUND', message: 'Opportunity not found' });
 
     if (dto.estimateId) {
       const estimate = await this.prisma.estimate.findUnique({ where: { id: dto.estimateId } });
       if (!estimate || estimate.opportunityId !== dto.opportunityId) {
-        throw new NotFoundException({ code: 'ESTIMATE_NOT_FOUND', message: 'Estimate tidak ditemukan di opportunity ini' });
+        throw new NotFoundException({ code: 'ESTIMATE_NOT_FOUND', message: 'Estimate not found in this opportunity' });
       }
     }
 

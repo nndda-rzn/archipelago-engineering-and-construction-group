@@ -27,7 +27,7 @@ export function DeviationPanel({
           <Label htmlFor="dev-opp">Opportunity</Label>
           <Select value={oppId} onValueChange={setOppId}>
             <SelectTrigger id="dev-opp">
-              <SelectValue placeholder="Pilih…" />
+              <SelectValue placeholder="Select…" />
             </SelectTrigger>
             <SelectContent>
               {opportunities.map((o) => <SelectItem key={o.id} value={o.id}>{o.oppNumber}</SelectItem>)}
@@ -35,35 +35,35 @@ export function DeviationPanel({
           </Select>
         </div>
         <div>
-          <Label htmlFor="dev-clause">Klausul</Label>
+          <Label htmlFor="dev-clause">Clause</Label>
           <Input id="dev-clause" value={clause} onChange={(e) => setClause(e.target.value)} />
         </div>
         <div className="flex-1">
-          <Label htmlFor="dev-req">Req. Client</Label>
+          <Label htmlFor="dev-req">Client Req.</Label>
           <Input id="dev-req" value={req} onChange={(e) => setReq(e.target.value)} />
         </div>
         <div className="flex-1">
-          <Label htmlFor="dev-pos">Posisi AEC</Label>
+          <Label htmlFor="dev-pos">AEC Position</Label>
           <Input id="dev-pos" value={position} onChange={(e) => setPosition(e.target.value)} />
         </div>
         <div>
           <Label htmlFor="dev-owner">Owner</Label>
           <Input id="dev-owner" value={owner} onChange={(e) => setOwner(e.target.value)} />
         </div>
-        <Button onClick={onSubmit} loading={create.isPending}>Buat Deviation</Button>
+        <Button onClick={onSubmit} loading={create.isPending}>Create Deviation</Button>
       </div>
 
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs overflow-x-auto">
         <table className="w-full text-left text-body">
           <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
             <tr>
-              <th className="px-4 py-2">Klausul</th>
-              <th className="px-4 py-2">Req. Client</th>
-              <th className="px-4 py-2">Posisi AEC</th>
-              <th className="px-4 py-2">Risiko</th>
+              <th className="px-4 py-2">Clause</th>
+              <th className="px-4 py-2">Client Req.</th>
+              <th className="px-4 py-2">AEC Position</th>
+              <th className="px-4 py-2">Risk</th>
               <th className="px-4 py-2">Owner</th>
               <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2">Aksi</th>
+              <th className="px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -85,7 +85,7 @@ export function DeviationPanel({
                 </td>
               </tr>
             ))}
-            {!loading && deviations.length === 0 && <tr><td colSpan={7} className="px-4 py-4 text-caption text-neutral-500">Belum ada deviation.</td></tr>}
+            {!loading && deviations.length === 0 && <tr><td colSpan={7} className="px-4 py-4 text-caption text-neutral-500">No deviations yet.</td></tr>}
           </tbody>
         </table>
       </div>

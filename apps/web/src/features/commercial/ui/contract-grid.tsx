@@ -11,18 +11,18 @@ export function ContractExecuteBtn({ contract }: { contract: Contract }) {
   if (contract.status !== 'DRAFT') return null;
   return (
     <Button size="sm" variant="secondary" loading={execute.isPending} onClick={() => execute.mutate({ id: contract.id })}>
-      Eksekusi
+      Execute
     </Button>
   );
 }
 
 export const contractColumns = [
-  contractHelper.accessor('contractNumber', { header: 'No. Kontrak', cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span> }),
-  contractHelper.accessor('title', { header: 'Judul', cell: (info) => <span className="max-w-xs truncate text-neutral-800">{info.getValue()}</span> }),
+  contractHelper.accessor('contractNumber', { header: 'Contract No.', cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span> }),
+  contractHelper.accessor('title', { header: 'Title', cell: (info) => <span className="max-w-xs truncate text-neutral-800">{info.getValue()}</span> }),
   contractHelper.accessor('client', { header: 'Client', cell: (info) => <span className="text-neutral-700">{info.getValue()?.name}</span> }),
-  contractHelper.accessor('contractType', { header: 'Tipe', cell: (info) => <Badge variant="default">{info.getValue()}</Badge> }),
-  contractHelper.accessor('value', { header: 'Nilai', cell: (info) => <span className="font-mono tabular-nums text-neutral-800 font-medium">{fmt(info.getValue())}</span> }),
-  contractHelper.accessor('retentionTerm', { header: 'Retensi', cell: (info) => <span className="font-mono tabular-nums text-neutral-600">{info.getValue()}%</span> }),
+  contractHelper.accessor('contractType', { header: 'Type', cell: (info) => <Badge variant="default">{info.getValue()}</Badge> }),
+  contractHelper.accessor('value', { header: 'Value', cell: (info) => <span className="font-mono tabular-nums text-neutral-800 font-medium">{fmt(info.getValue())}</span> }),
+  contractHelper.accessor('retentionTerm', { header: 'Retention', cell: (info) => <span className="font-mono tabular-nums text-neutral-600">{info.getValue()}%</span> }),
   contractHelper.accessor('status', { header: 'Status', cell: (info) => <StatusBadge status={info.getValue()} /> }),
   contractHelper.display({ id: 'actions', header: '', cell: ({ row }) => <ContractExecuteBtn contract={row.original} /> }),
 ];

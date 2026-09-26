@@ -52,7 +52,7 @@ export class CommercialService {
 
   async createOpportunity(dto: CreateOpportunityDto, actorId: string) {
     const client = await this.prisma.client.findUnique({ where: { id: dto.clientId } });
-    if (!client) throw new NotFoundException({ code: 'CLIENT_NOT_FOUND', message: 'Client tidak ditemukan' });
+    if (!client) throw new NotFoundException({ code: 'CLIENT_NOT_FOUND', message: 'Client not found' });
 
     const opp = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
@@ -83,7 +83,7 @@ export class CommercialService {
 
   async updateOpportunityStage(id: string, dto: UpdateOpportunityStageDto, actorId: string) {
     const opp = await this.prisma.opportunity.findUnique({ where: { id } });
-    if (!opp) throw new NotFoundException({ code: 'OPPORTUNITY_NOT_FOUND', message: 'Opportunity tidak ditemukan' });
+    if (!opp) throw new NotFoundException({ code: 'OPPORTUNITY_NOT_FOUND', message: 'Opportunity not found' });
     const stage = dto.stage ?? opp.stage;
     const status = stage === 'WON' ? 'CLOSED_WON' : stage === 'LOST' ? 'CLOSED_LOST' : 'OPEN';
     const probability = dto.probability ?? opp.probability;
@@ -114,11 +114,11 @@ export class CommercialService {
   async createContract(dto: CreateContractDto, actorId: string) {
     if (dto.clientId) {
       const client = await this.prisma.client.findUnique({ where: { id: dto.clientId } });
-      if (!client) throw new NotFoundException({ code: 'CLIENT_NOT_FOUND', message: 'Client tidak ditemukan' });
+      if (!client) throw new NotFoundException({ code: 'CLIENT_NOT_FOUND', message: 'Client not found' });
     }
     if (dto.projectId) {
       const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
-      if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+      if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
     }
 
     const contract = await this.prisma.$transaction(async (tx) => {
@@ -153,7 +153,7 @@ export class CommercialService {
 
   async executeContract(id: string, dto: ExecuteContractDto, actorId: string) {
     const contract = await this.prisma.contract.findUnique({ where: { id } });
-    if (!contract) throw new NotFoundException({ code: 'CONTRACT_NOT_FOUND', message: 'Kontrak tidak ditemukan' });
+    if (!contract) throw new NotFoundException({ code: 'CONTRACT_NOT_FOUND', message: 'Contract not found' });
     if (contract.status !== 'DRAFT') {
       throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa dieksekusi (${contract.status})` });
     }

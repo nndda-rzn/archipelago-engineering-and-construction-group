@@ -13,7 +13,7 @@ export class BidDecisionService {
 
   async decideBid(opportunityId: string, dto: CreateBidDecisionDto, actorId: string) {
     const opp = await this.prisma.opportunity.findUnique({ where: { id: opportunityId } });
-    if (!opp) throw new NotFoundException({ code: 'OPPORTUNITY_NOT_FOUND', message: 'Opportunity tidak ditemukan' });
+    if (!opp) throw new NotFoundException({ code: 'OPPORTUNITY_NOT_FOUND', message: 'Opportunity not found' });
 
     const existing = await this.prisma.bidDecision.findUnique({ where: { opportunityId } });
     if (existing && existing.decision !== 'PENDING') {
