@@ -6,9 +6,9 @@ const ratingHelper = createColumnHelper<VendorRating>();
 
 export const ratingColumns = [
   ratingHelper.accessor('vendor', { header: 'Vendor', cell: (i) => <span className="text-neutral-800">{i.getValue()?.name}</span> }),
-  ratingHelper.accessor('category', { header: 'Kategori', cell: (i) => <Badge variant="default">{i.getValue()}</Badge> }),
-  ratingHelper.accessor('score', { header: 'Skor', cell: (i) => <span className="font-mono tabular-nums text-neutral-800">{i.getValue()}/5</span> }),
-  ratingHelper.accessor('remark', { header: 'Catatan', cell: (i) => <span className="max-w-[200px] truncate text-neutral-600">{i.getValue() ?? <EmptyCell />}</span> }),
+  ratingHelper.accessor('category', { header: 'Category', cell: (i) => <Badge variant="default">{i.getValue()}</Badge> }),
+  ratingHelper.accessor('score', { header: 'Score', cell: (i) => <span className="font-mono tabular-nums text-neutral-800">{i.getValue()}/5</span> }),
+  ratingHelper.accessor('remark', { header: 'Remark', cell: (i) => <span className="max-w-[200px] truncate text-neutral-600">{i.getValue() ?? <EmptyCell />}</span> }),
   ratingHelper.accessor('project', { header: 'Project', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue()?.code ?? <EmptyCell />}</span> }),
 ];
 
@@ -40,7 +40,7 @@ export function VendorRatingGrid({
         isLoading={isLoading}
         isError={isError}
         onRetry={onRetry}
-        emptyMessage="Belum ada rating"
+        emptyMessage="No ratings yet"
         pagination={pagination}
         onPaginationChange={onPaginationChange}
       />

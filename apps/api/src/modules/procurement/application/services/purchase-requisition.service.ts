@@ -49,12 +49,12 @@ export class PurchaseRequisitionService {
 
   async createPr(dto: CreatePrDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     if (dto.wbsItemId) {
       const wbs = await this.prisma.wbsItem.findUnique({ where: { id: dto.wbsItemId } });
       if (!wbs || wbs.projectId !== dto.projectId) {
-        throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: 'WBS tidak ditemukan di project ini' });
+        throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: 'WBS not found in this project' });
       }
     }
 
@@ -69,7 +69,7 @@ export class PurchaseRequisitionService {
         if (!check.within) {
           throw new ConflictException({
             code: 'BUDGET_EXCEEDED',
-            message: `Estimasi PR ${estimatedTotal.toLocaleString('id-ID')} melebihi sisa budget ${check.remaining.toLocaleString('id-ID')} (FR-PRO-002)`,
+            message: `PR estimate ${estimatedTotal.toLocaleString('id-ID')} exceeds the remaining budget ${check.remaining.toLocaleString('id-ID')} (FR-PRO-002)`,
           });
         }
 
@@ -118,7 +118,7 @@ export class PurchaseRequisitionService {
 
   async budgetStatus(projectId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
     const check = await this.budgetCheck(projectId, 0);
     return { projectId, ...check, generatedAt: new Date().toISOString() };
   }

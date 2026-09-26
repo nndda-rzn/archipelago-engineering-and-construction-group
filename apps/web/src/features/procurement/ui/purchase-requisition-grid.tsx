@@ -6,9 +6,9 @@ import type { PurchaseRequisition } from '@aec/api-contracts';
 const columnHelper = createColumnHelper<PurchaseRequisition>();
 
 export const purchaseRequisitionColumns = [
-  columnHelper.accessor('prNumber', { header: 'Nomor PR', cell: (i) => <span className="font-mono text-neutral-800">{i.getValue()}</span> }),
+  columnHelper.accessor('prNumber', { header: 'PR Number', cell: (i) => <span className="font-mono text-neutral-800">{i.getValue()}</span> }),
   columnHelper.accessor('project', { header: 'Project', cell: (i) => <span className="text-neutral-700">{i.getValue()?.code ?? <EmptyCell />}</span> }),
-  columnHelper.accessor('requestedBy', { header: 'Diminta Oleh', cell: (i) => <span className="text-neutral-600">{i.getValue()}</span> }),
+  columnHelper.accessor('requestedBy', { header: 'Requested By', cell: (i) => <span className="text-neutral-600">{i.getValue()}</span> }),
   columnHelper.accessor('items', { header: 'Item', cell: (i) => <span className="text-neutral-600">{i.getValue().length} item</span> }),
   columnHelper.accessor('status', { header: 'Status', cell: (i) => <StatusBadge status={i.getValue()} /> }),
   columnHelper.display({ id: 'actions', header: '', cell: ({ row }) => <SubmitButton pr={row.original} /> }),
@@ -17,5 +17,5 @@ export const purchaseRequisitionColumns = [
 function SubmitButton({ pr }: { pr: PurchaseRequisition }) {
   const submit = useSubmitForApproval();
   if (pr.status !== 'DRAFT') return null;
-  return <ConfirmActionButton size="sm" variant="secondary" confirmTitle="Ajukan approval" confirmDescription={`Ajukan ${pr.prNumber} untuk approval?`} confirmLabel="Ajukan" onConfirm={() => submit.mutate({ transactionType: 'PurchaseRequisition', transactionId: pr.id, transactionCode: pr.prNumber, approverRoleCode: 'PROCUREMENT_MANAGER' })} loading={submit.isPending}>Ajukan Approval</ConfirmActionButton>;
+  return <ConfirmActionButton size="sm" variant="secondary" confirmTitle="Submit for approval" confirmDescription={`Submit ${pr.prNumber} for approval?`} confirmLabel="Submit" onConfirm={() => submit.mutate({ transactionType: 'PurchaseRequisition', transactionId: pr.id, transactionCode: pr.prNumber, approverRoleCode: 'PROCUREMENT_MANAGER' })} loading={submit.isPending}>Submit for Approval</ConfirmActionButton>;
 }

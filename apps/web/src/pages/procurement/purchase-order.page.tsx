@@ -10,7 +10,7 @@ const columnHelper = createColumnHelper<PurchaseOrder>();
 
 const columns = [
   columnHelper.accessor('poNumber', {
-    header: 'Nomor PO',
+    header: 'PO Number',
     cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span>,
   }),
   columnHelper.accessor('vendor', {
@@ -48,7 +48,7 @@ function ReleaseButton({ id, status }: { id: string; status: string }) {
       size="sm"
       variant="secondary"
       confirmTitle="Release PO"
-      confirmDescription="Commitment akan tercatat."
+      confirmDescription="The commitment will be recorded."
       confirmLabel="Release"
       onConfirm={() => release.mutate(id)}
       loading={release.isPending}
@@ -88,10 +88,10 @@ export function PurchaseOrderPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Purchase Order</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Pesanan pembelian → commitment (FR-PRO-007)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Purchase order → commitment (FR-PRO-007)</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>
-          {showForm ? 'Tutup' : '+ Buat PO dari PR'}
+          {showForm ? 'Close' : '+ Create PO from PR'}
         </Button>
       </div>
 
@@ -99,16 +99,16 @@ export function PurchaseOrderPage() {
         <div className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <Label htmlFor="po-pr">Dari PR (harus APPROVED)</Label>
+              <Label htmlFor="po-pr">From PR (must be APPROVED)</Label>
               <Select value={requisitionId} onValueChange={setRequisitionId}>
                 <SelectTrigger id="po-pr">
-                  <SelectValue placeholder="Pilih PR…" />
+                  <SelectValue placeholder="Select PR…" />
                 </SelectTrigger>
                 <SelectContent>
                   {approvedPrs.map((pr) => <SelectItem key={pr.id} value={pr.id}>{pr.prNumber} · {pr.requestedBy}</SelectItem>)}
                 </SelectContent>
               </Select>
-              {approvedPrs.length === 0 && <p className="mt-1 text-caption text-neutral-500">Tidak ada PR APPROVED. PR perlu di-approve dulu.</p>}
+              {approvedPrs.length === 0 && <p className="mt-1 text-caption text-neutral-500">No APPROVED PRs. A PR must be approved first.</p>}
             </div>
             <div>
               <Label htmlFor="po-vendor">Vendor</Label>
@@ -116,10 +116,10 @@ export function PurchaseOrderPage() {
             </div>
           </div>
           <div className="mt-4 flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>Batal</Button>
-            <Button type="button" onClick={onSubmit} loading={create.isPending}>Simpan PO</Button>
+            <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
+            <Button type="button" onClick={onSubmit} loading={create.isPending}>Save PO</Button>
           </div>
-          {create.isError && <p className="mt-2 text-caption text-destructive-600">Gagal membuat PO. PR harus APPROVED.</p>}
+          {create.isError && <p className="mt-2 text-caption text-destructive-600">Failed to create the PO. The PR must be APPROVED.</p>}
         </div>
       )}
 
@@ -133,7 +133,7 @@ export function PurchaseOrderPage() {
           isLoading={isLoading}
           isError={isError}
           onRetry={() => refetch()}
-          emptyMessage="Belum ada PO"
+          emptyMessage="No POs yet"
         />
       </div>
     </div>

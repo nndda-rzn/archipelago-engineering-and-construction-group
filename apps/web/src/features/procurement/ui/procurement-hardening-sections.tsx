@@ -34,22 +34,22 @@ export function BudgetCheckSection() {
             value={defaultProjectId}
             onValueChange={setProjectId}
             options={(projects.data?.items ?? []).map((p) => ({ value: p.id, label: p.code }))}
-            placeholder="Pilih project…"
-            searchPlaceholder="Cari project…"
+            placeholder="Select project…"
+            searchPlaceholder="Search project…"
           />
         </div>
-        <Button size="sm" variant="secondary" onClick={() => budgetStatus.refetch()} disabled={budgetStatus.isLoading}>Muat Ulang</Button>
+        <Button size="sm" variant="secondary" onClick={() => budgetStatus.refetch()} disabled={budgetStatus.isLoading}>Reload</Button>
       </div>
       <div className="rounded-md border border-neutral-200 bg-white p-6 shadow-xs">
-        {budgetStatus.isLoading && <p className="text-body-sm text-neutral-500">Menghitung.</p>}
+        {budgetStatus.isLoading && <p className="text-body-sm text-neutral-500">Calculating.</p>}
         {budgetStatus.data && (
           <>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               {([
                 ['Budget Baseline', budgetStatus.data.budget],
-                ['Komitmen (PO+Subkon)', budgetStatus.data.commitment],
-                ['Estimasi PR', budgetStatus.data.existingPr],
-                ['Sisa Budget', budgetStatus.data.remaining],
+                ['Commitment (PO+Subcon)', budgetStatus.data.commitment],
+                ['PR Estimate', budgetStatus.data.existingPr],
+                ['Remaining Budget', budgetStatus.data.remaining],
               ] as const).map(([label, val]) => (
                 <div key={label} className="rounded-md border border-neutral-100 p-3">
                   <p className="text-caption uppercase tracking-wide text-neutral-500">{label}</p>
@@ -57,7 +57,7 @@ export function BudgetCheckSection() {
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-caption text-neutral-500">FR-PRO-002 - PR baru ditolak jika estimasi melebihi sisa budget (409 BUDGET_EXCEEDED).</p>
+            <p className="mt-3 text-caption text-neutral-500">FR-PRO-002 - a new PR is rejected when its estimate exceeds the remaining budget (409 BUDGET_EXCEEDED).</p>
           </>
         )}
       </div>
@@ -80,7 +80,7 @@ export function PoChangeSection() {
           <Label htmlFor="poc-po">Purchase Order</Label>
           <Select value={poId} onValueChange={setPoId}>
             <SelectTrigger id="poc-po">
-              <SelectValue placeholder="Pilih…" />
+              <SelectValue placeholder="Select…" />
             </SelectTrigger>
             <SelectContent>
               {(pos.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.poNumber} - {fmt(p.totalAmount)}</SelectItem>)}
@@ -91,7 +91,7 @@ export function PoChangeSection() {
           <Label htmlFor="poc-rfq">RFQ (commercial eval)</Label>
           <Select value={rfqId} onValueChange={setRfqId}>
             <SelectTrigger id="poc-rfq">
-              <SelectValue placeholder="Pilih…" />
+              <SelectValue placeholder="Select…" />
             </SelectTrigger>
             <SelectContent>
               {(rfqs.data?.items ?? []).map((r) => <SelectItem key={r.id} value={r.id}>{r.rfqNumber} - {r.title}</SelectItem>)}
@@ -110,7 +110,7 @@ export function PoChangeSection() {
             rowCount={poChanges.data?.items.length ?? 0}
             isLoading={poChanges.isLoading}
             isError={false}
-            emptyMessage="Belum ada PO change"
+            emptyMessage="No PO changes yet"
           />
         </div>
       )}

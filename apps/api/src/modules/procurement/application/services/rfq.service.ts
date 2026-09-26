@@ -13,7 +13,7 @@ export class RfqService {
 
   async createRfq(dto: CreateRfqDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const rfq = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
@@ -58,9 +58,9 @@ export class RfqService {
 
   async sendRfq(id: string, actorId: string) {
     const rfq = await this.prisma.rfq.findUnique({ where: { id } });
-    if (!rfq) throw new NotFoundException({ code: 'RFQ_NOT_FOUND', message: 'RFQ tidak ditemukan' });
+    if (!rfq) throw new NotFoundException({ code: 'RFQ_NOT_FOUND', message: 'RFQ not found' });
     if (rfq.status !== 'DRAFT') {
-      throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa dikirim (${rfq.status})` });
+      throw new ConflictException({ code: 'NOT_DRAFT', message: `Only DRAFT can be sent (${rfq.status})` });
     }
 
     const sent = await this.prisma.rfq.update({ where: { id }, data: { status: 'SENT' } });
@@ -79,19 +79,19 @@ export class RfqService {
 
   async createQuote(rfqId: string, dto: CreateQuoteDto, actorId: string) {
     const rfq = await this.prisma.rfq.findUnique({ where: { id: rfqId }, include: { items: true } });
-    if (!rfq) throw new NotFoundException({ code: 'RFQ_NOT_FOUND', message: 'RFQ tidak ditemukan' });
+    if (!rfq) throw new NotFoundException({ code: 'RFQ_NOT_FOUND', message: 'RFQ not found' });
     if (rfq.status !== 'SENT' && rfq.status !== 'QUOTED') {
-      throw new ConflictException({ code: 'RFQ_NOT_OPEN', message: 'RFQ harus SENT untuk menerima quote' });
+      throw new ConflictException({ code: 'RFQ_NOT_OPEN', message: 'RFQ must be SENT to accept quotes' });
     }
 
     const existing = await this.prisma.rfqQuote.findUnique({ where: { rfqId_vendor: { rfqId, vendor: dto.vendor } } });
-    if (existing) throw new ConflictException({ code: 'QUOTE_EXISTS', message: `Vendor ${dto.vendor} sudah memberi quote` });
+    if (existing) throw new ConflictException({ code: 'QUOTE_EXISTS', message: `Vendor ${dto.vendor} has already submitted a quote` });
 
     const rfqItemMap = new Map(rfq.items.map((i) => [i.id, i]));
     let totalAmount = 0;
     const items = dto.items.map((item) => {
       const rfqItem = rfqItemMap.get(item.rfqItemId);
-      if (!rfqItem) throw new NotFoundException({ code: 'RFQ_ITEM_NOT_FOUND', message: `Item RFQ ${item.rfqItemId} tidak ada` });
+      if (!rfqItem) throw new NotFoundException({ code: 'RFQ_ITEM_NOT_FOUND', message: `RFQ item ${item.rfqItemId} not found` });
       const totalPrice = Number(rfqItem.quantity) * Number(item.unitPrice);
       totalAmount += totalPrice;
       return { rfqItemId: item.rfqItemId, unitPrice: Number(item.unitPrice), totalPrice };
@@ -122,12 +122,12 @@ export class RfqService {
 
   async evaluateRfq(id: string, actorId: string) {
     const rfq = await this.prisma.rfq.findUnique({ where: { id }, include: { quotes: { include: { items: true } } } });
-    if (!rfq) throw new NotFoundException({ code: 'RFQ_NOT_FOUND', message: 'RFQ tidak ditemukan' });
+    if (!rfq) throw new NotFoundException({ code: 'RFQ_NOT_FOUND', message: 'RFQ not found' });
     if (rfq.status !== 'QUOTED' && rfq.status !== 'SENT') {
-      throw new ConflictException({ code: 'NOT_QUOTED', message: 'RFQ belum punya quote' });
+      throw new ConflictException({ code: 'NOT_QUOTED', message: 'RFQ has no quotes yet' });
     }
     if (rfq.quotes.length === 0) {
-      throw new ConflictException({ code: 'NO_QUOTES', message: 'Belum ada quote vendor' });
+      throw new ConflictException({ code: 'NO_QUOTES', message: 'No vendor quotes yet' });
     }
 
     const technicalRejected = rfq.quotes.filter((q) => q.technicalStatus === 'REJECT');
@@ -171,7 +171,7 @@ export class RfqService {
 
   async technicalReview(quoteId: string, technicalStatus: string, technicalNote: string | null, actorId: string) {
     const quote = await this.prisma.rfqQuote.findUnique({ where: { id: quoteId } });
-    if (!quote) throw new NotFoundException({ code: 'QUOTE_NOT_FOUND', message: 'Quote tidak ditemukan' });
+    if (!quote) throw new NotFoundException({ code: 'QUOTE_NOT_FOUND', message: 'Quote not found' });
 
     const updated = await this.prisma.rfqQuote.update({
       where: { id: quoteId },
@@ -192,7 +192,7 @@ export class RfqService {
 
   async commercialEvaluation(rfqId: string) {
     const rfq = await this.prisma.rfq.findUnique({ where: { id: rfqId }, include: { quotes: { include: { items: true } } } });
-    if (!rfq) throw new NotFoundException({ code: 'RFQ_NOT_FOUND', message: 'RFQ tidak ditemukan' });
+    if (!rfq) throw new NotFoundException({ code: 'RFQ_NOT_FOUND', message: 'RFQ not found' });
 
     const items = rfq.quotes
       .filter((q) => q.status === 'SUBMITTED')

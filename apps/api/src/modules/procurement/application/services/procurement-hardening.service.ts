@@ -22,9 +22,9 @@ export class ProcurementHardeningService {
 
   async createPoChange(poId: string, dto: CreatePoChangeDto, actorId: string) {
     const po = await this.prisma.purchaseOrder.findUnique({ where: { id: poId } });
-    if (!po) throw new NotFoundException({ code: 'PO_NOT_FOUND', message: 'PO tidak ditemukan' });
+    if (!po) throw new NotFoundException({ code: 'PO_NOT_FOUND', message: 'PO not found' });
     if (po.status === 'CANCELLED') {
-      throw new ConflictException({ code: 'PO_CANCELLED', message: 'PO dibatalkan — tidak bisa diubah' });
+      throw new ConflictException({ code: 'PO_CANCELLED', message: 'PO is cancelled and cannot be changed' });
     }
 
     const change = await this.prisma.$transaction(async (tx) => {
@@ -56,9 +56,9 @@ export class ProcurementHardeningService {
 
   async approvePoChange(id: string, actorId: string) {
     const change = await this.prisma.purchaseOrderChange.findUnique({ where: { id } });
-    if (!change) throw new NotFoundException({ code: 'PO_CHANGE_NOT_FOUND', message: 'PO change tidak ditemukan' });
+    if (!change) throw new NotFoundException({ code: 'PO_CHANGE_NOT_FOUND', message: 'PO change not found' });
     if (change.status !== 'DRAFT') {
-      throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa di-approve (${change.status})` });
+      throw new ConflictException({ code: 'NOT_DRAFT', message: `Only DRAFT can be approved (${change.status})` });
     }
 
     const [approved, updatedPo] = await this.prisma.$transaction([
@@ -91,7 +91,7 @@ export class ProcurementHardeningService {
 
   async createRating(dto: CreateVendorRatingDto, actorId: string) {
     const vendor = await this.prisma.vendor.findUnique({ where: { id: dto.vendorId } });
-    if (!vendor) throw new NotFoundException({ code: 'VENDOR_NOT_FOUND', message: 'Vendor tidak ditemukan' });
+    if (!vendor) throw new NotFoundException({ code: 'VENDOR_NOT_FOUND', message: 'Vendor not found' });
 
     const rating = await this.prisma.vendorPerformanceRating.create({
       data: {
