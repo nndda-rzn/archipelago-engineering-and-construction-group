@@ -14,14 +14,14 @@ export class PermissionsGuard implements CanActivate {
     const required = this.reflector.getAllAndOverride<string[]>(PERMISSIONS_KEY, [context.getHandler(), context.getClass()]) ?? [];
     if (required.length === 0) return true;
     const request = context.switchToHttp().getRequest<{ user?: { sub?: string } }>();
-    if (!request.user?.sub) throw new ForbiddenException({ code: 'PERMISSION_DENIED', message: 'Akses ditolak' });
+    if (!request.user?.sub) throw new ForbiddenException({ code: 'PERMISSION_DENIED', message: 'Access denied' });
     const assignments = await this.prisma.userRole.findMany({
       where: { userId: request.user.sub, OR: [{ effectiveTo: null }, { effectiveTo: { gt: new Date() } }] },
       include: { role: { include: { permissions: { include: { permission: true } } } } },
     });
     const granted = new Set(assignments.flatMap((a) => a.role.permissions.map((p) => p.permission.code)));
     if (!required.every((permission) => granted.has(permission))) {
-      throw new ForbiddenException({ code: 'PERMISSION_DENIED', message: 'Akses ditolak' });
+      throw new ForbiddenException({ code: 'PERMISSION_DENIED', message: 'Access denied' });
     }
     return true;
   }

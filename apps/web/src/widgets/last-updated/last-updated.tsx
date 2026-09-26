@@ -26,7 +26,7 @@ export function LastUpdated({ queryKey, className }: { queryKey: readonly unknow
       title={updatedAt ? new Date(updatedAt).toLocaleString('id-ID') : undefined}
     >
       <Clock className={cn('h-3 w-3', isFetching > 0 && 'animate-spin')} aria-hidden="true" />
-      {isStale ? 'Data mungkin basi' : updatedAt ? `Diperbarui ${formatRelativeTime(new Date(updatedAt))}` : 'Belum dimuat'}
+      {isStale ? 'Data may be stale' : updatedAt ? `Updated ${formatRelativeTime(new Date(updatedAt))}` : 'Not loaded yet'}
     </span>
   );
 }

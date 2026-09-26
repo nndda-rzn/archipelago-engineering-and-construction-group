@@ -22,7 +22,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let code = 'INTERNAL_ERROR';
-    let message = 'Terjadi kesalahan internal';
+    let message = 'Internal server error';
     let details: unknown;
 
     if (exception instanceof HttpException) {
@@ -45,7 +45,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     } else if (exception instanceof Prisma.PrismaClientValidationError) {
       status = HttpStatus.BAD_REQUEST;
       code = 'INVALID_QUERY';
-      message = 'Query tidak valid';
+      message = 'Invalid query';
     } else {
 
       this.logger.error(
@@ -68,20 +68,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
   } {
     switch (e.code) {
       case 'P2002':
-        return { status: HttpStatus.CONFLICT, code: 'DUPLICATE', message: 'Data sudah ada (unik bertabrakan)' };
+        return { status: HttpStatus.CONFLICT, code: 'DUPLICATE', message: 'Record already exists (unique constraint violated)' };
       case 'P2025':
-        return { status: HttpStatus.NOT_FOUND, code: 'NOT_FOUND', message: 'Data tidak ditemukan' };
+        return { status: HttpStatus.NOT_FOUND, code: 'NOT_FOUND', message: 'Record not found' };
       case 'P2003':
-        return { status: HttpStatus.CONFLICT, code: 'FK_VIOLATION', message: 'Data terkait belum ada / tidak valid' };
+        return { status: HttpStatus.CONFLICT, code: 'FK_VIOLATION', message: 'Referenced record does not exist or is invalid' };
       case 'P2000':
-        return { status: HttpStatus.BAD_REQUEST, code: 'INVALID_DATA', message: 'Nilai terlalu panjang atau tidak valid' };
+        return { status: HttpStatus.BAD_REQUEST, code: 'INVALID_DATA', message: 'Value is too long or invalid' };
       case 'P2014':
-        return { status: HttpStatus.CONFLICT, code: 'RELATION_VIOLATION', message: 'Relasi data tidak valid' };
+        return { status: HttpStatus.CONFLICT, code: 'RELATION_VIOLATION', message: 'Invalid data relation' };
       case 'P2034':
-        return { status: HttpStatus.CONFLICT, code: 'RETRY_CONFLICT', message: 'Konflik transaksi bersamaan, silakan coba lagi' };
+        return { status: HttpStatus.CONFLICT, code: 'RETRY_CONFLICT', message: 'Concurrent transaction conflict, please retry' };
       default:
         this.logger.error(`Unhandled Prisma error code=${e.code}`, e.stack);
-        return { status: HttpStatus.INTERNAL_SERVER_ERROR, code: 'INTERNAL_ERROR', message: 'Terjadi kesalahan internal' };
+        return { status: HttpStatus.INTERNAL_SERVER_ERROR, code: 'INTERNAL_ERROR', message: 'Internal server error' };
     }
   }
 }
