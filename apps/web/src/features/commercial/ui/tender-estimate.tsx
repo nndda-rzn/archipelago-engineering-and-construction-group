@@ -29,7 +29,7 @@ export function EstimatePanel({
           <Label htmlFor="est-opp">Opportunity</Label>
           <Select value={oppId} onValueChange={(v) => { setOppId(v); setSelectedEstimateId(''); }}>
             <SelectTrigger id="est-opp">
-              <SelectValue placeholder="Pilih…" />
+              <SelectValue placeholder="Select…" />
             </SelectTrigger>
             <SelectContent>
               {opportunities.map((o) => <SelectItem key={o.id} value={o.id}>{o.oppNumber} · {o.title}</SelectItem>)}
@@ -37,7 +37,7 @@ export function EstimatePanel({
           </Select>
         </div>
         <div className="flex-1">
-          <Label htmlFor="est-desc">Deskripsi</Label>
+          <Label htmlFor="est-desc">Description</Label>
           <Input id="est-desc" value={description} onChange={(e) => setDescription(e.target.value)} />
         </div>
         <div>
@@ -45,7 +45,7 @@ export function EstimatePanel({
           <Input id="est-total" type="number" min={0} value={total} onChange={(e) => setTotal(e.target.value)} className="w-36" />
         </div>
         <Button onClick={() => { if (oppId && total) createEstimate.mutate({ description: description || undefined, totalAmount: Number(total) }, { onSuccess: () => { setDescription(''); setTotal(''); } }); }} loading={createEstimate.isPending}>
-          Versi Baru
+          New Version
         </Button>
       </div>
 
@@ -53,11 +53,11 @@ export function EstimatePanel({
         <table className="w-full text-left text-body">
           <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
             <tr>
-              <th className="px-4 py-2">Versi</th>
+              <th className="px-4 py-2">Version</th>
               <th className="px-4 py-2">No.</th>
               <th className="px-4 py-2 text-right">Total</th>
               <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2">Aksi</th>
+              <th className="px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -77,7 +77,7 @@ export function EstimatePanel({
                 </td>
               </tr>
             ))}
-            {!loading && estimates.length === 0 && <tr><td colSpan={5} className="px-4 py-4 text-caption text-neutral-500">Belum ada estimate. Pilih opportunity + total untuk versi baru.</td></tr>}
+            {!loading && estimates.length === 0 && <tr><td colSpan={5} className="px-4 py-4 text-caption text-neutral-500">No estimates yet. Select an opportunity and a total to create a new version.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -87,7 +87,7 @@ export function EstimatePanel({
           <h3 className="text-h3 text-neutral-900">Pricing Scenario · v{selected.version}</h3>
           <div className="mt-3 flex items-end gap-3">
             <div>
-              <Label htmlFor="sc-type">Tipe</Label>
+              <Label htmlFor="sc-type">Type</Label>
               <Select value={scenarioType} onValueChange={setScenarioType}>
                 <SelectTrigger id="sc-type">
                   <SelectValue />
@@ -98,11 +98,11 @@ export function EstimatePanel({
               </Select>
             </div>
             <div>
-              <Label htmlFor="sc-amt">Nilai</Label>
+              <Label htmlFor="sc-amt">Value</Label>
               <Input id="sc-amt" type="number" min={0} value={scenarioAmount} onChange={(e) => setScenarioAmount(e.target.value)} className="w-36" />
             </div>
             <Button onClick={() => { if (scenarioAmount) createScenario.mutate({ scenarioType, amount: Number(scenarioAmount) }, { onSuccess: () => setScenarioAmount('') }); }} loading={createScenario.isPending}>
-              Tambah Scenario
+              Add Scenario
             </Button>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -112,7 +112,7 @@ export function EstimatePanel({
                 <span className="font-mono tabular-nums text-neutral-800">{fmt(s.amount)}</span>
               </span>
             ))}
-            {(selected.pricingScenarios ?? []).length === 0 && <p className="text-caption text-neutral-500">Belum ada scenario.</p>}
+            {(selected.pricingScenarios ?? []).length === 0 && <p className="text-caption text-neutral-500">No scenarios yet.</p>}
           </div>
         </div>
       )}

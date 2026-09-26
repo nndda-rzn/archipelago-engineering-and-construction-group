@@ -22,7 +22,7 @@ export function OppAdvanceBtn({ opp }: { opp: Opportunity }) {
       <Button size="sm" variant="secondary" loading={update.isPending} onClick={() => update.mutate({ id: opp.id, stage: nextStage, probability: Math.min(opp.probability + 15, 100) })}>
         → {nextStage}
       </Button>
-      <ConfirmActionButton size="sm" variant="ghost" loading={update.isPending} confirmTitle="Tandai Lost?" confirmDescription="Opportunity akan ditandai sebagai Lost." confirmLabel="Lost" onConfirm={() => update.mutate({ id: opp.id, stage: 'LOST' })}>
+      <ConfirmActionButton size="sm" variant="ghost" loading={update.isPending} confirmTitle="Mark as Lost?" confirmDescription="The opportunity will be marked as Lost." confirmLabel="Lost" onConfirm={() => update.mutate({ id: opp.id, stage: 'LOST' })}>
         Lost
       </ConfirmActionButton>
     </div>
@@ -35,6 +35,6 @@ export const oppColumns = [
   oppHelper.accessor('client', { header: 'Client', cell: (info) => <span className="text-neutral-700">{info.getValue()?.name}</span> }),
   oppHelper.accessor('stage', { header: 'Stage', cell: (info) => <Badge variant={info.getValue() === 'WON' ? 'success' : info.getValue() === 'LOST' ? 'warning' : 'default'}>{info.getValue()}</Badge> }),
   oppHelper.accessor('probability', { header: 'Prob.', cell: (info) => <span className="font-mono tabular-nums text-neutral-600">{info.getValue()}%</span> }),
-  oppHelper.accessor('expectedValue', { header: 'Nilai', cell: (info) => <span className="font-mono tabular-nums text-neutral-800 font-medium">{fmt(info.getValue())}</span> }),
+  oppHelper.accessor('expectedValue', { header: 'Value', cell: (info) => <span className="font-mono tabular-nums text-neutral-800 font-medium">{fmt(info.getValue())}</span> }),
   oppHelper.display({ id: 'actions', header: '', cell: ({ row }) => <OppAdvanceBtn opp={row.original} /> }),
 ];

@@ -6,9 +6,9 @@ import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger,
 import { useClients, useCreateOpportunity } from '../model/commercial.api';
 
 const formSchema = z.object({
-  clientId: z.string().min(1, 'Client wajib dipilih'),
+  clientId: z.string().min(1, 'Client is required'),
   title: createOpportunitySchema.shape.title,
-  expectedValue: z.string().refine((v) => v.trim() !== '' && !isNaN(Number(v)), 'Nilai wajib diisi'),
+  expectedValue: z.string().refine((v) => v.trim() !== '' && !isNaN(Number(v)), 'Value is required'),
   owner: createOpportunitySchema.shape.owner,
 });
 type FormValues = z.infer<typeof formSchema>;
@@ -36,7 +36,7 @@ export function OpportunityForm({ onDone }: { onDone: () => void }) {
           <Controller name="clientId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="opp-client">
-                <SelectValue placeholder="Pilih…" />
+                <SelectValue placeholder="Select…" />
               </SelectTrigger>
               <SelectContent>
                 {(clients?.items ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -46,12 +46,12 @@ export function OpportunityForm({ onDone }: { onDone: () => void }) {
           {errors.clientId && <p className="mt-1 text-caption text-destructive-600">{errors.clientId.message}</p>}
         </div>
         <div className="flex-1">
-          <Label htmlFor="opp-title">Judul <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="opp-title">Title <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="opp-title" error={!!errors.title} {...register('title')} />
           {errors.title && <p className="mt-1 text-caption text-destructive-600">{errors.title.message}</p>}
         </div>
         <div>
-          <Label htmlFor="opp-value">Nilai <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="opp-value">Value <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="opp-value" type="number" min={0} error={!!errors.expectedValue} {...register('expectedValue')} />
           {errors.expectedValue && <p className="mt-1 text-caption text-destructive-600">{errors.expectedValue.message}</p>}
         </div>
@@ -60,7 +60,7 @@ export function OpportunityForm({ onDone }: { onDone: () => void }) {
           <Input id="opp-owner" error={!!errors.owner} {...register('owner')} />
           {errors.owner && <p className="mt-1 text-caption text-destructive-600">{errors.owner.message}</p>}
         </div>
-        <Button type="submit" loading={create.isPending}>Buat Opportunity</Button>
+        <Button type="submit" loading={create.isPending}>Create Opportunity</Button>
       </div>
     </form>
   );

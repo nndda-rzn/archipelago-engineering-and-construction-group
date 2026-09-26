@@ -14,11 +14,11 @@ export class EstimateService {
 
   async createEstimate(opportunityId: string, dto: CreateEstimateDto, actorId: string) {
     const opp = await this.prisma.opportunity.findUnique({ where: { id: opportunityId } });
-    if (!opp) throw new NotFoundException({ code: 'OPPORTUNITY_NOT_FOUND', message: 'Opportunity tidak ditemukan' });
+    if (!opp) throw new NotFoundException({ code: 'OPPORTUNITY_NOT_FOUND', message: 'Opportunity not found' });
 
     const bid = await this.prisma.bidDecision.findUnique({ where: { opportunityId } });
     if (!bid || bid.decision !== 'BID') {
-      throw new ConflictException({ code: 'BID_NOT_APPROVED', message: 'Bid/No-Bid harus BID sebelum bid preparation (FR-COM-002)' });
+      throw new ConflictException({ code: 'BID_NOT_APPROVED', message: 'Bid/No-Bid must be BID before bid preparation (FR-COM-002)' });
     }
 
     const last = await this.prisma.estimate.findFirst({ where: { opportunityId }, orderBy: { version: 'desc' } });
@@ -37,7 +37,7 @@ export class EstimateService {
 
   async transitionEstimate(id: string, status: string, actorId: string) {
     const estimate = await this.prisma.estimate.findUnique({ where: { id } });
-    if (!estimate) throw new NotFoundException({ code: 'ESTIMATE_NOT_FOUND', message: 'Estimate tidak ditemukan' });
+    if (!estimate) throw new NotFoundException({ code: 'ESTIMATE_NOT_FOUND', message: 'Estimate not found' });
 
     const allowed: Record<string, string[]> = {
       WORKING: ['REVIEW'],
@@ -67,7 +67,7 @@ export class EstimateService {
 
   async createPricingScenario(estimateId: string, dto: CreatePricingScenarioDto, actorId: string) {
     const estimate = await this.prisma.estimate.findUnique({ where: { id: estimateId } });
-    if (!estimate) throw new NotFoundException({ code: 'ESTIMATE_NOT_FOUND', message: 'Estimate tidak ditemukan' });
+    if (!estimate) throw new NotFoundException({ code: 'ESTIMATE_NOT_FOUND', message: 'Estimate not found' });
 
     const exists = await this.prisma.pricingScenario.findUnique({
       where: { estimateId_scenarioType: { estimateId, scenarioType: dto.scenarioType } },

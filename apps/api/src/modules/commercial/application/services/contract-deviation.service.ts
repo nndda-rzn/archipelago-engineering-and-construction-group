@@ -12,7 +12,7 @@ export class ContractDeviationService {
 
   async createContractDeviation(opportunityId: string, dto: CreateContractDeviationDto, actorId: string) {
     const opp = await this.prisma.opportunity.findUnique({ where: { id: opportunityId } });
-    if (!opp) throw new NotFoundException({ code: 'OPPORTUNITY_NOT_FOUND', message: 'Opportunity tidak ditemukan' });
+    if (!opp) throw new NotFoundException({ code: 'OPPORTUNITY_NOT_FOUND', message: 'Opportunity not found' });
 
     const deviation = await this.prisma.contractDeviation.create({
       data: {
@@ -31,7 +31,7 @@ export class ContractDeviationService {
 
   async approveDeviation(id: string, approved: boolean, actorId: string) {
     const deviation = await this.prisma.contractDeviation.findUnique({ where: { id } });
-    if (!deviation) throw new NotFoundException({ code: 'DEVIATION_NOT_FOUND', message: 'Deviation tidak ditemukan' });
+    if (!deviation) throw new NotFoundException({ code: 'DEVIATION_NOT_FOUND', message: 'Deviation not found' });
     if (deviation.status !== 'OPEN') {
       throw new ConflictException({ code: 'NOT_OPEN', message: `Hanya OPEN yang bisa di-approve (${deviation.status})` });
     }

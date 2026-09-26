@@ -21,7 +21,7 @@ type Tab = 'clients' | 'opportunities' | 'contracts';
 const TABS: { key: Tab; label: string }[] = [
   { key: 'clients', label: 'Client' },
   { key: 'opportunities', label: 'Opportunity' },
-  { key: 'contracts', label: 'Kontrak' },
+  { key: 'contracts', label: 'Contract' },
 ];
 
 const FORM: Record<Tab, React.ComponentType<{ onDone: () => void }>> = {
@@ -49,7 +49,7 @@ export function CommercialPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-h1 text-neutral-950">Commercial</h1>
         <Button onClick={() => setShowForm((v) => !v)}>
-          {showForm ? 'Tutup' : '+ Baru'}
+          {showForm ? 'Close' : '+ New'}
         </Button>
       </div>
 
@@ -80,7 +80,7 @@ export function CommercialPage() {
             isLoading={clients.isLoading}
             isError={clients.isError}
             onRetry={() => clients.refetch()}
-            emptyMessage="Belum ada client"
+            emptyMessage="No clients yet"
             {...gridProps}
           />
         )}
@@ -92,7 +92,7 @@ export function CommercialPage() {
             isLoading={opportunities.isLoading}
             isError={opportunities.isError}
             onRetry={() => opportunities.refetch()}
-            emptyMessage="Belum ada opportunity"
+            emptyMessage="No opportunities yet"
             {...gridProps}
           />
         )}
@@ -104,7 +104,7 @@ export function CommercialPage() {
             isLoading={contracts.isLoading}
             isError={contracts.isError}
             onRetry={() => contracts.refetch()}
-            emptyMessage="Belum ada kontrak"
+            emptyMessage="No contracts yet"
             {...gridProps}
           />
         )}
