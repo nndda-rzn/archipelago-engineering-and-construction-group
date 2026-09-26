@@ -31,15 +31,15 @@ export function UnsavedGuard({ dirty }: { dirty: boolean }) {
     >
       <DialogContent className="max-w-sm" showClose={false}>
         <DialogHeader>
-          <DialogTitle>Buang perubahan?</DialogTitle>
-          <DialogDescription>Perubahan yang belum disimpan akan hilang.</DialogDescription>
+          <DialogTitle>Discard changes?</DialogTitle>
+          <DialogDescription>Unsaved changes will be lost.</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="ghost" onClick={() => blocker.reset?.()}>
-            Tetap di sini
+            Stay here
           </Button>
           <Button variant="destructive" onClick={() => blocker.proceed?.()}>
-            Buang
+            Discard
           </Button>
         </DialogFooter>
       </DialogContent>

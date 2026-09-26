@@ -28,7 +28,7 @@ export class HealthController {
     } catch {
       throw new ServiceUnavailableException({
         code: 'DB_DOWN',
-        message: 'Database tidak tersedia',
+        message: 'Database is unavailable',
         details: { db: 'down' },
       });
     }

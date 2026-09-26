@@ -93,7 +93,7 @@ export async function downloadFile(path: string, fallbackFilename: string): Prom
     if (res.status === 401) handleUnauthorized();
     const body = (await res.json().catch(() => null)) as { error?: { code?: string; message?: string } } | null;
     throw new ApiError(
-      body?.error?.message ?? `Unduh gagal: ${res.status}`,
+      body?.error?.message ?? `Download failed: ${res.status}`,
       body?.error?.code ?? 'HTTP_ERROR',
     );
   }

@@ -5,10 +5,10 @@ export type HealthKey = Portfolio['items'][number]['health'];
 export type PortfolioTotals = Portfolio['totals'];
 
 export const healthMeta: Record<HealthKey, { label: string; dotClass?: string; badgeVariant: 'default' | 'success' | 'warning' }> = {
-  NO_BUDGET: { label: 'Belum Budget', badgeVariant: 'default' },
+  NO_BUDGET: { label: 'No Budget', badgeVariant: 'default' },
   ON_TRACK: { label: 'On Track', dotClass: 'bg-project-on-track-500', badgeVariant: 'success' },
   AT_RISK: { label: 'At Risk', dotClass: 'bg-project-at-risk-500', badgeVariant: 'warning' },
-  CRITICAL: { label: 'Kritis', dotClass: 'bg-project-critical-500', badgeVariant: 'warning' },
+  CRITICAL: { label: 'Critical', dotClass: 'bg-project-critical-500', badgeVariant: 'warning' },
 };
 
 export interface KpiItem {
@@ -49,7 +49,7 @@ export function DashboardGrid({
   return (
     <div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Total Kontrak" value={formatIdr(totals.totalContract)} />
+        <KpiCard label="Total Contract" value={formatIdr(totals.totalContract)} />
         <KpiCard label="Budget" value={formatIdr(totals.totalBudget)} />
         <KpiCard label="Actual Cost" value={formatIdr(totals.totalActual)} />
         <KpiCard label="Revenue" value={formatIdr(totals.totalRevenue)} />
