@@ -33,7 +33,7 @@ export class ContractDeviationService {
     const deviation = await this.prisma.contractDeviation.findUnique({ where: { id } });
     if (!deviation) throw new NotFoundException({ code: 'DEVIATION_NOT_FOUND', message: 'Deviation not found' });
     if (deviation.status !== 'OPEN') {
-      throw new ConflictException({ code: 'NOT_OPEN', message: `Hanya OPEN yang bisa di-approve (${deviation.status})` });
+      throw new ConflictException({ code: 'NOT_OPEN', message: `Only OPEN can be approved (${deviation.status})` });
     }
 
     const updated = await this.prisma.contractDeviation.update({
