@@ -10,11 +10,11 @@ const columnHelper = createColumnHelper<AuditLog>();
 
 const columns = [
   columnHelper.accessor('createdAt', {
-    header: 'Waktu',
+    header: 'Time',
     cell: (info) => <span className="font-mono text-body-sm text-neutral-600">{formatDateTime(info.getValue())}</span>,
   }),
   columnHelper.accessor('action', {
-    header: 'Aksi',
+    header: 'Action',
     cell: (info) => (
       <span className="text-neutral-800">
         {labelAction(info.getValue())}
@@ -31,7 +31,7 @@ const columns = [
     cell: (info) => <span className="font-mono text-neutral-500">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('userId', {
-    header: 'Aktor',
+    header: 'Actor',
     cell: (info) => <span className="font-mono text-neutral-500" title={info.getValue()}>{info.getValue().slice(0, 8)}…</span>,
   }),
 ];
@@ -47,7 +47,7 @@ export function AuditLogPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-h1 text-neutral-950">Audit Trail</h1>
-        <p className="mt-1 text-body-sm text-neutral-500">Riwayat aksi kritis (FR-FND-008)</p>
+        <p className="mt-1 text-body-sm text-neutral-500">History of critical actions (FR-FND-008)</p>
       </div>
 
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
@@ -60,7 +60,7 @@ export function AuditLogPage() {
           isLoading={isLoading}
           isError={isError}
           onRetry={() => refetch()}
-          emptyMessage="Belum ada audit log"
+          emptyMessage="No audit logs yet"
         />
       </div>
     </div>

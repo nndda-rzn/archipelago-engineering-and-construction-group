@@ -34,7 +34,7 @@ export function FoundationHardeningPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-h1 text-neutral-950">Foundation Hardening</h1>
-        <p className="mt-1 text-body-sm text-neutral-500">Effective-dated org, DoA engine, currency, IFC control, readiness gate (Fase 11F)</p>
+        <p className="mt-1 text-body-sm text-neutral-500">Effective-dated org, DoA engine, currency, IFC control, readiness gate (Phase 11F)</p>
       </div>
 
       <div className="mb-4 flex gap-2">

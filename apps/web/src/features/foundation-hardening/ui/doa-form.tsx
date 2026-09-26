@@ -9,7 +9,7 @@ import { useCreateDoaRule, useResolveDoa } from '../model/foundation-hardening.a
 const TX_TYPES = ['PurchaseRequisition', 'PurchaseOrder', 'Journal', 'Payment', 'BudgetBaseline', 'Contract'];
 
 const doaSchema = z.object({
-  transactionType: z.string().min(1, 'Transaksi wajib dipilih'),
+  transactionType: z.string().min(1, 'Transaction is required'),
   approverLevel: createDoaRuleSchema.shape.approverLevel,
   amountFrom: z.string().optional(),
   amountTo: z.string().optional(),
@@ -37,7 +37,7 @@ export function DoaForm() {
     <form onSubmit={onSubmit} className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="flex items-end gap-3">
         <div>
-          <Label htmlFor="doaf-tx">Transaksi <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="doaf-tx">Transaction <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="transactionType" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="doaf-tx">
@@ -50,14 +50,14 @@ export function DoaForm() {
           )} />
           {errors.transactionType && <p className="mt-1 text-caption text-destructive-600">{errors.transactionType.message}</p>}
         </div>
-        <div><Label htmlFor="doaf-from">Dari</Label><Input id="doaf-from" type="number" className="w-28" error={!!errors.amountFrom} {...register('amountFrom')} /></div>
-        <div><Label htmlFor="doaf-to">Sampai</Label><Input id="doaf-to" type="number" className="w-28" error={!!errors.amountTo} {...register('amountTo')} /></div>
+        <div><Label htmlFor="doaf-from">From</Label><Input id="doaf-from" type="number" className="w-28" error={!!errors.amountFrom} {...register('amountFrom')} /></div>
+        <div><Label htmlFor="doaf-to">To</Label><Input id="doaf-to" type="number" className="w-28" error={!!errors.amountTo} {...register('amountTo')} /></div>
         <div>
-          <Label htmlFor="doaf-risk">Risiko</Label>
+          <Label htmlFor="doaf-risk">Risk</Label>
           <Controller name="riskLevel" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="doaf-risk">
-                <SelectValue placeholder="Semua" />
+                <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
                 {['LOW', 'MEDIUM', 'HIGH'].map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
@@ -79,15 +79,15 @@ export function DoaForm() {
           )} />
         </div>
         <div><Label htmlFor="doaf-role">Role</Label><Input id="doaf-role" placeholder="PROCUREMENT_MANAGER" error={!!errors.approverRoleCode} {...register('approverRoleCode')} /></div>
-        <Button type="submit" loading={create.isPending}>Buat Rule</Button>
+        <Button type="submit" loading={create.isPending}>Create Rule</Button>
       </div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600" role="alert">Gagal menyimpan. Periksa kembali data.</p>}
+      {create.isError && <p className="mt-2 text-caption text-destructive-600" role="alert">Failed to save. Check the data again.</p>}
     </form>
   );
 }
 
 const resolveSchema = z.object({
-  transactionType: z.string().min(1, 'Transaksi wajib dipilih'),
+  transactionType: z.string().min(1, 'Transaction is required'),
   amount: z.string().optional(),
 });
 type ResolveValues = z.infer<typeof resolveSchema>;
@@ -110,7 +110,7 @@ export function ResolveForm() {
   return (
     <form onSubmit={onSubmit} className="mt-2 flex items-end gap-3">
       <div>
-        <Label htmlFor="doar-tx">Transaksi <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+        <Label htmlFor="doar-tx">Transaction <span aria-hidden="true" className="text-destructive-600">*</span></Label>
         <Controller name="transactionType" control={control} render={({ field }) => (
           <Select value={field.value} onValueChange={field.onChange}>
             <SelectTrigger id="doar-tx">

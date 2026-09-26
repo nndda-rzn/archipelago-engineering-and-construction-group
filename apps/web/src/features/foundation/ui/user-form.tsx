@@ -23,13 +23,13 @@ export function UserForm({ onDone }: { onDone: () => void }) {
     <form onSubmit={onSubmit} className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div><Label htmlFor="username">Username</Label><Input id="username" placeholder="buyer1" spellCheck={false} error={!!errors.username} {...register('username')} />{errors.username && <p className="mt-1 text-caption text-destructive-600">{errors.username.message}</p>}</div>
-        <div><Label htmlFor="displayName">Nama</Label><Input id="displayName" placeholder="Buyer Satu" error={!!errors.displayName} {...register('displayName')} />{errors.displayName && <p className="mt-1 text-caption text-destructive-600">{errors.displayName.message}</p>}</div>
+        <div><Label htmlFor="displayName">Name</Label><Input id="displayName" placeholder="Buyer Satu" error={!!errors.displayName} {...register('displayName')} />{errors.displayName && <p className="mt-1 text-caption text-destructive-600">{errors.displayName.message}</p>}</div>
         <div><Label htmlFor="email">Email</Label><Input id="email" type="email" placeholder="nama@perusahaan.com" spellCheck={false} error={!!errors.email} {...register('email')} />{errors.email && <p className="mt-1 text-caption text-destructive-600">{errors.email.message}</p>}</div>
-        <div><Label htmlFor="password">Password</Label><Input id="password" type="password" placeholder="Min. 8 karakter" spellCheck={false} error={!!errors.password} {...register('password')} />{errors.password && <p className="mt-1 text-caption text-destructive-600">{errors.password.message}</p>}</div>
+        <div><Label htmlFor="password">Password</Label><Input id="password" type="password" placeholder="Min. 8 characters" spellCheck={false} error={!!errors.password} {...register('password')} />{errors.password && <p className="mt-1 text-caption text-destructive-600">{errors.password.message}</p>}</div>
         <div><Label htmlFor="roleCode">Role</Label><Input id="roleCode" placeholder="PROCUREMENT_MANAGER" spellCheck={false} {...register('roleCode')} /></div>
       </div>
-      <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Batal</Button><Button type="submit" loading={create.isPending}>Simpan</Button></div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600">Gagal membuat user. Username/email mungkin sudah dipakai.</p>}
+      <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Cancel</Button><Button type="submit" loading={create.isPending}>Save</Button></div>
+      {create.isError && <p className="mt-2 text-caption text-destructive-600">Failed to create the user. The username or email may already be in use.</p>}
     </form>
   );
 }

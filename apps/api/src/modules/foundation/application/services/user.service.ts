@@ -61,7 +61,7 @@ export class UserService {
       where: { OR: [{ username: dto.username }, { email: dto.email }] },
     });
     if (existing) {
-      throw new ConflictException({ code: 'USER_EXISTS', message: 'Username atau email sudah digunakan' });
+      throw new ConflictException({ code: 'USER_EXISTS', message: 'Username or email is already in use' });
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
@@ -109,7 +109,7 @@ export class UserService {
 
   async block(id: string, actorId: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new NotFoundException({ code: 'USER_NOT_FOUND', message: 'User tidak ditemukan' });
+    if (!user) throw new NotFoundException({ code: 'USER_NOT_FOUND', message: 'User not found' });
     const blocked = await this.prisma.user.update({
       where: { id },
       data: { status: 'BLOCKED' },
