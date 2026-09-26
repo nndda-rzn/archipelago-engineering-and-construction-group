@@ -24,15 +24,15 @@ export function LegalEntityListPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Legal Entities</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Badan hukum perusahaan (FR-FND-001)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Company legal entities (FR-FND-001)</p>
         </div>
-        <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Tutup' : '+ Tambah Entity'}</Button>
+        <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Close' : '+ Add Entity'}</Button>
       </div>
 
       {showForm && <LegalEntityForm onDone={() => setShowForm(false)} />}
 
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-        <DataGrid columns={legalEntityColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={setPagination} sorting={sorting} onSortingChange={setSorting} isLoading={isLoading} isError={isError} onRetry={() => refetch()} emptyMessage="Belum ada legal entity" exportFilename="legal-entities" />
+        <DataGrid columns={legalEntityColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={setPagination} sorting={sorting} onSortingChange={setSorting} isLoading={isLoading} isError={isError} onRetry={() => refetch()} emptyMessage="No legal entities yet" exportFilename="legal-entities" />
       </div>
     </div>
   );

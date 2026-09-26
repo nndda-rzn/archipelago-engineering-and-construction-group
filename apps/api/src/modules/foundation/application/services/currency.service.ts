@@ -12,7 +12,7 @@ export class CurrencyService {
 
   async createCurrency(dto: CreateCurrencyDto, actorId: string) {
     const exists = await this.prisma.currency.findUnique({ where: { code: dto.code } });
-    if (exists) throw new ConflictException({ code: 'CURRENCY_EXISTS', message: 'Mata uang sudah ada' });
+    if (exists) throw new ConflictException({ code: 'CURRENCY_EXISTS', message: 'Currency already exists' });
 
     const currency = await this.prisma.currency.create({
       data: { code: dto.code, name: dto.name, symbol: dto.symbol ?? '', decimals: dto.decimals ?? 2 },
@@ -28,11 +28,11 @@ export class CurrencyService {
 
   async createExchangeRate(dto: CreateExchangeRateDto, actorId: string) {
     if (dto.fromCurrencyId === dto.toCurrencyId) {
-      throw new ConflictException({ code: 'SAME_CURRENCY', message: 'Mata uang asal dan tujuan harus berbeda' });
+      throw new ConflictException({ code: 'SAME_CURRENCY', message: 'Source and target currency must be different' });
     }
     const from = await this.prisma.currency.findUnique({ where: { id: dto.fromCurrencyId } });
     const to = await this.prisma.currency.findUnique({ where: { id: dto.toCurrencyId } });
-    if (!from || !to) throw new NotFoundException({ code: 'CURRENCY_NOT_FOUND', message: 'Mata uang tidak ditemukan' });
+    if (!from || !to) throw new NotFoundException({ code: 'CURRENCY_NOT_FOUND', message: 'Currency not found' });
 
     const rate = await this.prisma.exchangeRate.create({
       data: { fromCurrencyId: dto.fromCurrencyId, toCurrencyId: dto.toCurrencyId, rateType: dto.rateType, rate: dto.rate, effectiveDate: dto.effectiveDate ? new Date(dto.effectiveDate) : new Date() },
@@ -54,14 +54,14 @@ export class CurrencyService {
     const asOfDate = asOf ? new Date(asOf) : new Date();
     const from = await this.prisma.currency.findUnique({ where: { code: fromCurrencyCode } });
     const to = await this.prisma.currency.findUnique({ where: { code: toCurrencyCode } });
-    if (!from || !to) throw new NotFoundException({ code: 'CURRENCY_NOT_FOUND', message: 'Mata uang tidak ditemukan' });
+    if (!from || !to) throw new NotFoundException({ code: 'CURRENCY_NOT_FOUND', message: 'Currency not found' });
 
     const rate = await this.prisma.exchangeRate.findFirst({
       where: { fromCurrencyId: from.id, toCurrencyId: to.id, effectiveDate: { lte: asOfDate } },
       orderBy: { effectiveDate: 'desc' },
     });
 
-    if (!rate) return { from: fromCurrencyCode, to: toCurrencyCode, amount, converted: null, rate: null, note: 'Rate tidak ditemukan', asOf: asOfDate.toISOString() };
+    if (!rate) return { from: fromCurrencyCode, to: toCurrencyCode, amount, converted: null, rate: null, note: 'Exchange rate not found', asOf: asOfDate.toISOString() };
 
     const converted = amount * Number(rate.rate);
     return { from: fromCurrencyCode, to: toCurrencyCode, amount, rate: Number(rate.rate), rateType: rate.rateType, converted: Math.round(converted * 100) / 100, asOf: asOfDate.toISOString() };

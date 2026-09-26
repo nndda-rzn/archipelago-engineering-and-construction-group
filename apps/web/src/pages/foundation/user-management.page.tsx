@@ -19,19 +19,19 @@ export function UserManagementPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">User Management</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Pengguna sistem &amp; assignment role (FR-FND-003)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">System users &amp; role assignment (FR-FND-003)</p>
         </div>
-        <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Tutup' : '+ Tambah User'}</Button>
+        <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Close' : '+ Add User'}</Button>
       </div>
 
       {showForm && <UserForm onDone={() => setShowForm(false)} />}
 
       <div className="mb-4 w-64">
-        <Input type="search" placeholder="Cari username, nama, email..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <Input type="search" placeholder="Search username, name, email..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-        <DataGrid columns={userColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={onPaginationChange} sorting={sorting} onSortingChange={setSorting} isLoading={isLoading} isError={isError} onRetry={() => refetch()} emptyMessage="Belum ada user" exportFilename="users" />
+        <DataGrid columns={userColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={onPaginationChange} sorting={sorting} onSortingChange={setSorting} isLoading={isLoading} isError={isError} onRetry={() => refetch()} emptyMessage="No users yet" exportFilename="users" />
       </div>
     </div>
   );

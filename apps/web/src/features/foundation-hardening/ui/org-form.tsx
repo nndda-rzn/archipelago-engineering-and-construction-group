@@ -7,7 +7,7 @@ import { useCreateOrganization } from '../model/foundation-hardening.api';
 import { useLegalEntities } from '@/entities/legal-entity';
 
 const formSchema = z.object({
-  legalEntityId: z.string().min(1, 'Entity wajib dipilih'),
+  legalEntityId: z.string().min(1, 'Entity is required'),
   name: createOrganizationSchema.shape.name,
   orgType: createOrganizationSchema.shape.orgType,
 });
@@ -31,7 +31,7 @@ export function OrgForm() {
           <Controller name="legalEntityId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="orgf-entity">
-                <SelectValue placeholder="Pilih…" />
+                <SelectValue placeholder="Select…" />
               </SelectTrigger>
               <SelectContent>
                 {(entities?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code}</SelectItem>)}
@@ -41,12 +41,12 @@ export function OrgForm() {
           {errors.legalEntityId && <p className="mt-1 text-caption text-destructive-600">{errors.legalEntityId.message}</p>}
         </div>
         <div className="flex-1">
-          <Label htmlFor="orgf-name">Nama <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="orgf-name">Name <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="orgf-name" error={!!errors.name} {...register('name')} />
           {errors.name && <p className="mt-1 text-caption text-destructive-600">{errors.name.message}</p>}
         </div>
         <div>
-          <Label htmlFor="orgf-type">Tipe</Label>
+          <Label htmlFor="orgf-type">Type</Label>
           <Controller name="orgType" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="orgf-type">
@@ -59,10 +59,10 @@ export function OrgForm() {
           )} />
         </div>
         <Button type="submit" loading={create.isPending}>
-          Buat
+          Create
         </Button>
       </div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600" role="alert">Gagal menyimpan. Periksa kembali data.</p>}
+      {create.isError && <p className="mt-2 text-caption text-destructive-600" role="alert">Failed to save. Check the data again.</p>}
     </form>
   );
 }

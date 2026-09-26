@@ -50,13 +50,13 @@ export function LoginPage() {
 
         <div>
           <h1 className="max-w-md text-h1 font-semibold leading-snug text-white">
-            Enterprise operating system untuk konstruksi &amp; EPC.
+            Enterprise operating system for construction &amp; EPC.
           </h1>
           <p className="mt-3 max-w-md text-body-sm text-neutral-400">
-            Project-centric, finansial terintegrasi: dari tender, kontrak, pengadaan, konstruksi, hingga laporan keuangan konsolidasi.
+            Project-centric with integrated finance: from tender, contract, and procurement to construction and consolidated financial reporting.
           </p>
           <ul className="mt-6 space-y-2 text-body-sm text-neutral-300">
-            {['Golden flow: klien ke proyek ke laporan', 'Maker-checker & approval workflow', 'Project health, EVM, dan treasury'].map((item) => (
+            {['Golden flow: client to project to report', 'Maker-checker & approval workflow', 'Project health, EVM, and treasury'].map((item) => (
               <li key={item} className="flex items-center gap-2">
                 <HardHat className="h-4 w-4 shrink-0 text-racing-red-400" aria-hidden="true" />
                 {item}
@@ -78,8 +78,8 @@ export function LoginPage() {
             </div>
           </div>
 
-          <h2 className="text-h1 text-neutral-950">Masuk</h2>
-          <p className="mt-1 text-body-sm text-neutral-500">Gunakan akun Anda untuk mengakses sistem.</p>
+          <h2 className="text-h1 text-neutral-950">Sign in</h2>
+          <p className="mt-1 text-body-sm text-neutral-500">Use your account to access the system.</p>
 
           <form onSubmit={onSubmit} noValidate className="mt-6 flex flex-col gap-4">
             <div>
@@ -89,7 +89,7 @@ export function LoginPage() {
                 type="email"
                 autoComplete="email"
                 spellCheck={false}
-                placeholder="nama@perusahaan.com"
+                placeholder="name@company.com"
                 error={!!errors.email}
                 {...register('email')}
               />
@@ -104,14 +104,14 @@ export function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   spellCheck={false}
-                  placeholder="Masukkan password…"
+                  placeholder="Enter your password…"
                   error={!!errors.password}
                   className="pr-10"
                   {...register('password')}
                 />
                 <button
                   type="button"
-                  aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   onClick={() => setShowPassword((s) => !s)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-neutral-500 transition-colors duration-fast hover:bg-neutral-100 hover:text-neutral-700"
                 >
@@ -124,7 +124,7 @@ export function LoginPage() {
             {login.isError && (
               <div className="rounded-md border border-destructive-200 bg-destructive-50 px-3 py-2">
                 <p className="text-body-sm text-destructive-700">
-                  {login.error instanceof Error ? login.error.message : 'Login gagal. Periksa email dan password Anda.'}
+                  {login.error instanceof Error ? login.error.message : 'Sign in failed. Check your email and password.'}
                 </p>
                 {login.error instanceof Error && 'code' in login.error && (
                   <p
@@ -138,12 +138,12 @@ export function LoginPage() {
             )}
 
             <Button type="submit" className="mt-2 w-full" loading={login.isPending}>
-              Masuk
+              Sign in
             </Button>
           </form>
 
           <div className="mt-8">
-            <p className="text-caption font-medium uppercase tracking-wide text-neutral-500">Akun demo</p>
+            <p className="text-caption font-medium uppercase tracking-wide text-neutral-500">Demo accounts</p>
             <div className="mt-2 space-y-2">
               {DEMO_CREDENTIALS.map((c) => (
                 <button
@@ -157,7 +157,7 @@ export function LoginPage() {
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-caption text-neutral-500">Klik untuk mengisi otomatis.</p>
+            <p className="mt-2 text-caption text-neutral-500">Click to autofill.</p>
           </div>
         </div>
       </div>

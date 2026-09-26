@@ -32,11 +32,11 @@ export class AuthService {
           userId: user.id,
           action: 'AUTH.LOGIN_FAILED',
           resource: 'Auth',
-          reason: 'Password salah',
+          reason: 'Incorrect password',
           source: 'api',
         });
       }
-      throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Email atau password salah' });
+      throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Incorrect email or password' });
     }
 
     await this.prisma.user.update({
@@ -65,7 +65,7 @@ export class AuthService {
       include: { userRoles: { include: { role: true } } },
     });
     if (!user || user.status !== 'ACTIVE') {
-      throw new UnauthorizedException({ code: 'USER_INACTIVE', message: 'User tidak aktif' });
+      throw new UnauthorizedException({ code: 'USER_INACTIVE', message: 'User is inactive' });
     }
     const roles = user.userRoles.filter((assignment) => assignment.role.status === 'ACTIVE').map((assignment) => assignment.role.code);
     return { id: user.id, email: user.email, username: user.username, displayName: user.displayName, roles };

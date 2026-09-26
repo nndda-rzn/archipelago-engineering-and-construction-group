@@ -12,10 +12,10 @@ const currencySchema = z.object({
 type CurrencyValues = z.infer<typeof currencySchema>;
 
 const rateSchema = z.object({
-  fromCurrencyId: z.string().min(1, 'Mata uang asal wajib dipilih'),
-  toCurrencyId: z.string().min(1, 'Mata uang tujuan wajib dipilih'),
+  fromCurrencyId: z.string().min(1, 'Source currency is required'),
+  toCurrencyId: z.string().min(1, 'Target currency is required'),
   rateType: createExchangeRateSchema.shape.rateType,
-  rate: z.string().min(1, 'Rate wajib diisi').refine((v) => !Number.isNaN(Number(v)), 'Rate harus berupa angka'),
+  rate: z.string().min(1, 'Rate is required').refine((v) => !Number.isNaN(Number(v)), 'Rate must be a number'),
 });
 type RateValues = z.infer<typeof rateSchema>;
 
@@ -47,28 +47,28 @@ export function CurrencyForm({ currencies }: { currencies: Array<{ id: string; c
       <form onSubmit={onCurrencySubmit}>
         <div className="flex items-end gap-3">
           <div>
-            <Label htmlFor="cur-code">Kode <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+            <Label htmlFor="cur-code">Code <span aria-hidden="true" className="text-destructive-600">*</span></Label>
             <Input id="cur-code" placeholder="USD" className="w-24" error={!!currencyForm.formState.errors.code} {...currencyForm.register('code')} />
             {currencyForm.formState.errors.code && <p className="mt-1 text-caption text-destructive-600">{currencyForm.formState.errors.code.message}</p>}
           </div>
           <div className="flex-1">
-            <Label htmlFor="cur-name">Nama <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+            <Label htmlFor="cur-name">Name <span aria-hidden="true" className="text-destructive-600">*</span></Label>
             <Input id="cur-name" error={!!currencyForm.formState.errors.name} {...currencyForm.register('name')} />
             {currencyForm.formState.errors.name && <p className="mt-1 text-caption text-destructive-600">{currencyForm.formState.errors.name.message}</p>}
           </div>
           <Button type="submit" loading={createCurrency.isPending}>
-            Buat Mata Uang
+            Create Currency
           </Button>
         </div>
       </form>
       <form onSubmit={onRateSubmit} className="mt-4 border-t border-neutral-100 pt-4">
         <div className="flex items-end gap-3">
           <div>
-            <Label htmlFor="rate-from">Dari <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+            <Label htmlFor="rate-from">From <span aria-hidden="true" className="text-destructive-600">*</span></Label>
             <Controller name="fromCurrencyId" control={rateForm.control} render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger id="rate-from">
-                  <SelectValue placeholder="Pilih…" />
+                  <SelectValue placeholder="Select…" />
                 </SelectTrigger>
                 <SelectContent>
                   {currencies.map((c) => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}
@@ -78,11 +78,11 @@ export function CurrencyForm({ currencies }: { currencies: Array<{ id: string; c
             {rateForm.formState.errors.fromCurrencyId && <p className="mt-1 text-caption text-destructive-600">{rateForm.formState.errors.fromCurrencyId.message}</p>}
           </div>
           <div>
-            <Label htmlFor="rate-to">Ke <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+            <Label htmlFor="rate-to">To <span aria-hidden="true" className="text-destructive-600">*</span></Label>
             <Controller name="toCurrencyId" control={rateForm.control} render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger id="rate-to">
-                  <SelectValue placeholder="Pilih…" />
+                  <SelectValue placeholder="Select…" />
                 </SelectTrigger>
                 <SelectContent>
                   {currencies.map((c) => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}
@@ -92,7 +92,7 @@ export function CurrencyForm({ currencies }: { currencies: Array<{ id: string; c
             {rateForm.formState.errors.toCurrencyId && <p className="mt-1 text-caption text-destructive-600">{rateForm.formState.errors.toCurrencyId.message}</p>}
           </div>
           <div>
-            <Label htmlFor="rate-type">Tipe</Label>
+            <Label htmlFor="rate-type">Type</Label>
             <Controller name="rateType" control={rateForm.control} render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger id="rate-type">
@@ -110,7 +110,7 @@ export function CurrencyForm({ currencies }: { currencies: Array<{ id: string; c
             {rateForm.formState.errors.rate && <p className="mt-1 text-caption text-destructive-600">{rateForm.formState.errors.rate.message}</p>}
           </div>
           <Button type="submit" loading={createRate.isPending}>
-            Catat Kurs
+            Record Rate
           </Button>
         </div>
       </form>

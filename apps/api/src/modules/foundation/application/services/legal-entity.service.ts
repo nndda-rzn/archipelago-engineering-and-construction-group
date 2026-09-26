@@ -48,7 +48,7 @@ export class LegalEntityService {
 
   async findOne(id: string) {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id } });
-    if (!entity) throw new NotFoundException({ code: 'LEGAL_ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });
+    if (!entity) throw new NotFoundException({ code: 'LEGAL_ENTITY_NOT_FOUND', message: 'Legal entity not found' });
     return entity;
   }
 
@@ -57,7 +57,7 @@ export class LegalEntityService {
       return await this.prisma.legalEntity.create({ data: dto });
     } catch (error) {
       if (this.isUniqueError(error)) {
-        throw new ConflictException({ code: 'LEGAL_ENTITY_EXISTS', message: 'Code atau tax identifier sudah digunakan' });
+        throw new ConflictException({ code: 'LEGAL_ENTITY_EXISTS', message: 'Code or tax identifier is already in use' });
       }
       throw error;
     }
@@ -69,7 +69,7 @@ export class LegalEntityService {
       return await this.prisma.legalEntity.update({ where: { id }, data: dto });
     } catch (error) {
       if (this.isUniqueError(error)) {
-        throw new ConflictException({ code: 'LEGAL_ENTITY_EXISTS', message: 'Code atau tax identifier sudah digunakan' });
+        throw new ConflictException({ code: 'LEGAL_ENTITY_EXISTS', message: 'Code or tax identifier is already in use' });
       }
       throw error;
     }

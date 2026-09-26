@@ -20,13 +20,13 @@ export class RoleService {
 
   async create(dto: CreateRoleDto) {
     const existing = await this.prisma.role.findUnique({ where: { code: dto.code } });
-    if (existing) throw new ConflictException({ code: 'ROLE_EXISTS', message: 'Kode role sudah digunakan' });
+    if (existing) throw new ConflictException({ code: 'ROLE_EXISTS', message: 'Role code is already in use' });
     return this.prisma.role.create({ data: dto });
   }
 
   async assignPermissions(id: string, dto: AssignPermissionsDto) {
     const role = await this.prisma.role.findUnique({ where: { id } });
-    if (!role) throw new NotFoundException({ code: 'ROLE_NOT_FOUND', message: 'Role tidak ditemukan' });
+    if (!role) throw new NotFoundException({ code: 'ROLE_NOT_FOUND', message: 'Role not found' });
 
     const permissions = await this.prisma.permission.findMany({
       where: { code: { in: dto.permissionCodes } },

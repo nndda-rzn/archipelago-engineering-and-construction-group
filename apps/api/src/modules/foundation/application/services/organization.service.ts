@@ -13,11 +13,11 @@ export class OrganizationService {
 
   async createOrganization(dto: CreateOrganizationDto, actorId: string) {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
-    if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });
+    if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity not found' });
 
     if (dto.parentId) {
       const parent = await this.prisma.organization.findUnique({ where: { id: dto.parentId } });
-      if (!parent) throw new NotFoundException({ code: 'PARENT_NOT_FOUND', message: 'Parent organization tidak ditemukan' });
+      if (!parent) throw new NotFoundException({ code: 'PARENT_NOT_FOUND', message: 'Parent organization not found' });
     }
 
     const org = await this.prisma.organization.create({
