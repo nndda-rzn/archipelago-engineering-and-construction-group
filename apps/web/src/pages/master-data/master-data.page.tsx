@@ -22,7 +22,7 @@ export function MasterDataPage() {
           <p className="mt-1 text-body-sm text-neutral-500">Vendor master + fiscal period (FR-PRO-010, FR-FND-010)</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>
-          {showForm ? 'Tutup' : '+ Buat Baru'}
+          {showForm ? 'Close' : '+ Create New'}
         </Button>
       </div>
 
@@ -44,8 +44,8 @@ export function MasterDataPage() {
       {showForm && tab === 'periods' && <PeriodForm onDone={() => setShowForm(false)} />}
 
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-        {tab === 'vendors' && <DataGrid columns={vendorColumns} data={vendors.data?.items ?? []} rowCount={vendors.data?.total ?? 0} isLoading={vendors.isLoading} isError={vendors.isError} onRetry={() => vendors.refetch()} emptyMessage="Belum ada vendor" {...gridProps} />}
-        {tab === 'periods' && <DataGrid columns={periodColumns} data={periods.data?.items ?? []} rowCount={periods.data?.total ?? 0} isLoading={periods.isLoading} isError={periods.isError} onRetry={() => periods.refetch()} emptyMessage="Belum ada fiscal period" {...gridProps} />}
+        {tab === 'vendors' && <DataGrid columns={vendorColumns} data={vendors.data?.items ?? []} rowCount={vendors.data?.total ?? 0} isLoading={vendors.isLoading} isError={vendors.isError} onRetry={() => vendors.refetch()} emptyMessage="No vendors yet" {...gridProps} />}
+        {tab === 'periods' && <DataGrid columns={periodColumns} data={periods.data?.items ?? []} rowCount={periods.data?.total ?? 0} isLoading={periods.isLoading} isError={periods.isError} onRetry={() => periods.refetch()} emptyMessage="No fiscal periods yet" {...gridProps} />}
       </div>
     </div>
   );

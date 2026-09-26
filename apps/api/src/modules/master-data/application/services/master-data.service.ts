@@ -57,7 +57,7 @@ export class MasterDataService {
     const start = new Date(dto.startDate);
     const end = new Date(dto.endDate);
     if (end <= start) {
-      throw new ConflictException({ code: 'INVALID_PERIOD', message: 'endDate harus setelah startDate' });
+      throw new ConflictException({ code: 'INVALID_PERIOD', message: 'endDate must be after startDate' });
     }
     const period = await this.prisma.fiscalPeriod.create({
       data: {
@@ -74,7 +74,7 @@ export class MasterDataService {
 
   async updateFiscalPeriodStatus(id: string, dto: UpdateFiscalPeriodStatusDto, actorId: string) {
     const period = await this.prisma.fiscalPeriod.findUnique({ where: { id } });
-    if (!period) throw new NotFoundException({ code: 'PERIOD_NOT_FOUND', message: 'Periode tidak ditemukan' });
+    if (!period) throw new NotFoundException({ code: 'PERIOD_NOT_FOUND', message: 'Fiscal period not found' });
     const updated = await this.prisma.fiscalPeriod.update({ where: { id }, data: { status: dto.status } });
     await this.audit.record({ userId: actorId, action: 'FiscalPeriod.STATUS', resource: 'FiscalPeriod', resourceId: id, newValue: { periodCode: period.periodCode, status: dto.status }, source: 'api' });
     return updated;

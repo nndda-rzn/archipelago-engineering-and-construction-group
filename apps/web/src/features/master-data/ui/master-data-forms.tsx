@@ -25,17 +25,17 @@ export function VendorForm({ onDone }: { onDone: () => void }) {
     <form onSubmit={onSubmit} className="mb-4 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="flex items-end gap-3">
         <div className="flex-1">
-          <Label htmlFor="vnd-name">Nama Vendor <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="vnd-name">Vendor Name <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="vnd-name" error={!!errors.name} {...register('name')} />
           {errors.name && <p className="mt-1 text-caption text-destructive-600">{errors.name.message}</p>}
         </div>
         <div>
-          <Label htmlFor="vnd-tax">NPWP</Label>
+          <Label htmlFor="vnd-tax">Tax ID</Label>
           <Input id="vnd-tax" error={!!errors.taxId} {...register('taxId')} />
           {errors.taxId && <p className="mt-1 text-caption text-destructive-600">{errors.taxId.message}</p>}
         </div>
         <div>
-          <Label htmlFor="vnd-cat">Kategori</Label>
+          <Label htmlFor="vnd-cat">Category</Label>
           <Controller name="category" control={control} render={({ field }) => (
             <Select value={field.value ?? ''} onValueChange={field.onChange}>
               <SelectTrigger id="vnd-cat">
@@ -47,9 +47,9 @@ export function VendorForm({ onDone }: { onDone: () => void }) {
             </Select>
           )} />
         </div>
-        <Button type="submit" loading={create.isPending}>Buat Vendor</Button>
+        <Button type="submit" loading={create.isPending}>Create Vendor</Button>
       </div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600" role="alert">Gagal menyimpan. Periksa kembali data.</p>}
+      {create.isError && <p className="mt-2 text-caption text-destructive-600" role="alert">Failed to save. Check the data again.</p>}
     </form>
   );
 }
@@ -78,23 +78,23 @@ export function PeriodForm({ onDone }: { onDone: () => void }) {
     <form onSubmit={onSubmit} className="mb-4 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="flex items-end gap-3">
         <div>
-          <Label htmlFor="fp-code">Kode (mis. 2026-09) <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="fp-code">Code (e.g. 2026-09) <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="fp-code" error={!!errors.periodCode} {...register('periodCode')} />
           {errors.periodCode && <p className="mt-1 text-caption text-destructive-600">{errors.periodCode.message}</p>}
         </div>
         <div>
-          <Label htmlFor="fp-start">Mulai <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="fp-start">Start <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="fp-start" type="date" error={!!errors.startDate} {...register('startDate')} />
           {errors.startDate && <p className="mt-1 text-caption text-destructive-600">{errors.startDate.message}</p>}
         </div>
         <div>
-          <Label htmlFor="fp-end">Selesai <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="fp-end">End <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="fp-end" type="date" error={!!errors.endDate} {...register('endDate')} />
           {errors.endDate && <p className="mt-1 text-caption text-destructive-600">{errors.endDate.message}</p>}
         </div>
-        <Button type="submit" loading={create.isPending}>Buat Periode</Button>
+        <Button type="submit" loading={create.isPending}>Create Period</Button>
       </div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600" role="alert">Gagal menyimpan. Periksa kembali data.</p>}
+      {create.isError && <p className="mt-2 text-caption text-destructive-600" role="alert">Failed to save. Check the data again.</p>}
     </form>
   );
 }
