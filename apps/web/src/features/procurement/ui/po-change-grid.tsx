@@ -17,10 +17,10 @@ function PoChangeApproveCell({ id, status }: { id: string; status: string }) {
 
 export const pcColumns = [
   pcHelper.accessor('changeNumber', { header: 'No.', cell: (i) => <span className="font-mono text-neutral-800">{i.getValue()}</span> }),
-  pcHelper.accessor('version', { header: 'Versi', cell: (i) => <span className="font-mono text-neutral-600">v{i.getValue()}</span> }),
-  pcHelper.accessor('previousTotal', { header: 'Sebelum', cell: (i) => <span className="font-mono tabular-nums text-neutral-700">{fmt(i.getValue())}</span> }),
-  pcHelper.accessor('newTotal', { header: 'Sesudah', cell: (i) => <span className="font-mono tabular-nums text-neutral-800">{fmt(i.getValue())}</span> }),
-  pcHelper.accessor('reason', { header: 'Alasan', cell: (i) => <span className="max-w-[200px] truncate text-neutral-600">{i.getValue()}</span> }),
+  pcHelper.accessor('version', { header: 'Version', cell: (i) => <span className="font-mono text-neutral-600">v{i.getValue()}</span> }),
+  pcHelper.accessor('previousTotal', { header: 'Before', cell: (i) => <span className="font-mono tabular-nums text-neutral-700">{fmt(i.getValue())}</span> }),
+  pcHelper.accessor('newTotal', { header: 'After', cell: (i) => <span className="font-mono tabular-nums text-neutral-800">{fmt(i.getValue())}</span> }),
+  pcHelper.accessor('reason', { header: 'Reason', cell: (i) => <span className="max-w-[200px] truncate text-neutral-600">{i.getValue()}</span> }),
   pcHelper.accessor('status', { header: 'Status', cell: (i) => <StatusBadge status={i.getValue()} /> }),
   pcHelper.display({ id: 'actions', header: '', cell: ({ row }) => <PoChangeApproveCell id={row.original.id} status={row.original.status} /> }),
 ];

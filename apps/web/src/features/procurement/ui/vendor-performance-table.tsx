@@ -3,7 +3,7 @@ import type { VendorPerformance } from '@/features/procurement';
 export function VendorPerformanceSummaryTable({ items }: { items: VendorPerformance['items'] }) {
   return (
     <div className="mb-4 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-      <h3 className="text-h3 text-neutral-900">Ringkasan Performance Vendor</h3>
+      <h3 className="text-h3 text-neutral-900">Vendor Performance Summary</h3>
       <div className="mt-3 overflow-x-auto">
         <table className="w-full text-left text-body">
           <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
@@ -36,7 +36,7 @@ export function VendorPerformanceSummaryTable({ items }: { items: VendorPerforma
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-4 text-caption text-neutral-500">Belum ada rating vendor.</td>
+                <td colSpan={7} className="px-4 py-4 text-caption text-neutral-500">No vendor ratings yet.</td>
               </tr>
             )}
           </tbody>

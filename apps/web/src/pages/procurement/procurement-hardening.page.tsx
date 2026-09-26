@@ -20,7 +20,7 @@ export function ProcurementHardeningPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-h1 text-neutral-950">Procurement Hardening</h1>
-        <p className="mt-1 text-body-sm text-neutral-500">Budget check, technical/commercial eval, PO change, vendor performance (Fase 11E)</p>
+        <p className="mt-1 text-body-sm text-neutral-500">Budget check, technical/commercial eval, PO change, vendor performance (Phase 11E)</p>
       </div>
 
       <div className="mb-4 flex gap-2">

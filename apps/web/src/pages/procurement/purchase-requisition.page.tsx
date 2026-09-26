@@ -15,13 +15,13 @@ export function PurchaseRequisitionPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Purchase Requisition</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Permintaan pembelian (FR-PRO-001)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Purchase requisition (FR-PRO-001)</p>
         </div>
-        <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Tutup' : '+ Buat PR'}</Button>
+        <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Close' : '+ Create PR'}</Button>
       </div>
       {showForm && <PurchaseRequisitionForm onDone={() => setShowForm(false)} />}
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-        <DataGrid columns={purchaseRequisitionColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={onPaginationChange} isLoading={isLoading} isError={isError} onRetry={() => refetch()} emptyMessage="Belum ada PR" exportFilename="purchase-requisitions" />
+        <DataGrid columns={purchaseRequisitionColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={onPaginationChange} isLoading={isLoading} isError={isError} onRetry={() => refetch()} emptyMessage="No PRs yet" exportFilename="purchase-requisitions" />
       </div>
     </div>
   );

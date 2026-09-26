@@ -10,7 +10,7 @@ import { useWbsTree } from '@/entities/wbs';
 import { UnsavedGuard } from '@/shared/lib/unsaved-guard';
 
 const formSchema = z.object({
-  projectId: z.string().min(1, 'Project wajib dipilih'),
+  projectId: z.string().min(1, 'Project is required'),
   wbsItemId: z.string(),
   requestedBy: createPrSchema.shape.requestedBy,
   items: z.array(z.object({
@@ -18,7 +18,7 @@ const formSchema = z.object({
     quantity: z.string(),
     unit: z.string(),
     estimatedUnitPrice: z.string(),
-  })).refine((items) => items.some((i) => i.description.trim() !== ''), 'Minimal satu item harus diisi'),
+  })).refine((items) => items.some((i) => i.description.trim() !== ''), 'At least one item is required'),
 });
 type FormValues = z.infer<typeof formSchema>;
 
@@ -54,7 +54,7 @@ export function PurchaseRequisitionForm({ onDone }: { onDone: () => void }) {
           <Label htmlFor="pr-project">Project <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="projectId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={(v) => { field.onChange(v); replace([{ ...emptyItem }]); }}>
-              <SelectTrigger id="pr-project"><SelectValue placeholder="Pilih project…" /></SelectTrigger>
+              <SelectTrigger id="pr-project"><SelectValue placeholder="Select project…" /></SelectTrigger>
               <SelectContent>
                 {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
               </SelectContent>
@@ -63,10 +63,10 @@ export function PurchaseRequisitionForm({ onDone }: { onDone: () => void }) {
           {errors.projectId && <p className="mt-1 text-caption text-destructive-600">{errors.projectId.message}</p>}
         </div>
         <div>
-          <Label htmlFor="pr-wbs">WBS (opsional)</Label>
+          <Label htmlFor="pr-wbs">WBS (optional)</Label>
           <Controller name="wbsItemId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange} disabled={!projectId}>
-              <SelectTrigger id="pr-wbs"><SelectValue placeholder="Tanpa WBS" /></SelectTrigger>
+              <SelectTrigger id="pr-wbs"><SelectValue placeholder="No WBS" /></SelectTrigger>
               <SelectContent>
                 {flattenWbs(wbsTree ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{w.code} {w.name}</SelectItem>)}
               </SelectContent>
@@ -74,8 +74,8 @@ export function PurchaseRequisitionForm({ onDone }: { onDone: () => void }) {
           )} />
         </div>
         <div>
-          <Label htmlFor="pr-requested">Diminta Oleh <span aria-hidden="true" className="text-destructive-600">*</span></Label>
-          <Input id="pr-requested" placeholder="Nama pemohon" error={!!errors.requestedBy} {...register('requestedBy')} />
+          <Label htmlFor="pr-requested">Requested By <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Input id="pr-requested" placeholder="Requester name" error={!!errors.requestedBy} {...register('requestedBy')} />
           {errors.requestedBy && <p className="mt-1 text-caption text-destructive-600">{errors.requestedBy.message}</p>}
         </div>
       </div>
@@ -83,18 +83,18 @@ export function PurchaseRequisitionForm({ onDone }: { onDone: () => void }) {
         <div className="mb-2 text-body-sm font-medium text-neutral-700">Item</div>
         {fields.map((field, idx) => (
           <div key={field.id} className="mb-2 grid grid-cols-12 gap-2">
-            <Input className="col-span-5" placeholder="Deskripsi item" {...register(`items.${idx}.description`)} />
+            <Input className="col-span-5" placeholder="Item description" {...register(`items.${idx}.description`)} />
             <Input className="col-span-2" type="number" placeholder="Qty" {...register(`items.${idx}.quantity`)} />
             <Input className="col-span-2" placeholder="Unit" {...register(`items.${idx}.unit`)} />
-            <Input className="col-span-2" type="number" placeholder="Est. harga" {...register(`items.${idx}.estimatedUnitPrice`)} />
-            <Button className="col-span-1" variant="ghost" size="icon" type="button" aria-label="Hapus item" onClick={() => remove(idx)}><Trash2 className="h-4 w-4" aria-hidden="true" /></Button>
+            <Input className="col-span-2" type="number" placeholder="Est. price" {...register(`items.${idx}.estimatedUnitPrice`)} />
+            <Button className="col-span-1" variant="ghost" size="icon" type="button" aria-label="Remove item" onClick={() => remove(idx)}><Trash2 className="h-4 w-4" aria-hidden="true" /></Button>
           </div>
         ))}
         {errors.items && <p className="mb-2 text-caption text-destructive-600">{errors.items.message}</p>}
-        <Button type="button" variant="secondary" size="sm" onClick={() => append({ ...emptyItem })}><Plus className="h-4 w-4" aria-hidden="true" /> Tambah Item</Button>
+        <Button type="button" variant="secondary" size="sm" onClick={() => append({ ...emptyItem })}><Plus className="h-4 w-4" aria-hidden="true" /> Add Item</Button>
       </div>
-      <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Batal</Button><Button type="submit" loading={create.isPending}>Simpan PR</Button></div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600">Gagal membuat PR.</p>}
+      <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Cancel</Button><Button type="submit" loading={create.isPending}>Save PR</Button></div>
+      {create.isError && <p className="mt-2 text-caption text-destructive-600">Failed to create the PR.</p>}
     </form>
   );
 }

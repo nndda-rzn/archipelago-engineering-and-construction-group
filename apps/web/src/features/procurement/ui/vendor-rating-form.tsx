@@ -9,10 +9,10 @@ import { useVendors } from '@/features/master-data';
 const CATEGORIES = ['DELIVERY', 'QUALITY', 'COMMERCIAL', 'HSE', 'RESPONSIVENESS'] as const;
 
 const formSchema = z.object({
-  vendorId: z.string().min(1, 'Vendor wajib dipilih'),
+  vendorId: z.string().min(1, 'Vendor is required'),
   projectId: z.string(),
   category: z.enum(['DELIVERY', 'QUALITY', 'COMMERCIAL', 'HSE', 'RESPONSIVENESS']),
-  score: z.string().refine((v) => v !== '', 'Skor wajib dipilih'),
+  score: z.string().refine((v) => v !== '', 'Score is required'),
   remark: z.string().max(1000),
 });
 type FormValues = z.infer<typeof formSchema>;
@@ -35,14 +35,14 @@ export function VendorRatingForm() {
 
   return (
     <form onSubmit={onSubmit} className="mb-4 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-      <h3 className="mb-3 text-h3 text-neutral-900">Beri Rating Vendor</h3>
+      <h3 className="mb-3 text-h3 text-neutral-900">Rate Vendor</h3>
       <div className="flex flex-wrap items-end gap-3">
         <div>
           <Label htmlFor="vr-vendor">Vendor <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="vendorId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="vr-vendor">
-                <SelectValue placeholder="Pilih vendor…" />
+                <SelectValue placeholder="Select vendor…" />
               </SelectTrigger>
               <SelectContent>
                 {(vendors.data?.items ?? []).map((v) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
@@ -52,11 +52,11 @@ export function VendorRatingForm() {
           {errors.vendorId && <p className="mt-1 text-caption text-destructive-600">{errors.vendorId.message}</p>}
         </div>
         <div>
-          <Label htmlFor="vr-project">Project (opsional)</Label>
+          <Label htmlFor="vr-project">Project (optional)</Label>
           <Controller name="projectId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="vr-project">
-                <SelectValue placeholder="Semua" />
+                <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
                 {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
@@ -65,7 +65,7 @@ export function VendorRatingForm() {
           )} />
         </div>
         <div>
-          <Label htmlFor="vr-category">Kategori</Label>
+          <Label htmlFor="vr-category">Category</Label>
           <Controller name="category" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="vr-category">
@@ -78,7 +78,7 @@ export function VendorRatingForm() {
           )} />
         </div>
         <div>
-          <Label htmlFor="vr-score">Skor <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="vr-score">Score <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="score" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="vr-score">
@@ -92,12 +92,12 @@ export function VendorRatingForm() {
           {errors.score && <p className="mt-1 text-caption text-destructive-600">{errors.score.message}</p>}
         </div>
         <div className="flex-1">
-          <Label htmlFor="vr-remark">Catatan</Label>
+          <Label htmlFor="vr-remark">Remark</Label>
           <Input id="vr-remark" {...register('remark')} />
         </div>
-        <Button type="submit" loading={create.isPending}>Beri Rating</Button>
+        <Button type="submit" loading={create.isPending}>Submit Rating</Button>
       </div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600">Gagal memberi rating.</p>}
+      {create.isError && <p className="mt-2 text-caption text-destructive-600">Failed to submit the rating.</p>}
     </form>
   );
 }

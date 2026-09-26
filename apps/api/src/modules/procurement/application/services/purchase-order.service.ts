@@ -16,9 +16,9 @@ export class PurchaseOrderService {
       where: { id: dto.requisitionId },
       include: { items: true },
     });
-    if (!pr) throw new NotFoundException({ code: 'PR_NOT_FOUND', message: 'Purchase Requisition tidak ditemukan' });
+    if (!pr) throw new NotFoundException({ code: 'PR_NOT_FOUND', message: 'Purchase requisition not found' });
     if (pr.status !== 'APPROVED') {
-      throw new ConflictException({ code: 'PR_NOT_APPROVED', message: 'PR harus APPROVED sebelum jadi PO' });
+      throw new ConflictException({ code: 'PR_NOT_APPROVED', message: 'PR must be APPROVED before it can become a PO' });
     }
 
     const totalAmount = pr.items.reduce(
@@ -92,9 +92,9 @@ export class PurchaseOrderService {
 
   async releasePo(id: string, actorId: string) {
     const po = await this.prisma.purchaseOrder.findUnique({ where: { id } });
-    if (!po) throw new NotFoundException({ code: 'PO_NOT_FOUND', message: 'PO tidak ditemukan' });
+    if (!po) throw new NotFoundException({ code: 'PO_NOT_FOUND', message: 'PO not found' });
     if (po.status !== 'APPROVED') {
-      throw new ConflictException({ code: 'PO_NOT_APPROVED', message: 'PO harus APPROVED sebelum release' });
+      throw new ConflictException({ code: 'PO_NOT_APPROVED', message: 'PO must be APPROVED before release' });
     }
 
     // Compare-and-set pada status: cegah double-release saat dua approve/release paralel.
@@ -103,7 +103,7 @@ export class PurchaseOrderService {
       data: { status: 'RELEASED', issuedAt: new Date(), releasedBy: actorId },
     });
     if (cas.count === 0) {
-      throw new ConflictException({ code: 'PO_NOT_APPROVED', message: 'PO sudah di-release atau bukan APPROVED' });
+      throw new ConflictException({ code: 'PO_NOT_APPROVED', message: 'PO is already released or is not APPROVED' });
     }
     const released = await this.prisma.purchaseOrder.findUniqueOrThrow({ where: { id } });
 
