@@ -48,7 +48,7 @@ export class EstimateService {
       AWARD_RECONCILED: [],
     };
     if (!(allowed[estimate.status] ?? []).includes(status)) {
-      throw new ConflictException({ code: 'INVALID_TRANSITION', message: `Transisi ${estimate.status} → ${status} tidak valid` });
+      throw new ConflictException({ code: 'INVALID_TRANSITION', message: `Transition ${estimate.status} → ${status} is not valid` });
     }
 
     const updated = await this.prisma.estimate.update({ where: { id }, data: { status } });
@@ -72,7 +72,7 @@ export class EstimateService {
     const exists = await this.prisma.pricingScenario.findUnique({
       where: { estimateId_scenarioType: { estimateId, scenarioType: dto.scenarioType } },
     });
-    if (exists) throw new ConflictException({ code: 'SCENARIO_EXISTS', message: `Scenario ${dto.scenarioType} sudah ada di estimate ini` });
+    if (exists) throw new ConflictException({ code: 'SCENARIO_EXISTS', message: `Scenario ${dto.scenarioType} already exists on this estimate` });
 
     const scenario = await this.prisma.pricingScenario.create({
       data: { estimateId, scenarioType: dto.scenarioType, amount: dto.amount, marginPct: dto.marginPct ?? 0, note: dto.note ?? null },

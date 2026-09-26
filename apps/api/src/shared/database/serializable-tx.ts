@@ -63,19 +63,19 @@ export async function withSerializableRetry<T>(
     } catch (err) {
       if (!isRetryable(err) || attempt >= maxAttempts) {
         if (isRetryable(err)) {
-          logger.warn(`${opts.label}: retry habis setelah ${attempt} percobaan`);
+          logger.warn(`${opts.label}: retries exhausted after ${attempt} attempts`);
           // PrismaPg may surface 40001 at COMMIT as DriverAdapterError rather
           // than P2034; the global filter only recognizes the latter. Normalize
           // both after the final retry so callers never receive a generic 500.
           throw new ConflictException({
             code: 'RETRY_CONFLICT',
-            message: 'Konflik transaksi bersamaan, silakan coba lagi',
+            message: 'Concurrent transaction conflict, please retry',
           });
         }
         throw err;
       }
       const backoff = baseDelayMs * 2 ** (attempt - 1) + Math.floor(Math.random() * baseDelayMs);
-      logger.warn(`${opts.label}: konflik serialisasi, retry ${attempt + 1}/${maxAttempts} dalam ${backoff}ms`);
+      logger.warn(`${opts.label}: serialization conflict, retry ${attempt + 1}/${maxAttempts} in ${backoff}ms`);
       await sleep(backoff);
     }
   }

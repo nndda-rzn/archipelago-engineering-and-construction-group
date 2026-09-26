@@ -17,7 +17,7 @@ export class BidDecisionService {
 
     const existing = await this.prisma.bidDecision.findUnique({ where: { opportunityId } });
     if (existing && existing.decision !== 'PENDING') {
-      throw new ConflictException({ code: 'BID_ALREADY_DECIDED', message: `Bid decision sudah dibuat (${existing.decision})` });
+      throw new ConflictException({ code: 'BID_ALREADY_DECIDED', message: `Bid decision already made (${existing.decision})` });
     }
 
     const decision = await this.prisma.bidDecision.upsert({

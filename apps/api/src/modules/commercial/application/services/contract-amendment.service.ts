@@ -41,7 +41,7 @@ export class ContractAmendmentService {
     const amendment = await this.prisma.contractAmendment.findUnique({ where: { id }, include: { contract: true } });
     if (!amendment) throw new NotFoundException({ code: 'AMENDMENT_NOT_FOUND', message: 'Amendment not found' });
     if (amendment.status !== 'DRAFT') {
-      throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa dieksekusi (${amendment.status})` });
+      throw new ConflictException({ code: 'NOT_DRAFT', message: `Only DRAFT can be executed (${amendment.status})` });
     }
 
     const [executed, updatedContract] = await this.prisma.$transaction([

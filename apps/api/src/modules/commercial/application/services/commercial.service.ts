@@ -155,7 +155,7 @@ export class CommercialService {
     const contract = await this.prisma.contract.findUnique({ where: { id } });
     if (!contract) throw new NotFoundException({ code: 'CONTRACT_NOT_FOUND', message: 'Contract not found' });
     if (contract.status !== 'DRAFT') {
-      throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa dieksekusi (${contract.status})` });
+      throw new ConflictException({ code: 'NOT_DRAFT', message: `Only DRAFT can be executed (${contract.status})` });
     }
     const executed = await this.prisma.contract.update({
       where: { id },
