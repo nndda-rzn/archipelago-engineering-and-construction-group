@@ -1,4 +1,4 @@
-import { Badge, Button, StatusBadge } from '@aec/ui';
+import { Badge, Button, EmptyCell, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useUpdateFiscalPeriodStatus } from '../model/master-data.api';
 import type { FiscalPeriod, Vendor } from '@aec/api-contracts';
@@ -18,7 +18,7 @@ export const vendorColumns = [
   }),
   vendorHelper.accessor('taxId', {
     header: 'NPWP',
-    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? '-'}</span>,
+    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   vendorHelper.accessor('category', {
     header: 'Kategori',
@@ -26,7 +26,7 @@ export const vendorColumns = [
   }),
   vendorHelper.accessor('contactPerson', {
     header: 'Kontak',
-    cell: (info) => <span className="text-neutral-600">{info.getValue() ?? '-'}</span>,
+    cell: (info) => <span className="text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   vendorHelper.accessor('status', {
     header: 'Status',

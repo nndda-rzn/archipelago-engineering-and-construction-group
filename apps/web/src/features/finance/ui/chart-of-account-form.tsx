@@ -78,7 +78,7 @@ export function CoaForm({ onDone, entityId }: { onDone: () => void; entityId: st
       </div>
       <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Batal</Button><Button type="submit" loading={create.isPending}>Simpan Akun</Button></div>
       {create.isError && <p className="mt-2 text-caption text-destructive-600">Kode akun sudah ada / data tidak valid.</p>}
-      {accounts && accounts.length > 0 && <p className="mt-3 text-caption text-neutral-500">{accounts.length} akun terdaftar — format kode: 1xxx Aset, 2xxx Liabilitas, 3xxx Ekuitas, 4xxx Pendapatan, 6xxx Beban.</p>}
+      {accounts && accounts.length > 0 && <p className="mt-3 text-caption text-neutral-500">{accounts.length} akun terdaftar · format kode: 1xxx Aset, 2xxx Liabilitas, 3xxx Ekuitas, 4xxx Pendapatan, 6xxx Beban.</p>}
     </form>
   );
 }

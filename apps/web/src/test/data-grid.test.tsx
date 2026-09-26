@@ -18,20 +18,20 @@ const rows: Row[] = [
 describe('DataGrid', () => {
   it('render skeleton saat isLoading', () => {
     render(<DataGrid columns={columns} data={[]} isLoading />);
-    expect(screen.getByLabelText('Memuat data')).toBeTruthy();
+    expect(screen.getByLabelText('Loading data')).toBeTruthy();
   });
 
   it('render error state + retry memanggil onRetry', () => {
     const onRetry = vi.fn();
     render(<DataGrid columns={columns} data={[]} isError onRetry={onRetry} />);
-    expect(screen.getByText('Gagal memuat data')).toBeTruthy();
-    fireEvent.click(screen.getByText('Coba lagi'));
+    expect(screen.getByText('Failed to load data')).toBeTruthy();
+    fireEvent.click(screen.getByText('Try again'));
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
   it('render emptyMessage saat data kosong', () => {
-    render(<DataGrid columns={columns} data={[]} emptyMessage="Belum ada data" />);
-    expect(screen.getByText('Belum ada data')).toBeTruthy();
+    render(<DataGrid columns={columns} data={[]} emptyMessage="Nothing here yet" />);
+    expect(screen.getByText('Nothing here yet')).toBeTruthy();
   });
 
   it('render baris data', () => {

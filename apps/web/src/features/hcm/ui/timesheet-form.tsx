@@ -36,7 +36,7 @@ export function TimesheetForm({ onDone }: { onDone: () => void }) {
         <div>
           <Label htmlFor="ts-emp">Karyawan <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="employeeId" control={control} render={({ field }) => (
-            <EntitySelect value={field.value} onValueChange={field.onChange} options={(employees.data?.items ?? []).map((e) => ({ value: e.id, label: `${e.employeeNumber} — ${e.name}` }))} placeholder="Pilih karyawan…" searchPlaceholder="Cari karyawan…" />
+            <EntitySelect value={field.value} onValueChange={field.onChange} options={(employees.data?.items ?? []).map((e) => ({ value: e.id, label: `${e.employeeNumber} · ${e.name}` }))} placeholder="Pilih karyawan…" searchPlaceholder="Cari karyawan…" />
           )} />
           {errors.employeeId && <p className="mt-1 text-caption text-destructive-600">{errors.employeeId.message}</p>}
         </div>

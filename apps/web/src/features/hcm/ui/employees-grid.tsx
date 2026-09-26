@@ -1,4 +1,4 @@
-import { StatusBadge, Button, ConfirmActionButton } from '@aec/ui';
+import { Button, ConfirmActionButton, EmptyCell, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useChangeEmployeeStatus } from '../model/hcm.api';
 import type { Employee, ProjectAssignment } from '@aec/api-contracts';
@@ -22,11 +22,11 @@ export const employeeColumns = [
   }),
   columnHelper.accessor('grade', {
     header: 'Grade',
-    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? '-'}</span>,
+    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('department', {
     header: 'Departemen',
-    cell: (info) => <span className="text-neutral-600">{info.getValue() ?? '-'}</span>,
+    cell: (info) => <span className="text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('status', {
     header: 'Status',
@@ -68,7 +68,7 @@ export const assignmentColumns = [
   }),
   assignHelper.accessor('role', {
     header: 'Peran',
-    cell: (info) => <span className="text-neutral-600">{info.getValue() ?? '-'}</span>,
+    cell: (info) => <span className="text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   assignHelper.accessor('allocationPercent', {
     header: 'Alokasi',

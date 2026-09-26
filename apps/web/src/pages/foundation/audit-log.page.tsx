@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, DataGrid, EmptyCell } from '@aec/ui';
+import { DataGrid, EmptyCell, labelAction, labelResource } from '@aec/ui';
 import { useAuditLogs } from '@/features/audit';
 import type { AuditLog } from '@aec/api-contracts';
 import { formatDateTime } from '@/shared/lib/format';
@@ -15,11 +15,16 @@ const columns = [
   }),
   columnHelper.accessor('action', {
     header: 'Aksi',
-    cell: (info) => <Badge variant="default">{info.getValue()}</Badge>,
+    cell: (info) => (
+      <span className="text-neutral-800">
+        {labelAction(info.getValue())}
+        <span className="ml-1.5 font-mono text-caption text-neutral-400" title={info.getValue()}>{info.getValue()}</span>
+      </span>
+    ),
   }),
   columnHelper.accessor('resource', {
     header: 'Resource',
-    cell: (info) => <span className="font-mono text-neutral-700">{info.getValue()}</span>,
+    cell: (info) => <span className="text-neutral-700">{labelResource(info.getValue())}</span>,
   }),
   columnHelper.accessor('resourceId', {
     header: 'Resource ID',
@@ -27,11 +32,7 @@ const columns = [
   }),
   columnHelper.accessor('userId', {
     header: 'Aktor',
-    cell: (info) => <span className="font-mono text-neutral-500">{info.getValue().slice(0, 8)}…</span>,
-  }),
-  columnHelper.accessor('correlationId', {
-    header: 'Correlation',
-    cell: (info) => <span className="font-mono text-neutral-500">{info.getValue()?.slice(0, 8) ?? <EmptyCell />}</span>,
+    cell: (info) => <span className="font-mono text-neutral-500" title={info.getValue()}>{info.getValue().slice(0, 8)}…</span>,
   }),
 ];
 

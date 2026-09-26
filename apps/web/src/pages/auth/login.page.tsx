@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginRequestSchema, type LoginRequest } from '@aec/api-contracts';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, labelErrorCode } from '@aec/ui';
 import { Eye, EyeOff, HardHat } from 'lucide-react';
 import { useLogin } from '@/features/auth';
 
@@ -123,10 +123,15 @@ export function LoginPage() {
 
             {login.isError && (
               <div className="rounded-md border border-destructive-200 bg-destructive-50 px-3 py-2">
-                <p className="text-body-sm text-destructive-700">Login gagal. Periksa email dan password Anda.</p>
+                <p className="text-body-sm text-destructive-700">
+                  {login.error instanceof Error ? login.error.message : 'Login gagal. Periksa email dan password Anda.'}
+                </p>
                 {login.error instanceof Error && 'code' in login.error && (
-                  <p className="mt-1 font-mono text-caption text-destructive-500">
-                    Kode: {String((login.error as { code?: string }).code ?? '')}
+                  <p
+                    className="mt-1 text-caption text-destructive-500"
+                    title={String((login.error as { code?: string }).code ?? '')}
+                  >
+                    {labelErrorCode(String((login.error as { code?: string }).code ?? ''))}
                   </p>
                 )}
               </div>

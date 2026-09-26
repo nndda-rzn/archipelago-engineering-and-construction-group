@@ -78,7 +78,7 @@ function ClientInvoiceForm({ onDone }: { onDone: () => void }) {
             <SelectContent>
               {certifiedClaims.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
-                  {c.claimNumber} — {fmt(Number(c.certifiedAmount ?? c.amount))}
+                  {c.claimNumber} · {fmt(Number(c.certifiedAmount ?? c.amount))}
                 </SelectItem>
               ))}
             </SelectContent>

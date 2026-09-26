@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design token runtime.
+ *
+ * Sumber kebenaran warna/typography/radius/shadow/spacing ada di
+ * packages/config/tailwind/tailwind.preset.cjs. Blok :root di bawah adalah cerminan
+ * nilai yang sama sebagai CSS custom property, dan HANYA dipakai di file ini:
+ * body (background/color), focus ring, ::selection, dan scrollbar. Komponen dan
+ * halaman memakai token lewat utility class Tailwind (mis. bg-racing-red-600),
+ * bukan var(--...). Jangan tambah var() baru di komponen — pakai utility class.
+ * Nilai di sini wajib tetap sinkron dengan tailwind.preset.cjs.
+ */
 :root {
   /* Brand Racing Red — PRD §20.2. Shade lebih dalam (UI/UX-05) — sinkron dgn tailwind preset. */
   --racing-red-50: #fef2f2;
@@ -114,6 +124,14 @@ body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Heading balance (Design-Tokens §4) — hindari baris terakhir hanya berisi satu kata
+ * pada judul. Berlaku untuk seluruh heading agar tidak perlu diulang per halaman. */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
 }
 
 /* Focus ring universal */

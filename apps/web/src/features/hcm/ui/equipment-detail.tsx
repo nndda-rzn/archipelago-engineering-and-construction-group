@@ -75,7 +75,7 @@ export function EquipmentDetail({ equipment }: { equipment: Equipment }) {
   return (
     <div className="mt-6 space-y-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div>
-        <h2 className="text-h2 text-neutral-950">{equipment.equipmentNumber} — {equipment.name}</h2>
+        <h2 className="text-h2 text-neutral-950">{equipment.equipmentNumber} · {equipment.name}</h2>
         <p className="text-caption text-neutral-500">{equipment.category} · Status: {equipment.status} · Meter: {Number(equipment.currentMeter).toLocaleString('id-ID')} jam</p>
       </div>
 

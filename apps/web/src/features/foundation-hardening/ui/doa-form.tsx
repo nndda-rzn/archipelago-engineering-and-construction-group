@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { createDoaRuleSchema } from '@aec/api-contracts';
-import { Badge, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
+import { Badge, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, labelResource, labelRole } from '@aec/ui';
 import { useCreateDoaRule, useResolveDoa } from '../model/foundation-hardening.api';
 
 const TX_TYPES = ['PurchaseRequisition', 'PurchaseOrder', 'Journal', 'Payment', 'BudgetBaseline', 'Contract'];
@@ -44,7 +44,7 @@ export function DoaForm() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {TX_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              {TX_TYPES.map((t) => <SelectItem key={t} value={t}>{labelResource(t)}</SelectItem>)}
               </SelectContent>
             </Select>
           )} />
@@ -129,7 +129,7 @@ export function ResolveForm() {
         <div className="flex items-center gap-2">
           <span className="text-caption text-neutral-500">Approver:</span>
           <Badge variant="success">{result.approverLevel}</Badge>
-          {result.approverRoleCode && <span className="font-mono text-body-sm text-neutral-700">{result.approverRoleCode}</span>}
+          {result.approverRoleCode && <span className="text-body-sm text-neutral-700" title={result.approverRoleCode}>{labelRole(result.approverRoleCode)}</span>}
         </div>
       )}
     </form>

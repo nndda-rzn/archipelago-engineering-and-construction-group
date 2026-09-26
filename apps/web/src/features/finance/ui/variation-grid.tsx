@@ -1,4 +1,4 @@
-import { Badge, Button, ConfirmActionButton, StatusBadge } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, EmptyCell, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useApproveVariation, useRejectVariation } from '../model/variation.api';
 import type { Variation } from '@aec/api-contracts';
@@ -38,7 +38,7 @@ export const variationColumns = [
     header: 'Dampak Jadwal',
     cell: (info) => {
       const value = info.getValue();
-      return value != null ? <span className="font-mono tabular-nums text-neutral-700">{value > 0 ? `+${value} hari` : `${value} hari`}</span> : '—';
+      return value != null ? <span className="font-mono tabular-nums text-neutral-700">{value > 0 ? `+${value} hari` : `${value} hari`}</span> : <EmptyCell />;
     },
   }),
   columnHelper.accessor('status', {

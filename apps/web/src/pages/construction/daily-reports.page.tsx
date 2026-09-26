@@ -23,7 +23,7 @@ export function DailyReportsPage() {
           <EntitySelect
             value={projectId}
             onValueChange={(v) => { setProjectId(v); setPagination({ pageIndex: 0, pageSize: PAGE_SIZE }); }}
-            options={(projects?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }))}
+            options={(projects?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
             placeholder="Pilih Project…"
             searchPlaceholder="Cari project…"
             className="w-64"

@@ -55,7 +55,7 @@ export function SubcontractPage() {
 
       {selected && (
         <div className="mt-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-          <h2 className="text-h2 text-neutral-950">{selected.subconNumber} — {selected.title}</h2>
+          <h2 className="text-h2 text-neutral-950">{selected.subconNumber} · {selected.title}</h2>
           <p className="text-caption text-neutral-500">
             {selected.vendor} · Nilai kontrak {fmt(selected.contractValue)} · Klik baris lain untuk ganti
           </p>

@@ -1,4 +1,4 @@
-import { Badge, Button, StatusBadge } from '@aec/ui';
+import { Badge, Button, EmptyCell, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useApproveDeviation, useExecuteAmendment, useRejectDeviation } from '../model/tender.api';
 import type { BidDecision, ContractAmendment, ContractDeviation, TenderSubmission } from '@aec/api-contracts';
@@ -13,7 +13,7 @@ const amendmentHelper = createColumnHelper<ContractAmendment>();
 export const bidColumns = [
   bidHelper.accessor('opportunity', { header: 'Opportunity', cell: (i) => <span className="text-neutral-800">{i.getValue()?.title}</span> }),
   bidHelper.accessor('decision', { header: 'Keputusan', cell: (i) => <StatusBadge status={i.getValue()} /> }),
-  bidHelper.accessor('rationale', { header: 'Alasan', cell: (i) => <span className="max-w-xs truncate text-neutral-600">{i.getValue() ?? '-'}</span> }),
+  bidHelper.accessor('rationale', { header: 'Alasan', cell: (i) => <span className="max-w-xs truncate text-neutral-600">{i.getValue() ?? <EmptyCell />}</span> }),
   bidHelper.accessor('decidedBy', { header: 'Pembuat', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue()}</span> }),
 ];
 
@@ -21,9 +21,9 @@ export const submissionColumns = [
   submissionHelper.accessor('submissionNumber', { header: 'No.', cell: (i) => <span className="font-mono text-neutral-800">{i.getValue()}</span> }),
   submissionHelper.accessor('opportunity', { header: 'Opportunity', cell: (i) => <span className="text-neutral-700">{i.getValue()?.title}</span> }),
   submissionHelper.accessor('channel', { header: 'Channel', cell: (i) => <Badge variant="default">{i.getValue()}</Badge> }),
-  submissionHelper.accessor('packageVersion', { header: 'Paket', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue() ?? '-'}</span> }),
+  submissionHelper.accessor('packageVersion', { header: 'Paket', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue() ?? <EmptyCell />}</span> }),
   submissionHelper.accessor('submittedAt', { header: 'Waktu', cell: (i) => <span className="font-mono text-neutral-600">{formatDateTime(i.getValue())}</span> }),
-  submissionHelper.accessor('fileHash', { header: 'Hash', cell: (i) => <span className="max-w-[120px] truncate font-mono text-caption text-neutral-500">{i.getValue() ?? '-'}</span> }),
+  submissionHelper.accessor('fileHash', { header: 'Hash', cell: (i) => <span className="max-w-[120px] truncate font-mono text-caption text-neutral-500">{i.getValue() ?? <EmptyCell />}</span> }),
   submissionHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant="default">{i.getValue()}</Badge> }),
 ];
 

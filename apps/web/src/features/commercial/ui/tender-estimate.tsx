@@ -32,7 +32,7 @@ export function EstimatePanel({
               <SelectValue placeholder="Pilih…" />
             </SelectTrigger>
             <SelectContent>
-              {opportunities.map((o) => <SelectItem key={o.id} value={o.id}>{o.oppNumber} — {o.title}</SelectItem>)}
+              {opportunities.map((o) => <SelectItem key={o.id} value={o.id}>{o.oppNumber} · {o.title}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -84,7 +84,7 @@ export function EstimatePanel({
 
       {selected && (
         <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-          <h3 className="text-h3 text-neutral-900">Pricing Scenario — v{selected.version}</h3>
+          <h3 className="text-h3 text-neutral-900">Pricing Scenario · v{selected.version}</h3>
           <div className="mt-3 flex items-end gap-3">
             <div>
               <Label htmlFor="sc-type">Tipe</Label>

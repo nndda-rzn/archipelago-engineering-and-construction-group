@@ -1,4 +1,4 @@
-import { Badge, Button, EmptyState, ErrorState, KpiSkeleton } from '@aec/ui';
+import { Badge, Button, EmptyCell, EmptyState, ErrorState, KpiSkeleton } from '@aec/ui';
 import { usePortfolio } from '@/features/project';
 import { DashboardGrid, healthMeta, type HealthKey } from '@/widgets/dashboard-grid';
 import { HealthDonut } from '@/widgets/dashboard-charts';
@@ -15,7 +15,7 @@ export function DashboardPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Dashboard Eksekutif</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Portfolio project — cost, revenue &amp; health</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Portfolio project · cost, revenue &amp; health</p>
         </div>
         <div className="flex flex-col items-end gap-1">
           <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={isLoading}>Muat Ulang</Button>
@@ -71,10 +71,10 @@ export function DashboardPage() {
                     </td>
                     <td className="px-4 py-2 text-neutral-600">{p.client}</td>
                     <td className="px-4 py-2 text-right tabular-nums text-neutral-600">{fmt(p.contractValue)}</td>
-                    <td className="px-4 py-2 text-right tabular-nums text-neutral-700">{p.budget > 0 ? fmt(p.budget) : '—'}</td>
-                    <td className="px-4 py-2 text-right tabular-nums text-neutral-700">{p.actual > 0 ? fmt(p.actual) : '—'}</td>
-                    <td className="px-4 py-2 text-right tabular-nums text-neutral-700">{p.revenue > 0 ? fmt(p.revenue) : '—'}</td>
-                    <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-700">{p.utilization != null ? `${p.utilization}%` : '—'}</td>
+                    <td className="px-4 py-2 text-right tabular-nums text-neutral-700">{p.budget > 0 ? fmt(p.budget) : <EmptyCell />}</td>
+                    <td className="px-4 py-2 text-right tabular-nums text-neutral-700">{p.actual > 0 ? fmt(p.actual) : <EmptyCell />}</td>
+                    <td className="px-4 py-2 text-right tabular-nums text-neutral-700">{p.revenue > 0 ? fmt(p.revenue) : <EmptyCell />}</td>
+                    <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-700">{p.utilization != null ? `${p.utilization}%` : <EmptyCell />}</td>
                     <td className="px-4 py-2">
                       <Badge variant={healthMeta[p.health as HealthKey]?.badgeVariant ?? 'default'}>
                         {healthMeta[p.health as HealthKey]?.label ?? p.health}

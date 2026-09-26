@@ -80,7 +80,7 @@ export function JournalForm({ onDone, entityId }: { onDone: () => void; entityId
                     <Select value={f.value} onValueChange={f.onChange}>
                       <SelectTrigger className="h-8 w-48"><SelectValue placeholder="Pilih akun…" /></SelectTrigger>
                       <SelectContent>
-                        {(accounts ?? []).map((acc) => <SelectItem key={acc.id} value={acc.id}>{acc.code} — {acc.name}</SelectItem>)}
+                        {(accounts ?? []).map((acc) => <SelectItem key={acc.id} value={acc.id}>{acc.code} · {acc.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   )} />

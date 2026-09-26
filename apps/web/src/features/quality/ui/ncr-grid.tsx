@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, ConfirmActionButton, Input, StatusBadge } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, EmptyCell, Input, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useDisposeNcr, useReinspectNcr } from '../model/quality.api';
 import type { Ncr } from '@aec/api-contracts';
@@ -42,7 +42,7 @@ export const ncrColumns = [
   ncrHelper.accessor('severity', { header: 'Severity', cell: (info) => <Badge variant={info.getValue() === 'CRITICAL' ? 'warning' : info.getValue() === 'MAJOR' ? 'warning' : 'default'}>{info.getValue()}</Badge> }),
   ncrHelper.accessor('category', { header: 'Kategori', cell: (info) => <Badge variant="default">{info.getValue()}</Badge> }),
   ncrHelper.accessor('description', { header: 'Deskripsi', cell: (info) => <span className="max-w-xs truncate text-neutral-700">{info.getValue()}</span> }),
-  ncrHelper.accessor('reinspectionResult', { header: 'Re-inspeksi', cell: (info) => (info.getValue() ? <Badge variant={info.getValue() === 'PASS' ? 'success' : 'warning'}>{info.getValue()}</Badge> : '-') }),
+  ncrHelper.accessor('reinspectionResult', { header: 'Re-inspeksi', cell: (info) => (info.getValue() ? <Badge variant={info.getValue() === 'PASS' ? 'success' : 'warning'}>{info.getValue()}</Badge> : <EmptyCell />) }),
   ncrHelper.accessor('status', { header: 'Status', cell: ({ row }) => <StatusBadge status={row.original.status} /> }),
   ncrHelper.display({ id: 'actions', header: '', cell: ({ row }) => <NcrActions ncr={row.original} /> }),
 ];

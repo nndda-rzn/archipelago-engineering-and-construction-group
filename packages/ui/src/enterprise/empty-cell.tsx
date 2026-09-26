@@ -6,7 +6,7 @@ export interface EmptyCellProps extends React.HTMLAttributes<HTMLSpanElement> {
   label?: string;
 }
 
-export function EmptyCell({ className, label = 'Tidak ada', ...props }: EmptyCellProps) {
+export function EmptyCell({ className, label = 'None', ...props }: EmptyCellProps) {
   return (
     <span
       aria-label={label}

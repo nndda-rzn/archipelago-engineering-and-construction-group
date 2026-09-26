@@ -21,7 +21,7 @@ export function ProjectHealthPage() {
           <EntitySelect
             value={defaultProjectId}
             onValueChange={setProjectId}
-            options={(projects.data?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }))}
+            options={(projects.data?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
             placeholder="Pilih project…"
             searchPlaceholder="Cari project…"
             className="w-56"

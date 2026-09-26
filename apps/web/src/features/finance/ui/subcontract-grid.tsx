@@ -1,4 +1,4 @@
-import { Button, ConfirmActionButton, StatusBadge } from '@aec/ui';
+import { Button, ConfirmActionButton, EmptyCell, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useRejectSubcontractProgress, useVerifySubcontractProgress } from '../model/subcontract.api';
 import type { Subcontract, SubcontractProgress } from '@aec/api-contracts';
@@ -41,7 +41,7 @@ export const subcontractColumns = [
 export const progressColumns = [
   progColumnHelper.accessor('period', {
     header: 'Periode',
-    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? '-'}</span>,
+    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   progColumnHelper.accessor('progressDate', {
     header: 'Tanggal',

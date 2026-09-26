@@ -105,7 +105,7 @@ export function PurchaseOrderPage() {
                   <SelectValue placeholder="Pilih PR…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {approvedPrs.map((pr) => <SelectItem key={pr.id} value={pr.id}>{pr.prNumber} — {pr.requestedBy}</SelectItem>)}
+                  {approvedPrs.map((pr) => <SelectItem key={pr.id} value={pr.id}>{pr.prNumber} · {pr.requestedBy}</SelectItem>)}
                 </SelectContent>
               </Select>
               {approvedPrs.length === 0 && <p className="mt-1 text-caption text-neutral-500">Tidak ada PR APPROVED. PR perlu di-approve dulu.</p>}

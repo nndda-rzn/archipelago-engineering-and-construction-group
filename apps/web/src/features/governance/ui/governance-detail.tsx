@@ -9,7 +9,7 @@ export function AuditDetail({ audit }: { audit: AuditEngagement }) {
   const create = useCreateFinding();
   return (
     <div className="mt-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-      <h2 className="text-h2 text-neutral-950">{audit.auditNumber} — {audit.title}</h2>
+      <h2 className="text-h2 text-neutral-950">{audit.auditNumber} · {audit.title}</h2>
       <p className="text-caption text-neutral-500">Status {audit.status} · Klik baris lain untuk ganti</p>
       <div className="mt-4 flex items-end gap-2 border-t border-neutral-100 pt-4">
         <div className="flex-1">

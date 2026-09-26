@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, LogOut } from 'lucide-react';
-import { cn } from '@aec/ui';
+import { cn, labelRole } from '@aec/ui';
 import { useMe, useLogout } from '@/features/auth';
 
 interface UserMenuProps {
@@ -47,8 +47,8 @@ export function UserMenu({ className }: UserMenuProps) {
           </div>
           <div className="flex flex-wrap gap-1 px-3 py-2">
             {(me?.roles ?? []).map((r) => (
-              <span key={r} className="rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-caption text-neutral-600">
-                {r}
+              <span key={r} className="rounded bg-neutral-100 px-1.5 py-0.5 text-caption text-neutral-600" title={r}>
+                {labelRole(r)}
               </span>
             ))}
           </div>

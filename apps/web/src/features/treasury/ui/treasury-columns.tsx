@@ -1,5 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, StatusBadge } from '@aec/ui';
+import { Badge, Button, EmptyCell, StatusBadge } from '@aec/ui';
 import {
   useApproveProposal, useReleaseProposal, useSubmitProposal,
   type BankAccount, type BankGuarantee, type PaymentProposal,
@@ -25,7 +25,7 @@ export const proposalColumns = [
   proposalHelper.accessor('proposalNumber', { header: 'No.', cell: (i) => <span className="font-mono text-neutral-800">{i.getValue()}</span> }),
   proposalHelper.accessor('vendor', { header: 'Vendor', cell: (i) => <span className="text-neutral-700">{i.getValue()}</span> }),
   proposalHelper.accessor('totalAmount', { header: 'Nilai', cell: (i) => <span className="font-mono tabular-nums text-neutral-800">{fmt(i.getValue())}</span> }),
-  proposalHelper.accessor('bankAccount', { header: 'Rekening', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue() ? `${i.getValue()!.bankName} ${i.getValue()!.accountCode}` : '-'}</span> }),
+  proposalHelper.accessor('bankAccount', { header: 'Rekening', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue() ? `${i.getValue()!.bankName} ${i.getValue()!.accountCode}` : <EmptyCell />}</span> }),
   proposalHelper.accessor('status', { header: 'Status', cell: (i) => <StatusBadge status={i.getValue()} /> }),
   proposalHelper.display({
     id: 'actions',

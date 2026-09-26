@@ -1,15 +1,9 @@
 import { useState } from 'react';
-import { Badge, type BadgeVariant, Button, ConfirmDialog, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyCell, Input, useToast } from '@aec/ui';
+import { Badge, Button, ConfirmDialog, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyCell, Input, StatusBadge, labelRole, useToast } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useDecideApproval } from '../model/approval.api';
 import type { ApprovalTask } from '@aec/api-contracts';
 import { formatDateTime } from '@/shared/lib/format';
-
-type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
-
-export const approvalStatusVariant: Record<ApprovalStatus, BadgeVariant> = {
-  PENDING: 'warning', APPROVED: 'success', REJECTED: 'default', CANCELLED: 'muted',
-};
 
 const typeLabel: Record<string, string> = { PurchaseRequisition: 'PR', PurchaseOrder: 'PO' };
 
@@ -18,8 +12,8 @@ const columnHelper = createColumnHelper<ApprovalTask>();
 export const approvalColumns = [
   columnHelper.accessor('transactionCode', { header: 'Dokumen', cell: (i) => <span className="font-mono text-neutral-800">{i.getValue() ?? <EmptyCell />}</span> }),
   columnHelper.accessor('transactionType', { header: 'Tipe', cell: (i) => <Badge variant="default">{typeLabel[i.getValue()] ?? i.getValue()}</Badge> }),
-  columnHelper.accessor('approverRoleCode', { header: 'Approver', cell: (i) => <span className="text-neutral-700">{i.getValue()}</span> }),
-  columnHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant={approvalStatusVariant[i.getValue() as ApprovalStatus]}>{i.getValue()}</Badge> }),
+  columnHelper.accessor('approverRoleCode', { header: 'Approver', cell: (i) => <span className="text-neutral-700">{labelRole(i.getValue())}</span> }),
+  columnHelper.accessor('status', { header: 'Status', cell: (i) => <StatusBadge status={i.getValue()} /> }),
   columnHelper.accessor('comment', { header: 'Komentar', cell: (i) => <span className="max-w-[240px] truncate text-neutral-600">{i.getValue() ?? <EmptyCell />}</span> }),
   columnHelper.accessor('createdAt', { header: 'Diajukan', cell: (i) => <span className="tabular-nums text-neutral-500">{formatDateTime(i.getValue())}</span> }),
   columnHelper.display({ id: 'actions', header: '', cell: ({ row }) => <DecideButtons task={row.original} /> }),

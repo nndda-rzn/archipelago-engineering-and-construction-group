@@ -38,16 +38,21 @@ export function formatDateTime(d: string | Date | null | undefined) {
   }).format(date);
 }
 
+/** Unit + pluralisasi Inggris untuk waktu relatif. Format angka & tanggal `id-ID` (standar bank nasional). */
+function ago(value: number, unit: 'minute' | 'hour' | 'day') {
+  return `${value} ${unit}${value === 1 ? '' : 's'} ago`;
+}
+
 export function formatRelativeTime(d: string | Date | null | undefined) {
   const date = safeDate(d);
   if (!date) return INVALID;
   const diffMs = Date.now() - date.getTime();
   const minutes = Math.floor(diffMs / 60_000);
-  if (minutes < 1) return 'baru saja';
-  if (minutes < 60) return `${minutes} menit lalu`;
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return ago(minutes, 'minute');
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} jam lalu`;
+  if (hours < 24) return ago(hours, 'hour');
   const days = Math.floor(hours / 24);
-  if (days <= 7) return `${days} hari lalu`;
+  if (days <= 7) return ago(days, 'day');
   return formatDate(date);
 }

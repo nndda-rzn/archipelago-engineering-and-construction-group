@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, DataGrid } from '@aec/ui';
+import { Badge, Button, DataGrid, EmptyCell } from '@aec/ui';
 import { useMaterialIssues, type MaterialIssue } from '@/features/inventory';
 import { IssueForm } from '@/features/inventory';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
@@ -14,11 +14,11 @@ const columns = [
   }),
   columnHelper.accessor('project', {
     header: 'Project',
-    cell: (info) => <span className="text-neutral-600">{info.getValue()?.code ?? '-'}</span>,
+    cell: (info) => <span className="text-neutral-600">{info.getValue()?.code ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('warehouse', {
     header: 'Warehouse',
-    cell: (info) => <span className="text-neutral-700">{info.getValue()?.code ?? '-'}</span>,
+    cell: (info) => <span className="text-neutral-700">{info.getValue()?.code ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('issuedTo', {
     header: 'Untuk',

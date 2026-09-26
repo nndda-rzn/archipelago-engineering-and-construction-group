@@ -1,4 +1,4 @@
-import { Badge, type BadgeVariant } from '@aec/ui';
+import { Badge, EmptyCell, type BadgeVariant } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import type { StockLedgerEntry } from '@aec/api-contracts';
 import { formatDateTime } from '@/shared/lib/format';
@@ -24,11 +24,11 @@ export const ledgerColumns = [
   }),
   columnHelper.accessor('reference', {
     header: 'Referensi',
-    cell: (info) => <span className="font-mono text-neutral-700">{info.getValue() ?? '-'}</span>,
+    cell: (info) => <span className="font-mono text-neutral-700">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('wbsItem', {
     header: 'WBS',
-    cell: (info) => <span className="text-neutral-600">{info.getValue() ? `${info.getValue()?.code} — ${info.getValue()?.name}` : '-'}</span>,
+    cell: (info) => <span className="text-neutral-600">{info.getValue() ? `${info.getValue()?.code} · ${info.getValue()?.name}` : <EmptyCell />}</span>,
   }),
   columnHelper.accessor('movementType', {
     header: 'Jenis',

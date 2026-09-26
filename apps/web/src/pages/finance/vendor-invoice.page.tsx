@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { Button, ConfirmActionButton, DataGrid, StatusBadge } from '@aec/ui';
+import { Button, ConfirmActionButton, DataGrid, EmptyCell, StatusBadge } from '@aec/ui';
 import { usePostVendorInvoice, useVendorInvoices, type VendorInvoice } from '@/features/finance';
 import { InvoiceForm } from '@/features/finance';
 import { formatIdr } from '@/shared/lib/format';
@@ -20,7 +20,7 @@ const columns = [
   }),
   columnHelper.accessor('po', {
     header: 'PO',
-    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue()?.poNumber ?? '-'}</span>,
+    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue()?.poNumber ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('totalAmount', {
     header: 'Total',
@@ -70,7 +70,7 @@ export function VendorInvoicePage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Vendor Invoice</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Invoice berbasis PO — three-way match PO + GR + Invoice (FR-PRO-009)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Invoice berbasis PO · three-way match PO + GR + Invoice (FR-PRO-009)</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>
           {showForm ? 'Tutup' : '+ Buat Invoice'}

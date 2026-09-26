@@ -33,7 +33,7 @@ export function EngineeringPage() {
   const gridProps = { pagination, onPaginationChange };
 
   return (
-    <div className="p-6">
+    <div>
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Engineering</h1>

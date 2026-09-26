@@ -39,7 +39,7 @@ export function IssueHeaderFields({
             <SelectValue placeholder="Pilih project…" />
           </SelectTrigger>
           <SelectContent>
-            {projects.map((p) => <SelectItem key={p.id} value={p.id}>{p.code} — {p.name}</SelectItem>)}
+            {projects.map((p) => <SelectItem key={p.id} value={p.id}>{p.code} · {p.name}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -50,7 +50,7 @@ export function IssueHeaderFields({
             <SelectValue placeholder="Pilih warehouse…" />
           </SelectTrigger>
           <SelectContent>
-            {projectWhs.map((w) => <SelectItem key={w.id} value={w.id}>{w.code} — {w.name}</SelectItem>)}
+            {projectWhs.map((w) => <SelectItem key={w.id} value={w.id}>{w.code} · {w.name}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>

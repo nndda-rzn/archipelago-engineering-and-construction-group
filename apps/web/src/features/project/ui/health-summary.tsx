@@ -1,4 +1,5 @@
-import { StatusBadge } from '@aec/ui';
+import type { ReactNode } from 'react';
+import { EmptyCell, StatusBadge } from '@aec/ui';
 import type { ProjectHealth } from '@aec/api-contracts';
 import { formatIdr as fmt } from '@/shared/lib/format';
 
@@ -34,7 +35,7 @@ export function HealthSummary({ data }: { data: ProjectHealth }) {
         <MetricCard label="Budget" value={fmt(data.totalBudget)} />
         <MetricCard label="Actual Cost" value={fmt(data.totalActual)} />
         <MetricCard label="Revenue" value={fmt(data.revenue)} />
-        <MetricCard label="Utilisasi" value={data.utilization != null ? `${data.utilization}%` : '—'} />
+        <MetricCard label="Utilisasi" value={data.utilization != null ? `${data.utilization}%` : <EmptyCell />} />
       </div>
 
       <div className="mt-3 flex items-center gap-4 text-caption text-neutral-500">
@@ -50,7 +51,7 @@ export function HealthSummary({ data }: { data: ProjectHealth }) {
   );
 }
 
-function MetricCard({ label, value }: { label: string; value: string }) {
+function MetricCard({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="rounded-md border border-neutral-100 p-3">
       <p className="text-caption uppercase tracking-wide text-neutral-500">{label}</p>

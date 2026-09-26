@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
+import { Badge, Button, EmptyCell, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useLegalEntities } from '@/entities/legal-entity';
 import { useTrialBalance } from '@/features/finance';
 import { formatIdr as fmt } from '@/shared/lib/format';
@@ -79,7 +79,7 @@ export function TrialBalancePage() {
                 <Badge variant="default">{data.legalEntityCode}</Badge>
                 <span className="text-caption text-neutral-500">
                   {new Date(data.generatedAt).toLocaleString('id-ID')}
-                  {data.from || data.to ? ` — ${data.from ?? 'awal'} s/d ${data.to ?? 'sekarang'}` : ' — semua periode'}
+                  {data.from || data.to ? ` · ${data.from ?? 'start'} to ${data.to ?? 'now'}` : ' · all periods'}
                 </span>
                 <Badge variant={data.balanced ? 'success' : 'warning'}>
                   {data.balanced ? 'Balance ✓' : 'TIDAK BALANCE'}
@@ -104,8 +104,8 @@ export function TrialBalancePage() {
                       <td className="px-4 py-2 font-mono text-neutral-800">{line.code}</td>
                       <td className="px-4 py-2 text-neutral-700">{line.name}</td>
                       <td className="px-4 py-2 text-neutral-500">{typeLabel[line.accountType] ?? line.accountType}</td>
-                      <td className="px-4 py-2 text-right tabular-nums text-neutral-700">{line.debit > 0 ? fmt(line.debit) : '—'}</td>
-                      <td className="px-4 py-2 text-right tabular-nums text-neutral-700">{line.credit > 0 ? fmt(line.credit) : '—'}</td>
+                      <td className="px-4 py-2 text-right tabular-nums text-neutral-700">{line.debit > 0 ? fmt(line.debit) : <EmptyCell />}</td>
+                      <td className="px-4 py-2 text-right tabular-nums text-neutral-700">{line.credit > 0 ? fmt(line.credit) : <EmptyCell />}</td>
                       <td className="px-4 py-2 text-right font-medium tabular-nums text-neutral-800">{fmt(line.balance)}</td>
                     </tr>
                   ))}

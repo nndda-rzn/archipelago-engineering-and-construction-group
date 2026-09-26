@@ -80,7 +80,7 @@ export function PaymentPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Payment / AP</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Bayar vendor — kurangi AP (FR-FIN-005/007)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Bayar vendor · kurangi AP (FR-FIN-005/007)</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>
           {showForm ? 'Tutup' : '+ Buat Payment'}

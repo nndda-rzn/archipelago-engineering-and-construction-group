@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createRoleSchema, type RoleWithPermissions } from '@aec/api-contracts';
 import { z } from 'zod';
-import { Badge, Button, Input, Label } from '@aec/ui';
+import { Badge, Button, Input, Label, labelPermission } from '@aec/ui';
 import { useCreateRole, useRoles } from '@/entities/role';
 
 const formSchema = z.object({
@@ -79,13 +79,13 @@ export function RoleManagementPage() {
           {data.map((role: RoleWithPermissions) => (
             <div key={role.id} className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-body-sm font-medium text-neutral-900">{role.code}</span>
+                <span className="text-body-sm font-medium text-neutral-900">{role.name}</span>
                 <Badge variant="default">{role._count.userRoles} user</Badge>
               </div>
-              <div className="mt-1 text-body-sm text-neutral-600">{role.name}</div>
+              <div className="mt-1 font-mono text-caption text-neutral-500">{role.code}</div>
               <div className="mt-3 flex flex-wrap gap-1">
                 {role.permissions.map(({ permission }) => (
-                  <Badge key={permission.code} variant="outline">{permission.code}</Badge>
+                  <Badge key={permission.code} variant="outline">{labelPermission(permission.code)}</Badge>
                 ))}
                 {role.permissions.length === 0 && (
                   <span className="text-caption text-neutral-500">Belum ada permission</span>

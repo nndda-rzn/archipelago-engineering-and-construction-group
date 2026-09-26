@@ -33,7 +33,7 @@ export function ProjectForm({ onDone }: { onDone: () => void }) {
           <EntitySelect
             value={legalEntityId ?? ''}
             onValueChange={(value) => setValue('legalEntityId', value, { shouldValidate: true })}
-            options={(entities.data?.items ?? []).map((e) => ({ value: e.id, label: `${e.code} — ${e.legalName}` }))}
+            options={(entities.data?.items ?? []).map((e) => ({ value: e.id, label: `${e.code} · ${e.legalName}` }))}
             placeholder="Pilih entity…"
             searchPlaceholder="Cari entity…"
             error={!!errors.legalEntityId}

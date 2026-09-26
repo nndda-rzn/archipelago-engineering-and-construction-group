@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDate, formatDateTime, formatIdr, formatNumber } from './format';
+import { formatDate, formatDateTime, formatIdr, formatNumber, formatRelativeTime } from './format';
 
 describe('formatIdr', () => {
   it('format nominal IDR', () => {
@@ -41,5 +41,30 @@ describe('formatDateTime', () => {
 
   it('null -> fallback dash', () => {
     expect(formatDateTime(undefined)).toBe('—');
+  });
+});
+
+describe('formatRelativeTime', () => {
+  const at = (msAgo: number) => new Date(Date.now() - msAgo);
+
+  it('baru saja -> just now', () => {
+    expect(formatRelativeTime(at(10_000))).toBe('just now');
+  });
+
+  it('menit dengan pluralisasi Inggris', () => {
+    expect(formatRelativeTime(at(60_000))).toBe('1 minute ago');
+    expect(formatRelativeTime(at(5 * 60_000))).toBe('5 minutes ago');
+  });
+
+  it('jam dengan pluralisasi Inggris', () => {
+    expect(formatRelativeTime(at(3 * 60 * 60_000))).toBe('3 hours ago');
+  });
+
+  it('hari dengan pluralisasi Inggris', () => {
+    expect(formatRelativeTime(at(2 * 24 * 60 * 60_000))).toBe('2 days ago');
+  });
+
+  it('null -> fallback dash', () => {
+    expect(formatRelativeTime(null)).toBe('—');
   });
 });

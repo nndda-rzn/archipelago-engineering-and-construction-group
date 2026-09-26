@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, Input, StatusBadge } from '@aec/ui';
+import { Badge, Button, EmptyCell, Input, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useCertifyClaim } from '../model/progress-claim.api';
 import type { ProgressClaim } from '@aec/api-contracts';
@@ -17,15 +17,15 @@ export const progressClaimColumns = [
   columnHelper.accessor('claimNumber', { header: 'No. Klaim', cell: (i) => <span className="font-mono text-neutral-800">{i.getValue()}</span> }),
   columnHelper.accessor('claimType', { header: 'Tipe', cell: (i) => <Badge variant={i.getValue() === 'PROGRESS' ? 'default' : 'warning'}>{claimTypeLabel[i.getValue()] ?? i.getValue()}</Badge> }),
   columnHelper.accessor('project', { header: 'Project', cell: (i) => <span className="text-neutral-700">{i.getValue()?.code}</span> }),
-  columnHelper.accessor('workPackage', { header: 'Work Package', cell: (i) => i.getValue() ? <span className="font-mono text-neutral-600">{i.getValue()!.wpNumber}</span> : '-' }),
-  columnHelper.accessor('physicalProgressAtClaim', { header: 'Fisik', cell: (i) => i.getValue() != null ? <span className="font-mono tabular-nums text-neutral-600">{i.getValue()}%</span> : '-' }),
-  columnHelper.accessor('billableProgress', { header: 'Billable', cell: (i) => i.getValue() != null ? <span className="font-mono tabular-nums text-neutral-700">{i.getValue()}%</span> : '-' }),
-  columnHelper.accessor('period', { header: 'Periode', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue() ?? '-'}</span> }),
+  columnHelper.accessor('workPackage', { header: 'Work Package', cell: (i) => i.getValue() ? <span className="font-mono text-neutral-600">{i.getValue()!.wpNumber}</span> : <EmptyCell /> }),
+  columnHelper.accessor('physicalProgressAtClaim', { header: 'Fisik', cell: (i) => i.getValue() != null ? <span className="font-mono tabular-nums text-neutral-600">{i.getValue()}%</span> : <EmptyCell /> }),
+  columnHelper.accessor('billableProgress', { header: 'Billable', cell: (i) => i.getValue() != null ? <span className="font-mono tabular-nums text-neutral-700">{i.getValue()}%</span> : <EmptyCell /> }),
+  columnHelper.accessor('period', { header: 'Periode', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue() ?? <EmptyCell />}</span> }),
   columnHelper.accessor('amount', { header: 'Nilai Klaim', cell: (i) => <span className="font-mono tabular-nums text-neutral-700">{fmt(i.getValue())}</span> }),
-  columnHelper.accessor('certifiedAmount', { header: 'Tersertifikasi', cell: (i) => i.getValue() != null ? <span className="font-mono tabular-nums text-neutral-700">{fmt(i.getValue()!)}</span> : '-' }),
-  columnHelper.accessor('retentionRate', { header: 'Retensi', cell: (i) => { const rate = i.getValue(); const row = i.row.original; if (rate == null || row.status !== 'CERTIFIED') return '-'; return <span className="font-mono tabular-nums text-neutral-600">{row.retentionAmount != null ? `${fmt(row.retentionAmount)} (${rate}%)` : `${rate}%`}</span>; } }),
-  columnHelper.accessor('netCertifiedAmount', { header: 'Net', cell: (i) => i.getValue() != null ? <span className="font-mono font-medium tabular-nums text-neutral-800">{fmt(i.getValue()!)}</span> : '-' }),
-  columnHelper.accessor('cumulativeRecovered', { header: 'DP Kembali', cell: (i) => { const row = i.row.original; const value = i.getValue(); if (row.status !== 'CERTIFIED') return '-'; return value != null ? <span className="font-mono tabular-nums text-warning-700">{fmt(value)}</span> : '-'; } }),
+  columnHelper.accessor('certifiedAmount', { header: 'Tersertifikasi', cell: (i) => i.getValue() != null ? <span className="font-mono tabular-nums text-neutral-700">{fmt(i.getValue()!)}</span> : <EmptyCell /> }),
+  columnHelper.accessor('retentionRate', { header: 'Retensi', cell: (i) => { const rate = i.getValue(); const row = i.row.original; if (rate == null || row.status !== 'CERTIFIED') return <EmptyCell />; return <span className="font-mono tabular-nums text-neutral-600">{row.retentionAmount != null ? `${fmt(row.retentionAmount)} (${rate}%)` : `${rate}%`}</span>; } }),
+  columnHelper.accessor('netCertifiedAmount', { header: 'Net', cell: (i) => i.getValue() != null ? <span className="font-mono font-medium tabular-nums text-neutral-800">{fmt(i.getValue()!)}</span> : <EmptyCell /> }),
+  columnHelper.accessor('cumulativeRecovered', { header: 'DP Kembali', cell: (i) => { const row = i.row.original; const value = i.getValue(); if (row.status !== 'CERTIFIED') return <EmptyCell />; return value != null ? <span className="font-mono tabular-nums text-warning-700">{fmt(value)}</span> : <EmptyCell />; } }),
   columnHelper.accessor('status', { header: 'Status', cell: (i) => <StatusBadge status={i.getValue()} /> }),
   columnHelper.display({ id: 'actions', header: '', cell: ({ row }) => <CertifyButton claim={row.original} /> }),
 ];

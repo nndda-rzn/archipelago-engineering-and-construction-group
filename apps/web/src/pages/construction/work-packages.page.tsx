@@ -17,13 +17,13 @@ export function WorkPackagesPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Work Packages</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Unit kerja konstruksi — rencana vs progress fisik (FR-CON)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Unit kerja konstruksi · rencana vs progress fisik (FR-CON)</p>
         </div>
         <div className="flex items-center gap-2">
           <EntitySelect
             value={projectId}
             onValueChange={(v) => { setProjectId(v); setPagination({ pageIndex: 0, pageSize: PAGE_SIZE }); }}
-            options={(projects?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }))}
+            options={(projects?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
             placeholder="Pilih Project…"
             searchPlaceholder="Cari project…"
             className="w-64"

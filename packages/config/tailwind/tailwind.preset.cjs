@@ -68,8 +68,15 @@ module.exports = {
         sans: ['"IBM Plex Sans"', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['"IBM Plex Mono"', '"JetBrains Mono"', '"Fira Code"', 'monospace'],
       },
+      fontWeight: {
+        // Dipakai Button (font-button). Sebelumnya class ini dirujuk tetapi tokennya
+        // tidak ada, sehingga label button tidak punya weight eksplisit (PR-2).
+        button: '500',
+      },
       fontSize: {
-        h1: ['1.25rem', { lineHeight: '1.3', fontWeight: '600' }],
+        // h1 adalah judul halaman. Dinaikkan 20px -> 24px (PR-2) agar judul jelas
+        // mendominasi; tetap lebih kecil dari 28px agar hierarchy dengan h2 (16px) terjaga.
+        h1: ['1.5rem', { lineHeight: '1.25', fontWeight: '600' }],
         h2: ['1rem', { lineHeight: '1.4', fontWeight: '600' }],
         h3: ['0.875rem', { lineHeight: '1.4', fontWeight: '600' }],
         body: ['0.875rem', { lineHeight: '1.5' }],

@@ -25,7 +25,7 @@ export function BidForm({ opportunities }: { opportunities: OppOption[] }) {
               <SelectValue placeholder="Pilih…" />
             </SelectTrigger>
             <SelectContent>
-              {opportunities.map((o) => <SelectItem key={o.id} value={o.id}>{o.oppNumber} — {o.title}</SelectItem>)}
+              {opportunities.map((o) => <SelectItem key={o.id} value={o.id}>{o.oppNumber} · {o.title}</SelectItem>)}
             </SelectContent>
           </Select>} />
           {errors.oppId && <p role="alert" className="mt-1 text-caption text-destructive-600">{errors.oppId.message}</p>}
@@ -65,7 +65,7 @@ export function SubmissionForm({ opportunities }: { opportunities: OppOption[] }
               <SelectValue placeholder="Pilih…" />
             </SelectTrigger>
             <SelectContent>
-              {opportunities.map((o) => <SelectItem key={o.id} value={o.id}>{o.oppNumber} — {o.title}</SelectItem>)}
+              {opportunities.map((o) => <SelectItem key={o.id} value={o.id}>{o.oppNumber} · {o.title}</SelectItem>)}
             </SelectContent>
           </Select>} />
           {errors.opportunityId && <p role="alert" className="mt-1 text-caption text-destructive-600">{errors.opportunityId.message}</p>}

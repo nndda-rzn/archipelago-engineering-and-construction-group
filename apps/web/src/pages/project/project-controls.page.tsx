@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, DataGrid, EntitySelect } from '@aec/ui';
+import { Button, DataGrid, EmptyCell, EntitySelect } from '@aec/ui';
 import {
   useCommitment, useControlAccounts, useCostCodes, useEvm, useForecasts,
 } from '@/features/project';
@@ -44,7 +44,7 @@ export function ProjectControlsPage() {
           <EntitySelect
             value={projectId}
             onValueChange={(v) => { setProjectId(v); setShowForm(false); }}
-            options={(projects.data?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }))}
+            options={(projects.data?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
             placeholder="Pilih project…"
             searchPlaceholder="Cari project…"
             className="w-64"
@@ -114,8 +114,8 @@ export function ProjectControlsPage() {
             ))}
           </div>
           <div className="mt-4 flex gap-6 text-body-sm">
-            <span>CPI: <span className="font-mono font-medium">{evm.data.metrics.cpi?.toFixed(2) ?? '-'}</span></span>
-            <span>SPI: <span className="font-mono font-medium">{evm.data.metrics.spi?.toFixed(2) ?? '-'}</span></span>
+            <span>CPI: <span className="font-mono font-medium">{evm.data.metrics.cpi?.toFixed(2) ?? <EmptyCell />}</span></span>
+            <span>SPI: <span className="font-mono font-medium">{evm.data.metrics.spi?.toFixed(2) ?? <EmptyCell />}</span></span>
             <span>Progress: <span className="font-mono font-medium">{evm.data.metrics.progressPercent}%</span></span>
           </div>
         </div>

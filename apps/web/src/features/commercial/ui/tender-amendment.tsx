@@ -24,7 +24,7 @@ export function AmendmentPanel({
               <SelectValue placeholder="Pilih…" />
             </SelectTrigger>
             <SelectContent>
-              {contracts.map((c) => <SelectItem key={c.id} value={c.id}>{c.contractNumber} — {c.title}</SelectItem>)}
+              {contracts.map((c) => <SelectItem key={c.id} value={c.id}>{c.contractNumber} · {c.title}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>

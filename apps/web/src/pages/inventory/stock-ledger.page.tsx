@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, DataGrid } from '@aec/ui';
+import { Button, DataGrid, EmptyCell } from '@aec/ui';
 import { Download } from 'lucide-react';
 import { useStockLedger, useStockSummary, useWarehouses, exportStockLedger } from '@/features/inventory';
 import { WarehouseForm, ledgerColumns } from '@/features/inventory';
@@ -67,7 +67,7 @@ export function StockLedgerPage() {
               <tbody>
                 {summary.data.items.map((item) => (
                   <tr key={`${item.wbsItemId}-${item.warehouseId}`} className="border-t border-neutral-100">
-                    <td className="px-3 py-2 text-neutral-700">{item.wbsItem ? `${item.wbsItem.code} — ${item.wbsItem.name}` : '-'}</td>
+                    <td className="px-3 py-2 text-neutral-700">{item.wbsItem ? `${item.wbsItem.code} · ${item.wbsItem.name}` : <EmptyCell />}</td>
                     <td className="px-3 py-2 text-neutral-600">{item.warehouse.code}</td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums text-neutral-800">{item.quantity}</td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums text-neutral-700">{formatIdr(item.totalValue)}</td>

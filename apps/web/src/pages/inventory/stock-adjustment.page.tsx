@@ -15,7 +15,7 @@ export function StockAdjustmentPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Stock Adjustment</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Penyesuaian stok — wajib approval + reason code (FR-INV-006)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Penyesuaian stok · wajib approval + reason code (FR-INV-006)</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>
           {showForm ? 'Tutup' : '+ Buat Adjustment'}

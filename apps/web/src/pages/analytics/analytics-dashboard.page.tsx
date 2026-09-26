@@ -48,7 +48,7 @@ export function AnalyticsDashboardPage() {
       <div className="mb-6">
         <h1 className="text-h1 text-neutral-950">Executive Dashboard</h1>
         <p className="mt-1 text-body-sm text-neutral-500">
-          Portfolio &amp; KPI lintas domain · diperbarui {new Date(data.generatedAt).toLocaleTimeString('id-ID')} (Fase 10 — advisory)
+          Portfolio &amp; KPI lintas domain · diperbarui {new Date(data.generatedAt).toLocaleTimeString('id-ID')} (Fase 10 · advisory)
         </p>
       </div>
 

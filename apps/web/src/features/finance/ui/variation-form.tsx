@@ -64,8 +64,8 @@ export function VariationForm({ onDone }: { onDone: () => void }) {
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="vr-type"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="ADDITIVE">ADDITIVE — menambah kontrak</SelectItem>
-                <SelectItem value="DEDUCTIVE">DEDUCTIVE — mengurangi kontrak</SelectItem>
+                <SelectItem value="ADDITIVE">ADDITIVE · menambah kontrak</SelectItem>
+                <SelectItem value="DEDUCTIVE">DEDUCTIVE · mengurangi kontrak</SelectItem>
               </SelectContent>
             </Select>
           )} />

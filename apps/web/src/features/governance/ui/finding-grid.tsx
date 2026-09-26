@@ -1,4 +1,4 @@
-import { Button, StatusBadge } from '@aec/ui';
+import { Button, EmptyCell, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useRespondFinding } from '../model/governance.api';
 import type { AuditFinding } from '@aec/api-contracts';
@@ -19,7 +19,7 @@ function RespondFindingCell({ finding }: { finding: AuditFinding }) {
 export const findingColumns = [
   findingHelper.accessor('title', { header: 'Finding', cell: (info) => <span className="text-neutral-700">{info.getValue()}</span> }),
   findingHelper.accessor('severity', { header: 'Severity', cell: (info) => <StatusBadge status={info.getValue()} /> }),
-  findingHelper.accessor('response', { header: 'Respons', cell: (info) => <span className="max-w-xs truncate text-neutral-600">{info.getValue() ?? '-'}</span> }),
+  findingHelper.accessor('response', { header: 'Respons', cell: (info) => <span className="max-w-xs truncate text-neutral-600">{info.getValue() ?? <EmptyCell />}</span> }),
   findingHelper.accessor('status', { header: 'Status', cell: (info) => <StatusBadge status={info.getValue()} /> }),
   findingHelper.display({ id: 'actions', header: '', cell: ({ row }) => <RespondFindingCell finding={row.original} /> }),
 ];

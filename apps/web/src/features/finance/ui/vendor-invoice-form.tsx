@@ -54,7 +54,7 @@ export function InvoiceForm({ onDone }: { onDone: () => void }) {
             <Select value={field.value} onValueChange={(v) => { field.onChange(v); replace([]); }}>
               <SelectTrigger id="inv-po"><SelectValue placeholder="Pilih PO…" /></SelectTrigger>
               <SelectContent>
-                {releasedPos.map((po) => <SelectItem key={po.id} value={po.id}>{po.poNumber} — {po.vendor}</SelectItem>)}
+                {releasedPos.map((po) => <SelectItem key={po.id} value={po.id}>{po.poNumber} · {po.vendor}</SelectItem>)}
               </SelectContent>
             </Select>
           )} />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, ConfirmActionButton, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, StatusBadge } from '@aec/ui';
+import { Badge, Button, ConfirmActionButton, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, StatusBadge, labelResource, labelRole } from '@aec/ui';
 import { useAddWorkflowStep, usePublishWorkflow, useNewWorkflowVersion, type WorkflowDefinition } from '../model/approval.api';
 import { formatNumber } from '@/shared/lib/format';
 
@@ -44,9 +44,9 @@ export function WorkflowCard({ workflow }: { workflow: WorkflowDefinition }) {
         <div>
           <div className="flex items-center gap-2">
             <span className="font-mono text-body font-semibold text-neutral-900">{workflow.code}</span>
-            <StatusBadge status={workflow.status} label={`v${workflow.version} · ${workflow.status}`} />
+            <StatusBadge status={workflow.status} label={`v${workflow.version}`} />
           </div>
-          <p className="mt-1 text-caption text-neutral-500">{workflow.transactionType} — {workflow.description ?? workflow.name}</p>
+          <p className="mt-1 text-caption text-neutral-500">{labelResource(workflow.transactionType)} · {workflow.description ?? workflow.name}</p>
         </div>
         <div className="flex gap-2">
           {isDraft && (
@@ -73,7 +73,7 @@ export function WorkflowCard({ workflow }: { workflow: WorkflowDefinition }) {
             <li key={step.id} className="flex items-center gap-2 rounded-md border border-neutral-100 px-3 py-2 text-body-sm">
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-neutral-100 font-mono text-caption text-neutral-600">{step.stepOrder}</span>
               <span className="text-neutral-800">{step.name}</span>
-              <Badge variant="default">{step.approverRoleCode}</Badge>
+              <Badge variant="default">{labelRole(step.approverRoleCode)}</Badge>
               <StepBadge conditionField={step.conditionField} conditionOp={step.conditionOp} conditionValue={step.conditionValue} />
             </li>
           ))}

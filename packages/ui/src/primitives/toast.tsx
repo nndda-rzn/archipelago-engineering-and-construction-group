@@ -58,7 +58,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 )}
               </div>
               <ToastPrimitive.Close
-                aria-label="Tutup notifikasi"
+                aria-label="Close notification"
                 className="rounded p-1 text-neutral-400 transition-colors duration-fast hover:bg-neutral-100 hover:text-neutral-600"
               >
                 <X className="h-3.5 w-3.5" aria-hidden="true" />

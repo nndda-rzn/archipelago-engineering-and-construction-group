@@ -1,4 +1,4 @@
-import { StatusBadge } from '@aec/ui';
+import { EmptyCell, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import type { WorkPackage } from '@aec/api-contracts';
 
@@ -18,7 +18,7 @@ export const workPackageColumns = [
   columnHelper.accessor('title', { header: 'Work Package' }),
   columnHelper.accessor('wbs', {
     header: 'WBS',
-    cell: (info) => (info.getValue() ? <span className="font-mono text-neutral-600">{info.getValue()?.code}</span> : '-'),
+    cell: (info) => (info.getValue() ? <span className="font-mono text-neutral-600">{info.getValue()?.code}</span> : <EmptyCell />),
   }),
   columnHelper.accessor('plannedQty', {
     header: 'Qty Rencana',

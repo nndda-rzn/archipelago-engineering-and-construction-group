@@ -74,7 +74,7 @@ export function ClaimForm({ onDone }: { onDone: () => void }) {
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="clm-type"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {CLAIM_TYPES.map((t) => <SelectItem key={t} value={t}>{t} — {claimTypeLabel[t]}</SelectItem>)}
+                {CLAIM_TYPES.map((t) => <SelectItem key={t} value={t}>{t} · {claimTypeLabel[t]}</SelectItem>)}
               </SelectContent>
             </Select>
           )} />
@@ -92,7 +92,7 @@ export function ClaimForm({ onDone }: { onDone: () => void }) {
             <Select value={field.value} onValueChange={field.onChange} disabled={!projectId}>
               <SelectTrigger id="clm-wp"><SelectValue placeholder="Tanpa work package" /></SelectTrigger>
               <SelectContent>
-                {(workPackages?.items ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{w.wpNumber} — {w.title} ({w.latestProgress ?? 0}%)</SelectItem>)}
+                {(workPackages?.items ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{w.wpNumber} · {w.title} ({w.latestProgress ?? 0}%)</SelectItem>)}
               </SelectContent>
             </Select>
           )} />

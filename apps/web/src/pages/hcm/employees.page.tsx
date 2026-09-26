@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, DataGrid, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
+import { Button, DataGrid, EmptyCell, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useAssignments, useEmployees } from '@/features/hcm';
 import { EmployeeForm, AssignmentForm, employeeColumns, assignmentColumns } from '@/features/hcm/ui';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
@@ -59,8 +59,8 @@ export function EmployeesPage() {
 
       {selected && (
         <div className="mt-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-          <h2 className="text-h2 text-neutral-950">{selected.employeeNumber} — {selected.name}</h2>
-          <p className="text-caption text-neutral-500">{selected.position} · {selected.department ?? '-'} · Klik baris lain untuk ganti</p>
+          <h2 className="text-h2 text-neutral-950">{selected.employeeNumber} · {selected.name}</h2>
+          <p className="text-caption text-neutral-500">{selected.position} · {selected.department ?? <EmptyCell />} · Klik baris lain untuk ganti</p>
           <AssignmentForm employee={selected} />
           <div className="mt-4">
             <DataGrid columns={assignmentColumns} data={assignData?.items ?? []} isLoading={assignLoading} emptyMessage="Belum ada assignment" hideToolbar />

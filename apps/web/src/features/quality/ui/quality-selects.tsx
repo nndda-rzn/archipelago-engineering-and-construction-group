@@ -36,7 +36,7 @@ export function WpSelect({ id, projectId, value, onChange, workPackages }: { id:
           <SelectValue placeholder="Tanpa WP" />
         </SelectTrigger>
         <SelectContent>
-          {(workPackages?.items ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{w.wpNumber}{w.title ? ` — ${w.title}` : ''}</SelectItem>)}
+          {(workPackages?.items ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{w.wpNumber}{w.title ? ` · ${w.title}` : ''}</SelectItem>)}
         </SelectContent>
       </Select>
     </div>

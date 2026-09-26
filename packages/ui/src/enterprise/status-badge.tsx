@@ -5,6 +5,7 @@ import {
   ShieldCheck, Wrench, UserX, Award,
 } from 'lucide-react';
 import { cn } from '../lib/cn';
+import { humanizeCode } from '../lib/labels';
 import { Badge, type BadgeProps } from '../primitives/badge';
 
 export type StatusKey =
@@ -36,70 +37,70 @@ export const statusMeta: Record<StatusKey, StatusMeta> = {
   SUBMITTED: { label: 'Submitted', variant: 'muted', icon: Send },
   UNDER_REVIEW: { label: 'Under Review', variant: 'info', icon: Eye },
   APPROVED: { label: 'Approved', variant: 'success', icon: CheckCircle2 },
-  REJECTED: { label: 'Ditolak', variant: 'destructive', icon: XCircle },
+  REJECTED: { label: 'Rejected', variant: 'destructive', icon: XCircle },
   RELEASED: { label: 'Released', variant: 'info', icon: Rocket },
   POSTED: { label: 'Posted', variant: 'success-filled', icon: Lock },
-  CANCELLED: { label: 'Dibatalkan', variant: 'muted', icon: Ban },
+  CANCELLED: { label: 'Cancelled', variant: 'muted', icon: Ban },
   PENDING: { label: 'Pending', variant: 'warning', icon: Clock },
-  ACTIVE: { label: 'Aktif', variant: 'success', icon: CheckCircle2 },
-  INACTIVE: { label: 'Nonaktif', variant: 'muted', icon: CircleDashed },
+  ACTIVE: { label: 'Active', variant: 'success', icon: CheckCircle2 },
+  INACTIVE: { label: 'Inactive', variant: 'muted', icon: CircleDashed },
   ARCHIVED: { label: 'Archived', variant: 'muted', icon: Ban },
   IN_PROGRESS: { label: 'In Progress', variant: 'info', icon: Clock },
-  COMPLETED: { label: 'Selesai', variant: 'success', icon: CheckCircle2 },
+  COMPLETED: { label: 'Completed', variant: 'success', icon: CheckCircle2 },
 
   LEAVER: { label: 'Leaver', variant: 'muted', icon: UserX },
-  CRITICAL: { label: 'Kritis', variant: 'destructive', icon: AlertTriangle },
-  AT_RISK: { label: 'Berisiko', variant: 'warning', icon: TrendingDown },
+  CRITICAL: { label: 'Critical', variant: 'destructive', icon: AlertTriangle },
+  AT_RISK: { label: 'At Risk', variant: 'warning', icon: TrendingDown },
   ON_TRACK: { label: 'On Track', variant: 'success', icon: TrendingUp },
   NO_BUDGET: { label: 'No Budget', variant: 'default', icon: CircleDashed },
 
   LOST: { label: 'Lost', variant: 'muted', icon: XCircle },
-  WON: { label: 'Menang', variant: 'success', icon: Award },
-  CLOSED_WON: { label: 'Menang', variant: 'success', icon: Award },
-  CLOSED_LOST: { label: 'Kalah', variant: 'muted', icon: XCircle },
+  WON: { label: 'Won', variant: 'success', icon: Award },
+  CLOSED_WON: { label: 'Closed Won', variant: 'success', icon: Award },
+  CLOSED_LOST: { label: 'Closed Lost', variant: 'muted', icon: XCircle },
 
-  INVESTIGATING: { label: 'Investigasi', variant: 'warning', icon: Eye },
+  INVESTIGATING: { label: 'Investigating', variant: 'warning', icon: Eye },
   RESOLVED: { label: 'Resolved', variant: 'success', icon: CheckCircle2 },
-  REVOKED: { label: 'Dicabut', variant: 'destructive', icon: Ban },
+  REVOKED: { label: 'Revoked', variant: 'destructive', icon: Ban },
   AWARD_RECONCILED: { label: 'Reconciled', variant: 'success', icon: CheckCircle2 },
-  SUPERSEDED: { label: 'Diganti', variant: 'muted', icon: CircleDashed },
-  LOCKED: { label: 'Terkunci', variant: 'muted', icon: Lock },
+  SUPERSEDED: { label: 'Superseded', variant: 'muted', icon: CircleDashed },
+  LOCKED: { label: 'Locked', variant: 'muted', icon: Lock },
   SOFT_CLOSED: { label: 'Soft Closed', variant: 'warning', icon: Clock },
-  ENDED: { label: 'Berakhir', variant: 'muted', icon: Ban },
+  ENDED: { label: 'Ended', variant: 'muted', icon: Ban },
 
   BREAKDOWN: { label: 'Breakdown', variant: 'destructive', icon: Zap },
   ASSIGNED: { label: 'Assigned', variant: 'info', icon: Send },
-  AVAILABLE: { label: 'Tersedia', variant: 'success', icon: CheckCircle2 },
+  AVAILABLE: { label: 'Available', variant: 'success', icon: CheckCircle2 },
   MAINTENANCE: { label: 'Maintenance', variant: 'warning', icon: Wrench },
   RETIRED: { label: 'Retired', variant: 'muted', icon: Ban },
 
-  OPEN: { label: 'Terbuka', variant: 'warning', icon: Clock },
-  MITIGATED: { label: 'Dimitigasi', variant: 'info', icon: ShieldCheck },
-  SETTLED: { label: 'Selesai', variant: 'success', icon: CheckCircle2 },
-  PLANNED: { label: 'Direncanakan', variant: 'default', icon: Clock },
+  OPEN: { label: 'Open', variant: 'warning', icon: Clock },
+  MITIGATED: { label: 'Mitigated', variant: 'info', icon: ShieldCheck },
+  SETTLED: { label: 'Settled', variant: 'success', icon: CheckCircle2 },
+  PLANNED: { label: 'Planned', variant: 'default', icon: Clock },
   FIELDWORK: { label: 'Fieldwork', variant: 'info', icon: Eye },
-  FINDINGS: { label: 'Temuan', variant: 'warning', icon: AlertTriangle },
+  FINDINGS: { label: 'Findings', variant: 'warning', icon: AlertTriangle },
 
-  EXECUTED: { label: 'Dieksekusi', variant: 'success', icon: CheckCircle2 },
-  TERMINATED: { label: 'Diakhiri', variant: 'destructive', icon: Ban },
-  AMENDED: { label: 'Diamendemen', variant: 'warning', icon: FilePen },
+  EXECUTED: { label: 'Executed', variant: 'success', icon: CheckCircle2 },
+  TERMINATED: { label: 'Terminated', variant: 'destructive', icon: Ban },
+  AMENDED: { label: 'Amended', variant: 'warning', icon: FilePen },
 
-  PASS: { label: 'Lulus', variant: 'success', icon: CheckCircle2 },
-  FAIL: { label: 'Gagal', variant: 'destructive', icon: XCircle },
+  PASS: { label: 'Pass', variant: 'success', icon: CheckCircle2 },
+  FAIL: { label: 'Fail', variant: 'destructive', icon: XCircle },
   DISPOSED: { label: 'Disposed', variant: 'info', icon: Eye },
   VERIFIED: { label: 'Verified', variant: 'success', icon: ShieldCheck },
 
-  FUTURE: { label: 'Akan Datang', variant: 'default', icon: Clock },
-  CLOSED: { label: 'Ditutup', variant: 'success', icon: Lock },
+  FUTURE: { label: 'Future', variant: 'default', icon: Clock },
+  CLOSED: { label: 'Closed', variant: 'success', icon: Lock },
 
-  POTENTIAL: { label: 'Potensial', variant: 'default', icon: CircleDashed },
+  POTENTIAL: { label: 'Potential', variant: 'default', icon: CircleDashed },
   MATCHED: { label: 'Matched', variant: 'success', icon: CheckCircle2 },
 
-  HIGH: { label: 'Tinggi', variant: 'warning', icon: AlertTriangle },
-  MEDIUM: { label: 'Sedang', variant: 'default', icon: Clock },
-  LOW: { label: 'Rendah', variant: 'success', icon: CheckCircle2 },
+  HIGH: { label: 'High', variant: 'warning', icon: AlertTriangle },
+  MEDIUM: { label: 'Medium', variant: 'default', icon: Clock },
+  LOW: { label: 'Low', variant: 'success', icon: CheckCircle2 },
 
-  PAID: { label: 'Lunas', variant: 'success-filled', icon: CheckCircle2 },
+  PAID: { label: 'Paid', variant: 'success-filled', icon: CheckCircle2 },
 };
 
 export interface StatusBadgeProps {
@@ -112,10 +113,13 @@ export interface StatusBadgeProps {
 export function StatusBadge({ status, label, className, size = 12 }: StatusBadgeProps) {
   const meta = statusMeta[status as StatusKey];
   const Icon = meta?.icon ?? CircleDashed;
+  // Status di luar whitelist tetap diturunkan (bukan kode mentah), dan kode asli
+  // disimpan di `title` agar tetap bisa ditelusuri.
+  const text = label ?? meta?.label ?? humanizeCode(status);
   return (
     <Badge variant={meta?.variant ?? 'default'} className={cn('gap-1', className)}>
       <Icon className="shrink-0" style={{ width: size, height: size }} aria-hidden="true" />
-      <span>{label ?? meta?.label ?? status}</span>
+      <span title={status}>{text}</span>
     </Badge>
   );
 }

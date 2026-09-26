@@ -65,7 +65,7 @@ export function DataGrid<TData>({
   isLoading,
   isError,
   onRetry,
-  emptyMessage = 'Tidak ada data',
+  emptyMessage = 'No data',
   rowCount,
   pagination,
   onPaginationChange,
@@ -140,8 +140,8 @@ export function DataGrid<TData>({
         <div className="flex items-center justify-between border-b border-neutral-200 px-3 py-2">
           <span className="text-caption text-neutral-500">
             {rowCount != null
-              ? `${data.length} dari ${rowCount.toLocaleString('id-ID')} total`
-              : `${data.length} baris`}
+              ? `${data.length} of ${rowCount.toLocaleString('id-ID')} total`
+              : `${data.length} rows`}
           </span>
           {exportFilename && (
             <Button size="sm" variant="secondary" onClick={exportCsv} disabled={data.length === 0}>
@@ -177,7 +177,7 @@ export function DataGrid<TData>({
                           type="button"
                           className="inline-flex items-center gap-1 uppercase hover:text-neutral-700"
                           onClick={header.column.getToggleSortingHandler()}
-                          aria-label={`Urutkan berdasarkan ${typeof header.column.columnDef.header === 'string' ? header.column.columnDef.header : header.id}`}
+                          aria-label={`Sort by ${typeof header.column.columnDef.header === 'string' ? header.column.columnDef.header : header.id}`}
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}
                           {sortDir === 'asc' ? (
@@ -230,7 +230,7 @@ export function DataGrid<TData>({
       {isServer && pageCount > 1 && (
         <div className="flex items-center justify-between border-t border-neutral-200 px-4 py-2">
           <span className="text-caption text-neutral-500">
-            {pageIndex * pageSize + 1}–{Math.min((pageIndex + 1) * pageSize, rowCount ?? 0)} dari {rowCount?.toLocaleString('id-ID') ?? 0}
+            {pageIndex * pageSize + 1}–{Math.min((pageIndex + 1) * pageSize, rowCount ?? 0)} of {rowCount?.toLocaleString('id-ID') ?? 0}
           </span>
           <div className="flex items-center gap-2">
             <Button
@@ -239,10 +239,10 @@ export function DataGrid<TData>({
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
-              Sebelumnya
+              Previous
             </Button>
             <span className="text-caption text-neutral-500">
-              Hal {pageIndex + 1} / {pageCount}
+              Page {pageIndex + 1} of {pageCount}
             </span>
             <Button
               variant="secondary"
@@ -250,7 +250,7 @@ export function DataGrid<TData>({
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
-              Berikutnya
+              Next
             </Button>
           </div>
         </div>

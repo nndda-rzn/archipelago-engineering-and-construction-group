@@ -21,7 +21,7 @@ export function CommissioningPage() {
           <EntitySelect
             value={projectId}
             onValueChange={(v) => { setProjectId(v); setShowForm(false); }}
-            options={(projects?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }))}
+            options={(projects?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
             placeholder="Pilih Project…"
             searchPlaceholder="Cari project…"
             className="w-64"

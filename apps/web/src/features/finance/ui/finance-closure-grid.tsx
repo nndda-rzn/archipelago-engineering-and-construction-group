@@ -1,5 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, StatusBadge } from '@aec/ui';
+import { Badge, Button, EmptyCell, StatusBadge } from '@aec/ui';
 import { usePostIntercompany, useCompleteStep, useLockPeriod, useClosePeriod } from '../model/finance-closure.api';
 import { formatIdr as fmt } from '@/shared/lib/format';
 import type { Intercompany, PeriodClose } from '../model/finance-closure.api';
@@ -71,7 +71,7 @@ export const icColumns = [
   }),
   icHelper.accessor('description', {
     header: 'Keterangan',
-    cell: (i) => <span className="max-w-[200px] truncate text-neutral-600">{i.getValue() ?? '-'}</span>,
+    cell: (i) => <span className="max-w-[200px] truncate text-neutral-600">{i.getValue() ?? <EmptyCell />}</span>,
   }),
   icHelper.accessor('status', {
     header: 'Status',

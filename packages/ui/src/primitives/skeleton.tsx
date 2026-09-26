@@ -21,7 +21,7 @@ export function Skeleton({ className, ...props }: SkeletonProps) {
 
 export function TableSkeleton({ rows = 5, cols = 5 }: { rows?: number; cols?: number }) {
   return (
-    <div className="p-4" aria-label="Memuat data">
+    <div className="p-4" aria-label="Loading data">
       {Array.from({ length: rows }).map((_, r) => (
         <div key={r} className="flex gap-4 border-b border-neutral-100 py-2.5 last:border-0">
           {Array.from({ length: cols }).map((_, c) => (

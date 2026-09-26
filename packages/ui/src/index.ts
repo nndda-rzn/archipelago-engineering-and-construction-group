@@ -1,4 +1,17 @@
 export { cn } from './lib/cn';
+export {
+  humanizeCode,
+  labelResource,
+  labelActionVerb,
+  labelAction,
+  labelPermission,
+  labelRole,
+  labelErrorCode,
+  RESOURCE_LABELS,
+  ACTION_LABELS,
+  ROLE_LABELS,
+  ERROR_LABELS,
+} from './lib/labels';
 export { Button, buttonVariants, type ButtonProps } from './primitives/button';
 export { Input, type InputProps } from './primitives/input';
 export { Badge, type BadgeProps, type BadgeVariant } from './primitives/badge';

@@ -1,5 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Badge, Button, StatusBadge } from '@aec/ui';
+import { Badge, Button, EmptyCell, StatusBadge } from '@aec/ui';
 import {
   useCompleteEquipmentPm, useEndEquipmentAssignment, useResolveEquipmentBreakdown,
 } from '../model/hcm.api';
@@ -26,7 +26,7 @@ export const equipmentColumns = [
   }),
   columnHelper.accessor('serialNumber', {
     header: 'Serial',
-    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? '-'}</span>,
+    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('currentMeter', {
     header: 'Meter',
@@ -78,7 +78,7 @@ export const pmColumns = [
   }),
   pmHelper.accessor('dueMeter', {
     header: 'Due Meter',
-    cell: (info) => (info.getValue() != null ? <span className="font-mono tabular-nums text-neutral-700">{info.getValue()} jam</span> : '-'),
+    cell: (info) => (info.getValue() != null ? <span className="font-mono tabular-nums text-neutral-700">{info.getValue()} jam</span> : <EmptyCell />),
   }),
   pmHelper.accessor('status', {
     header: 'Status',

@@ -1,4 +1,4 @@
-import { Badge, StatusBadge } from '@aec/ui';
+import { Badge, EmptyCell, StatusBadge } from '@aec/ui';
 import type { CommercialEvaluation } from '@/features/procurement';
 import { formatIdr as fmt } from '@/shared/lib/format';
 
@@ -27,7 +27,7 @@ export function CommercialEvalTable({ data }: { data: CommercialEvaluation }) {
               <td className="px-4 py-2">
                 <StatusBadge status={i.technicalStatus} />
               </td>
-              <td className="px-4 py-2">{i.isWinner ? <Badge variant="success">Winner</Badge> : '-'}</td>
+              <td className="px-4 py-2">{i.isWinner ? <Badge variant="success">Winner</Badge> : <EmptyCell />}</td>
             </tr>
           ))}
         </tbody>

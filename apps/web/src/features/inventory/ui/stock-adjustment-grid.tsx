@@ -1,4 +1,4 @@
-import { Badge, ConfirmActionButton, StatusBadge } from '@aec/ui';
+import { Badge, ConfirmActionButton, EmptyCell, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useApproveStockAdjustment } from '../model/stock-adjustment.api';
 import type { StockAdjustment } from '@aec/api-contracts';
@@ -13,7 +13,7 @@ export const adjustmentColumns = [
   }),
   columnHelper.accessor('warehouse', {
     header: 'Warehouse',
-    cell: (info) => <span className="text-neutral-700">{info.getValue()?.code ?? '-'}</span>,
+    cell: (info) => <span className="text-neutral-700">{info.getValue()?.code ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('reasonCode', {
     header: 'Alasan',

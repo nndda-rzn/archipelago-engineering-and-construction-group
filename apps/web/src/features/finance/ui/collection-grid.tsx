@@ -1,4 +1,4 @@
-import { ConfirmActionButton, StatusBadge } from '@aec/ui';
+import { ConfirmActionButton, EmptyCell, StatusBadge } from '@aec/ui';
 import { createColumnHelper } from '@tanstack/react-table';
 import { usePostCollection } from '../model/collection.api';
 import type { Collection } from '@aec/api-contracts';
@@ -23,7 +23,7 @@ export const collectionColumns = [
   }),
   columnHelper.accessor('reference', {
     header: 'Referensi',
-    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? '-'}</span>,
+    cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('status', {
     header: 'Status',
