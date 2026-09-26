@@ -9,7 +9,7 @@ const periodHelper = createColumnHelper<FiscalPeriod>();
 
 export const vendorColumns = [
   vendorHelper.accessor('vendorCode', {
-    header: 'Kode',
+    header: 'Code',
     cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span>,
   }),
   vendorHelper.accessor('name', {
@@ -17,15 +17,15 @@ export const vendorColumns = [
     cell: (info) => <span className="text-neutral-800 font-medium">{info.getValue()}</span>,
   }),
   vendorHelper.accessor('taxId', {
-    header: 'NPWP',
+    header: 'Tax ID',
     cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   vendorHelper.accessor('category', {
-    header: 'Kategori',
+    header: 'Category',
     cell: (info) => <Badge variant="default">{info.getValue()}</Badge>,
   }),
   vendorHelper.accessor('contactPerson', {
-    header: 'Kontak',
+    header: 'Contact',
     cell: (info) => <span className="text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   vendorHelper.accessor('status', {
@@ -36,15 +36,15 @@ export const vendorColumns = [
 
 export const periodColumns = [
   periodHelper.accessor('periodCode', {
-    header: 'Periode',
+    header: 'Period',
     cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span>,
   }),
   periodHelper.accessor('startDate', {
-    header: 'Mulai',
+    header: 'Start',
     cell: (info) => <span className="font-mono text-neutral-600">{formatDate(info.getValue())}</span>,
   }),
   periodHelper.accessor('endDate', {
-    header: 'Selesai',
+    header: 'End',
     cell: (info) => <span className="font-mono text-neutral-600">{formatDate(info.getValue())}</span>,
   }),
   periodHelper.accessor('status', {
@@ -61,7 +61,7 @@ export const periodColumns = [
 function PeriodStatusButton({ period }: { period: FiscalPeriod }) {
   const update = useUpdateFiscalPeriodStatus();
   const next: Record<string, string> = { FUTURE: 'OPEN', OPEN: 'SOFT_CLOSED', SOFT_CLOSED: 'CLOSED', CLOSED: 'LOCKED' };
-  const label: Record<string, string> = { OPEN: 'Buka', SOFT_CLOSED: 'Tutup Sementara', CLOSED: 'Tutup', LOCKED: 'Kunci' };
+  const label: Record<string, string> = { OPEN: 'Open', SOFT_CLOSED: 'Soft Close', CLOSED: 'Close', LOCKED: 'Lock' };
   const to = next[period.status];
   if (!to) return null;
   return (
