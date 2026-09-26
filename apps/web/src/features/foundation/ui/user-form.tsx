@@ -24,7 +24,7 @@ export function UserForm({ onDone }: { onDone: () => void }) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div><Label htmlFor="username">Username</Label><Input id="username" placeholder="buyer1" spellCheck={false} error={!!errors.username} {...register('username')} />{errors.username && <p className="mt-1 text-caption text-destructive-600">{errors.username.message}</p>}</div>
         <div><Label htmlFor="displayName">Name</Label><Input id="displayName" placeholder="Buyer Satu" error={!!errors.displayName} {...register('displayName')} />{errors.displayName && <p className="mt-1 text-caption text-destructive-600">{errors.displayName.message}</p>}</div>
-        <div><Label htmlFor="email">Email</Label><Input id="email" type="email" placeholder="nama@perusahaan.com" spellCheck={false} error={!!errors.email} {...register('email')} />{errors.email && <p className="mt-1 text-caption text-destructive-600">{errors.email.message}</p>}</div>
+        <div><Label htmlFor="email">Email</Label><Input id="email" type="email" placeholder="name@company.com" spellCheck={false} error={!!errors.email} {...register('email')} />{errors.email && <p className="mt-1 text-caption text-destructive-600">{errors.email.message}</p>}</div>
         <div><Label htmlFor="password">Password</Label><Input id="password" type="password" placeholder="Min. 8 characters" spellCheck={false} error={!!errors.password} {...register('password')} />{errors.password && <p className="mt-1 text-caption text-destructive-600">{errors.password.message}</p>}</div>
         <div><Label htmlFor="roleCode">Role</Label><Input id="roleCode" placeholder="PROCUREMENT_MANAGER" spellCheck={false} {...register('roleCode')} /></div>
       </div>
