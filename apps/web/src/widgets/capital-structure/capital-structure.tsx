@@ -9,7 +9,7 @@ export interface CapitalInput {
 export interface CapitalBar {
   label: string;
   value: number;
-  /** Lebar relatif terhadap nilai terbesar (0–100). */
+  /** Lebar relatif terhadap **Contract** (0–100) — Contract adalah referensi 100%. */
   pct: number;
   /** Warna token netral untuk baris ini. */
   tone: string;
@@ -18,13 +18,15 @@ export interface CapitalBar {
 }
 
 /**
- * Susun tiga besaran modal (Contract ⊇ Budget ⊇ Actual) sebagai bar sejajar
- * dengan skala bersama, agar panjangnya langsung sebanding. Nilai nol → 0%
- * (tanpa pembagian nol). Warna netral; hanya overrun yang memakai token merah.
+ * Susun tiga besaran modal sebagai **nested bar**: Contract ⊇ Budget ⊇ Actual.
+ * Semua lebar diskala terhadap **Contract** (bukan nilai terbesar) supaya relasi
+ * "budget & actual adalah pecahan dari contract" langsung terbaca — bar Contract
+ * selalu penuh sebagai garis acuan. Nilai nol → 0% (tanpa pembagian nol).
+ * Lebar dibatasi 100% agar bar tetap di dalam track. Warna netral; hanya overrun
+ * yang memakai token merah.
  */
 export function capitalBars({ contract, budget, actual }: CapitalInput): CapitalBar[] {
-  const max = Math.max(contract, budget, actual, 0);
-  const pct = (v: number) => (max > 0 ? Math.round((v / max) * 100) : 0);
+  const pct = (v: number) => (contract > 0 ? Math.min(100, Math.round((v / contract) * 100)) : 0);
   const overrun = budget > 0 && actual > budget;
   return [
     { label: 'Contract Value', value: contract, pct: pct(contract), tone: 'bg-neutral-200', overrun: false },
@@ -38,12 +40,15 @@ export interface CapitalStructureChartProps extends CapitalInput {
 }
 
 /**
- * Bagan "Capital Structure": tiga bar horizontal skala bersama menggantikan
- * grid kartu metrik. Setiap baris = label + bar + angka (rata kanan).
+ * Bagan "Capital Structure": tiga bar horizontal berskala Contract menggantikan
+ * grid kartu metrik. Setiap baris = label + track + bar + angka (rata kanan).
+ * Persentase serapan anggaran menempel pada baris **Actual Cost** agar dekat
+ * dengan datanya (ux-designer/18).
  */
 export function CapitalStructureChart({ contract, budget, actual, projectCount }: CapitalStructureChartProps) {
   const bars = capitalBars({ contract, budget, actual });
   const budgetPct = budget > 0 ? Math.round((actual / budget) * 100) : 0;
+  const actualBar = bars.find((b) => b.label === 'Actual Cost');
 
   return (
     <div data-slot="capital-structure">
@@ -52,31 +57,33 @@ export function CapitalStructureChart({ contract, budget, actual, projectCount }
         <p className="text-caption text-neutral-500">{projectCount} projects</p>
       </div>
       <dl className="mt-3 space-y-3">
-        {bars.map((b) => (
-          <div key={b.label} className="grid grid-cols-[8.5rem_1fr_auto] items-center gap-3">
-            <dt className="text-body-sm text-neutral-600">{b.label}</dt>
-            <dd className="min-w-0">
-              <div
-                role="img"
-                aria-label={`${b.label}: ${formatIdr(b.value)}`}
-                className="h-2.5 w-full overflow-hidden rounded-sm bg-neutral-100"
-              >
-                <div className={`h-full rounded-sm ${b.tone}`} style={{ width: `${b.pct}%` }} />
-              </div>
-            </dd>
-            <dd className="text-right font-mono text-body-sm tabular-nums text-neutral-900">{formatIdr(b.value)}</dd>
-          </div>
-        ))}
+        {bars.map((b) => {
+          const isActual = b.label === 'Actual Cost';
+          return (
+            <div key={b.label} className="grid grid-cols-[8.5rem_1fr_auto] items-center gap-3">
+              <dt className="text-body-sm text-neutral-600">
+                {b.label}
+                {isActual && budget > 0 && (
+                  <span className={b.overrun ? 'text-destructive-600' : 'text-neutral-500'}> · {budgetPct}% of budget</span>
+                )}
+              </dt>
+              <dd className="min-w-0">
+                <div
+                  data-slot="capital-track"
+                  role="img"
+                  aria-label={`${b.label}: ${formatIdr(b.value)}`}
+                  className="h-2.5 w-full overflow-hidden rounded-sm bg-neutral-100"
+                >
+                  <div className={`h-full rounded-sm ${b.tone}`} style={{ width: `${b.pct}%` }} />
+                </div>
+              </dd>
+              <dd className="text-right font-mono text-body-sm tabular-nums text-neutral-900">{formatIdr(b.value)}</dd>
+            </div>
+          );
+        })}
       </dl>
       <p className="mt-3 text-caption text-neutral-500">
-        {budget > 0 ? (
-          <>
-            <span className={bars[2]!.overrun ? 'text-destructive-600' : 'text-neutral-600'}>{budgetPct}% of budget</span>{' '}
-            spent · baseline not period-filtered
-          </>
-        ) : (
-          'No budget baseline'
-        )}
+        {actualBar?.overrun ? 'Actual exceeds budget · baseline not period-filtered' : 'Baseline not period-filtered'}
       </p>
     </div>
   );

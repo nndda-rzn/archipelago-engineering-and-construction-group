@@ -7,15 +7,18 @@ import { formatIdr } from '@/shared/lib/format';
 import { TONE_CLASS, valueTone } from '@/shared/lib/value-tone';
 import { CapitalStructureChart } from '@/widgets/capital-structure';
 
-/** Kalimat narasi hero dari angka yang sudah dimuat (fungsi murni). */
-export function heroNarrative(input: {
-  cashOnHand: number;
-  netCashFlow: number;
-  criticalProjects: number;
-  openNcrs: number;
-}): string {
-  const flow = input.netCashFlow >= 0 ? 'positive' : 'negative';
-  return `Cash on hand ${formatIdr(input.cashOnHand)}; net cash flow ${flow}; ${input.criticalProjects} critical project(s); ${input.openNcrs} open NCR(s).`;
+/**
+ * Baris fakta hero — **hanya** informasi yang belum tampil di tempat lain pada
+ * kartu (angka kas & net cash flow sudah punya barisnya sendiri). Sengaja tanpa
+ * nilai mata uang: menaruh angka di tengah kalimat membuat panjangnya ikut data
+ * dan merusak tata letak (lihat ux-designer/09: "don't embed variables mid-sentence").
+ */
+export function heroFacts(input: { criticalProjects: number; openNcrs: number }): string {
+  const parts: string[] = [];
+  if (input.criticalProjects > 0) parts.push(`${input.criticalProjects} critical project${input.criticalProjects === 1 ? '' : 's'}`);
+  if (input.openNcrs > 0) parts.push(`${input.openNcrs} open NCR${input.openNcrs === 1 ? '' : 's'}`);
+  if (parts.length === 0) return 'No critical projects or open NCRs';
+  return parts.join(' · ');
 }
 
 type PortfolioItem = NonNullable<ReturnType<typeof usePortfolio>['data']>['items'][number];
@@ -105,16 +108,20 @@ export function HeroBandView({
             </span>
           )}
         </div>
-        <p className="mt-2 flex items-center gap-2 text-h3 text-neutral-700">
-          <span>
-            Net cash flow · period:{' '}
-            <span className={`font-mono tabular-nums ${TONE_CLASS[valueTone(netCashFlow)]}`}>{formatIdr(netCashFlow)}</span>
-          </span>
-          {deltaCashIn && <DeltaBadge pct={deltaCashIn.pctChange} direction={deltaCashIn.direction} />}
-        </p>
-        <p className="mt-2 text-body text-neutral-600">
-          {heroNarrative({ cashOnHand, netCashFlow, criticalProjects, openNcrs })}
-        </p>
+
+        <div className="mt-3 border-t border-neutral-200 pt-3">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <span className="text-body-sm text-neutral-500">Net cash flow · period</span>
+            <span className="flex shrink-0 items-baseline gap-2">
+              <span className={`font-mono text-h3 tabular-nums ${TONE_CLASS[valueTone(netCashFlow)]}`}>{formatIdr(netCashFlow)}</span>
+              {deltaCashIn && <DeltaBadge pct={deltaCashIn.pctChange} direction={deltaCashIn.direction} />}
+            </span>
+          </div>
+          {/* Hanya fakta baru; satu baris agar tinggi kartu stabil berapa pun datanya. */}
+          <p data-slot="hero-facts" className="mt-1 truncate text-body-sm text-neutral-600">
+            {heroFacts({ criticalProjects, openNcrs })}
+          </p>
+        </div>
       </div>
 
       <div className="mt-auto border-t border-neutral-200 pt-4">
