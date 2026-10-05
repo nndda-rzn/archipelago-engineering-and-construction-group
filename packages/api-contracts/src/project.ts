@@ -113,6 +113,40 @@ export const portfolioFilterParamsSchema = z.object({
 });
 export type PortfolioFilterParams = z.infer<typeof portfolioFilterParamsSchema>;
 
+export const portfolioEvmItemSchema = z.object({
+  projectId: z.string(),
+  projectCode: z.string(),
+  projectName: z.string(),
+  bac: z.number(),
+  ev: z.number(),
+  pv: z.number(),
+  ac: z.number(),
+  cpi: z.number().nullable(),
+  spi: z.number().nullable(),
+  eac: z.number(),
+  vac: z.number(),
+  tcpi: z.number().nullable(),
+  progressPercent: z.number(),
+  hasEvm: z.boolean(),
+});
+export type PortfolioEvmItem = z.infer<typeof portfolioEvmItemSchema>;
+
+export const portfolioEvmSchema = z.object({
+  items: z.array(portfolioEvmItemSchema),
+  totals: z.object({
+    bac: z.number(),
+    ev: z.number(),
+    pv: z.number(),
+    ac: z.number(),
+    cpi: z.number().nullable(),
+    spi: z.number().nullable(),
+    eac: z.number(),
+    vac: z.number(),
+  }),
+  generatedAt: z.string(),
+});
+export type PortfolioEvm = z.infer<typeof portfolioEvmSchema>;
+
 export const wbsItemSchema: z.ZodType<{
   id: string;
   code: string;
