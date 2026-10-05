@@ -39,7 +39,7 @@ export function ItpForm({ onDone }: { onDone: () => void }) {
           <Input id="itp-title" error={!!errors.title} {...register('title')} />
           {errors.title && <p className="mt-1 text-caption text-destructive-600">{errors.title.message}</p>}
         </div>
-        <Button type="submit" loading={create.isPending}>Buat ITP</Button>
+        <Button type="submit" loading={create.isPending}>Create ITP</Button>
       </div>
     </form>
   );

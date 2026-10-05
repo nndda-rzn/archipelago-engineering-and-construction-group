@@ -9,7 +9,7 @@ type Tab = 'itp' | 'inspections' | 'ncrs' | 'punch';
 
 const TAB_LABELS: Record<Tab, string> = {
   itp: 'ITP',
-  inspections: 'Inspeksi',
+  inspections: 'Inspection',
   ncrs: 'NCR',
   punch: 'Punch',
 };
