@@ -10,6 +10,7 @@ import {
   type PaginationState,
 } from '@tanstack/react-table';
 import { ChevronDown, ChevronUp, ChevronsUpDown, Download } from 'lucide-react';
+import { cn } from '../lib/cn';
 import { Button } from '../primitives/button';
 import { TableSkeleton } from '../primitives/skeleton';
 import { ErrorState } from './state';
@@ -159,12 +160,17 @@ export function DataGrid<TData>({
                 {headerGroup.headers.map((header) => {
                   const canSort = header.column.getCanSort();
                   const sortDir = header.column.getIsSorted();
+                  const align = (header.column.columnDef.meta as { align?: 'left' | 'right' } | undefined)?.align;
+                  const size = header.column.columnDef.size;
                   return (
                     <th
                       key={header.id}
                       scope="col"
-                      className="px-2 py-2 text-caption font-medium uppercase text-neutral-500"
-                      style={{ width: header.getSize() }}
+                      className={cn(
+                        'whitespace-nowrap px-2 py-2 text-caption font-medium uppercase text-neutral-500',
+                        align === 'right' && 'text-right',
+                      )}
+                      style={size ? { minWidth: `${size}px` } : undefined}
                       aria-sort={
                         sortDir === 'asc' ? 'ascending'
                         : sortDir === 'desc' ? 'descending'
@@ -214,11 +220,14 @@ export function DataGrid<TData>({
                     className={`border-b border-neutral-100 last:border-0 ${isSelected ? 'bg-racing-red-50' : 'hover:bg-neutral-50'} ${onRowClick ? 'cursor-pointer' : ''}`}
                     onClick={onRowClick ? () => onRowClick(row) : undefined}
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className={density === 'compact' ? 'px-2 py-1.5' : 'px-4 py-3'}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
+                    {row.getVisibleCells().map((cell) => {
+                      const align = (cell.column.columnDef.meta as { align?: 'left' | 'right' } | undefined)?.align;
+                      return (
+                        <td key={cell.id} className={cn(density === 'compact' ? 'px-2 py-1.5' : 'px-4 py-3', align === 'right' && 'text-right')}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })

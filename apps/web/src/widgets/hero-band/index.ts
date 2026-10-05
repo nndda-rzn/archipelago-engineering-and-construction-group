@@ -1,1 +1,1 @@
-export { HeroBand, heroNarrative } from './hero-band';
+export { HeroBand, HeroBandView, heroNarrative, summarizePortfolio } from './hero-band';

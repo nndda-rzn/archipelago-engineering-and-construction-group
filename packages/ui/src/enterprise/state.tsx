@@ -8,14 +8,24 @@ export interface EmptyStateProps {
   title?: string;
   description?: string;
   action?: React.ReactNode;
+  icon?: React.ReactNode;
+  tone?: 'neutral' | 'success';
   className?: string;
 }
 
-export function EmptyState({ title, description, action, className }: EmptyStateProps) {
+const TONE_BADGE: Record<'neutral' | 'success', string> = {
+  neutral: 'bg-neutral-100 text-neutral-400',
+  success: 'bg-success-50 text-success-600',
+};
+
+export function EmptyState({ title, description, action, icon, tone = 'neutral', className }: EmptyStateProps) {
   return (
     <div className={cn('flex flex-col items-center justify-center gap-2 px-6 py-12 text-center', className)}>
-      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-100">
-        <Inbox className="h-5 w-5 text-neutral-400" aria-hidden="true" />
+      <div
+        data-slot="empty-icon"
+        className={cn('flex h-11 w-11 items-center justify-center rounded-full', TONE_BADGE[tone])}
+      >
+        {icon ?? <Inbox className="h-5 w-5" aria-hidden="true" />}
       </div>
       <div>
         <p className="text-body font-medium text-neutral-700">{title ?? 'No data yet'}</p>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildEvmPoints, filterByHealth } from './portfolio-canvas';
+import { render, screen } from '@testing-library/react';
+import { buildEvmPoints, filterByHealth, PortfolioCanvasView } from './portfolio-canvas';
 
 const portfolio = [
   { projectId: 'p1', projectCode: 'PRJ-1', projectName: 'A', client: 'C', status: 'ACTIVE', contractValue: 100, budget: 0, actual: 0, revenue: 0, variance: 0, utilization: null, health: 'NO_BUDGET' as const },
@@ -49,5 +50,31 @@ describe('filterByHealth', () => {
   });
   it('returns empty for a filter that matches nothing', () => {
     expect(filterByHealth([{ projectId: 'p1', health: 'ON_TRACK' as const }] as never[], 'CRITICAL')).toEqual([]);
+  });
+});
+
+describe('PortfolioCanvasView', () => {
+  const points = buildEvmPoints(portfolio, evm);
+
+  it('renders an educational empty state (with faint axes) when there are no projects', () => {
+    render(<PortfolioCanvasView points={[]} />);
+    expect(screen.getByText(/Belum ada data portofolio/i)).toBeTruthy();
+    expect(screen.getByText(/analisis EVM/i)).toBeTruthy();
+  });
+
+  it('exposes the empty-state message to screen readers', () => {
+    render(<PortfolioCanvasView points={[]} />);
+    expect(screen.getByRole('img', { name: /Belum ada data portofolio/i })).toBeTruthy();
+  });
+
+  it('renders a chart skeleton while loading', () => {
+    render(<PortfolioCanvasView points={[]} isLoading />);
+    expect(screen.getByLabelText('Loading portfolio canvas')).toBeTruthy();
+    expect(screen.queryByText(/Belum ada data portofolio/i)).toBeNull();
+  });
+
+  it('renders the scatter canvas when points exist', () => {
+    render(<PortfolioCanvasView points={points} />);
+    expect(screen.queryByText(/Belum ada data portofolio/i)).toBeNull();
   });
 });

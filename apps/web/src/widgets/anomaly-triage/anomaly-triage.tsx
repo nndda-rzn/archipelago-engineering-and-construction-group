@@ -1,4 +1,5 @@
-import { Badge, EmptyState } from '@aec/ui';
+import { ShieldCheck } from 'lucide-react';
+import { Badge, EmptyState, ListSkeleton } from '@aec/ui';
 import type { Anomaly } from '@aec/api-contracts';
 import { useAnomalies } from '@/features/analytics';
 
@@ -22,21 +23,28 @@ export function groupAnomalies(anomalies: Anomaly[]): AnomalyGroup[] {
   })).filter((g) => g.items.length > 0);
 }
 
-export function AnomalyTriage() {
-  const { data, isLoading } = useAnomalies();
-  const groups = groupAnomalies(data?.anomalies ?? []);
+export function AnomalyTriageView({ anomalies, total, isLoading = false }: { anomalies: Anomaly[]; total?: number; isLoading?: boolean }) {
+  const groups = groupAnomalies(anomalies);
+  const count = total ?? anomalies.length;
 
   return (
     <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-h2 text-neutral-950">Anomaly triage</h2>
-        <Badge variant={groups.length > 0 ? 'warning' : 'success'}>{data?.total ?? 0} anomalies</Badge>
+        <Badge variant={groups.length > 0 ? 'warning' : 'success'}>{count} anomalies</Badge>
       </div>
 
       {isLoading ? (
-        <p className="text-body-sm text-neutral-500">Loading…</p>
+        <div aria-label="Loading anomalies">
+          <ListSkeleton rows={3} />
+        </div>
       ) : groups.length === 0 ? (
-        <EmptyState title="No anomalies" description="Nothing flagged across the portfolio." />
+        <EmptyState
+          tone="success"
+          icon={<ShieldCheck className="h-5 w-5" aria-hidden="true" />}
+          title="No anomalies"
+          description="Nothing flagged across the portfolio."
+        />
       ) : (
         <div className="space-y-4">
           {groups.map((g) => (
@@ -60,4 +68,9 @@ export function AnomalyTriage() {
       )}
     </section>
   );
+}
+
+export function AnomalyTriage() {
+  const { data, isLoading } = useAnomalies();
+  return <AnomalyTriageView anomalies={data?.anomalies ?? []} total={data?.total} isLoading={isLoading} />;
 }
