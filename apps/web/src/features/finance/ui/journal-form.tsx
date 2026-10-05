@@ -115,7 +115,7 @@ export function JournalForm({ onDone, entityId }: { onDone: () => void; entityId
         <div className="flex gap-6 text-body-sm">
           <span className="text-neutral-600">Total Debit: <span className="font-mono tabular-nums">{formatNumber(totalDebit)}</span></span>
           <span className="text-neutral-600">Total Credit: <span className="font-mono tabular-nums">{formatNumber(totalCredit)}</span></span>
-          {fields.length > 0 && (<span className={balanced ? 'text-semantic-success' : 'text-destructive-600'}>{balanced ? 'Balanced ✓' : 'Not balanced'}</span>)}
+          {fields.length > 0 && (<span className={balanced ? 'text-financial-positive-600' : 'text-destructive-600'}>{balanced ? 'Balanced ✓' : 'Not balanced'}</span>)}
         </div>
         <Button type="button" variant="secondary" size="sm" onClick={() => append({ accountId: '', debit: 0, credit: 0, description: '' })}>+ Add Line</Button>
       </div>

@@ -26,6 +26,17 @@ export class ProjectController {
     return this.service.findAll(query);
   }
 
+  /**
+   * Register: satu payload (metadata + biaya + health) untuk daftar/kartu/timeline.
+   * WAJIB didaftarkan SEBELUM `@Get(':id')` — jika tidak, "register" akan
+   * ditangkap sebagai `:id` dan menghasilkan 404.
+   */
+  @Get('register')
+  @Permissions(Permission.ProjectView)
+  register(@Query() query: ListProjectQueryDto) {
+    return this.service.register({ sort: query.sort, order: query.order });
+  }
+
   @Get('portfolio')
   @Permissions(Permission.ProjectView)
   portfolio(@Query() query: PortfolioFilterParams) {

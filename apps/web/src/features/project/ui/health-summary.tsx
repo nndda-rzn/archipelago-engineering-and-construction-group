@@ -12,10 +12,21 @@ export const healthLabel: Record<ProjectHealthLevel, string> = {
   CRITICAL: 'Critical',
 };
 
+/**
+ * Warna bar health — memakai token yang BENAR-BENAR ada di preset Tailwind.
+ * Sebelumnya memakai `bg-semantic-*` yang tidak terdefinisi sehingga bar tidak
+ * berwarna sama sekali.
+ */
 export function getHealthBarColor(health: ProjectHealth['health']): string {
-  if (health === 'ON_TRACK') return 'bg-semantic-success';
-  if (health === 'AT_RISK') return 'bg-semantic-warning';
-  return 'bg-destructive-600';
+  if (health === 'ON_TRACK') return 'bg-project-on-track-500';
+  if (health === 'AT_RISK') return 'bg-project-at-risk-500';
+  if (health === 'CRITICAL') return 'bg-project-critical-500';
+  return 'bg-neutral-400';
+}
+
+/** Kelas teks untuk nilai variance — token yang ada. */
+export function getVarianceTextColor(variance: number): string {
+  return variance >= 0 ? 'text-financial-positive-600' : 'text-financial-negative-600';
 }
 
 export function HealthSummary({ data }: { data: ProjectHealth }) {
@@ -41,7 +52,7 @@ export function HealthSummary({ data }: { data: ProjectHealth }) {
       <div className="mt-3 flex items-center gap-4 text-caption text-neutral-500">
         <span>
           Variance:{' '}
-          <span className={data.variance >= 0 ? 'font-medium text-semantic-success' : 'font-medium text-destructive-600'}>
+          <span className={`font-medium ${getVarianceTextColor(data.variance)}`}>
             {fmt(data.variance)}
           </span>
         </span>

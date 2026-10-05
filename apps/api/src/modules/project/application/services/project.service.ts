@@ -1,9 +1,12 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
+import { PROJECT_SORT_FIELDS, type ProjectRegister, type ProjectSortField } from '@aec/api-contracts';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { CacheService } from '@/shared/cache/cache.service';
 import { invalidateAnalytics } from '@/shared/cache/analytics-cache';
+import { ActualCostCalculator } from '@/shared/project/actual-cost.calculator';
+import { classifyHealth } from '@/shared/project/project-health.classifier';
 import type { CreateProjectDto, ListProjectQueryDto } from '../../presentation/dto/project.dto';
 
 @Injectable()
@@ -12,7 +15,88 @@ export class ProjectService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(CacheService) private readonly cache: CacheService,
+    @Inject(ActualCostCalculator) private readonly actualCost: ActualCostCalculator,
   ) {}
+
+  /**
+   * Register proyek: satu payload berisi metadata proyek + metrik biaya + health,
+   * dipakai bersama oleh daftar (tabel/kartu/timeline) dan ringkasan.
+   *
+   * `sort`/`order` di-whitelist: kolom di luar `PROJECT_SORT_FIELDS` diabaikan dan
+   * jatuh ke `createdAt desc` — mencegah kolom liar / error 500.
+   */
+  async register(query: { sort?: string; order?: string } = {}): Promise<ProjectRegister> {
+    const sortField = (PROJECT_SORT_FIELDS as readonly string[]).includes(query.sort ?? '')
+      ? (query.sort as ProjectSortField)
+      : 'createdAt';
+    const sortOrder: Prisma.SortOrder = query.order === 'asc' ? 'asc' : 'desc';
+
+    const projects = await this.prisma.project.findMany({
+      select: {
+        id: true, code: true, name: true, client: true, manager: true, status: true,
+        contractValue: true, startDate: true, completionDate: true,
+      },
+      orderBy: { [sortField]: sortOrder },
+    });
+
+    if (projects.length === 0) {
+      return {
+        items: [],
+        totals: { projectCount: 0, totalContract: 0, totalBudget: 0, totalActual: 0, totalVariance: 0 },
+        healthCounts: { NO_BUDGET: 0, ON_TRACK: 0, AT_RISK: 0, CRITICAL: 0 },
+        generatedAt: new Date().toISOString(),
+      };
+    }
+
+    const projectIds = projects.map((p) => p.id);
+    const [budgetGroups, actualMap] = await Promise.all([
+      this.prisma.budgetItem.groupBy({
+        by: ['projectId'],
+        where: { projectId: { in: projectIds }, status: 'PUBLISHED' },
+        _sum: { amount: true },
+      }),
+      this.actualCost.computeBatch(projectIds),
+    ]);
+    const budgetMap = new Map(budgetGroups.map((r) => [r.projectId, Number(r._sum?.amount ?? 0)]));
+
+    let totalContract = 0;
+    let totalBudget = 0;
+    let totalActual = 0;
+    const healthCounts = { NO_BUDGET: 0, ON_TRACK: 0, AT_RISK: 0, CRITICAL: 0 };
+
+    const items = projects.map((p) => {
+      const budget = budgetMap.get(p.id) ?? 0;
+      const actual = actualMap.get(p.id) ?? 0;
+      const { utilization, health } = classifyHealth(budget, actual);
+      healthCounts[health] += 1;
+      totalContract += Number(p.contractValue ?? 0);
+      totalBudget += budget;
+      totalActual += actual;
+      return {
+        projectId: p.id,
+        code: p.code,
+        name: p.name,
+        client: p.client,
+        manager: p.manager,
+        status: p.status,
+        contractValue: Number(p.contractValue ?? 0),
+        startDate: p.startDate ? p.startDate.toISOString() : null,
+        completionDate: p.completionDate ? p.completionDate.toISOString() : null,
+        budget,
+        actual,
+        variance: budget - actual,
+        utilization: utilization != null ? Math.round(utilization * 10) / 10 : null,
+        health,
+      };
+    });
+
+    return {
+      items,
+      totals: { projectCount: projects.length, totalContract, totalBudget, totalActual, totalVariance: totalBudget - totalActual },
+      healthCounts,
+      generatedAt: new Date().toISOString(),
+    };
+  }
 
   async findAll(query: ListProjectQueryDto) {
     const page = Number(query.page) || 1;

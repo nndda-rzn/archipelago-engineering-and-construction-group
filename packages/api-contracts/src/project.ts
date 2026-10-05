@@ -26,6 +26,56 @@ export type Project = z.infer<typeof projectSchema>;
 export const projectListResponseSchema = paginatedResponseSchema(projectSchema);
 export type ProjectListResponse = z.infer<typeof projectListResponseSchema>;
 
+/**
+ * Baris register proyek — satu bentuk untuk daftar/kartu/timeline & halaman detail.
+ * Menggabungkan metadata proyek + metrik biaya + health dalam SATU payload agar
+ * tiga view dan halaman detail tidak perlu join di klien (dan tidak berbeda kunci).
+ *
+ * Catatan pelabelan: `utilization` = **serapan biaya** (actual/budget × 100),
+ * bukan progress fisik. UI harus melabelinya "Budget used", bukan "Utilization".
+ */
+export const projectRegisterItemSchema = z.object({
+  projectId: z.string(),
+  code: z.string(),
+  name: z.string(),
+  client: z.string(),
+  manager: z.string().nullable(),
+  status: z.string(),
+  contractValue: z.number(),
+  startDate: z.string().nullable(),
+  completionDate: z.string().nullable(),
+  budget: z.number(),
+  actual: z.number(),
+  variance: z.number(),
+  /** Serapan biaya (%) — `null` bila belum ada budget. */
+  utilization: z.number().nullable(),
+  health: z.enum(['NO_BUDGET', 'ON_TRACK', 'AT_RISK', 'CRITICAL']),
+});
+export type ProjectRegisterItem = z.infer<typeof projectRegisterItemSchema>;
+
+export const projectRegisterSchema = z.object({
+  items: z.array(projectRegisterItemSchema),
+  totals: z.object({
+    projectCount: z.number(),
+    totalContract: z.number(),
+    totalBudget: z.number(),
+    totalActual: z.number(),
+    totalVariance: z.number(),
+  }),
+  healthCounts: z.object({
+    NO_BUDGET: z.number(),
+    ON_TRACK: z.number(),
+    AT_RISK: z.number(),
+    CRITICAL: z.number(),
+  }),
+  generatedAt: z.string(),
+});
+export type ProjectRegister = z.infer<typeof projectRegisterSchema>;
+
+/** Kolom yang boleh dipakai untuk sortir register — whitelist, bukan input bebas. */
+export const PROJECT_SORT_FIELDS = ['code', 'name', 'client', 'contractValue', 'startDate', 'status', 'createdAt'] as const;
+export type ProjectSortField = (typeof PROJECT_SORT_FIELDS)[number];
+
 export const createProjectSchema = z.object({
   code: z.string().min(3).max(30),
   name: z.string().min(3).max(200),

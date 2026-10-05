@@ -21,14 +21,19 @@ const baseHealth: ProjectHealth = {
 };
 
 describe('getHealthBarColor', () => {
-  it('ON_TRACK -> semantic success', () => {
-    expect(getHealthBarColor('ON_TRACK')).toBe('bg-semantic-success');
+  // Token harus benar-benar ada di preset Tailwind — `semantic-*` tidak terdefinisi
+  // sehingga kelasnya tidak menghasilkan CSS apa pun (bar health tak berwarna).
+  it('ON_TRACK -> project-on-track token', () => {
+    expect(getHealthBarColor('ON_TRACK')).toBe('bg-project-on-track-500');
   });
-  it('AT_RISK -> semantic warning', () => {
-    expect(getHealthBarColor('AT_RISK')).toBe('bg-semantic-warning');
+  it('AT_RISK -> project-at-risk token', () => {
+    expect(getHealthBarColor('AT_RISK')).toBe('bg-project-at-risk-500');
   });
-  it('CRITICAL -> destructive', () => {
-    expect(getHealthBarColor('CRITICAL')).toBe('bg-destructive-600');
+  it('CRITICAL -> project-critical token', () => {
+    expect(getHealthBarColor('CRITICAL')).toBe('bg-project-critical-500');
+  });
+  it('NO_BUDGET -> neutral', () => {
+    expect(getHealthBarColor('NO_BUDGET')).toBe('bg-neutral-400');
   });
 });
 

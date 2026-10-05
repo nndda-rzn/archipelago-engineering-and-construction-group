@@ -10,8 +10,8 @@ export function HealthBadge() {
   if (isError || !data) {
     return (
       <div className="flex items-center gap-2 text-sm">
-        <span className="inline-block h-2 w-2 rounded-full bg-semantic-destructive" />
-        <span className="text-semantic-destructive">API unavailable</span>
+        <span className="inline-block h-2 w-2 rounded-full bg-destructive-500" />
+        <span className="text-destructive-600">API unavailable</span>
         <button
           type="button"
           onClick={() => refetch()}
@@ -25,7 +25,7 @@ export function HealthBadge() {
 
   return (
     <span className="flex items-center gap-2 text-sm text-neutral-700">
-      <span className="inline-block h-2 w-2 rounded-full bg-semantic-success" />
+      <span className="inline-block h-2 w-2 rounded-full bg-financial-positive-500" />
       API healthy
       <span className="text-xs text-neutral-500">
         v{data.version} · {new Date(data.timestamp).toLocaleTimeString('id-ID')}

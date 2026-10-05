@@ -29,6 +29,6 @@ export const forecastColumns = [
   forecastHelper.accessor('period', { header: 'Period', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue() ?? <EmptyCell />}</span> }),
   forecastHelper.accessor('estimateAtCompletion', { header: 'EAC', cell: (i) => <span className="font-mono tabular-nums text-neutral-800">{fmt(i.getValue())}</span> }),
   forecastHelper.accessor('estimateToComplete', { header: 'ETC', cell: (i) => <span className="font-mono tabular-nums text-neutral-700">{fmt(i.getValue())}</span> }),
-  forecastHelper.accessor('varianceAtCompletion', { header: 'VAC', cell: (i) => <span className={`font-mono tabular-nums ${i.getValue() >= 0 ? 'text-semantic-success' : 'text-destructive-600'}`}>{fmt(i.getValue())}</span> }),
+  forecastHelper.accessor('varianceAtCompletion', { header: 'VAC', cell: (i) => <span className={`font-mono tabular-nums ${i.getValue() >= 0 ? 'text-financial-positive-600' : 'text-destructive-600'}`}>{fmt(i.getValue())}</span> }),
   forecastHelper.accessor('status', { header: 'Status', cell: (i) => <Badge variant="default">{i.getValue()}</Badge> }),
 ];
