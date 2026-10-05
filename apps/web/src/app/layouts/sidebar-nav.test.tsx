@@ -19,7 +19,7 @@ vi.mock('@/features/analytics/model/analytics.api', () => ({
 }));
 
 import { SidebarNav, resolveOpenNodes, scrollActiveIntoView } from './sidebar-nav';
-import { navGroups, nodeKey } from './nav-config';
+import { allNavItems, navGroups, nodeKey } from './nav-config';
 
 describe('resolveOpenNodes', () => {
   const saved = { 'Finance & Treasury': false, 'Procurement & Inventory': false };
@@ -281,6 +281,51 @@ describe('pohon tersambung (garis pemandu)', () => {
     for (const guide of guides) {
       expect(guide.className).toContain('bg-neutral-200');
       expect(guide.className).not.toContain('bg-neutral-900');
+    }
+  });
+});
+
+describe('satu item aktif saja (tidak double highlight)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    state.pendingCount = undefined;
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  const activeLinks = () =>
+    screen.queryAllByRole('link').filter((el) => el.getAttribute('aria-current') === 'page');
+
+  it('route bersarang /analytics/reporting hanya menandai Advanced Reporting', () => {
+    state.path = '/analytics/reporting';
+    render(<SidebarNav onNavigate={() => {}} />);
+    const active = activeLinks();
+    expect(active).toHaveLength(1);
+    expect(active[0]?.textContent?.trim()).toBe('Advanced Reporting');
+  });
+
+  it('route bersarang /commercial/tender hanya menandai Tender & Bid', () => {
+    state.path = '/commercial/tender';
+    render(<SidebarNav onNavigate={() => {}} />);
+    const active = activeLinks();
+    expect(active).toHaveLength(1);
+    expect(active[0]?.textContent?.trim()).toBe('Tender & Bid');
+  });
+
+  it('route induk /analytics tetap menandai Executive Analytics', () => {
+    state.path = '/analytics';
+    render(<SidebarNav onNavigate={() => {}} />);
+    const active = activeLinks();
+    expect(active).toHaveLength(1);
+    expect(active[0]?.textContent?.trim()).toBe('Executive Analytics');
+  });
+
+  it('SETIAP route nav menandai tepat satu item (invarian 52 route)', () => {
+    for (const item of allNavItems()) {
+      state.path = item.to;
+      const { unmount } = render(<SidebarNav onNavigate={() => {}} />);
+      const active = screen.queryAllByRole('link').filter((el) => el.getAttribute('aria-current') === 'page');
+      expect(active.length, `route ${item.to} menandai ${active.length} item`).toBe(1);
+      unmount();
     }
   });
 });

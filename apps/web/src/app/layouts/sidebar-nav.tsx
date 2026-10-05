@@ -3,7 +3,7 @@ import { Link, useLocation } from '@tanstack/react-router';
 import { ChevronDown, Search } from 'lucide-react';
 import { Badge, cn, Collapsible, CollapsibleContent, CollapsibleTrigger, Input } from '@aec/ui';
 import { usePendingApprovals } from '@/features/analytics/model/analytics.api';
-import { allNavItems, isActiveRoute, leavesOf, navGroups, nodeKey, readCollapsed, STORAGE_KEY, type NavItem } from './nav-config';
+import { allNavItems, leavesOf, matchNav, navGroups, nodeKey, readCollapsed, STORAGE_KEY, type NavItem } from './nav-config';
 
 interface SidebarNavProps {
   /** Dipanggil saat item diklik — dipakai shell untuk menutup drawer mobile. */
@@ -19,16 +19,21 @@ function normalize(value: string): string {
  * Hitung status buka/tutup setiap node (grup + subgrup). Node yang memuat route
  * aktif **dipaksa terbuka** (lokasi saat ini selalu terlihat) — mengalahkan state
  * tersimpan. Node lain mengikuti `saved` bila ada, jika tidak `defaultCollapsed`.
+ *
+ * "Aktif" di sini berarti sama dengan yang dipakai highlight: item yang dipilih
+ * `matchNav` (match paling spesifik), bukan sekadar prefix — supaya route
+ * bersarang (`/analytics/reporting`) tidak ikut membuka/menyalakan induknya.
  */
 export function resolveOpenNodes(pathname: string, saved: Record<string, boolean>): Record<string, boolean> {
+  const activeTo = matchNav(pathname)?.to ?? null;
   const result: Record<string, boolean> = {};
   for (const group of navGroups) {
-    const groupHasActive = leavesOf(group).some((item) => isActiveRoute(item.to, pathname));
+    const groupHasActive = leavesOf(group).some((item) => item.to === activeTo);
     result[group.label] = groupHasActive ? true : (saved[group.label] ?? !(group.defaultCollapsed ?? false));
 
     for (const sub of group.subgroups ?? []) {
       const key = nodeKey(group.label, sub.label);
-      const subHasActive = sub.items.some((item) => isActiveRoute(item.to, pathname));
+      const subHasActive = sub.items.some((item) => item.to === activeTo);
       result[key] = subHasActive ? true : (saved[key] ?? !(sub.defaultCollapsed ?? false));
     }
   }
@@ -145,7 +150,11 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
   const { data: pending } = usePendingApprovals();
   const pendingCount = pending?.count ?? 0;
 
-  const isItemActive = (to: string) => isActiveRoute(to, pathname);
+  // Satu sumber kebenaran: item aktif = match paling spesifik dari `matchNav`
+  // (dipakai juga oleh breadcrumb). Mencegah highlight ganda pada route
+  // bersarang seperti /analytics/reporting (induk + anak).
+  const activeTo = matchNav(pathname)?.to ?? null;
+  const isItemActive = (to: string) => to === activeTo;
 
   // Setelah render (atau saat route berubah), pastikan item aktif terlihat —
   // relevan ketika grup/subgrup default-collapsed baru saja dibuka paksa.
