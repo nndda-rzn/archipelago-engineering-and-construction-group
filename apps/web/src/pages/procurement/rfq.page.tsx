@@ -47,7 +47,7 @@ function QuoteList({ rfq }: { rfq: Rfq }) {
   return (
     <div className="mt-2 grid gap-2 md:grid-cols-2">
       {rfq.quotes.map((q) => (
-        <div key={q.id} className={`rounded-md border px-3 py-2 text-body-sm ${q.isWinner ? 'border-semantic-success bg-semantic-success/5' : 'border-neutral-100'}`}>
+        <div key={q.id} className={`rounded-md border px-3 py-2 text-body-sm ${q.isWinner ? 'border-financial-positive-500 bg-financial-positive-500/5' : 'border-neutral-100'}`}>
           <div className="flex items-center justify-between"><span className="font-medium text-neutral-800">{q.vendor}</span>{q.isWinner && <Badge variant="success">Winner</Badge>}</div>
           <div className="mt-1 flex justify-between text-caption text-neutral-500"><span>{fmt(Number(q.totalAmount))}</span>{q.leadTimeDays ? <span>{q.leadTimeDays} days</span> : null}</div>
         </div>

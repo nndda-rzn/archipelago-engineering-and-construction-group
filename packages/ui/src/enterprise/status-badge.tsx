@@ -12,6 +12,7 @@ export type StatusKey =
   | 'DRAFT' | 'DRAFT_APPROVED' | 'SUBMITTED' | 'UNDER_REVIEW'
   | 'APPROVED' | 'REJECTED' | 'RELEASED' | 'POSTED' | 'CANCELLED'
   | 'PENDING' | 'ACTIVE' | 'INACTIVE' | 'ARCHIVED' | 'IN_PROGRESS' | 'COMPLETED'
+  | 'PLANNING' | 'ON_HOLD'
   | 'LEAVER' | 'CRITICAL' | 'AT_RISK' | 'ON_TRACK' | 'NO_BUDGET'
   | 'LOST' | 'WON' | 'CLOSED_WON' | 'CLOSED_LOST'
   | 'INVESTIGATING' | 'RESOLVED' | 'REVOKED' | 'AWARD_RECONCILED'
@@ -44,6 +45,8 @@ export const statusMeta: Record<StatusKey, StatusMeta> = {
   PENDING: { label: 'Pending', variant: 'warning', icon: Clock },
   ACTIVE: { label: 'Active', variant: 'success', icon: CheckCircle2 },
   INACTIVE: { label: 'Inactive', variant: 'muted', icon: CircleDashed },
+  PLANNING: { label: 'Planning', variant: 'info', icon: Clock },
+  ON_HOLD: { label: 'On Hold', variant: 'warning', icon: Clock },
   ARCHIVED: { label: 'Archived', variant: 'muted', icon: Ban },
   IN_PROGRESS: { label: 'In Progress', variant: 'info', icon: Clock },
   COMPLETED: { label: 'Completed', variant: 'success', icon: CheckCircle2 },

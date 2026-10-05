@@ -82,4 +82,13 @@ export class ListProjectQueryDto {
   @IsOptional()
   @IsString()
   status?: string;
+
+  /** Kolom sortir (di-whitelist di service; nilai asing jatuh ke default). */
+  @IsOptional()
+  @IsString()
+  sort?: string;
+
+  @IsOptional()
+  @IsString()
+  order?: string;
 }
