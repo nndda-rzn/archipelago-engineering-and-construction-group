@@ -14,7 +14,7 @@ export const collectionColumns = [
     cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span>,
   }),
   columnHelper.accessor('client', {
-    header: 'Klien',
+    header: 'Client',
     cell: (info) => <span className="text-neutral-700">{info.getValue()}</span>,
   }),
   columnHelper.accessor('totalAmount', {
@@ -22,7 +22,7 @@ export const collectionColumns = [
     cell: (info) => <span className="font-mono tabular-nums text-neutral-700">{fmt(info.getValue())}</span>,
   }),
   columnHelper.accessor('reference', {
-    header: 'Referensi',
+    header: 'Reference',
     cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('status', {
@@ -43,13 +43,13 @@ function PostButton({ collection }: { collection: Collection }) {
     <ConfirmActionButton
       size="sm"
       variant="secondary"
-      confirmTitle="Posting collection"
-      confirmDescription={`Posting ${collection.collectionNumber}? Auto-GL: Dr Kas, Cr Piutang.`}
-      confirmLabel="Posting"
+      confirmTitle="Post collection"
+      confirmDescription={`Post ${collection.collectionNumber}? Auto-GL: Dr Cash, Cr Receivable.`}
+      confirmLabel="Post"
       onConfirm={() => post.mutate(collection.id)}
       loading={post.isPending}
     >
-      Posting
+      Post
     </ConfirmActionButton>
   );
 }

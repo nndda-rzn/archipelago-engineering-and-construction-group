@@ -26,10 +26,10 @@ export class AuditEngagementService {
 
   async advanceAudit(id: string, dto: { status?: string }, actorId: string) {
     const auditRecord = await this.prisma.auditEngagement.findUnique({ where: { id } });
-    if (!auditRecord) throw new NotFoundException({ code: 'AUDIT_NOT_FOUND', message: 'Audit tidak ditemukan' });
+    if (!auditRecord) throw new NotFoundException({ code: 'AUDIT_NOT_FOUND', message: 'Audit not found' });
     const status = dto.status ?? 'FIELDWORK';
     if (!['PLANNED', 'FIELDWORK', 'FINDINGS', 'CLOSED'].includes(status)) {
-      throw new BadRequestException({ code: 'INVALID_STATUS', message: 'Status audit tidak valid' });
+      throw new BadRequestException({ code: 'INVALID_STATUS', message: 'Invalid audit status' });
     }
     const updated = await this.prisma.auditEngagement.update({
       where: { id },
@@ -41,7 +41,7 @@ export class AuditEngagementService {
 
   async createFinding(auditId: string, dto: CreateFindingDto, actorId: string) {
     const auditRecord = await this.prisma.auditEngagement.findUnique({ where: { id: auditId } });
-    if (!auditRecord) throw new NotFoundException({ code: 'AUDIT_NOT_FOUND', message: 'Audit tidak ditemukan' });
+    if (!auditRecord) throw new NotFoundException({ code: 'AUDIT_NOT_FOUND', message: 'Audit not found' });
     const finding = await this.prisma.auditFinding.create({
       data: { auditId, title: dto.title, severity: dto.severity ?? 'MEDIUM', followUpDate: dto.followUpDate ? new Date(dto.followUpDate) : null },
     });
@@ -51,9 +51,9 @@ export class AuditEngagementService {
 
   async respondFinding(findingId: string, dto: RespondFindingDto, actorId: string) {
     const finding = await this.prisma.auditFinding.findUnique({ where: { id: findingId } });
-    if (!finding) throw new NotFoundException({ code: 'FINDING_NOT_FOUND', message: 'Finding tidak ditemukan' });
+    if (!finding) throw new NotFoundException({ code: 'FINDING_NOT_FOUND', message: 'Finding not found' });
     if (finding.status === 'VERIFIED') {
-      throw new ConflictException({ code: 'ALREADY_VERIFIED', message: 'Finding sudah verified' });
+      throw new ConflictException({ code: 'ALREADY_VERIFIED', message: 'Finding is already verified' });
     }
     const status = dto.status === 'VERIFIED' ? 'VERIFIED' : dto.response ? 'ACCEPTED' : finding.status;
     const updated = await this.prisma.auditFinding.update({

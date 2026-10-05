@@ -39,9 +39,9 @@ export class NcrService {
 
   async disposeNcr(id: string, dto: DisposeNcrDto, actorId: string) {
     const ncr = await this.prisma.ncr.findUnique({ where: { id } });
-    if (!ncr) throw new NotFoundException({ code: 'NCR_NOT_FOUND', message: 'NCR tidak ditemukan' });
+    if (!ncr) throw new NotFoundException({ code: 'NCR_NOT_FOUND', message: 'NCR not found' });
     if (ncr.status !== 'OPEN') {
-      throw new ConflictException({ code: 'NOT_OPEN', message: `Hanya OPEN yang bisa di-dispose (${ncr.status})` });
+      throw new ConflictException({ code: 'NOT_OPEN', message: `Only OPEN can be disposed (${ncr.status})` });
     }
     const updated = await this.prisma.ncr.update({ where: { id }, data: { status: 'UNDER_REVIEW', rootCause: dto.rootCause ?? ncr.rootCause, correctiveAction: dto.correctiveAction ?? ncr.correctiveAction } });
     await this.audit.record({ userId: actorId, action: 'Ncr.DISPOSE', resource: 'Ncr', resourceId: id, newValue: { ncrNumber: ncr.ncrNumber }, source: 'api' });
@@ -51,12 +51,12 @@ export class NcrService {
 
   async reinspectNcr(id: string, dto: ReinspectNcrDto, actorId: string) {
     const ncr = await this.prisma.ncr.findUnique({ where: { id } });
-    if (!ncr) throw new NotFoundException({ code: 'NCR_NOT_FOUND', message: 'NCR tidak ditemukan' });
+    if (!ncr) throw new NotFoundException({ code: 'NCR_NOT_FOUND', message: 'NCR not found' });
     if (ncr.status === 'CLOSED') {
-      throw new ConflictException({ code: 'ALREADY_CLOSED', message: 'NCR sudah closed' });
+      throw new ConflictException({ code: 'ALREADY_CLOSED', message: 'NCR is already closed' });
     }
     if (!['PASS', 'FAIL'].includes(dto.result)) {
-      throw new BadRequestException({ code: 'INVALID_RESULT', message: 'Result harus PASS atau FAIL' });
+      throw new BadRequestException({ code: 'INVALID_RESULT', message: 'Result must be PASS or FAIL' });
     }
     const updated = await this.prisma.ncr.update({ where: { id }, data: { reinspectionResult: dto.result, status: dto.result === 'PASS' ? 'CLOSED' : 'UNDER_REVIEW', closedAt: dto.result === 'PASS' ? new Date() : null } });
     await this.audit.record({ userId: actorId, action: 'Ncr.REINSPECT', resource: 'Ncr', resourceId: id, newValue: { result: dto.result, status: updated.status }, source: 'api' });

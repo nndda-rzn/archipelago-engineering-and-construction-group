@@ -12,7 +12,7 @@ const pcsHelper = createColumnHelper<ProjectCostSummaryItem>();
 function bucketColumns(label: string) {
   return [
     bucketHelper.accessor('bucket', {
-      header: 'Umur',
+      header: 'Bucket',
       cell: (info) => <Badge variant="default">{info.getValue()}</Badge>,
     }),
     bucketHelper.accessor('amount', {
@@ -28,7 +28,7 @@ const pcsColumns = [
     cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span>,
   }),
   pcsHelper.accessor('contractValue', {
-    header: 'Kontrak',
+    header: 'Contract',
     cell: (info) => <span className="font-mono tabular-nums text-neutral-700">{fmt(info.getValue())}</span>,
   }),
   pcsHelper.accessor('budget', {
@@ -75,7 +75,7 @@ function Section({ title, children, onExport }: { title: string; children: React
         {onExport && (
           <Button size="sm" variant="secondary" className="no-print" onClick={handleExport} disabled={busy}>
             <Download className="h-3.5 w-3.5" aria-hidden="true" />
-            {busy ? 'Menyiapkan…' : 'Unduh CSV'}
+            {busy ? 'Preparing…' : 'Download CSV'}
           </Button>
         )}
       </div>
@@ -96,18 +96,18 @@ export function ReportingPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Advanced Reporting</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Cash flow, aging AP/AR, project cost summary (Fase 10)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Cash flow, aging AP/AR, project cost summary (Phase 10)</p>
         </div>
         <Button size="sm" variant="secondary" className="no-print" onClick={() => window.print()}>
           <Printer className="h-3.5 w-3.5" aria-hidden="true" />
-          Cetak
+          Print
         </Button>
       </div>
 
       <div className="space-y-6">
         <Section title="Cash Flow" onExport={exportAnalytics.cashFlow}>
           {cashFlow.isLoading ? (
-            <p className="text-body text-neutral-500">Memuat…</p>
+            <p className="text-body text-neutral-500">Loading…</p>
           ) : cashFlow.data ? (
             <>
               <CashFlowChart data={cashFlow.data.series} />
@@ -122,15 +122,15 @@ export function ReportingPage() {
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           <Section title={`Aging AR (Total ${fmt(total(aging.data?.ar ?? []))})`} onExport={exportAnalytics.aging}>
-            <DataGrid columns={bucketColumns('Piutang')} data={aging.data?.ar ?? []} isLoading={aging.isLoading} emptyMessage="Tidak ada piutang" />
+            <DataGrid columns={bucketColumns('Receivable')} data={aging.data?.ar ?? []} isLoading={aging.isLoading} emptyMessage="No receivables" />
           </Section>
           <Section title={`Aging AP (Total ${fmt(total(aging.data?.ap ?? []))})`} onExport={exportAnalytics.aging}>
-            <DataGrid columns={bucketColumns('Hutang')} data={aging.data?.ap ?? []} isLoading={aging.isLoading} emptyMessage="Tidak ada hutang" />
+            <DataGrid columns={bucketColumns('Payable')} data={aging.data?.ap ?? []} isLoading={aging.isLoading} emptyMessage="No payables" />
           </Section>
         </div>
 
         <Section title="Project Cost Summary" onExport={exportAnalytics.projectCostSummary}>
-          <DataGrid columns={pcsColumns} data={costSummary.data?.items ?? []} isLoading={costSummary.isLoading} emptyMessage="Belum ada project" />
+          <DataGrid columns={pcsColumns} data={costSummary.data?.items ?? []} isLoading={costSummary.isLoading} emptyMessage="No projects yet" />
         </Section>
       </div>
     </div>

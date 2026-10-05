@@ -32,7 +32,7 @@ export class SubmittalService {
 
   async reviewSubmittal(id: string, dto: ReviewSubmittalDto, actorId: string) {
     const item = await this.prisma.submittal.findUnique({ where: { id } });
-    if (!item) throw new NotFoundException({ code: 'SUBMITTAL_NOT_FOUND', message: 'Submittal tidak ditemukan' });
+    if (!item) throw new NotFoundException({ code: 'SUBMITTAL_NOT_FOUND', message: 'Submittal not found' });
     const updated = await this.prisma.submittal.update({
       where: { id },
       data: { status: dto.status, responseNote: dto.responseNote ?? item.responseNote, reviewedBy: actorId, reviewedAt: new Date() },

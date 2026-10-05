@@ -14,11 +14,11 @@ export function DashboardPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-h1 text-neutral-950">Dashboard Eksekutif</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Portfolio project · cost, revenue &amp; health</p>
+          <h1 className="text-h1 text-neutral-950">Executive Dashboard</h1>
+          <p className="mt-1 text-body-sm text-neutral-500">Project portfolio · cost, revenue &amp; health</p>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={isLoading}>Muat Ulang</Button>
+          <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={isLoading}>Reload</Button>
           <LastUpdated queryKey={PORTFOLIO_KEY} />
         </div>
       </div>
@@ -26,7 +26,7 @@ export function DashboardPage() {
       {isLoading && <KpiSkeleton count={4} />}
       {isError && (
         <ErrorState
-          message="Portfolio tidak dapat dimuat."
+          message="The portfolio could not be loaded."
           onRetry={() => refetch()}
           className="rounded-md border border-neutral-200 bg-white shadow-xs"
         />
@@ -38,27 +38,27 @@ export function DashboardPage() {
 
           <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
             <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs xl:col-span-1">
-              <h2 className="mb-2 text-h2 text-neutral-950">Distribusi Health</h2>
+              <h2 className="mb-2 text-h2 text-neutral-950">Health Distribution</h2>
               <HealthDonut
                 data={Object.entries(data.healthCounts).map(([k, v]) => ({ name: k, value: v }))}
               />
             </div>
             <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs xl:col-span-2">
-              <h2 className="mb-3 text-h2 text-neutral-950">Portfolio Project</h2>
+              <h2 className="mb-3 text-h2 text-neutral-950">Project Portfolio</h2>
             {data.items.length === 0 ? (
-              <EmptyState title="Belum ada project" description="Buat project pertama untuk mulai mengelola portfolio." />
+              <EmptyState title="No projects yet" description="Create your first project to start managing the portfolio." />
             ) : (
             <div className="overflow-x-auto">
             <table className="w-full text-left text-body">
               <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
                 <tr>
                   <th className="px-4 py-2">Project</th>
-                  <th className="px-4 py-2">Klien</th>
-                  <th className="px-4 py-2 text-right">Kontrak</th>
+                  <th className="px-4 py-2">Client</th>
+                  <th className="px-4 py-2 text-right">Contract</th>
                   <th className="px-4 py-2 text-right">Budget</th>
                   <th className="px-4 py-2 text-right">Actual</th>
                   <th className="px-4 py-2 text-right">Revenue</th>
-                  <th className="px-4 py-2 text-right">Utilisasi</th>
+                  <th className="px-4 py-2 text-right">Utilization</th>
                   <th className="px-4 py-2">Health</th>
                 </tr>
               </thead>
@@ -83,7 +83,7 @@ export function DashboardPage() {
                   </tr>
                 ))}
                 {data.items.length === 0 && (
-                  <tr><td colSpan={8} className="px-4 py-4 text-caption text-neutral-500">Belum ada project.</td></tr>
+                  <tr><td colSpan={8} className="px-4 py-4 text-caption text-neutral-500">No projects yet.</td></tr>
                 )}
               </tbody>
               <tfoot className="border-t border-neutral-200 bg-neutral-50 font-medium">

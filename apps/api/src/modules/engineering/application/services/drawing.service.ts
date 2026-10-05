@@ -32,7 +32,7 @@ export class DrawingService {
 
   async publishDrawing(id: string, dto: PublishDrawingDto, actorId: string) {
     const drawing = await this.prisma.drawing.findUnique({ where: { id } });
-    if (!drawing) throw new NotFoundException({ code: 'DRAWING_NOT_FOUND', message: 'Drawing tidak ditemukan' });
+    if (!drawing) throw new NotFoundException({ code: 'DRAWING_NOT_FOUND', message: 'Drawing not found' });
 
     const revision = dto.revision ?? String(Number(drawing.currentRevision) + 1);
     const updated = await this.prisma.$transaction(async (tx) => {

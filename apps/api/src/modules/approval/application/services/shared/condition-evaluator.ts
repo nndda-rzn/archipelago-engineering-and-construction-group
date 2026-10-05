@@ -33,7 +33,7 @@ export class ConditionEvaluator {
       case 'PurchaseOrder':
         return this.prisma.purchaseOrder.findUnique({ where: { id: transactionId } });
       default:
-        throw new BadRequestException({ code: 'UNSUPPORTED_TYPE', message: `Tipe ${transactionType} belum didukung` });
+        throw new BadRequestException({ code: 'UNSUPPORTED_TYPE', message: `Type ${transactionType} is not supported yet` });
     }
   }
 
@@ -44,7 +44,7 @@ export class ConditionEvaluator {
       case 'PurchaseOrder':
         return tx.purchaseOrder.update({ where: { id: transactionId }, data: { status } });
       default:
-        throw new BadRequestException({ code: 'UNSUPPORTED_TYPE', message: `Tipe ${transactionType} belum didukung` });
+        throw new BadRequestException({ code: 'UNSUPPORTED_TYPE', message: `Type ${transactionType} is not supported yet` });
     }
   }
 }

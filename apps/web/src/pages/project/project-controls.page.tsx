@@ -38,15 +38,15 @@ export function ProjectControlsPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Project Controls</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Cost code, control account, forecast, EVM, commitment (Fase 11B)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Cost code, control account, forecast, EVM, commitment (Phase 11B)</p>
         </div>
         <div className="flex items-center gap-2">
           <EntitySelect
             value={projectId}
             onValueChange={(v) => { setProjectId(v); setShowForm(false); }}
             options={(projects.data?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
-            placeholder="Pilih project…"
-            searchPlaceholder="Cari project…"
+            placeholder="Select project…"
+            searchPlaceholder="Search project…"
             className="w-64"
           />
           {projectId && (
@@ -54,7 +54,7 @@ export function ProjectControlsPage() {
               variant="secondary"
               onClick={() => setShowForm((s) => !s)}
             >
-              {showForm ? 'Tutup' : '+ Buat'}
+              {showForm ? 'Close' : '+ Create'}
             </Button>
           )}
         </div>
@@ -80,19 +80,19 @@ export function ProjectControlsPage() {
 
       {tab === 'costcodes' && (
         <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-          <DataGrid columns={costCodeColumns} data={costCodes.data?.items ?? []} rowCount={costCodes.data?.total ?? 0} isLoading={costCodes.isLoading} isError={costCodes.isError} onRetry={() => costCodes.refetch()} emptyMessage="Belum ada cost code" {...gridProps} />
+          <DataGrid columns={costCodeColumns} data={costCodes.data?.items ?? []} rowCount={costCodes.data?.total ?? 0} isLoading={costCodes.isLoading} isError={costCodes.isError} onRetry={() => costCodes.refetch()} emptyMessage="No cost codes yet" {...gridProps} />
         </div>
       )}
 
       {tab === 'control-accounts' && (
         <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-          <DataGrid columns={caColumns} data={controlAccounts.data?.items ?? []} rowCount={controlAccounts.data?.total ?? 0} isLoading={controlAccounts.isLoading} isError={controlAccounts.isError} onRetry={() => controlAccounts.refetch()} emptyMessage="Belum ada control account" {...gridProps} />
+          <DataGrid columns={caColumns} data={controlAccounts.data?.items ?? []} rowCount={controlAccounts.data?.total ?? 0} isLoading={controlAccounts.isLoading} isError={controlAccounts.isError} onRetry={() => controlAccounts.refetch()} emptyMessage="No control accounts yet" {...gridProps} />
         </div>
       )}
 
       {tab === 'forecasts' && (
         <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-          <DataGrid columns={forecastColumns} data={forecasts.data?.items ?? []} rowCount={forecasts.data?.items?.length ?? 0} isLoading={forecasts.isLoading} isError={forecasts.isError} onRetry={() => forecasts.refetch()} emptyMessage="Belum ada forecast" {...gridProps} />
+          <DataGrid columns={forecastColumns} data={forecasts.data?.items ?? []} rowCount={forecasts.data?.items?.length ?? 0} isLoading={forecasts.isLoading} isError={forecasts.isError} onRetry={() => forecasts.refetch()} emptyMessage="No forecasts yet" {...gridProps} />
         </div>
       )}
 
@@ -137,7 +137,7 @@ export function ProjectControlsPage() {
               <p className="mt-1 font-mono text-h3 tabular-nums text-neutral-800">{fmt(commitment.data.totalCommitment)}</p>
             </div>
             <div className="rounded-md border border-neutral-100 p-3">
-              <p className="text-caption text-neutral-500">Sisa Budget</p>
+              <p className="text-caption text-neutral-500">Remaining Budget</p>
               <p className={`mt-1 font-mono text-h3 tabular-nums ${commitment.data.remainingBudget >= 0 ? 'text-financial-positive-500' : 'text-destructive-600'}`}>{fmt(commitment.data.remainingBudget)}</p>
             </div>
           </div>

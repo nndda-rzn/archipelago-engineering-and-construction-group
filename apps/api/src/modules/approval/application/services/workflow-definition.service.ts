@@ -12,7 +12,7 @@ export class WorkflowDefinitionService {
 
   async createDefinition(dto: CreateWorkflowDefinitionDto, actorId: string) {
     const existing = await this.prisma.workflowDefinition.findFirst({ where: { code: dto.code } });
-    if (existing) throw new ConflictException({ code: 'WORKFLOW_EXISTS', message: `Workflow ${dto.code} sudah ada` });
+    if (existing) throw new ConflictException({ code: 'WORKFLOW_EXISTS', message: `Workflow ${dto.code} already exists` });
 
     const definition = await this.prisma.workflowDefinition.create({
       data: { code: dto.code, name: dto.name, description: dto.description ?? null, version: 1, status: dto.status ?? 'DRAFT', transactionType: dto.transactionType, createdBy: actorId },
@@ -35,13 +35,13 @@ export class WorkflowDefinitionService {
 
   async addStep(id: string, dto: AddWorkflowStepDto, actorId: string) {
     const definition = await this.prisma.workflowDefinition.findUnique({ where: { id } });
-    if (!definition) throw new NotFoundException({ code: 'WORKFLOW_NOT_FOUND', message: 'Workflow tidak ditemukan' });
+    if (!definition) throw new NotFoundException({ code: 'WORKFLOW_NOT_FOUND', message: 'Workflow not found' });
     if (definition.status !== 'DRAFT') {
-      throw new ConflictException({ code: 'NOT_DRAFT', message: 'Step hanya bisa ditambah saat DRAFT' });
+      throw new ConflictException({ code: 'NOT_DRAFT', message: 'Steps can only be added while in DRAFT' });
     }
 
     const existing = await this.prisma.workflowStep.findUnique({ where: { definitionId_stepOrder: { definitionId: id, stepOrder: dto.stepOrder } } });
-    if (existing) throw new ConflictException({ code: 'STEP_EXISTS', message: `Step order ${dto.stepOrder} sudah ada` });
+    if (existing) throw new ConflictException({ code: 'STEP_EXISTS', message: `Step order ${dto.stepOrder} already exists` });
 
     const step = await this.prisma.workflowStep.create({
       data: { definitionId: id, stepOrder: dto.stepOrder, name: dto.name, approverRoleCode: dto.approverRoleCode, conditionField: dto.conditionField ?? null, conditionOp: dto.conditionOp ?? null, conditionValue: dto.conditionValue ?? null },
@@ -59,9 +59,9 @@ export class WorkflowDefinitionService {
     const definition = await this.prisma.workflowDefinition.findUnique({
       where: { id }, include: { steps: { orderBy: { stepOrder: 'asc' } } },
     });
-    if (!definition) throw new NotFoundException({ code: 'WORKFLOW_NOT_FOUND', message: 'Workflow tidak ditemukan' });
-    if (definition.status !== 'DRAFT') throw new ConflictException({ code: 'NOT_DRAFT', message: 'Hanya DRAFT yang bisa di-publish' });
-    if (definition.steps.length === 0) throw new ConflictException({ code: 'NO_STEPS', message: 'Workflow harus punya minimal 1 step' });
+    if (!definition) throw new NotFoundException({ code: 'WORKFLOW_NOT_FOUND', message: 'Workflow not found' });
+    if (definition.status !== 'DRAFT') throw new ConflictException({ code: 'NOT_DRAFT', message: 'Only DRAFT can be published' });
+    if (definition.steps.length === 0) throw new ConflictException({ code: 'NO_STEPS', message: 'Workflow must have at least 1 step' });
 
     const published = await this.prisma.$transaction(async (tx) => {
       await tx.workflowDefinition.updateMany({ where: { transactionType: definition.transactionType, status: 'ACTIVE' }, data: { status: 'ARCHIVED' } });
@@ -80,7 +80,7 @@ export class WorkflowDefinitionService {
     const latest = await this.prisma.workflowDefinition.findFirst({
       where: { code }, include: { steps: true }, orderBy: { version: 'desc' },
     });
-    if (!latest) throw new NotFoundException({ code: 'WORKFLOW_NOT_FOUND', message: `Workflow ${code} tidak ada` });
+    if (!latest) throw new NotFoundException({ code: 'WORKFLOW_NOT_FOUND', message: `Workflow ${code} not found` });
 
     const newVersion = await this.prisma.$transaction(async (tx) => {
       const created = await tx.workflowDefinition.create({

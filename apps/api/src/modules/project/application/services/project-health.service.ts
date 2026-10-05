@@ -15,7 +15,7 @@ export class ProjectHealthService {
       where: { id },
       include: { legalEntity: { select: { code: true } } },
     });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const budgetItems = await this.prisma.budgetItem.findMany({ where: { projectId: id, status: 'PUBLISHED' } });
     const budgetByWbs = new Map<string, number>();

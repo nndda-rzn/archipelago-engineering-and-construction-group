@@ -76,24 +76,24 @@ export class AnalyticsService {
           type: 'BUDGET_OVERRUN',
           severity: budget / contract > 1 ? 'HIGH' : 'MEDIUM',
           projectCode: p.code,
-          message: `Budget ${Math.round((budget / contract) * 100)}% dari kontrak (${budget.toLocaleString('id-ID')} / ${contract.toLocaleString('id-ID')})`,
+          message: `Budget ${Math.round((budget / contract) * 100)}% of contract (${budget.toLocaleString('id-ID')} / ${contract.toLocaleString('id-ID')})`,
         });
       }
     }
 
     const overduePmCount = await this.prisma.equipmentPm.count({ where: { status: 'SCHEDULED', dueDate: { lt: new Date() } } });
     if (overduePmCount > 0) {
-      anomalies.push({ type: 'PM_OVERDUE', severity: 'MEDIUM', message: `${overduePmCount} PM schedule melewati jatuh tempo` });
+      anomalies.push({ type: 'PM_OVERDUE', severity: 'MEDIUM', message: `${overduePmCount} PM schedule(s) past due` });
     }
 
     const criticalNcrCount = await this.prisma.ncr.count({ where: { severity: 'CRITICAL', status: { not: 'CLOSED' } } });
     if (criticalNcrCount > 0) {
-      anomalies.push({ type: 'NCR_CRITICAL_OPEN', severity: 'HIGH', message: `${criticalNcrCount} NCR CRITICAL belum ditutup` });
+      anomalies.push({ type: 'NCR_CRITICAL_OPEN', severity: 'HIGH', message: `${criticalNcrCount} CRITICAL NCR(s) not yet closed` });
     }
 
     const openHighIncidents = await this.prisma.hseIncident.count({ where: { severity: { in: ['HIGH', 'CRITICAL'] }, status: { not: 'RESOLVED' } } });
     if (openHighIncidents > 0) {
-      anomalies.push({ type: 'INCIDENT_HIGH_OPEN', severity: 'HIGH', message: `${openHighIncidents} insiden HIGH/CRITICAL belum resolved` });
+      anomalies.push({ type: 'INCIDENT_HIGH_OPEN', severity: 'HIGH', message: `${openHighIncidents} HIGH/CRITICAL incident(s) not yet resolved` });
     }
 
     const overallocated = await this.prisma.projectAssignment.groupBy({
@@ -105,12 +105,12 @@ export class AnalyticsService {
     if (overallocated.length > 0) {
       const employeeIds = overallocated.map((r) => r.employeeId);
       const emps = await this.prisma.employee.findMany({ where: { id: { in: employeeIds } }, select: { name: true } });
-      anomalies.push({ type: 'ALLOCATION_OVER_100', severity: 'MEDIUM', message: `${emps.length} karyawan alokasi aktif >100%: ${emps.map((e) => e.name).join(', ')}` });
+      anomalies.push({ type: 'ALLOCATION_OVER_100', severity: 'MEDIUM', message: `${emps.length} employee(s) with active allocation >100%: ${emps.map((e) => e.name).join(', ')}` });
     }
 
     const draftClaims = await this.prisma.progressClaim.count({ where: { status: 'DRAFT' } });
     if (draftClaims >= 3) {
-      anomalies.push({ type: 'CLAIMS_DRAFT_BACKLOG', severity: 'LOW', message: `${draftClaims} claim masih DRAFT — perlu sertifikasi` });
+      anomalies.push({ type: 'CLAIMS_DRAFT_BACKLOG', severity: 'LOW', message: `${draftClaims} claim(s) still DRAFT - certification needed` });
     }
 
     return { anomalies, total: anomalies.length, generatedAt: new Date().toISOString() };

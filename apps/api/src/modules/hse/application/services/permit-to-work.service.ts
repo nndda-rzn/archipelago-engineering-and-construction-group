@@ -15,7 +15,7 @@ export class PermitToWorkService {
 
   async createPermit(dto: CreatePermitDto, actorId: string) {
     if (dto.validFrom && dto.validTo && new Date(dto.validTo) <= new Date(dto.validFrom)) {
-      throw new BadRequestException({ code: 'INVALID_PERIOD', message: 'validTo harus setelah validFrom' });
+      throw new BadRequestException({ code: 'INVALID_PERIOD', message: 'validTo must be after validFrom' });
     }
     const permit = await this.prisma.$transaction(async (tx) => {
       const permitNumber = await this.seq.next('PTW', `PTW-${new Date().getFullYear()}-`, tx);
@@ -38,9 +38,9 @@ export class PermitToWorkService {
 
   async revokePermit(id: string, actorId: string) {
     const permit = await this.prisma.permitToWork.findUnique({ where: { id } });
-    if (!permit) throw new NotFoundException({ code: 'PERMIT_NOT_FOUND', message: 'Permit tidak ditemukan' });
+    if (!permit) throw new NotFoundException({ code: 'PERMIT_NOT_FOUND', message: 'Permit not found' });
     if (permit.status !== 'ACTIVE') {
-      throw new ConflictException({ code: 'NOT_ACTIVE', message: `Hanya ACTIVE yang bisa dicabut (${permit.status})` });
+      throw new ConflictException({ code: 'NOT_ACTIVE', message: `Only ACTIVE can be revoked (${permit.status})` });
     }
     const revoked = await this.prisma.permitToWork.update({ where: { id }, data: { status: 'REVOKED', revokedAt: new Date(), revokedBy: actorId } });
     await this.audit.record({ userId: actorId, action: 'PermitToWork.REVOKE', resource: 'PermitToWork', resourceId: id, newValue: { permitNumber: permit.permitNumber }, source: 'api' });

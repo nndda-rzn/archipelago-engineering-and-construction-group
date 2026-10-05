@@ -12,11 +12,11 @@ export class EmployeeLifecycleService {
 
   async changeEmployeeStatus(id: string, dto: ChangeEmployeeStatusDto, actorId: string) {
     const employee = await this.prisma.employee.findUnique({ where: { id }, include: { user: { select: { id: true } } } });
-    if (!employee) throw new NotFoundException({ code: 'EMPLOYEE_NOT_FOUND', message: 'Employee tidak ditemukan' });
+    if (!employee) throw new NotFoundException({ code: 'EMPLOYEE_NOT_FOUND', message: 'Employee not found' });
 
     const status = dto.status;
     if (!['ACTIVE', 'INACTIVE', 'LEAVER'].includes(status)) {
-      throw new BadRequestException({ code: 'INVALID_STATUS', message: `Status tidak valid: ${status}` });
+      throw new BadRequestException({ code: 'INVALID_STATUS', message: `Invalid status: ${status}` });
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {

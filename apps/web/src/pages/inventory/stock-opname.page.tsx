@@ -16,12 +16,12 @@ export function StockOpnamePage() {
           <h1 className="text-h1 text-neutral-950">Stock Opname</h1>
           <p className="mt-1 text-body-sm text-neutral-500">Count sheet + reconciliation (FR-INV-007)</p>
         </div>
-        <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Tutup' : '+ Mulai Opname'}</Button>
+        <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Close' : '+ Start Opname'}</Button>
       </div>
 
       {showForm && <OpnameForm onDone={() => setShowForm(false)} />}
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-        <DataGrid columns={opnameColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={setPagination} isLoading={isLoading} isError={isError} onRetry={() => refetch()} emptyMessage="Belum ada stock opname" exportFilename="stock-opnames" />
+        <DataGrid columns={opnameColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={setPagination} isLoading={isLoading} isError={isError} onRetry={() => refetch()} emptyMessage="No stock opnames yet" exportFilename="stock-opnames" />
       </div>
     </div>
   );

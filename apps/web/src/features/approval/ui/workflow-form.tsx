@@ -21,20 +21,20 @@ export function CreateWorkflowForm({ onDone }: { onDone: () => void }) {
     <form onSubmit={onSubmit} className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div>
-          <Label htmlFor="wf-code">Kode <span aria-hidden="true" className="text-destructive-600">*</span></Label>
-          <Input id="wf-code" placeholder="mis. SUB_APPROVAL" error={!!errors.code} {...register('code')} />
+          <Label htmlFor="wf-code">Code <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Input id="wf-code" placeholder="e.g. SUB_APPROVAL" error={!!errors.code} {...register('code')} />
           {errors.code && <p role="alert" className="mt-1 text-caption text-destructive-600">{errors.code.message}</p>}
         </div>
         <div>
-          <Label htmlFor="wf-name">Nama <span aria-hidden="true" className="text-destructive-600">*</span></Label>
-          <Input id="wf-name" placeholder="Approval Subkontrak" error={!!errors.name} {...register('name')} />
+          <Label htmlFor="wf-name">Name <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Input id="wf-name" placeholder="Subcontract Approval" error={!!errors.name} {...register('name')} />
           {errors.name && <p role="alert" className="mt-1 text-caption text-destructive-600">{errors.name.message}</p>}
         </div>
         <div>
-          <Label htmlFor="wf-type">Tipe Transaksi <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="wf-type">Transaction Type <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="transactionType" control={control} render={({ field }) => <Select value={field.value} onValueChange={field.onChange}>
             <SelectTrigger id="wf-type">
-              <SelectValue placeholder="Pilih tipe…" />
+              <SelectValue placeholder="Select type…" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="PurchaseRequisition">PurchaseRequisition</SelectItem>
@@ -44,10 +44,10 @@ export function CreateWorkflowForm({ onDone }: { onDone: () => void }) {
         </div>
       </div>
       <div className="mt-4 flex justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={onDone}>Batal</Button>
-        <Button type="submit" loading={create.isPending}>Buat Workflow v1</Button>
+        <Button type="button" variant="ghost" onClick={onDone}>Cancel</Button>
+        <Button type="submit" loading={create.isPending}>Create Workflow v1</Button>
       </div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600">Kode workflow sudah ada.</p>}
+      {create.isError && <p className="mt-2 text-caption text-destructive-600">Workflow code already exists.</p>}
     </form>
   );
 }

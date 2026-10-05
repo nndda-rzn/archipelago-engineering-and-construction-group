@@ -31,18 +31,18 @@ export function StockLedgerPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Stock Ledger</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Semua perubahan stok berasal dari movement (FR-INV-001)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">All stock changes come from movements (FR-INV-001)</p>
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="secondary" onClick={handleExport} disabled={exporting}>
             <Download className="h-3.5 w-3.5" aria-hidden="true" />
-            {exporting ? 'Menyiapkan…' : 'Unduh CSV'}
+            {exporting ? 'Preparing…' : 'Download CSV'}
           </Button>
           <Button size="sm" variant="secondary" onClick={() => setShowSummary((s) => !s)}>
-            {showSummary ? 'Sembunyikan Ringkasan' : 'Ringkasan Stok'}
+            {showSummary ? 'Hide Summary' : 'Stock Summary'}
           </Button>
           <Button size="sm" onClick={() => setShowWarehouseForm((s) => !s)}>
-            {showWarehouseForm ? 'Tutup' : '+ Warehouse'}
+            {showWarehouseForm ? 'Close' : '+ Warehouse'}
           </Button>
         </div>
       </div>
@@ -51,9 +51,9 @@ export function StockLedgerPage() {
 
       {showSummary && (
         <div className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-          <h2 className="text-h3 text-neutral-900">Ringkasan Stok per WBS</h2>
-          {summary.isLoading && <p className="mt-2 text-caption text-neutral-500">Memuat…</p>}
-          {summary.data && summary.data.items.length === 0 && <p className="mt-2 text-caption text-neutral-500">Belum ada stok.</p>}
+          <h2 className="text-h3 text-neutral-900">Stock Summary by WBS</h2>
+          {summary.isLoading && <p className="mt-2 text-caption text-neutral-500">Loading…</p>}
+          {summary.data && summary.data.items.length === 0 && <p className="mt-2 text-caption text-neutral-500">No stock yet.</p>}
           {summary.data && summary.data.items.length > 0 && (
             <table className="mt-3 w-full text-left text-body">
               <thead className="text-caption uppercase tracking-wide text-neutral-500">
@@ -61,7 +61,7 @@ export function StockLedgerPage() {
                   <th className="px-3 py-2">WBS</th>
                   <th className="px-3 py-2">Warehouse</th>
                   <th className="px-3 py-2 text-right">Qty</th>
-                  <th className="px-3 py-2 text-right">Nilai</th>
+                  <th className="px-3 py-2 text-right">Value</th>
                 </tr>
               </thead>
               <tbody>
@@ -89,7 +89,7 @@ export function StockLedgerPage() {
           isLoading={isLoading}
           isError={isError}
           onRetry={() => refetch()}
-          emptyMessage="Belum ada stock movement"
+          emptyMessage="No stock movements yet"
         />
       </div>
     </div>

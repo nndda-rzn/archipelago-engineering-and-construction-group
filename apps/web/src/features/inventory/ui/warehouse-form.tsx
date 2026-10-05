@@ -30,17 +30,17 @@ export function WarehouseForm({ onDone }: { onDone: () => void }) {
     <form onSubmit={onSubmit} className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="wh-code">Kode <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="wh-code">Code <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="wh-code" placeholder="WH-PROJ-014" error={!!errors.code} {...register('code')} />
           {errors.code && <p className="mt-1 text-caption text-destructive-600">{errors.code.message}</p>}
         </div>
         <div>
-          <Label htmlFor="wh-name">Nama <span aria-hidden="true" className="text-destructive-600">*</span></Label>
-          <Input id="wh-name" placeholder="Warehouse Proyek" error={!!errors.name} {...register('name')} />
+          <Label htmlFor="wh-name">Name <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Input id="wh-name" placeholder="Project Warehouse" error={!!errors.name} {...register('name')} />
           {errors.name && <p className="mt-1 text-caption text-destructive-600">{errors.name.message}</p>}
         </div>
         <div>
-          <Label htmlFor="wh-type">Tipe</Label>
+          <Label htmlFor="wh-type">Type</Label>
           <Controller name="warehouseType" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="wh-type">
@@ -56,16 +56,16 @@ export function WarehouseForm({ onDone }: { onDone: () => void }) {
           )} />
         </div>
         <div>
-          <Label htmlFor="wh-location">Lokasi</Label>
+          <Label htmlFor="wh-location">Location</Label>
           <Input id="wh-location" error={!!errors.location} {...register('location')} />
           {errors.location && <p className="mt-1 text-caption text-destructive-600">{errors.location.message}</p>}
         </div>
       </div>
       <div className="mt-4 flex justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={onDone}>Batal</Button>
-        <Button type="submit" loading={create.isPending}>Simpan</Button>
+        <Button type="button" variant="ghost" onClick={onDone}>Cancel</Button>
+        <Button type="submit" loading={create.isPending}>Save</Button>
       </div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600" role="alert">Gagal menyimpan. Periksa kembali data.</p>}
+      {create.isError && <p className="mt-2 text-caption text-destructive-600" role="alert">Failed to save. Please check the data.</p>}
     </form>
   );
 }

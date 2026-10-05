@@ -25,25 +25,25 @@ export function ProjectForm({ onDone }: { onDone: () => void }) {
   return (
     <form onSubmit={onSubmit} className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div><Label htmlFor="code">Kode Project</Label><Input id="code" placeholder="PRJ-EPC-2027-014" spellCheck={false} error={!!errors.code} {...register('code')} />{errors.code && <p className="mt-1 text-caption text-destructive-600">{errors.code.message}</p>}</div>
-        <div><Label htmlFor="name">Nama Project</Label><Input id="name" placeholder="EPC Industrial Processing Facility" error={!!errors.name} {...register('name')} />{errors.name && <p className="mt-1 text-caption text-destructive-600">{errors.name.message}</p>}</div>
-        <div><Label htmlFor="client">Klien</Label><Input id="client" placeholder="PT Klien Utama" error={!!errors.client} {...register('client')} />{errors.client && <p className="mt-1 text-caption text-destructive-600">{errors.client.message}</p>}</div>
+        <div><Label htmlFor="code">Project Code</Label><Input id="code" placeholder="PRJ-EPC-2027-014" spellCheck={false} error={!!errors.code} {...register('code')} />{errors.code && <p className="mt-1 text-caption text-destructive-600">{errors.code.message}</p>}</div>
+        <div><Label htmlFor="name">Project Name</Label><Input id="name" placeholder="EPC Industrial Processing Facility" error={!!errors.name} {...register('name')} />{errors.name && <p className="mt-1 text-caption text-destructive-600">{errors.name.message}</p>}</div>
+        <div><Label htmlFor="client">Client</Label><Input id="client" placeholder="PT Klien Utama" error={!!errors.client} {...register('client')} />{errors.client && <p className="mt-1 text-caption text-destructive-600">{errors.client.message}</p>}</div>
         <div>
           <Label htmlFor="legalEntityId">Legal Entity</Label>
           <EntitySelect
             value={legalEntityId ?? ''}
             onValueChange={(value) => setValue('legalEntityId', value, { shouldValidate: true })}
             options={(entities.data?.items ?? []).map((e) => ({ value: e.id, label: `${e.code} · ${e.legalName}` }))}
-            placeholder="Pilih entity…"
-            searchPlaceholder="Cari entity…"
+            placeholder="Select entity…"
+            searchPlaceholder="Search entity…"
             error={!!errors.legalEntityId}
           />
           {errors.legalEntityId && <p className="mt-1 text-caption text-destructive-600">{errors.legalEntityId.message}</p>}
         </div>
-        <div className="col-span-2"><Label htmlFor="location">Lokasi</Label><Input id="location" placeholder="Karawang" {...register('location')} /></div>
+        <div className="col-span-2"><Label htmlFor="location">Location</Label><Input id="location" placeholder="Karawang" {...register('location')} /></div>
       </div>
-      <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Batal</Button><Button type="submit" loading={create.isPending}>Simpan</Button></div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600">Gagal membuat project. Kode mungkin sudah dipakai.</p>}
+      <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Cancel</Button><Button type="submit" loading={create.isPending}>Save</Button></div>
+      {create.isError && <p className="mt-2 text-caption text-destructive-600">Failed to create the project. The code may already be in use.</p>}
     </form>
   );
 }

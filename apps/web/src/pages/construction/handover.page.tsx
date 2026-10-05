@@ -18,15 +18,15 @@ export function HandoverPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Handover</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Serah terima & closeout · cek dokumen mandatory (FR-CON-006)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Handover & closeout · check mandatory documents (FR-CON-006)</p>
         </div>
         <div className="flex items-center gap-2">
           <EntitySelect
             value={projectId}
             onValueChange={(v) => { setProjectId(v); setPagination({ pageIndex: 0, pageSize: PAGE_SIZE }); setSelected(null); }}
             options={(projects?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
-            placeholder="Pilih Project…"
-            searchPlaceholder="Cari project…"
+            placeholder="Select Project…"
+            searchPlaceholder="Search project…"
             className="w-64"
           />
           {projectId && <Button size="sm" onClick={() => setShowForm(true)} disabled={showForm}>+ Handover</Button>}
@@ -34,11 +34,11 @@ export function HandoverPage() {
       </div>
 
       {showForm && projectId && <HandoverForm projectId={projectId} onDone={() => setShowForm(false)} />}
-      {!projectId && <p className="text-body-sm text-neutral-500">Pilih project untuk melihat handover.</p>}
+      {!projectId && <p className="text-body-sm text-neutral-500">Select a project to view handovers.</p>}
       {projectId && (
         <>
-          <DataGrid columns={handoverColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={setPagination} isLoading={isLoading} isError={isError} onRetry={refetch} onRowClick={(row) => setSelected(row.original)} selectedRowId={selected?.id} getRowId={(row) => row.id} emptyMessage="Belum ada handover" />
-          <p className="mt-2 text-caption text-neutral-500">Klik baris untuk detail & verifikasi dokumen.</p>
+          <DataGrid columns={handoverColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={setPagination} isLoading={isLoading} isError={isError} onRetry={refetch} onRowClick={(row) => setSelected(row.original)} selectedRowId={selected?.id} getRowId={(row) => row.id} emptyMessage="No handovers yet" />
+          <p className="mt-2 text-caption text-neutral-500">Click a row for details & document verification.</p>
         </>
       )}
       {selected && <HandoverDetail selected={selected} projectId={projectId} />}

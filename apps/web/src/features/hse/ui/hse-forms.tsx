@@ -6,7 +6,7 @@ import { useCreateIncident, useCreateObservation, useCreatePermit } from '../mod
 
 const observationSchema = z.object({
   type: z.enum(['UNSAFE', 'SAFE']),
-  description: z.string().min(1, 'Deskripsi wajib diisi'),
+  description: z.string().min(1, 'Description is required'),
 });
 type ObservationValues = z.infer<typeof observationSchema>;
 
@@ -28,7 +28,7 @@ export function ObservationForm({ onDone }: { onDone: () => void }) {
     <form onSubmit={onSubmit} className="mb-4 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="flex items-end gap-3">
         <div>
-          <Label htmlFor="obs-type">Tipe</Label>
+          <Label htmlFor="obs-type">Type</Label>
           <Controller name="type" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="obs-type">
@@ -42,11 +42,11 @@ export function ObservationForm({ onDone }: { onDone: () => void }) {
           )} />
         </div>
         <div className="flex-1">
-          <Label htmlFor="obs-desc">Deskripsi <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="obs-desc">Description <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="obs-desc" error={!!errors.description} {...register('description')} />
           {errors.description && <p className="mt-1 text-caption text-destructive-600">{errors.description.message}</p>}
         </div>
-        <Button type="submit" loading={create.isPending}>Buat Observasi</Button>
+        <Button type="submit" loading={create.isPending}>Create Observation</Button>
       </div>
     </form>
   );
@@ -55,7 +55,7 @@ export function ObservationForm({ onDone }: { onDone: () => void }) {
 const incidentSchema = z.object({
   type: z.enum(['NEAR_MISS', 'INJURY', 'PROPERTY', 'ENVIRONMENT']),
   severity: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
-  description: z.string().min(1, 'Deskripsi wajib diisi'),
+  description: z.string().min(1, 'Description is required'),
 });
 type IncidentValues = z.infer<typeof incidentSchema>;
 
@@ -77,7 +77,7 @@ export function IncidentForm({ onDone }: { onDone: () => void }) {
     <form onSubmit={onSubmit} className="mb-4 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="flex items-end gap-3">
         <div>
-          <Label htmlFor="inc-type">Tipe</Label>
+          <Label htmlFor="inc-type">Type</Label>
           <Controller name="type" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="inc-type">
@@ -109,21 +109,21 @@ export function IncidentForm({ onDone }: { onDone: () => void }) {
           )} />
         </div>
         <div className="flex-1">
-          <Label htmlFor="inc-desc">Deskripsi <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="inc-desc">Description <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="inc-desc" error={!!errors.description} {...register('description')} />
           {errors.description && <p className="mt-1 text-caption text-destructive-600">{errors.description.message}</p>}
         </div>
-        <Button type="submit" loading={create.isPending}>Buat Insiden</Button>
+        <Button type="submit" loading={create.isPending}>Create Incident</Button>
       </div>
     </form>
   );
 }
 
 const permitSchema = z.object({
-  area: z.string().min(1, 'Area wajib diisi'),
-  issuedTo: z.string().min(1, 'Diterbitkan ke wajib diisi'),
-  validFrom: z.string().min(1, 'Tanggal mulai wajib diisi'),
-  validTo: z.string().min(1, 'Tanggal selesai wajib diisi'),
+  area: z.string().min(1, 'Area is required'),
+  issuedTo: z.string().min(1, 'Issued-to is required'),
+  validFrom: z.string().min(1, 'Start date is required'),
+  validTo: z.string().min(1, 'End date is required'),
 });
 type PermitValues = z.infer<typeof permitSchema>;
 
@@ -150,21 +150,21 @@ export function PermitForm({ onDone }: { onDone: () => void }) {
           {errors.area && <p className="mt-1 text-caption text-destructive-600">{errors.area.message}</p>}
         </div>
         <div>
-          <Label htmlFor="ptw-to">Diterbitkan ke <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="ptw-to">Issued to <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="ptw-to" error={!!errors.issuedTo} {...register('issuedTo')} />
           {errors.issuedTo && <p className="mt-1 text-caption text-destructive-600">{errors.issuedTo.message}</p>}
         </div>
         <div>
-          <Label htmlFor="ptw-from">Dari <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="ptw-from">From <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="ptw-from" type="date" error={!!errors.validFrom} {...register('validFrom')} />
           {errors.validFrom && <p className="mt-1 text-caption text-destructive-600">{errors.validFrom.message}</p>}
         </div>
         <div>
-          <Label htmlFor="ptw-until">Sampai <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="ptw-until">Until <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="ptw-until" type="date" error={!!errors.validTo} {...register('validTo')} />
           {errors.validTo && <p className="mt-1 text-caption text-destructive-600">{errors.validTo.message}</p>}
         </div>
-        <Button type="submit" loading={create.isPending}>Terbitkan PTW</Button>
+        <Button type="submit" loading={create.isPending}>Issue PTW</Button>
       </div>
     </form>
   );

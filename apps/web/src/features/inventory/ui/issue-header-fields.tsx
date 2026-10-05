@@ -36,7 +36,7 @@ export function IssueHeaderFields({
           onValueChange={(v) => { onProjectChange(v); onWarehouseChange(''); }}
         >
           <SelectTrigger id="mi-project">
-            <SelectValue placeholder="Pilih project…" />
+            <SelectValue placeholder="Select project…" />
           </SelectTrigger>
           <SelectContent>
             {projects.map((p) => <SelectItem key={p.id} value={p.id}>{p.code} · {p.name}</SelectItem>)}
@@ -47,7 +47,7 @@ export function IssueHeaderFields({
         <Label htmlFor="mi-wh">Warehouse</Label>
         <Select value={warehouseId} onValueChange={onWarehouseChange}>
           <SelectTrigger id="mi-wh">
-            <SelectValue placeholder="Pilih warehouse…" />
+            <SelectValue placeholder="Select warehouse…" />
           </SelectTrigger>
           <SelectContent>
             {projectWhs.map((w) => <SelectItem key={w.id} value={w.id}>{w.code} · {w.name}</SelectItem>)}
@@ -55,11 +55,11 @@ export function IssueHeaderFields({
         </Select>
       </div>
       <div>
-        <Label htmlFor="mi-to">Issue ke</Label>
-        <Input id="mi-to" placeholder="Tim Konstruksi" value={issuedTo} onChange={(e) => onIssuedToChange(e.target.value)} />
+        <Label htmlFor="mi-to">Issue to</Label>
+        <Input id="mi-to" placeholder="Construction Team" value={issuedTo} onChange={(e) => onIssuedToChange(e.target.value)} />
       </div>
       <div>
-        <Label htmlFor="mi-reason">Alasan</Label>
+        <Label htmlFor="mi-reason">Reason</Label>
         <Select value={reason} onValueChange={onReasonChange}>
           <SelectTrigger id="mi-reason">
             <SelectValue />

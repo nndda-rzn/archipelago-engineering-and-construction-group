@@ -35,7 +35,7 @@ export function InspectionForm({ onDone }: { onDone: () => void }) {
           <WpSelect id="ins-wp" projectId={projectId} value={field.value} onChange={field.onChange} workPackages={workPackages} />
         )} />
         <div className="flex-1">
-          <Label htmlFor="ins-desc">Deskripsi Inspeksi <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="ins-desc">Inspection Description <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="ins-desc" error={!!errors.description} {...register('description')} />
           {errors.description && <p className="mt-1 text-caption text-destructive-600">{errors.description.message}</p>}
         </div>

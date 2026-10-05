@@ -77,7 +77,7 @@ export function WorkflowCard({ workflow }: { workflow: WorkflowDefinition }) {
               <StepBadge conditionField={step.conditionField} conditionOp={step.conditionOp} conditionValue={step.conditionValue} />
             </li>
           ))}
-          {workflow.steps.length === 0 && <li className="text-caption text-neutral-500">Belum ada step.</li>}
+          {workflow.steps.length === 0 && <li className="text-caption text-neutral-500">No steps yet.</li>}
         </ol>
       </div>
       {isDraft && (
@@ -87,15 +87,15 @@ export function WorkflowCard({ workflow }: { workflow: WorkflowDefinition }) {
             <Input id={`step-order-${workflow.id}`} type="number" min={1} value={stepOrder} onChange={(e) => setStepOrder(Number(e.target.value))} className="h-8" />
           </div>
           <div>
-            <Label htmlFor={`step-name-${workflow.id}`}>Nama Step</Label>
-            <Input id={`step-name-${workflow.id}`} placeholder="Approval Direksi" value={stepName} onChange={(e) => setStepName(e.target.value)} className="h-8" />
+            <Label htmlFor={`step-name-${workflow.id}`}>Step Name</Label>
+            <Input id={`step-name-${workflow.id}`} placeholder="Board Approval" value={stepName} onChange={(e) => setStepName(e.target.value)} className="h-8" />
           </div>
           <div>
             <Label htmlFor={`step-role-${workflow.id}`}>Role</Label>
             <Input id={`step-role-${workflow.id}`} value={role} onChange={(e) => setRole(e.target.value)} className="h-8" />
           </div>
           <div>
-            <Label htmlFor={`step-cond-${workflow.id}`}>Kondisi (opsional)</Label>
+            <Label htmlFor={`step-cond-${workflow.id}`}>Condition (optional)</Label>
             <div className="flex gap-1">
               <Input id={`step-cond-${workflow.id}`} placeholder="totalAmount" value={condField} onChange={(e) => setCondField(e.target.value)} className="h-8 w-full" />
               <Select value={condOp} onValueChange={setCondOp}>
@@ -110,7 +110,7 @@ export function WorkflowCard({ workflow }: { workflow: WorkflowDefinition }) {
                   <SelectItem value="==">=</SelectItem>
                 </SelectContent>
               </Select>
-              <Input type="number" value={condValue || ''} onChange={(e) => setCondValue(Number(e.target.value))} className="h-8 w-20" aria-label="Nilai kondisi" />
+              <Input type="number" value={condValue || ''} onChange={(e) => setCondValue(Number(e.target.value))} className="h-8 w-20" aria-label="Condition value" />
             </div>
           </div>
           <div className="flex items-end">

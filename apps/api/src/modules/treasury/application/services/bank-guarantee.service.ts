@@ -15,7 +15,7 @@ export class BankGuaranteeService {
 
   async createBankGuarantee(dto: CreateBankGuaranteeDto, actorId: string) {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
-    if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });
+    if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity not found' });
 
     const bg = await this.prisma.$transaction(async (tx) => {
       const guaranteeNumber = await this.seq.next('BG', `BG-${new Date().getFullYear()}-`, tx);

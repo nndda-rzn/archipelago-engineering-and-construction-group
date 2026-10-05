@@ -16,11 +16,11 @@ export function VariationPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Variation Order</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Potential change tak ubah kontrak; approved variation update contract value (FR-CMR-005/006)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">A potential change does not alter the contract; an approved variation updates the contract value (FR-CMR-005/006)</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-auto" aria-label="Filter status"><SelectValue placeholder="Semua status" /></SelectTrigger>
+            <SelectTrigger className="w-auto" aria-label="Filter status"><SelectValue placeholder="All statuses" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="POTENTIAL">POTENTIAL</SelectItem>
               <SelectItem value="APPROVED">APPROVED</SelectItem>
@@ -28,7 +28,7 @@ export function VariationPage() {
             </SelectContent>
           </Select>
           <Button size="sm" onClick={() => setShowForm((s) => !s)}>
-            {showForm ? 'Tutup' : '+ Buat Variation'}
+            {showForm ? 'Close' : '+ Create Variation'}
           </Button>
         </div>
       </div>
@@ -45,7 +45,7 @@ export function VariationPage() {
           isLoading={isLoading}
           isError={isError}
           onRetry={() => refetch()}
-          emptyMessage="Belum ada variation"
+          emptyMessage="No variations yet"
         />
       </div>
     </div>

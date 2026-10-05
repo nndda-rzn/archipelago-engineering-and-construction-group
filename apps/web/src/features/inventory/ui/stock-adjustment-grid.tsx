@@ -16,7 +16,7 @@ export const adjustmentColumns = [
     cell: (info) => <span className="text-neutral-700">{info.getValue()?.code ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('reasonCode', {
-    header: 'Alasan',
+    header: 'Reason',
     cell: (info) => <Badge variant={info.getValue() === 'SURPLUS' ? 'success' : 'default'}>{info.getValue()}</Badge>,
   }),
   columnHelper.accessor('items', {
@@ -42,7 +42,7 @@ function ApproveButton({ adj }: { adj: StockAdjustment }) {
       size="sm"
       variant="secondary"
       confirmTitle="Approve adjustment"
-      confirmDescription={`Approve ${adj.adjustmentNumber}? Stok akan ter-update.`}
+      confirmDescription={`Approve ${adj.adjustmentNumber}? Stock will be updated.`}
       confirmLabel="Approve"
       onConfirm={() => approve.mutate(adj.id)}
       loading={approve.isPending}

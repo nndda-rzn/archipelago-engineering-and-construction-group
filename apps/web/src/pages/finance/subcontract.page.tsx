@@ -20,18 +20,18 @@ export function SubcontractPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Subcontract</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Pembayaran subkon berdasarkan verified progress (FR-CMR-008)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Subcontractor payments based on verified progress (FR-CMR-008)</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPagination({ pageIndex: 0, pageSize: PAGE_SIZE }); }}>
-            <SelectTrigger className="w-auto" aria-label="Filter status"><SelectValue placeholder="Semua status" /></SelectTrigger>
+            <SelectTrigger className="w-auto" aria-label="Filter status"><SelectValue placeholder="All statuses" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="ACTIVE">ACTIVE</SelectItem>
               <SelectItem value="COMPLETED">COMPLETED</SelectItem>
             </SelectContent>
           </Select>
           <Button size="sm" onClick={() => setShowForm((s) => !s)}>
-            {showForm ? 'Tutup' : '+ Buat Subcontract'}
+            {showForm ? 'Close' : '+ Create Subcontract'}
           </Button>
         </div>
       </div>
@@ -49,7 +49,7 @@ export function SubcontractPage() {
           isError={isError}
           onRetry={() => refetch()}
           onRowClick={(row) => setSelectedId(row.original.id)} selectedRowId={selectedId ?? undefined} getRowId={(row) => row.id}
-          emptyMessage="Belum ada subcontract"
+          emptyMessage="No subcontracts yet"
         />
       </div>
 
@@ -57,7 +57,7 @@ export function SubcontractPage() {
         <div className="mt-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
           <h2 className="text-h2 text-neutral-950">{selected.subconNumber} · {selected.title}</h2>
           <p className="text-caption text-neutral-500">
-            {selected.vendor} · Nilai kontrak {fmt(selected.contractValue)} · Klik baris lain untuk ganti
+            {selected.vendor} · Contract value {fmt(selected.contractValue)} · Click another row to switch
           </p>
           <ProgressForm subcontract={selected} />
           <div className="mt-4">
@@ -66,7 +66,7 @@ export function SubcontractPage() {
               data={progressData?.items ?? []}
               rowCount={progressData?.total ?? 0}
               isLoading={progressLoading}
-              emptyMessage="Belum ada progress"
+              emptyMessage="No progress yet"
               hideToolbar
             />
           </div>

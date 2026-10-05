@@ -14,7 +14,7 @@ describe('WbsForm', () => {
 
   it('menolak submit saat kode kosong', async () => {
     renderWithProviders(<WbsForm projectId="p1" projectCode="PRJ-1" tree={[]} onDone={vi.fn()} />);
-    fireEvent.click(screen.getByText('Simpan'));
+    fireEvent.click(screen.getByText('Save'));
     await waitFor(() => expect(mutate).not.toHaveBeenCalled());
   });
 
@@ -22,9 +22,9 @@ describe('WbsForm', () => {
     renderWithProviders(
       <WbsForm projectId="p1" parentId="wbs-parent" projectCode="PRJ-1" tree={[]} onDone={vi.fn()} />,
     );
-    fireEvent.change(screen.getByLabelText(/Kode WBS/), { target: { value: '1.1' } });
-    fireEvent.change(screen.getByLabelText(/Nama/), { target: { value: 'Detail Engineering' } });
-    fireEvent.click(screen.getByText('Simpan'));
+    fireEvent.change(screen.getByLabelText(/WBS Code/), { target: { value: '1.1' } });
+    fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'Detail Engineering' } });
+    fireEvent.click(screen.getByText('Save'));
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1));
     expect(mutate.mock.calls.at(0)?.at(0)).toEqual({
       code: '1.1',
@@ -35,9 +35,9 @@ describe('WbsForm', () => {
 
   it('submit tanpa parentId saat root', async () => {
     renderWithProviders(<WbsForm projectId="p1" projectCode="PRJ-1" tree={[]} onDone={vi.fn()} />);
-    fireEvent.change(screen.getByLabelText(/Kode WBS/), { target: { value: '1' } });
-    fireEvent.change(screen.getByLabelText(/Nama/), { target: { value: 'Root WBS' } });
-    fireEvent.click(screen.getByText('Simpan'));
+    fireEvent.change(screen.getByLabelText(/WBS Code/), { target: { value: '1' } });
+    fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'Root WBS' } });
+    fireEvent.click(screen.getByText('Save'));
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1));
     expect(mutate.mock.calls.at(0)?.at(0)).toEqual({
       code: '1',

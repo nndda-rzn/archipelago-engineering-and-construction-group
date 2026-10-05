@@ -54,42 +54,42 @@ export function CreateDailyReportForm({ projectId, onDone }: { projectId: string
       <UnsavedGuard dirty={isDirty} />
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div>
-          <Label htmlFor="dr-date">Tanggal</Label>
+          <Label htmlFor="dr-date">Date</Label>
           <Input id="dr-date" type="date" error={!!errors.reportDate} {...register('reportDate')} />
           {errors.reportDate && <p className="mt-1 text-caption text-destructive-600">{errors.reportDate.message}</p>}
         </div>
         <div>
-          <Label htmlFor="dr-weather">Cuaca</Label>
+          <Label htmlFor="dr-weather">Weather</Label>
           <Controller name="weather" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="dr-weather"><SelectValue /></SelectTrigger>
-              <SelectContent><SelectItem value="CERAH">Cerah</SelectItem><SelectItem value="BERAWAN">Berawan</SelectItem><SelectItem value="MENDUNG">Mendung</SelectItem><SelectItem value="HUJAN">Hujan</SelectItem></SelectContent>
+              <SelectContent><SelectItem value="CERAH">Clear</SelectItem><SelectItem value="BERAWAN">Cloudy</SelectItem><SelectItem value="MENDUNG">Overcast</SelectItem><SelectItem value="HUJAN">Rain</SelectItem></SelectContent>
             </Select>
           )} />
         </div>
-        <div><Label>Manpower (baris)</Label><Button size="sm" variant="secondary" type="button" onClick={() => append({ trade: '', count: '', hours: '' })}>+ Tambah</Button></div>
+        <div><Label>Manpower (rows)</Label><Button size="sm" variant="secondary" type="button" onClick={() => append({ trade: '', count: '', hours: '' })}>+ Add</Button></div>
       </div>
       {fields.map((field, i) => (
         <div key={field.id} className="grid grid-cols-1 gap-3 md:grid-cols-4">
           <div><Label>Trade</Label><Input placeholder="KONSTRUKSI" {...register(`lines.${i}.trade` as const)} /></div>
-          <div><Label>Jumlah</Label><Input type="number" min={1} placeholder="10" {...register(`lines.${i}.count` as const)} /></div>
-          <div><Label>Jam Kerja</Label><Input type="number" min={0} max={24} placeholder="8" {...register(`lines.${i}.hours` as const)} /></div>
-          <div className="flex items-end">{fields.length > 1 && <Button size="sm" variant="secondary" type="button" onClick={() => remove(i)}>Hapus</Button>}</div>
+          <div><Label>Count</Label><Input type="number" min={1} placeholder="10" {...register(`lines.${i}.count` as const)} /></div>
+          <div><Label>Hours Worked</Label><Input type="number" min={0} max={24} placeholder="8" {...register(`lines.${i}.hours` as const)} /></div>
+          <div className="flex items-end">{fields.length > 1 && <Button size="sm" variant="secondary" type="button" onClick={() => remove(i)}>Remove</Button>}</div>
         </div>
       ))}
       <div>
-        <Label htmlFor="dr-summary">Ringkasan Aktivitas <span aria-hidden="true" className="text-destructive-600">*</span></Label>
-        <textarea id="dr-summary" rows={3} className="w-full rounded-md border border-neutral-300 px-3 py-2 text-body-sm" placeholder="Aktivitas utama hari ini..." {...register('summary')} />
+        <Label htmlFor="dr-summary">Activity Summary <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+        <textarea id="dr-summary" rows={3} className="w-full rounded-md border border-neutral-300 px-3 py-2 text-body-sm" placeholder="Main activities today..." {...register('summary')} />
         {errors.summary && <p className="mt-1 text-caption text-destructive-600">{errors.summary.message}</p>}
       </div>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div><Label htmlFor="dr-issues">Masalah Lapangan</Label><Input id="dr-issues" placeholder="Opsional" error={!!errors.issues} {...register('issues')} />{errors.issues && <p className="mt-1 text-caption text-destructive-600">{errors.issues.message}</p>}</div>
-        <div><Label htmlFor="dr-hse">Catatan HSE</Label><Input id="dr-hse" placeholder="Opsional" error={!!errors.hseNote} {...register('hseNote')} />{errors.hseNote && <p className="mt-1 text-caption text-destructive-600">{errors.hseNote.message}</p>}</div>
-        <div><Label htmlFor="dr-equip">Equipment</Label><Input id="dr-equip" placeholder="Opsional" error={!!errors.equipmentList} {...register('equipmentList')} />{errors.equipmentList && <p className="mt-1 text-caption text-destructive-600">{errors.equipmentList.message}</p>}</div>
-        <div><Label htmlFor="dr-mat">Material</Label><Input id="dr-mat" placeholder="Opsional" error={!!errors.materialList} {...register('materialList')} />{errors.materialList && <p className="mt-1 text-caption text-destructive-600">{errors.materialList.message}</p>}</div>
+        <div><Label htmlFor="dr-issues">Site Issues</Label><Input id="dr-issues" placeholder="Optional" error={!!errors.issues} {...register('issues')} />{errors.issues && <p className="mt-1 text-caption text-destructive-600">{errors.issues.message}</p>}</div>
+        <div><Label htmlFor="dr-hse">HSE Note</Label><Input id="dr-hse" placeholder="Optional" error={!!errors.hseNote} {...register('hseNote')} />{errors.hseNote && <p className="mt-1 text-caption text-destructive-600">{errors.hseNote.message}</p>}</div>
+        <div><Label htmlFor="dr-equip">Equipment</Label><Input id="dr-equip" placeholder="Optional" error={!!errors.equipmentList} {...register('equipmentList')} />{errors.equipmentList && <p className="mt-1 text-caption text-destructive-600">{errors.equipmentList.message}</p>}</div>
+        <div><Label htmlFor="dr-mat">Material</Label><Input id="dr-mat" placeholder="Optional" error={!!errors.materialList} {...register('materialList')} />{errors.materialList && <p className="mt-1 text-caption text-destructive-600">{errors.materialList.message}</p>}</div>
       </div>
-      <div className="flex justify-end gap-2"><Button size="sm" variant="secondary" type="button" onClick={onDone}>Batal</Button><Button size="sm" type="submit" loading={create.isPending}>Submit Daily Report</Button></div>
-      {create.isError && <p className="text-body-sm text-destructive-600">Gagal menyimpan daily report.</p>}
+      <div className="flex justify-end gap-2"><Button size="sm" variant="secondary" type="button" onClick={onDone}>Cancel</Button><Button size="sm" type="submit" loading={create.isPending}>Submit Daily Report</Button></div>
+      {create.isError && <p className="text-body-sm text-destructive-600">Failed to save the daily report.</p>}
     </form>
   );
 }

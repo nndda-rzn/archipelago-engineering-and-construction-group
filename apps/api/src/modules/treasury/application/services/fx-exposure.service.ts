@@ -12,12 +12,12 @@ export class FxExposureService {
 
   async createFxExposure(dto: CreateFxExposureDto, actorId: string) {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
-    if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });
+    if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity not found' });
 
     const existing = await this.prisma.fxExposure.findUnique({
       where: { legalEntityId_currency: { legalEntityId: dto.legalEntityId, currency: dto.currency } },
     });
-    if (existing) throw new ConflictException({ code: 'FX_EXPOSURE_EXISTS', message: `Eksposur ${dto.currency} sudah ada — update via upsert` });
+    if (existing) throw new ConflictException({ code: 'FX_EXPOSURE_EXISTS', message: `Exposure ${dto.currency} already exists - update via upsert` });
 
     const fx = await this.prisma.fxExposure.create({
       data: {

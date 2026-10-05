@@ -16,12 +16,12 @@ export class MaterialIssueService {
 
   async createMaterialIssue(dto: CreateMaterialIssueDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const warehouse = await this.prisma.warehouse.findUnique({ where: { id: dto.warehouseId } });
-    if (!warehouse) throw new NotFoundException({ code: 'WAREHOUSE_NOT_FOUND', message: 'Warehouse tidak ditemukan' });
+    if (!warehouse) throw new NotFoundException({ code: 'WAREHOUSE_NOT_FOUND', message: 'Warehouse not found' });
     if (warehouse.projectId && warehouse.projectId !== dto.projectId) {
-      throw new ConflictException({ code: 'WAREHOUSE_PROJECT_MISMATCH', message: 'Warehouse bukan milik project ini' });
+      throw new ConflictException({ code: 'WAREHOUSE_PROJECT_MISMATCH', message: 'Warehouse does not belong to this project' });
     }
 
     const wbsIds = dto.items.map((i) => i.wbsItemId).filter((id): id is string => Boolean(id));
@@ -33,7 +33,7 @@ export class MaterialIssueService {
       const validWbsIds = new Set(wbsItems.map((w) => w.id));
       for (const item of dto.items) {
         if (item.wbsItemId && !validWbsIds.has(item.wbsItemId)) {
-          throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: `WBS ${item.wbsItemId} tidak ada di project ini` });
+          throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: `WBS ${item.wbsItemId} not found in this project` });
         }
       }
     }
@@ -74,7 +74,7 @@ export class MaterialIssueService {
           if (Number(item.quantity) > onHand) {
             throw new ConflictException({
               code: 'INSUFFICIENT_STOCK',
-              message: `Stok tidak cukup untuk "${item.description}" (tersedia ${onHand} ${item.unit ?? 'EA'})`,
+              message: `Insufficient stock for "${item.description}" (available ${onHand} ${item.unit ?? 'EA'})`,
             });
           }
           const avgPrice = available.get(`${key}|value`) ?? 0;

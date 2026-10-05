@@ -29,21 +29,21 @@ describe('WbsTree', () => {
 
   it('sembunyikan anak saat di-collapse + aria-expanded false', () => {
     renderWithProviders(<WbsTree tree={tree} onAddChild={vi.fn()} />);
-    const toggle = screen.getByLabelText('Tutup 1');
+    const toggle = screen.getByLabelText('Collapse 1');
     fireEvent.click(toggle);
     expect(screen.queryByText('Anak Satu')).toBeNull();
-    expect(screen.getByLabelText('Buka 1').getAttribute('aria-expanded')).toBe('false');
+    expect(screen.getByLabelText('Expand 1').getAttribute('aria-expanded')).toBe('false');
   });
 
   it('node tanpa anak tidak punya tombol toggle', () => {
     renderWithProviders(<WbsTree tree={tree} onAddChild={vi.fn()} />);
-    expect(screen.queryByLabelText('Tutup 2')).toBeNull();
-    expect(screen.queryByLabelText('Buka 2')).toBeNull();
+    expect(screen.queryByLabelText('Collapse 2')).toBeNull();
+    expect(screen.queryByLabelText('Expand 2')).toBeNull();
   });
 
   it('persist state collapsed ke localStorage', () => {
     renderWithProviders(<WbsTree tree={tree} onAddChild={vi.fn()} />);
-    fireEvent.click(screen.getByLabelText('Tutup 1'));
+    fireEvent.click(screen.getByLabelText('Collapse 1'));
     expect(localStorage.getItem('aec.wbs.collapsed')).toContain('"r1":true');
   });
 });

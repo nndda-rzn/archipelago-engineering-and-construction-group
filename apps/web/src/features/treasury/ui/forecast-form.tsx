@@ -7,7 +7,7 @@ import { useCreateCashForecast } from '../model/treasury.api';
 import { useLegalEntities } from '@/entities/legal-entity';
 
 const formSchema = z.object({
-  legalEntityId: z.string().min(1, 'Entity wajib dipilih'),
+  legalEntityId: z.string().min(1, 'Entity is required'),
   period: createCashForecastSchema.shape.period,
   receipt: z.string(),
   ap: z.string(),
@@ -37,7 +37,7 @@ export function ForecastForm() {
           <Label htmlFor="cf-entity">Entity <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="legalEntityId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger id="cf-entity"><SelectValue placeholder="Pilih…" /></SelectTrigger>
+              <SelectTrigger id="cf-entity"><SelectValue placeholder="Select…" /></SelectTrigger>
               <SelectContent>
                 {(entities?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code}</SelectItem>)}
               </SelectContent>
@@ -46,7 +46,7 @@ export function ForecastForm() {
           {errors.legalEntityId && <p className="mt-1 text-caption text-destructive-600">{errors.legalEntityId.message}</p>}
         </div>
         <div>
-          <Label htmlFor="cf-period">Periode <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="cf-period">Period <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="cf-period" placeholder="2026-09" error={!!errors.period} {...register('period')} />
           {errors.period && <p className="mt-1 text-caption text-destructive-600">{errors.period.message}</p>}
         </div>
@@ -62,7 +62,7 @@ export function ForecastForm() {
           <Label htmlFor="cf-payroll">Payroll</Label>
           <Input id="cf-payroll" type="number" min={0} className="w-32" {...register('payroll')} />
         </div>
-        <Button type="submit" loading={create.isPending}>Buat Forecast</Button>
+        <Button type="submit" loading={create.isPending}>Create Forecast</Button>
       </div>
     </form>
   );

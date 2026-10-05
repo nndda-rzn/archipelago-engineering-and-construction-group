@@ -14,14 +14,14 @@ export function GoodsReceiptPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Goods Receipt</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Terima barang dari PO → update stock ledger (FR-PRO-009, FR-INV-001)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Receive goods from PO → update stock ledger (FR-PRO-009, FR-INV-001)</p>
         </div>
-        <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Tutup' : '+ Terima Barang'}</Button>
+        <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Close' : '+ Receive Goods'}</Button>
       </div>
 
       {showForm && <ReceiptForm onDone={() => setShowForm(false)} />}
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-        <DataGrid columns={goodsReceiptColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={setPagination} isLoading={isLoading} isError={isError} onRetry={() => refetch()} emptyMessage="Belum ada goods receipt" />
+        <DataGrid columns={goodsReceiptColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={setPagination} isLoading={isLoading} isError={isError} onRetry={() => refetch()} emptyMessage="No goods receipts yet" />
       </div>
     </div>
   );

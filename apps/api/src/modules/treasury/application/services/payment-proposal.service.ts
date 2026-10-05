@@ -15,11 +15,11 @@ export class PaymentProposalService {
 
   async createPaymentProposal(dto: CreatePaymentProposalDto, actorId: string) {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
-    if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });
+    if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity not found' });
 
     if (dto.bankAccountId) {
       const bank = await this.prisma.bankAccount.findUnique({ where: { id: dto.bankAccountId } });
-      if (!bank) throw new NotFoundException({ code: 'BANK_NOT_FOUND', message: 'Rekening tidak ditemukan' });
+      if (!bank) throw new NotFoundException({ code: 'BANK_NOT_FOUND', message: 'Bank account not found' });
     }
 
     const proposal = await this.prisma.$transaction(async (tx) => {
@@ -61,9 +61,9 @@ export class PaymentProposalService {
 
   async submitProposal(id: string, actorId: string) {
     const proposal = await this.prisma.paymentProposal.findUnique({ where: { id } });
-    if (!proposal) throw new NotFoundException({ code: 'PROPOSAL_NOT_FOUND', message: 'Proposal tidak ditemukan' });
+    if (!proposal) throw new NotFoundException({ code: 'PROPOSAL_NOT_FOUND', message: 'Proposal not found' });
     if (proposal.status !== 'DRAFT') {
-      throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa disubmit (${proposal.status})` });
+      throw new ConflictException({ code: 'NOT_DRAFT', message: `Only DRAFT can be submitted (${proposal.status})` });
     }
     const updated = await this.prisma.paymentProposal.update({ where: { id }, data: { status: 'SUBMITTED', submittedAt: new Date() } });
     await this.audit.record({ userId: actorId, action: 'PaymentProposal.SUBMIT', resource: 'PaymentProposal', resourceId: id, newValue: { proposalNumber: proposal.proposalNumber }, source: 'api' });
@@ -72,9 +72,9 @@ export class PaymentProposalService {
 
   async approveProposal(id: string, actorId: string) {
     const proposal = await this.prisma.paymentProposal.findUnique({ where: { id } });
-    if (!proposal) throw new NotFoundException({ code: 'PROPOSAL_NOT_FOUND', message: 'Proposal tidak ditemukan' });
+    if (!proposal) throw new NotFoundException({ code: 'PROPOSAL_NOT_FOUND', message: 'Proposal not found' });
     if (proposal.status !== 'SUBMITTED') {
-      throw new ConflictException({ code: 'NOT_SUBMITTED', message: `Hanya SUBMITTED yang bisa di-approve (${proposal.status})` });
+      throw new ConflictException({ code: 'NOT_SUBMITTED', message: `Only SUBMITTED can be approved (${proposal.status})` });
     }
     const updated = await this.prisma.paymentProposal.update({ where: { id }, data: { status: 'APPROVED', approvedAt: new Date(), approvedBy: actorId } });
     await this.audit.record({ userId: actorId, action: 'PaymentProposal.APPROVE', resource: 'PaymentProposal', resourceId: id, newValue: { proposalNumber: proposal.proposalNumber }, source: 'api' });
@@ -83,9 +83,9 @@ export class PaymentProposalService {
 
   async releaseProposal(id: string, actorId: string) {
     const proposal = await this.prisma.paymentProposal.findUnique({ where: { id } });
-    if (!proposal) throw new NotFoundException({ code: 'PROPOSAL_NOT_FOUND', message: 'Proposal tidak ditemukan' });
+    if (!proposal) throw new NotFoundException({ code: 'PROPOSAL_NOT_FOUND', message: 'Proposal not found' });
     if (proposal.status !== 'APPROVED') {
-      throw new ConflictException({ code: 'NOT_APPROVED', message: `Hanya APPROVED yang bisa di-release (${proposal.status})` });
+      throw new ConflictException({ code: 'NOT_APPROVED', message: `Only APPROVED can be released (${proposal.status})` });
     }
     const updated = await this.prisma.paymentProposal.update({ where: { id }, data: { status: 'RELEASED' } });
     await this.audit.record({ userId: actorId, action: 'PaymentProposal.RELEASE', resource: 'PaymentProposal', resourceId: id, newValue: { proposalNumber: proposal.proposalNumber }, source: 'api' });

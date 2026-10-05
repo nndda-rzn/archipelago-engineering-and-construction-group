@@ -7,10 +7,10 @@ import { useBankAccounts, useCreatePaymentProposal } from '../model/treasury.api
 import { useLegalEntities } from '@/entities/legal-entity';
 
 const formSchema = z.object({
-  legalEntityId: z.string().min(1, 'Entity wajib dipilih'),
+  legalEntityId: z.string().min(1, 'Entity is required'),
   bankAccountId: z.string(),
   vendor: createPaymentProposalSchema.shape.vendor,
-  totalAmount: z.string().refine((v) => v.trim() !== '' && !isNaN(Number(v)), 'Nilai wajib diisi'),
+  totalAmount: z.string().refine((v) => v.trim() !== '' && !isNaN(Number(v)), 'Amount is required'),
 });
 type FormValues = z.infer<typeof formSchema>;
 
@@ -37,7 +37,7 @@ export function ProposalForm() {
           <Label htmlFor="pp-entity">Entity <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="legalEntityId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger id="pp-entity"><SelectValue placeholder="Pilih…" /></SelectTrigger>
+              <SelectTrigger id="pp-entity"><SelectValue placeholder="Select…" /></SelectTrigger>
               <SelectContent>
                 {(entities?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code}</SelectItem>)}
               </SelectContent>
@@ -46,10 +46,10 @@ export function ProposalForm() {
           {errors.legalEntityId && <p className="mt-1 text-caption text-destructive-600">{errors.legalEntityId.message}</p>}
         </div>
         <div>
-          <Label htmlFor="pp-bank">Rekening</Label>
+          <Label htmlFor="pp-bank">Bank Account</Label>
           <Controller name="bankAccountId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger id="pp-bank"><SelectValue placeholder="Pilih…" /></SelectTrigger>
+              <SelectTrigger id="pp-bank"><SelectValue placeholder="Select…" /></SelectTrigger>
               <SelectContent>
                 {(banks?.items ?? []).map((b) => <SelectItem key={b.id} value={b.id}>{b.bankName} {b.accountNumber}</SelectItem>)}
               </SelectContent>
@@ -62,11 +62,11 @@ export function ProposalForm() {
           {errors.vendor && <p className="mt-1 text-caption text-destructive-600">{errors.vendor.message}</p>}
         </div>
         <div>
-          <Label htmlFor="pp-amt">Nilai <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="pp-amt">Amount <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="pp-amt" type="number" min={0} className="w-36" error={!!errors.totalAmount} {...register('totalAmount')} />
           {errors.totalAmount && <p className="mt-1 text-caption text-destructive-600">{errors.totalAmount.message}</p>}
         </div>
-        <Button type="submit" loading={create.isPending}>Buat Proposal</Button>
+        <Button type="submit" loading={create.isPending}>Create Proposal</Button>
       </div>
     </form>
   );

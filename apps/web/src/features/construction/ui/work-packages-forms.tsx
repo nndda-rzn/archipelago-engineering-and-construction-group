@@ -8,9 +8,9 @@ import { useWbsTree } from '@/entities/wbs';
 import { useCreateWorkPackage, useStartWorkPackage, useCompleteWorkPackage, useAddProgress } from '../model/work-package.api';
 
 const wpSchema = z.object({
-  wbsItemId: z.string().min(1, 'WBS wajib dipilih'),
+  wbsItemId: z.string().min(1, 'WBS is required'),
   title: createWorkPackageSchema.shape.title,
-  plannedQty: z.string().min(1, 'Qty wajib diisi').refine((v) => Number(v) >= 0.01, 'Qty minimal 0.01'),
+  plannedQty: z.string().min(1, 'Quantity is required').refine((v) => Number(v) >= 0.01, 'Quantity must be at least 0.01'),
   unit: z.string(),
   scope: createWorkPackageSchema.shape.scope,
 });
@@ -37,8 +37,8 @@ export function CreateWorkPackageForm({ projectId, onDone }: { projectId: string
     <form onSubmit={onSubmit} className="space-y-3 rounded-md border border-neutral-200 bg-white p-4">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div>
-          <Label htmlFor="wp-title">Judul <span aria-hidden="true" className="text-destructive-600">*</span></Label>
-          <Input id="wp-title" placeholder="Pengecoran Fondasi Area A" error={!!errors.title} {...register('title')} />
+          <Label htmlFor="wp-title">Title <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Input id="wp-title" placeholder="Foundation Pour Area A" error={!!errors.title} {...register('title')} />
           {errors.title && <p className="mt-1 text-caption text-destructive-600">{errors.title.message}</p>}
         </div>
         <div>
@@ -46,7 +46,7 @@ export function CreateWorkPackageForm({ projectId, onDone }: { projectId: string
           <Controller name="wbsItemId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="wp-wbs">
-                <SelectValue placeholder="Pilih WBS…" />
+                <SelectValue placeholder="Select WBS…" />
               </SelectTrigger>
               <SelectContent>
                 {wbs && flatten(wbs).map((w) => <SelectItem key={w.id} value={w.id}>{w.label}</SelectItem>)}
@@ -56,7 +56,7 @@ export function CreateWorkPackageForm({ projectId, onDone }: { projectId: string
           {errors.wbsItemId && <p className="mt-1 text-caption text-destructive-600">{errors.wbsItemId.message}</p>}
         </div>
         <div>
-          <Label htmlFor="wp-qty">Qty Rencana <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="wp-qty">Planned Qty <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="wp-qty" type="number" placeholder="120" error={!!errors.plannedQty} {...register('plannedQty')} />
           {errors.plannedQty && <p className="mt-1 text-caption text-destructive-600">{errors.plannedQty.message}</p>}
         </div>
@@ -66,18 +66,18 @@ export function CreateWorkPackageForm({ projectId, onDone }: { projectId: string
           {errors.unit && <p className="mt-1 text-caption text-destructive-600">{errors.unit.message}</p>}
         </div>
         <div className="md:col-span-2">
-          <Label htmlFor="wp-scope">Ruang Lingkup</Label>
-          <Input id="wp-scope" placeholder="Opsional" error={!!errors.scope} {...register('scope')} />
+          <Label htmlFor="wp-scope">Scope</Label>
+          <Input id="wp-scope" placeholder="Optional" error={!!errors.scope} {...register('scope')} />
           {errors.scope && <p className="mt-1 text-caption text-destructive-600">{errors.scope.message}</p>}
         </div>
       </div>
       <div className="flex justify-end gap-2">
-        <Button size="sm" variant="secondary" type="button" onClick={onDone}>Batal</Button>
+        <Button size="sm" variant="secondary" type="button" onClick={onDone}>Cancel</Button>
         <Button size="sm" type="submit" loading={create.isPending}>
-          Buat Work Package
+          Create Work Package
         </Button>
       </div>
-      {create.isError && <p className="text-body-sm text-destructive-600">Gagal membuat work package.</p>}
+      {create.isError && <p className="text-body-sm text-destructive-600">Failed to create the work package.</p>}
     </form>
   );
 }
@@ -100,9 +100,9 @@ export const statusVariant: Record<WorkPackageStatus, BadgeVariant> = {
 
 export const statusLabel: Record<WorkPackageStatus, string> = {
   DRAFT: 'Draft',
-  IN_PROGRESS: 'Berjalan',
-  COMPLETED: 'Selesai',
-  CANCELLED: 'Dibatalkan',
+  IN_PROGRESS: 'In Progress',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
 };
 
 export function WorkPackageActionsPanel({ projectId, items }: ActionsPanelProps) {
@@ -123,7 +123,7 @@ export function WorkPackageActionsPanel({ projectId, items }: ActionsPanelProps)
 
   return (
     <div className="mt-4 rounded-md border border-neutral-200 bg-white p-4">
-      <h2 className="text-h3 text-neutral-800">Aksi Work Package</h2>
+      <h2 className="text-h3 text-neutral-800">Work Package Actions</h2>
       <div className="mt-3 space-y-2">
         {items.filter((wp) => wp.status === 'DRAFT' || wp.status === 'IN_PROGRESS').map((wp) => (
           <div key={wp.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-neutral-100 px-3 py-2">
@@ -134,14 +134,14 @@ export function WorkPackageActionsPanel({ projectId, items }: ActionsPanelProps)
             </div>
             <div className="flex items-center gap-2">
               {wp.status === 'DRAFT' && (
-                <Button size="sm" variant="secondary" onClick={() => start.mutate(wp.id)} disabled={start.isPending}>Mulai</Button>
+                <Button size="sm" variant="secondary" onClick={() => start.mutate(wp.id)} disabled={start.isPending}>Start</Button>
               )}
               {wp.status === 'IN_PROGRESS' && (
                 <>
                   <Button size="sm" variant="secondary" onClick={() => setProgressState({ id: wp.id, open: true, value: String(wp.latestProgress ?? 0), qty: '' })}>
-                    Catat Progress
+                    Record Progress
                   </Button>
-                  <Button size="sm" variant="secondary" onClick={() => complete.mutate(wp.id)} disabled={complete.isPending}>Selesaikan</Button>
+                  <Button size="sm" variant="secondary" onClick={() => complete.mutate(wp.id)} disabled={complete.isPending}>Complete</Button>
                 </>
               )}
             </div>
@@ -153,15 +153,15 @@ export function WorkPackageActionsPanel({ projectId, items }: ActionsPanelProps)
         <div className="mt-4 space-y-3 rounded-md border border-neutral-200 bg-neutral-50 p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div><Label htmlFor="wp-progress">Progress (%)</Label><Input id="wp-progress" type="number" min={0} max={100} value={progressState.value} onChange={(e) => setProgressState({ ...progressState, value: e.target.value })} /></div>
-            <div><Label htmlFor="wp-qty-terukur">Qty Terukur</Label><Input id="wp-qty-terukur" type="number" min={0} value={progressState.qty} onChange={(e) => setProgressState({ ...progressState, qty: e.target.value })} /></div>
+            <div><Label htmlFor="wp-qty-terukur">Measured Qty</Label><Input id="wp-qty-terukur" type="number" min={0} value={progressState.qty} onChange={(e) => setProgressState({ ...progressState, qty: e.target.value })} /></div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button size="sm" variant="secondary" onClick={() => setProgressState({ id: '', open: false, value: '', qty: '' })}>Batal</Button>
+            <Button size="sm" variant="secondary" onClick={() => setProgressState({ id: '', open: false, value: '', qty: '' })}>Cancel</Button>
             <Button size="sm" onClick={() => recordProgress(progressState.id)} disabled={progress.isPending}>
-              {progress.isPending ? 'Menyimpan...' : 'Simpan Progress'}
+              {progress.isPending ? 'Saving...' : 'Save Progress'}
             </Button>
           </div>
-          {progress.isError && <p className="text-body-sm text-destructive-600">Gagal menyimpan (progress tidak boleh turun).</p>}
+          {progress.isError && <p className="text-body-sm text-destructive-600">Failed to save (progress cannot decrease).</p>}
         </div>
       )}
     </div>

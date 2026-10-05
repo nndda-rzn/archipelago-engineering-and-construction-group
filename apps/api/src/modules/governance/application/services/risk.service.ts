@@ -40,9 +40,9 @@ export class RiskService {
 
   async mitigateRisk(id: string, dto: MitigateRiskDto, actorId: string) {
     const risk = await this.prisma.risk.findUnique({ where: { id } });
-    if (!risk) throw new NotFoundException({ code: 'RISK_NOT_FOUND', message: 'Risk tidak ditemukan' });
+    if (!risk) throw new NotFoundException({ code: 'RISK_NOT_FOUND', message: 'Risk not found' });
     if (risk.status === 'CLOSED') {
-      throw new ConflictException({ code: 'ALREADY_CLOSED', message: 'Risk sudah closed' });
+      throw new ConflictException({ code: 'ALREADY_CLOSED', message: 'Risk is already closed' });
     }
     const residualScore = dto.residualLikelihood != null && dto.residualImpact != null
       ? Number(dto.residualLikelihood) * Number(dto.residualImpact)

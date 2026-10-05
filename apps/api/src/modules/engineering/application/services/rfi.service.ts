@@ -33,9 +33,9 @@ export class RfiService {
 
   async answerRfi(id: string, dto: AnswerRfiDto, actorId: string) {
     const rfi = await this.prisma.rfi.findUnique({ where: { id } });
-    if (!rfi) throw new NotFoundException({ code: 'RFI_NOT_FOUND', message: 'RFI tidak ditemukan' });
+    if (!rfi) throw new NotFoundException({ code: 'RFI_NOT_FOUND', message: 'RFI not found' });
     if (rfi.status === 'CLOSED') {
-      throw new ConflictException({ code: 'ALREADY_CLOSED', message: 'RFI sudah closed' });
+      throw new ConflictException({ code: 'ALREADY_CLOSED', message: 'RFI is already closed' });
     }
     const updated = await this.prisma.rfi.update({
       where: { id },

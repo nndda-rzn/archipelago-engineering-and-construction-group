@@ -7,7 +7,7 @@ import { useCreateBankAccount } from '../model/treasury.api';
 import { useLegalEntities } from '@/entities/legal-entity';
 
 const formSchema = z.object({
-  legalEntityId: z.string().min(1, 'Entity wajib dipilih'),
+  legalEntityId: z.string().min(1, 'Entity is required'),
   bankCode: createBankAccountSchema.shape.bankCode,
   bankName: createBankAccountSchema.shape.bankName,
   accountNumber: createBankAccountSchema.shape.accountNumber,
@@ -39,7 +39,7 @@ export function BankAccountForm() {
           <Label htmlFor="ba-entity">Entity <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="legalEntityId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger id="ba-entity"><SelectValue placeholder="Pilih…" /></SelectTrigger>
+              <SelectTrigger id="ba-entity"><SelectValue placeholder="Select…" /></SelectTrigger>
               <SelectContent>
                 {(entities?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code}</SelectItem>)}
               </SelectContent>
@@ -48,27 +48,27 @@ export function BankAccountForm() {
           {errors.legalEntityId && <p className="mt-1 text-caption text-destructive-600">{errors.legalEntityId.message}</p>}
         </div>
         <div>
-          <Label htmlFor="ba-code">Kode Bank <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="ba-code">Bank Code <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="ba-code" placeholder="BCA" error={!!errors.bankCode} {...register('bankCode')} />
           {errors.bankCode && <p className="mt-1 text-caption text-destructive-600">{errors.bankCode.message}</p>}
         </div>
         <div className="flex-1">
-          <Label htmlFor="ba-name">Nama Bank <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="ba-name">Bank Name <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="ba-name" placeholder="Bank Central Asia" error={!!errors.bankName} {...register('bankName')} />
           {errors.bankName && <p className="mt-1 text-caption text-destructive-600">{errors.bankName.message}</p>}
         </div>
         <div>
-          <Label htmlFor="ba-num">No. Rekening <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="ba-num">Account No. <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="ba-num" error={!!errors.accountNumber} {...register('accountNumber')} />
           {errors.accountNumber && <p className="mt-1 text-caption text-destructive-600">{errors.accountNumber.message}</p>}
         </div>
         <div>
-          <Label htmlFor="ba-acct">Atas Nama <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="ba-acct">Account Name <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="ba-acct" error={!!errors.accountName} {...register('accountName')} />
           {errors.accountName && <p className="mt-1 text-caption text-destructive-600">{errors.accountName.message}</p>}
         </div>
         <div>
-          <Label htmlFor="ba-ccy">Mata Uang</Label>
+          <Label htmlFor="ba-ccy">Currency</Label>
           <Controller name="currency" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="ba-ccy"><SelectValue /></SelectTrigger>
@@ -79,10 +79,10 @@ export function BankAccountForm() {
           )} />
         </div>
         <div>
-          <Label htmlFor="ba-bal">Saldo Awal</Label>
+          <Label htmlFor="ba-bal">Opening Balance</Label>
           <Input id="ba-bal" type="number" min={0} className="w-32" {...register('openingBalance')} />
         </div>
-        <Button type="submit" loading={create.isPending}>Buat Rekening</Button>
+        <Button type="submit" loading={create.isPending}>Create Account</Button>
       </div>
     </form>
   );

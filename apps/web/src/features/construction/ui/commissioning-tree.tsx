@@ -12,7 +12,7 @@ export const commissioningLevelVariant: Record<CommissioningLevel, BadgeVariant>
 export const commissioningStatusVariant: Record<CommissioningStatus, BadgeVariant> = {
   NOT_STARTED: 'default', IN_PROGRESS: 'warning', COMPLETED: 'success',
 };
-const statusLabel: Record<CommissioningStatus, string> = { NOT_STARTED: 'Belum Mulai', IN_PROGRESS: 'Berjalan', COMPLETED: 'Selesai' };
+const statusLabel: Record<CommissioningStatus, string> = { NOT_STARTED: 'Not Started', IN_PROGRESS: 'In Progress', COMPLETED: 'Completed' };
 
 function TreeRow({ node, depth, projectId }: { node: CommissioningSystem; depth: number; projectId: string }) {
   const updateStatus = useUpdateCommissioningStatus(projectId);
@@ -26,8 +26,8 @@ function TreeRow({ node, depth, projectId }: { node: CommissioningSystem; depth:
         <span className="text-body-sm text-neutral-800">{node.name}</span>
         <Badge variant={commissioningStatusVariant[node.status]}>{statusLabel[node.status]}</Badge>
         <div className="ml-auto flex gap-1">
-          {node.status === 'NOT_STARTED' && <Button size="sm" variant="secondary" onClick={() => updateStatus.mutate({ id: node.id, status: 'IN_PROGRESS' })}>Mulai</Button>}
-          {node.status === 'IN_PROGRESS' && <ConfirmActionButton size="sm" variant="secondary" confirmTitle="Tandai selesai?" confirmDescription="Status commissioning akan berubah menjadi selesai." confirmLabel="Selesai" onConfirm={() => updateStatus.mutate({ id: node.id, status: 'COMPLETED' })}>Selesai</ConfirmActionButton>}
+          {node.status === 'NOT_STARTED' && <Button size="sm" variant="secondary" onClick={() => updateStatus.mutate({ id: node.id, status: 'IN_PROGRESS' })}>Start</Button>}
+          {node.status === 'IN_PROGRESS' && <ConfirmActionButton size="sm" variant="secondary" confirmTitle="Mark as complete?" confirmDescription="The commissioning status will change to completed." confirmLabel="Complete" onConfirm={() => updateStatus.mutate({ id: node.id, status: 'COMPLETED' })}>Complete</ConfirmActionButton>}
         </div>
       </div>
       {showChildren && node.children?.map((c) => <TreeRow key={c.id} node={c} depth={depth + 1} projectId={projectId} />)}
@@ -36,5 +36,5 @@ function TreeRow({ node, depth, projectId }: { node: CommissioningSystem; depth:
 }
 
 export function CommissioningTree({ tree, projectId }: { tree: CommissioningSystem[]; projectId: string }) {
-  return <div className="space-y-1">{tree.length === 0 && <p className="text-body-sm text-neutral-500">Belum ada node commissioning.</p>}{tree.map((n) => <TreeRow key={n.id} node={n} depth={0} projectId={projectId} />)}</div>;
+  return <div className="space-y-1">{tree.length === 0 && <p className="text-body-sm text-neutral-500">No commissioning nodes yet.</p>}{tree.map((n) => <TreeRow key={n.id} node={n} depth={0} projectId={projectId} />)}</div>;
 }

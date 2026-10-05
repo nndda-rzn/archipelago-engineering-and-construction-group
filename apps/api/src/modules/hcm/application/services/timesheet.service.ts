@@ -13,18 +13,18 @@ export class TimesheetService {
 
   async createTimesheet(dto: CreateTimesheetDto, actorId: string) {
     const employee = await this.prisma.employee.findUnique({ where: { id: dto.employeeId } });
-    if (!employee) throw new NotFoundException({ code: 'EMPLOYEE_NOT_FOUND', message: 'Employee tidak ditemukan' });
+    if (!employee) throw new NotFoundException({ code: 'EMPLOYEE_NOT_FOUND', message: 'Employee not found' });
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
     if (dto.wbsItemId) {
       const wbs = await this.prisma.wbsItem.findUnique({ where: { id: dto.wbsItemId } });
       if (!wbs || wbs.projectId !== dto.projectId) {
-        throw new BadRequestException({ code: 'INVALID_WBS', message: 'WBS tidak valid untuk project ini' });
+        throw new BadRequestException({ code: 'INVALID_WBS', message: 'WBS is not valid for this project' });
       }
     }
 
     const hours = Number(dto.hours);
-    if (hours > 24) throw new BadRequestException({ code: 'INVALID_HOURS', message: 'Jam kerja maksimal 24' });
+    if (hours > 24) throw new BadRequestException({ code: 'INVALID_HOURS', message: 'Work hours cannot exceed 24' });
 
     const timesheet = await this.prisma.timesheet.create({
       data: {
@@ -53,9 +53,9 @@ export class TimesheetService {
 
   async approveTimesheet(id: string, dto: ApproveTimesheetDto, actorId: string) {
     const timesheet = await this.prisma.timesheet.findUnique({ where: { id } });
-    if (!timesheet) throw new NotFoundException({ code: 'TIMESHEET_NOT_FOUND', message: 'Timesheet tidak ditemukan' });
+    if (!timesheet) throw new NotFoundException({ code: 'TIMESHEET_NOT_FOUND', message: 'Timesheet not found' });
     if (timesheet.status !== 'SUBMITTED') {
-      throw new ConflictException({ code: 'NOT_SUBMITTED', message: `Hanya SUBMITTED yang bisa diproses (${timesheet.status})` });
+      throw new ConflictException({ code: 'NOT_SUBMITTED', message: `Only SUBMITTED can be processed (${timesheet.status})` });
     }
 
     const updated = await this.prisma.timesheet.update({

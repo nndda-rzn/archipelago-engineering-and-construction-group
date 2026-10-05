@@ -14,7 +14,7 @@ export class CorrectiveActionService {
     const source = dto.sourceType === 'OBSERVATION'
       ? await this.prisma.safetyObservation.findUnique({ where: { id: dto.sourceId } })
       : await this.prisma.hseIncident.findUnique({ where: { id: dto.sourceId } });
-    if (!source) throw new NotFoundException({ code: 'SOURCE_NOT_FOUND', message: 'Source observasi/insiden tidak ditemukan' });
+    if (!source) throw new NotFoundException({ code: 'SOURCE_NOT_FOUND', message: 'Observation/incident source not found' });
 
     const ca = await this.prisma.correctiveAction.create({
       data: {
@@ -32,9 +32,9 @@ export class CorrectiveActionService {
 
   async closeCorrectiveAction(id: string, dto: CloseCorrectiveActionDto, actorId: string) {
     const ca = await this.prisma.correctiveAction.findUnique({ where: { id } });
-    if (!ca) throw new NotFoundException({ code: 'CA_NOT_FOUND', message: 'Corrective action tidak ditemukan' });
+    if (!ca) throw new NotFoundException({ code: 'CA_NOT_FOUND', message: 'Corrective action not found' });
     if (ca.status === 'CLOSED' || ca.status === 'VERIFIED') {
-      throw new ConflictException({ code: 'ALREADY_CLOSED', message: `CA sudah ${ca.status}` });
+      throw new ConflictException({ code: 'ALREADY_CLOSED', message: `CA is already ${ca.status}` });
     }
     const closed = await this.prisma.correctiveAction.update({
       where: { id },

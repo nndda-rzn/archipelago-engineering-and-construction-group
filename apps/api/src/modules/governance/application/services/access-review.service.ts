@@ -26,9 +26,9 @@ export class AccessReviewService {
 
   async completeAccessReview(id: string, dto: CompleteAccessReviewDto, actorId: string) {
     const review = await this.prisma.accessReview.findUnique({ where: { id } });
-    if (!review) throw new NotFoundException({ code: 'REVIEW_NOT_FOUND', message: 'Access review tidak ditemukan' });
+    if (!review) throw new NotFoundException({ code: 'REVIEW_NOT_FOUND', message: 'Access review not found' });
     if (review.status === 'COMPLETED') {
-      throw new ConflictException({ code: 'ALREADY_COMPLETED', message: 'Access review sudah completed' });
+      throw new ConflictException({ code: 'ALREADY_COMPLETED', message: 'Access review is already completed' });
     }
     const updated = await this.prisma.accessReview.update({
       where: { id },

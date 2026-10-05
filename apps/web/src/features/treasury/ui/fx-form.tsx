@@ -7,9 +7,9 @@ import { useCreateFxExposure } from '../model/treasury.api';
 import { useLegalEntities } from '@/entities/legal-entity';
 
 const formSchema = z.object({
-  legalEntityId: z.string().min(1, 'Entity wajib dipilih'),
+  legalEntityId: z.string().min(1, 'Entity is required'),
   currency: createFxExposureSchema.shape.currency,
-  exposureAmount: z.string().refine((v) => v.trim() !== '' && !isNaN(Number(v)), 'Eksposur wajib diisi'),
+  exposureAmount: z.string().refine((v) => v.trim() !== '' && !isNaN(Number(v)), 'Exposure is required'),
   rate: z.string(),
 });
 type FormValues = z.infer<typeof formSchema>;
@@ -36,7 +36,7 @@ export function FxForm() {
           <Label htmlFor="fx-entity">Entity <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="legalEntityId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger id="fx-entity"><SelectValue placeholder="Pilih…" /></SelectTrigger>
+              <SelectTrigger id="fx-entity"><SelectValue placeholder="Select…" /></SelectTrigger>
               <SelectContent>
                 {(entities?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code}</SelectItem>)}
               </SelectContent>
@@ -45,7 +45,7 @@ export function FxForm() {
           {errors.legalEntityId && <p className="mt-1 text-caption text-destructive-600">{errors.legalEntityId.message}</p>}
         </div>
         <div>
-          <Label htmlFor="fx-ccy">Mata Uang <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="fx-ccy">Currency <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="currency" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="fx-ccy"><SelectValue /></SelectTrigger>
@@ -56,7 +56,7 @@ export function FxForm() {
           )} />
         </div>
         <div>
-          <Label htmlFor="fx-amt">Eksposur <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="fx-amt">Exposure <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="fx-amt" type="number" min={0} className="w-36" error={!!errors.exposureAmount} {...register('exposureAmount')} />
           {errors.exposureAmount && <p className="mt-1 text-caption text-destructive-600">{errors.exposureAmount.message}</p>}
         </div>
@@ -64,7 +64,7 @@ export function FxForm() {
           <Label htmlFor="fx-rate">Rate</Label>
           <Input id="fx-rate" type="number" step="0.000001" min={0} placeholder="16000" className="w-32" {...register('rate')} />
         </div>
-        <Button type="submit" loading={create.isPending}>Buat FX</Button>
+        <Button type="submit" loading={create.isPending}>Create FX</Button>
       </div>
     </form>
   );

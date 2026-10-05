@@ -39,7 +39,7 @@ export function WbsTree({ tree, onAddChild }: { tree: WbsItem[]; onAddChild: (it
 
   return (
     <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-      {tree.length === 0 ? <p className="p-6 text-center text-body-sm text-neutral-500">Belum ada WBS. Tambah root pertama.</p> : tree.map((item) => <WbsRow key={item.id} item={item} depth={0} collapsed={collapsed} onToggle={toggle} onAddChild={onAddChild} />)}
+      {tree.length === 0 ? <p className="p-6 text-center text-body-sm text-neutral-500">No WBS yet. Add the first root.</p> : tree.map((item) => <WbsRow key={item.id} item={item} depth={0} collapsed={collapsed} onToggle={toggle} onAddChild={onAddChild} />)}
     </div>
   );
 }
@@ -54,7 +54,7 @@ function WbsRow({ item, depth, collapsed, onToggle, onAddChild }: { item: WbsIte
           <button
             type="button"
             className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-neutral-500 hover:bg-neutral-200"
-            aria-label={isCollapsed ? `Buka ${item.code}` : `Tutup ${item.code}`}
+            aria-label={isCollapsed ? `Expand ${item.code}` : `Collapse ${item.code}`}
             aria-expanded={!isCollapsed}
             onClick={() => onToggle(item.id)}
           >

@@ -35,10 +35,10 @@ function IncidentActions({ incident }: { incident: HseIncident }) {
 }
 
 export const incidentColumns = [
-  incHelper.accessor('incidentNumber', { header: 'No. Insiden', cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span> }),
+  incHelper.accessor('incidentNumber', { header: 'Incident No.', cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span> }),
   incHelper.accessor('severity', { header: 'Severity', cell: ({ row }) => <StatusBadge status={row.original.severity} /> }),
-  incHelper.accessor('type', { header: 'Tipe', cell: (info) => <StatusBadge status={info.getValue()} /> }),
-  incHelper.accessor('description', { header: 'Deskripsi', cell: (info) => <span className="max-w-xs truncate text-neutral-700">{info.getValue()}</span> }),
+  incHelper.accessor('type', { header: 'Type', cell: (info) => <StatusBadge status={info.getValue()} /> }),
+  incHelper.accessor('description', { header: 'Description', cell: (info) => <span className="max-w-xs truncate text-neutral-700">{info.getValue()}</span> }),
   incHelper.accessor('rootCause', { header: 'Root Cause', cell: (info) => <span className="max-w-xs truncate text-neutral-600">{info.getValue() ?? <EmptyCell />}</span> }),
   incHelper.accessor('status', { header: 'Status', cell: (info) => <StatusBadge status={info.getValue()} /> }),
   incHelper.display({ id: 'actions', header: '', cell: ({ row }) => <IncidentActions incident={row.original} /> }),

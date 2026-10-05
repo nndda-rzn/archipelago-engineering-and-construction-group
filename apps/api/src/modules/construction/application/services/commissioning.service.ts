@@ -27,19 +27,19 @@ export class CommissioningService {
 
   async create(projectId: string, dto: CreateCommissioningDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     if (dto.parentId) {
       const parent = await this.prisma.commissioningSystem.findUnique({ where: { id: dto.parentId } });
       if (!parent || parent.projectId !== projectId) {
-        throw new NotFoundException({ code: 'COMMISSIONING_PARENT_NOT_FOUND', message: 'Parent commissioning tidak ditemukan di project ini' });
+        throw new NotFoundException({ code: 'COMMISSIONING_PARENT_NOT_FOUND', message: 'Parent commissioning not found in this project' });
       }
     }
 
     const existing = await this.prisma.commissioningSystem.findUnique({
       where: { projectId_code: { projectId, code: dto.code } },
     });
-    if (existing) throw new ConflictException({ code: 'COMMISSIONING_EXISTS', message: 'Kode commissioning sudah ada di project ini' });
+    if (existing) throw new ConflictException({ code: 'COMMISSIONING_EXISTS', message: 'Commissioning code already exists in this project' });
 
     const node = await this.prisma.commissioningSystem.create({
       data: {
@@ -66,7 +66,7 @@ export class CommissioningService {
 
   async updateStatus(id: string, status: string, actorId: string) {
     const node = await this.prisma.commissioningSystem.findUnique({ where: { id } });
-    if (!node) throw new NotFoundException({ code: 'COMMISSIONING_NOT_FOUND', message: 'Commissioning tidak ditemukan' });
+    if (!node) throw new NotFoundException({ code: 'COMMISSIONING_NOT_FOUND', message: 'Commissioning system not found' });
 
     const updated = await this.prisma.commissioningSystem.update({
       where: { id },

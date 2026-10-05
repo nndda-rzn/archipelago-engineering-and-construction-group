@@ -12,20 +12,20 @@ const proposalHelper = createColumnHelper<PaymentProposal>();
 const bgHelper = createColumnHelper<BankGuarantee>();
 
 export const bankColumns = [
-  bankHelper.accessor('accountCode', { header: 'Kode', cell: (i) => <span className="font-mono text-neutral-800">{i.getValue()}</span> }),
+  bankHelper.accessor('accountCode', { header: 'Code', cell: (i) => <span className="font-mono text-neutral-800">{i.getValue()}</span> }),
   bankHelper.accessor('bankName', { header: 'Bank', cell: (i) => <span className="text-neutral-800 font-medium">{i.getValue()}</span> }),
-  bankHelper.accessor('accountNumber', { header: 'No. Rekening', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue()}</span> }),
-  bankHelper.accessor('currency', { header: 'Mata Uang', cell: (i) => <Badge variant="default">{i.getValue()}</Badge> }),
+  bankHelper.accessor('accountNumber', { header: 'Account No.', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue()}</span> }),
+  bankHelper.accessor('currency', { header: 'Currency', cell: (i) => <Badge variant="default">{i.getValue()}</Badge> }),
   bankHelper.accessor('legalEntity', { header: 'Entity', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue()?.code}</span> }),
-  bankHelper.accessor('openingBalance', { header: 'Saldo Awal', cell: (i) => <span className="font-mono tabular-nums text-neutral-800">{fmt(i.getValue())}</span> }),
+  bankHelper.accessor('openingBalance', { header: 'Opening Balance', cell: (i) => <span className="font-mono tabular-nums text-neutral-800">{fmt(i.getValue())}</span> }),
   bankHelper.accessor('status', { header: 'Status', cell: (i) => <StatusBadge status={i.getValue()} /> }),
 ];
 
 export const proposalColumns = [
   proposalHelper.accessor('proposalNumber', { header: 'No.', cell: (i) => <span className="font-mono text-neutral-800">{i.getValue()}</span> }),
   proposalHelper.accessor('vendor', { header: 'Vendor', cell: (i) => <span className="text-neutral-700">{i.getValue()}</span> }),
-  proposalHelper.accessor('totalAmount', { header: 'Nilai', cell: (i) => <span className="font-mono tabular-nums text-neutral-800">{fmt(i.getValue())}</span> }),
-  proposalHelper.accessor('bankAccount', { header: 'Rekening', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue() ? `${i.getValue()!.bankName} ${i.getValue()!.accountCode}` : <EmptyCell />}</span> }),
+  proposalHelper.accessor('totalAmount', { header: 'Amount', cell: (i) => <span className="font-mono tabular-nums text-neutral-800">{fmt(i.getValue())}</span> }),
+  proposalHelper.accessor('bankAccount', { header: 'Bank Account', cell: (i) => <span className="font-mono text-neutral-600">{i.getValue() ? `${i.getValue()!.bankName} ${i.getValue()!.accountCode}` : <EmptyCell />}</span> }),
   proposalHelper.accessor('status', { header: 'Status', cell: (i) => <StatusBadge status={i.getValue()} /> }),
   proposalHelper.display({
     id: 'actions',
@@ -52,10 +52,10 @@ function ProposalActions({ proposal }: { proposal: PaymentProposal }) {
 
 export const bgColumns = [
   bgHelper.accessor('guaranteeNumber', { header: 'No.', cell: (i) => <span className="font-mono text-neutral-800">{i.getValue()}</span> }),
-  bgHelper.accessor('guaranteeType', { header: 'Tipe', cell: (i) => <Badge variant="default">{i.getValue()}</Badge> }),
+  bgHelper.accessor('guaranteeType', { header: 'Type', cell: (i) => <Badge variant="default">{i.getValue()}</Badge> }),
   bgHelper.accessor('beneficiary', { header: 'Beneficiary', cell: (i) => <span className="text-neutral-700">{i.getValue()}</span> }),
   bgHelper.accessor('bankName', { header: 'Bank', cell: (i) => <span className="text-neutral-600">{i.getValue()}</span> }),
-  bgHelper.accessor('amount', { header: 'Nilai', cell: (i) => <span className="font-mono tabular-nums text-neutral-800">{fmt(i.getValue())}</span> }),
+  bgHelper.accessor('amount', { header: 'Amount', cell: (i) => <span className="font-mono tabular-nums text-neutral-800">{fmt(i.getValue())}</span> }),
   bgHelper.accessor('expiryDate', { header: 'Expiry', cell: (i) => <span className="font-mono text-neutral-600">{formatDate(i.getValue())}</span> }),
   bgHelper.accessor('status', { header: 'Status', cell: (i) => <StatusBadge status={i.getValue()} /> }),
 ];

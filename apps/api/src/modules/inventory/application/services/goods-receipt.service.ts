@@ -19,15 +19,15 @@ export class GoodsReceiptService {
       where: { id: dto.poId },
       include: { items: true },
     });
-    if (!po) throw new NotFoundException({ code: 'PO_NOT_FOUND', message: 'PO tidak ditemukan' });
+    if (!po) throw new NotFoundException({ code: 'PO_NOT_FOUND', message: 'Purchase order not found' });
     if (po.status !== 'RELEASED') {
-      throw new ConflictException({ code: 'PO_NOT_RELEASED', message: 'PO harus RELEASED sebelum goods receipt' });
+      throw new ConflictException({ code: 'PO_NOT_RELEASED', message: 'Purchase order must be RELEASED before goods receipt' });
     }
 
     const warehouse = await this.prisma.warehouse.findUnique({ where: { id: dto.warehouseId } });
-    if (!warehouse) throw new NotFoundException({ code: 'WAREHOUSE_NOT_FOUND', message: 'Warehouse tidak ditemukan' });
+    if (!warehouse) throw new NotFoundException({ code: 'WAREHOUSE_NOT_FOUND', message: 'Warehouse not found' });
     if (warehouse.projectId && warehouse.projectId !== po.projectId) {
-      throw new ConflictException({ code: 'WAREHOUSE_PROJECT_MISMATCH', message: 'Warehouse bukan milik project PO' });
+      throw new ConflictException({ code: 'WAREHOUSE_PROJECT_MISMATCH', message: 'Warehouse does not belong to the PO project' });
     }
 
     const poItemMap = new Map(po.items.map((i) => [i.id, i]));
@@ -55,12 +55,12 @@ export class GoodsReceiptService {
 
         const items = dto.items.map((item) => {
           const poItem = poItemMap.get(item.poItemId);
-          if (!poItem) throw new NotFoundException({ code: 'PO_ITEM_NOT_FOUND', message: `Item PO ${item.poItemId} tidak ada` });
+          if (!poItem) throw new NotFoundException({ code: 'PO_ITEM_NOT_FOUND', message: `PO item ${item.poItemId} not found` });
           const outstanding = Number(poItem.quantity) - (receivedMap.get(item.poItemId) ?? 0);
           if (Number(item.quantity) > outstanding) {
             throw new ConflictException({
               code: 'OVER_RECEIPT',
-              message: `Qty melebihi sisa outstanding item "${poItem.description}" (sisa ${outstanding} ${poItem.unit})`,
+              message: `Quantity exceeds outstanding balance for item "${poItem.description}" (remaining ${outstanding} ${poItem.unit})`,
             });
           }
           return {

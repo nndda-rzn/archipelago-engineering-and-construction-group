@@ -139,7 +139,7 @@ export class StockLedgerService {
 
   async stockSummary(projectId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const groups = await this.prisma.stockLedgerEntry.groupBy({
       by: ['wbsItemId', 'warehouseId'],

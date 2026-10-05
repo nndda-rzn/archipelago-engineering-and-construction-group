@@ -29,19 +29,19 @@ export class WbsService {
 
   async create(projectId: string, dto: CreateWbsItemDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     if (dto.parentId) {
       const parent = await this.prisma.wbsItem.findUnique({ where: { id: dto.parentId } });
       if (!parent || parent.projectId !== projectId) {
-        throw new NotFoundException({ code: 'WBS_PARENT_NOT_FOUND', message: 'Parent WBS tidak ditemukan di project ini' });
+        throw new NotFoundException({ code: 'WBS_PARENT_NOT_FOUND', message: 'Parent WBS not found in this project' });
       }
     }
 
     const existing = await this.prisma.wbsItem.findUnique({
       where: { projectId_code: { projectId, code: dto.code } },
     });
-    if (existing) throw new ConflictException({ code: 'WBS_EXISTS', message: 'Kode WBS sudah ada di project ini' });
+    if (existing) throw new ConflictException({ code: 'WBS_EXISTS', message: 'WBS code already exists in this project' });
 
     const item = await this.prisma.wbsItem.create({
       data: {

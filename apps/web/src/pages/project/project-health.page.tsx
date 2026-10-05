@@ -22,20 +22,20 @@ export function ProjectHealthPage() {
             value={defaultProjectId}
             onValueChange={setProjectId}
             options={(projects.data?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
-            placeholder="Pilih project…"
-            searchPlaceholder="Cari project…"
+            placeholder="Select project…"
+            searchPlaceholder="Search project…"
             className="w-56"
           />
-          <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={isLoading}>Muat Ulang</Button>
+          <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={isLoading}>Reload</Button>
         </div>
       </div>
 
-      {!defaultProjectId && <p className="text-body-sm text-neutral-500">Pilih project untuk melihat health.</p>}
+      {!defaultProjectId && <p className="text-body-sm text-neutral-500">Select a project to view health.</p>}
 
       {defaultProjectId && (
         <div className="space-y-6">
-          {isLoading && <p className="text-body-sm text-neutral-500">Menghitung…</p>}
-          {isError && <p className="text-body-sm text-destructive-600">Gagal memuat health project.</p>}
+          {isLoading && <p className="text-body-sm text-neutral-500">Computing…</p>}
+          {isError && <p className="text-body-sm text-destructive-600">Failed to load project health.</p>}
           {!isLoading && !isError && data && (
             <>
               <HealthSummary data={data} />

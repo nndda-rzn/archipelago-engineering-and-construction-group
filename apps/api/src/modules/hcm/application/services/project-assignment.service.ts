@@ -15,9 +15,9 @@ export class ProjectAssignmentService {
 
   async createAssignment(employeeId: string, dto: CreateProjectAssignmentDto, actorId: string) {
     const employee = await this.prisma.employee.findUnique({ where: { id: employeeId } });
-    if (!employee) throw new NotFoundException({ code: 'EMPLOYEE_NOT_FOUND', message: 'Employee tidak ditemukan' });
+    if (!employee) throw new NotFoundException({ code: 'EMPLOYEE_NOT_FOUND', message: 'Employee not found' });
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const allocation = Number(dto.allocationPercent);
     const start = dto.startDate ? new Date(dto.startDate) : new Date();
@@ -31,7 +31,7 @@ export class ProjectAssignmentService {
     if (currentTotal + allocation > 100 && !dto.exceptionApproved) {
       throw new ConflictException({
         code: 'ALLOCATION_EXCEEDS',
-        message: `Total alokasi ${currentTotal + allocation}% > 100% — butuh exception approval (FR-HCM-003)`,
+        message: `Total allocation ${currentTotal + allocation}% > 100% - exception approval required (FR-HCM-003)`,
       });
     }
 
@@ -65,10 +65,10 @@ export class ProjectAssignmentService {
   async endAssignment(employeeId: string, assignmentId: string, dto: EndAssignmentDto, actorId: string) {
     const assignment = await this.prisma.projectAssignment.findUnique({ where: { id: assignmentId } });
     if (!assignment || assignment.employeeId !== employeeId) {
-      throw new NotFoundException({ code: 'ASSIGNMENT_NOT_FOUND', message: 'Assignment tidak ditemukan' });
+      throw new NotFoundException({ code: 'ASSIGNMENT_NOT_FOUND', message: 'Assignment not found' });
     }
     if (assignment.status !== 'ACTIVE') {
-      throw new ConflictException({ code: 'NOT_ACTIVE', message: `Hanya ACTIVE yang bisa diakhiri (${assignment.status})` });
+      throw new ConflictException({ code: 'NOT_ACTIVE', message: `Only ACTIVE can be ended (${assignment.status})` });
     }
 
     const ended = await this.prisma.projectAssignment.update({

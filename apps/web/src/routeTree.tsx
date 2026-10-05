@@ -8,9 +8,9 @@ const rootRoute = createRootRoute({
     <div className="flex min-h-screen items-center justify-center bg-neutral-50">
       <div className="text-center">
         <p className="text-h1 font-semibold text-neutral-900">404</p>
-        <p className="mt-2 text-body-sm text-neutral-500">Halaman tidak ditemukan.</p>
+        <p className="mt-2 text-body-sm text-neutral-500">Page not found.</p>
         <a href="/" className="mt-4 inline-block text-body-sm font-medium text-racing-red-600 hover:underline">
-          Kembali ke Dashboard
+          Back to Dashboard
         </a>
       </div>
     </div>

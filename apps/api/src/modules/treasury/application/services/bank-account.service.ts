@@ -15,7 +15,7 @@ export class BankAccountService {
 
   async createBankAccount(dto: CreateBankAccountDto, actorId: string) {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
-    if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });
+    if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity not found' });
 
     const account = await this.prisma.$transaction(async (tx) => {
       const accountCode = await this.seq.next('BANK', `BANK-${new Date().getFullYear()}-`, tx);

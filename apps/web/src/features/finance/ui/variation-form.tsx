@@ -7,10 +7,10 @@ import { useProjects } from '@/entities/project';
 import { useCreateVariation } from '../model/variation.api';
 
 const formSchema = z.object({
-  projectId: z.string().min(1, 'Project wajib dipilih'),
+  projectId: z.string().min(1, 'Project is required'),
   title: createVariationSchema.shape.title,
   type: z.string(),
-  amountChange: z.string().refine((v) => Number(v) > 0, 'Nilai harus lebih dari 0'),
+  amountChange: z.string().refine((v) => Number(v) > 0, 'Amount must be greater than 0'),
   scheduleImpactDays: z.string(),
   description: z.string().max(500),
 });
@@ -45,7 +45,7 @@ export function VariationForm({ onDone }: { onDone: () => void }) {
           <Label htmlFor="vr-project">Project <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="projectId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger id="vr-project"><SelectValue placeholder="Pilih project…" /></SelectTrigger>
+              <SelectTrigger id="vr-project"><SelectValue placeholder="Select project…" /></SelectTrigger>
               <SelectContent>
                 {(projects.data?.items ?? []).map((project) => <SelectItem key={project.id} value={project.id}>{project.code}</SelectItem>)}
               </SelectContent>
@@ -54,41 +54,41 @@ export function VariationForm({ onDone }: { onDone: () => void }) {
           {errors.projectId && <p className="mt-1 text-caption text-destructive-600">{errors.projectId.message}</p>}
         </div>
         <div>
-          <Label htmlFor="vr-title">Judul Variation <span aria-hidden="true" className="text-destructive-600">*</span></Label>
-          <Input id="vr-title" placeholder="mis. Tambahan scope area X" error={!!errors.title} {...register('title')} />
+          <Label htmlFor="vr-title">Variation Title <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Input id="vr-title" placeholder="e.g. Additional scope for area X" error={!!errors.title} {...register('title')} />
           {errors.title && <p className="mt-1 text-caption text-destructive-600">{errors.title.message}</p>}
         </div>
         <div>
-          <Label htmlFor="vr-type">Tipe</Label>
+          <Label htmlFor="vr-type">Type</Label>
           <Controller name="type" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="vr-type"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="ADDITIVE">ADDITIVE · menambah kontrak</SelectItem>
-                <SelectItem value="DEDUCTIVE">DEDUCTIVE · mengurangi kontrak</SelectItem>
+                <SelectItem value="ADDITIVE">ADDITIVE · increases contract</SelectItem>
+                <SelectItem value="DEDUCTIVE">DEDUCTIVE · reduces contract</SelectItem>
               </SelectContent>
             </Select>
           )} />
         </div>
         <div>
-          <Label htmlFor="vr-amount">Perubahan Nilai <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="vr-amount">Amount Change <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="vr-amount" type="number" min={0} step={100000} error={!!errors.amountChange} {...register('amountChange')} />
           {errors.amountChange && <p className="mt-1 text-caption text-destructive-600">{errors.amountChange.message}</p>}
         </div>
         <div>
-          <Label htmlFor="vr-days">Dampak Jadwal (hari)</Label>
-          <Input id="vr-days" type="number" min={-3650} max={3650} placeholder="Opsional" {...register('scheduleImpactDays')} />
+          <Label htmlFor="vr-days">Schedule Impact (days)</Label>
+          <Input id="vr-days" type="number" min={-3650} max={3650} placeholder="Optional" {...register('scheduleImpactDays')} />
         </div>
         <div>
-          <Label htmlFor="vr-desc">Deskripsi</Label>
-          <Input id="vr-desc" placeholder="Alasan variation…" {...register('description')} />
+          <Label htmlFor="vr-desc">Description</Label>
+          <Input id="vr-desc" placeholder="Reason for variation…" {...register('description')} />
         </div>
       </div>
       <div className="mt-4 flex justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={onDone}>Batal</Button>
-        <Button type="submit" loading={create.isPending}>Buat Variation POTENTIAL</Button>
+        <Button type="button" variant="ghost" onClick={onDone}>Cancel</Button>
+        <Button type="submit" loading={create.isPending}>Create POTENTIAL Variation</Button>
       </div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600">Gagal membuat variation.</p>}
+      {create.isError && <p className="mt-2 text-caption text-destructive-600">Failed to create the variation.</p>}
     </form>
   );
 }

@@ -35,12 +35,12 @@ export function CommissioningForm({ projectId, tree, onDone }: { projectId: stri
     <form onSubmit={onSubmit} className="mb-6 space-y-3 rounded-md border border-neutral-200 bg-white p-4">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div>
-          <Label htmlFor="comm-code">Kode <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="comm-code">Code <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="comm-code" placeholder="PLANT-01" error={!!errors.code} {...register('code')} />
           {errors.code && <p className="mt-1 text-caption text-destructive-600">{errors.code.message}</p>}
         </div>
         <div>
-          <Label htmlFor="comm-name">Nama <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="comm-name">Name <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="comm-name" placeholder="Process Plant" error={!!errors.name} {...register('name')} />
           {errors.name && <p className="mt-1 text-caption text-destructive-600">{errors.name.message}</p>}
         </div>
@@ -71,13 +71,13 @@ export function CommissioningForm({ projectId, tree, onDone }: { projectId: stri
           )} />
         </div>
         <div>
-          <Label htmlFor="comm-remark">Catatan</Label>
-          <Input id="comm-remark" placeholder="Opsional" error={!!errors.remark} {...register('remark')} />
+          <Label htmlFor="comm-remark">Remark</Label>
+          <Input id="comm-remark" placeholder="Optional" error={!!errors.remark} {...register('remark')} />
           {errors.remark && <p className="mt-1 text-caption text-destructive-600">{errors.remark.message}</p>}
         </div>
       </div>
-      <div className="flex justify-end gap-2"><Button size="sm" variant="secondary" type="button" onClick={onDone}>Batal</Button><Button size="sm" type="submit" loading={create.isPending}>Tambah</Button></div>
-      {create.isError && <p className="mt-1 text-caption text-destructive-600" role="alert">Gagal menyimpan. Periksa kembali data.</p>}
+      <div className="flex justify-end gap-2"><Button size="sm" variant="secondary" type="button" onClick={onDone}>Cancel</Button><Button size="sm" type="submit" loading={create.isPending}>Add</Button></div>
+      {create.isError && <p className="mt-1 text-caption text-destructive-600" role="alert">Failed to save. Please check the data.</p>}
     </form>
   );
 }

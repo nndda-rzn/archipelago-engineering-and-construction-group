@@ -13,13 +13,13 @@ export class ControlAccountService {
 
   async createControlAccount(projectId: string, dto: CreateControlAccountDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const wbs = await this.prisma.wbsItem.findUnique({ where: { id: dto.wbsItemId } });
-    if (!wbs || wbs.projectId !== projectId) throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: 'WBS tidak ditemukan di project ini' });
+    if (!wbs || wbs.projectId !== projectId) throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: 'WBS not found in this project' });
 
     const exists = await this.prisma.controlAccount.findUnique({ where: { projectId_code: { projectId, code: dto.code } } });
-    if (exists) throw new ConflictException({ code: 'CONTROL_ACCOUNT_EXISTS', message: 'Kode control account sudah digunakan' });
+    if (exists) throw new ConflictException({ code: 'CONTROL_ACCOUNT_EXISTS', message: 'Control account code already in use' });
 
     const ca = await this.prisma.controlAccount.create({
       data: {

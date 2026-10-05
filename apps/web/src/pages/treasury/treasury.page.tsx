@@ -7,11 +7,11 @@ import { PAGE_SIZE } from '@/shared/lib/pagination';
 type Tab = 'bank-accounts' | 'cash-position' | 'proposals' | 'guarantees' | 'forecasts' | 'fx';
 
 const TAB_LABELS: Record<Tab, string> = {
-  'bank-accounts': 'Rekening Bank',
-  'cash-position': 'Posisi Kas',
-  proposals: 'Proposal Bayar',
+  'bank-accounts': 'Bank Accounts',
+  'cash-position': 'Cash Position',
+  proposals: 'Payment Proposals',
   guarantees: 'Bank Guarantee',
-  forecasts: 'Forecast Kas',
+  forecasts: 'Cash Forecast',
   fx: 'FX Exposure',
 };
 
@@ -32,7 +32,7 @@ export function TreasuryPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-h1 text-neutral-950">Treasury</h1>
-        <p className="mt-1 text-body-sm text-neutral-500">Bank account, cash position, payment proposal, bank guarantee, cash forecast, FX exposure (Fase 11A)</p>
+        <p className="mt-1 text-body-sm text-neutral-500">Bank account, cash position, payment proposal, bank guarantee, cash forecast, FX exposure (Phase 11A)</p>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -53,14 +53,14 @@ export function TreasuryPage() {
         <>
           <BankAccountForm />
           <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-            <DataGrid columns={bankColumns} data={banks.data?.items ?? []} rowCount={banks.data?.total ?? 0} isLoading={banks.isLoading} isError={banks.isError} onRetry={() => banks.refetch()} emptyMessage="Belum ada rekening bank" {...gridProps} />
+            <DataGrid columns={bankColumns} data={banks.data?.items ?? []} rowCount={banks.data?.total ?? 0} isLoading={banks.isLoading} isError={banks.isError} onRetry={() => banks.refetch()} emptyMessage="No bank accounts yet" {...gridProps} />
           </div>
         </>
       )}
 
       {tab === 'cash-position' && (
         <>
-          {cashPosition.isLoading && <p className="text-body-sm text-neutral-500">Menghitung posisi kas…</p>}
+          {cashPosition.isLoading && <p className="text-body-sm text-neutral-500">Computing cash position…</p>}
           {cashPosition.data && <CashPositionSection data={cashPosition.data} />}
         </>
       )}
@@ -69,7 +69,7 @@ export function TreasuryPage() {
         <>
           <ProposalForm />
           <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-            <DataGrid columns={proposalColumns} data={proposals.data?.items ?? []} rowCount={proposals.data?.total ?? 0} isLoading={proposals.isLoading} isError={proposals.isError} onRetry={() => proposals.refetch()} emptyMessage="Belum ada proposal pembayaran" {...gridProps} />
+            <DataGrid columns={proposalColumns} data={proposals.data?.items ?? []} rowCount={proposals.data?.total ?? 0} isLoading={proposals.isLoading} isError={proposals.isError} onRetry={() => proposals.refetch()} emptyMessage="No payment proposals yet" {...gridProps} />
           </div>
         </>
       )}
@@ -78,7 +78,7 @@ export function TreasuryPage() {
         <>
           <GuaranteeForm />
           <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-            <DataGrid columns={bgColumns} data={guarantees.data?.items ?? []} rowCount={guarantees.data?.total ?? 0} isLoading={guarantees.isLoading} isError={guarantees.isError} onRetry={() => guarantees.refetch()} emptyMessage="Belum ada bank guarantee" {...gridProps} />
+            <DataGrid columns={bgColumns} data={guarantees.data?.items ?? []} rowCount={guarantees.data?.total ?? 0} isLoading={guarantees.isLoading} isError={guarantees.isError} onRetry={() => guarantees.refetch()} emptyMessage="No bank guarantees yet" {...gridProps} />
           </div>
         </>
       )}

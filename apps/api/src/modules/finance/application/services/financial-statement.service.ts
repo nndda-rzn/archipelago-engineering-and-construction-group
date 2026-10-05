@@ -9,7 +9,7 @@ export class FinancialStatementService {
 
   private async statementRows(query: FinancialStatementQueryDto) {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: query.legalEntityId } });
-    if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });
+    if (!entity) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Legal entity not found' });
 
     const rows = await this.prisma.journalLine.groupBy({
       by: ['accountId'],

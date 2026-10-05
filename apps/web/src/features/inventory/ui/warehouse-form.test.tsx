@@ -14,23 +14,23 @@ describe('WarehouseForm', () => {
 
   it('menolak submit saat kode & nama kosong', async () => {
     renderWithProviders(<WarehouseForm onDone={vi.fn()} />);
-    fireEvent.click(screen.getByText('Simpan'));
+    fireEvent.click(screen.getByText('Save'));
     await waitFor(() => expect(mutate).not.toHaveBeenCalled());
   });
 
   it('menolak kode terlalu pendek (< 2 karakter)', async () => {
     renderWithProviders(<WarehouseForm onDone={vi.fn()} />);
-    fireEvent.change(screen.getByLabelText(/Kode/), { target: { value: 'X' } });
-    fireEvent.change(screen.getByLabelText(/Nama/), { target: { value: 'Gudang A' } });
-    fireEvent.click(screen.getByText('Simpan'));
+    fireEvent.change(screen.getByLabelText(/Code/), { target: { value: 'X' } });
+    fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'Gudang A' } });
+    fireEvent.click(screen.getByText('Save'));
     await waitFor(() => expect(mutate).not.toHaveBeenCalled());
   });
 
   it('submit payload default warehouseType PROJECT + location undefined', async () => {
     renderWithProviders(<WarehouseForm onDone={vi.fn()} />);
-    fireEvent.change(screen.getByLabelText(/Kode/), { target: { value: 'WH-01' } });
-    fireEvent.change(screen.getByLabelText(/Nama/), { target: { value: 'Gudang Proyek' } });
-    fireEvent.click(screen.getByText('Simpan'));
+    fireEvent.change(screen.getByLabelText(/Code/), { target: { value: 'WH-01' } });
+    fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'Gudang Proyek' } });
+    fireEvent.click(screen.getByText('Save'));
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1));
     expect(mutate.mock.calls.at(0)?.at(0)).toEqual({
       code: 'WH-01',

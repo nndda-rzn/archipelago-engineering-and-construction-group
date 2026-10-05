@@ -12,7 +12,7 @@ export class EarnedValueService {
 
   async earnedValue(projectId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const pvAgg = await this.prisma.controlAccount.aggregate({ where: { projectId }, _sum: { plannedValue: true } });
     const pv = Number(pvAgg._sum?.plannedValue ?? 0);

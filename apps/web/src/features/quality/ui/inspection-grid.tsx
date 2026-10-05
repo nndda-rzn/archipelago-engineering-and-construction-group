@@ -22,7 +22,7 @@ function InspectButtons({ inspection }: { inspection: InspectionRequest }) {
 
 export const insColumns = [
   insHelper.accessor('inspectionNumber', { header: 'No. Inspeksi', cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span> }),
-  insHelper.accessor('description', { header: 'Deskripsi', cell: (info) => <span className="max-w-sm truncate text-neutral-700">{info.getValue()}</span> }),
+  insHelper.accessor('description', { header: 'Description', cell: (info) => <span className="max-w-sm truncate text-neutral-700">{info.getValue()}</span> }),
   insHelper.accessor('result', { header: 'Hasil', cell: ({ row }) => <StatusBadge status={row.original.result} /> }),
   insHelper.accessor('status', { header: 'Status', cell: ({ row }) => <StatusBadge status={row.original.status} /> }),
   insHelper.display({ id: 'actions', header: '', cell: ({ row }) => <InspectButtons inspection={row.original} /> }),

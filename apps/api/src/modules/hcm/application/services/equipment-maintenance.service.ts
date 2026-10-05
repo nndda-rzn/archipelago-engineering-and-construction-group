@@ -15,7 +15,7 @@ export class EquipmentMaintenanceService {
 
   async createPm(equipmentId: string, dto: CreateEquipmentPmDto, actorId: string) {
     const equipment = await this.prisma.equipment.findUnique({ where: { id: equipmentId } });
-    if (!equipment) throw new NotFoundException({ code: 'EQUIPMENT_NOT_FOUND', message: 'Equipment tidak ditemukan' });
+    if (!equipment) throw new NotFoundException({ code: 'EQUIPMENT_NOT_FOUND', message: 'Equipment not found' });
 
     const pm = await this.prisma.equipmentPm.create({
       data: {
@@ -45,10 +45,10 @@ export class EquipmentMaintenanceService {
   async completePm(equipmentId: string, pmId: string, actorId: string) {
     const pm = await this.prisma.equipmentPm.findUnique({ where: { id: pmId } });
     if (!pm || pm.equipmentId !== equipmentId) {
-      throw new NotFoundException({ code: 'PM_NOT_FOUND', message: 'PM schedule tidak ditemukan' });
+      throw new NotFoundException({ code: 'PM_NOT_FOUND', message: 'PM schedule not found' });
     }
     if (pm.status !== 'SCHEDULED') {
-      throw new ConflictException({ code: 'NOT_SCHEDULED', message: `Hanya SCHEDULED yang bisa diselesaikan (${pm.status})` });
+      throw new ConflictException({ code: 'NOT_SCHEDULED', message: `Only SCHEDULED can be completed (${pm.status})` });
     }
 
     const done = await this.prisma.equipmentPm.update({
@@ -81,7 +81,7 @@ export class EquipmentMaintenanceService {
 
   async createBreakdown(equipmentId: string, dto: CreateEquipmentBreakdownDto, actorId: string) {
     const equipment = await this.prisma.equipment.findUnique({ where: { id: equipmentId } });
-    if (!equipment) throw new NotFoundException({ code: 'EQUIPMENT_NOT_FOUND', message: 'Equipment tidak ditemukan' });
+    if (!equipment) throw new NotFoundException({ code: 'EQUIPMENT_NOT_FOUND', message: 'Equipment not found' });
 
     const breakdown = await this.prisma.$transaction(async (tx) => {
       const created = await tx.equipmentBreakdown.create({
@@ -114,10 +114,10 @@ export class EquipmentMaintenanceService {
   async resolveBreakdown(equipmentId: string, breakdownId: string, actorId: string) {
     const bd = await this.prisma.equipmentBreakdown.findUnique({ where: { id: breakdownId } });
     if (!bd || bd.equipmentId !== equipmentId) {
-      throw new NotFoundException({ code: 'BREAKDOWN_NOT_FOUND', message: 'Breakdown tidak ditemukan' });
+      throw new NotFoundException({ code: 'BREAKDOWN_NOT_FOUND', message: 'Breakdown not found' });
     }
     if (bd.status !== 'OPEN') {
-      throw new ConflictException({ code: 'NOT_OPEN', message: `Hanya OPEN yang bisa di-resolve (${bd.status})` });
+      throw new ConflictException({ code: 'NOT_OPEN', message: `Only OPEN can be resolved (${bd.status})` });
     }
 
     const resolved = await this.prisma.$transaction(async (tx) => {

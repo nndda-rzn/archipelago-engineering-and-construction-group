@@ -17,16 +17,16 @@ export function ProgressClaimPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Progress Claim</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Klaim progres pekerjaan ke klien · tipe PROGRESS/COST/TIME/EOT/KONTRACTUAL (FR-CMR-007)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Progress claim to client · types PROGRESS/COST/TIME/EOT/CONTRACTUAL (FR-CMR-007)</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={claimTypeFilter} onValueChange={setClaimTypeFilter}>
-            <SelectTrigger className="w-auto" aria-label="Filter tipe klaim"><SelectValue placeholder="Semua tipe" /></SelectTrigger>
+            <SelectTrigger className="w-auto" aria-label="Filter claim type"><SelectValue placeholder="All types" /></SelectTrigger>
             <SelectContent>
               {CLAIM_TYPES.map((t) => <SelectItem key={t} value={t}>{t} · {claimTypeLabel[t]}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Tutup' : '+ Buat Klaim'}</Button>
+          <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Close' : '+ Create Claim'}</Button>
         </div>
       </div>
 
@@ -41,7 +41,7 @@ export function ProgressClaimPage() {
           isLoading={isLoading}
           isError={isError}
           onRetry={() => refetch()}
-          emptyMessage="Belum ada claim"
+          emptyMessage="No claims yet"
           exportFilename="progress-claims"
         />
       </div>

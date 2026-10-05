@@ -8,12 +8,12 @@ import { useLegalEntities } from '@/entities/legal-entity';
 import { useProjects } from '@/entities/project';
 
 const formSchema = z.object({
-  legalEntityId: z.string().min(1, 'Entity wajib dipilih'),
+  legalEntityId: z.string().min(1, 'Entity is required'),
   projectId: z.string(),
   guaranteeType: z.enum(['BID', 'PERFORMANCE', 'ADVANCE', 'RETENTION', 'MAINTENANCE']),
   beneficiary: createBankGuaranteeSchema.shape.beneficiary,
   bankName: createBankGuaranteeSchema.shape.bankName,
-  amount: z.string().refine((v) => v.trim() !== '' && !isNaN(Number(v)), 'Nilai wajib diisi'),
+  amount: z.string().refine((v) => v.trim() !== '' && !isNaN(Number(v)), 'Amount is required'),
 });
 type FormValues = z.infer<typeof formSchema>;
 
@@ -40,7 +40,7 @@ export function GuaranteeForm() {
           <Label htmlFor="bg-entity">Entity <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="legalEntityId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger id="bg-entity"><SelectValue placeholder="Pilih…" /></SelectTrigger>
+              <SelectTrigger id="bg-entity"><SelectValue placeholder="Select…" /></SelectTrigger>
               <SelectContent>
                 {(entities?.items ?? []).map((e) => <SelectItem key={e.id} value={e.id}>{e.code}</SelectItem>)}
               </SelectContent>
@@ -52,7 +52,7 @@ export function GuaranteeForm() {
           <Label htmlFor="bg-project">Project</Label>
           <Controller name="projectId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger id="bg-project"><SelectValue placeholder="Pilih…" /></SelectTrigger>
+              <SelectTrigger id="bg-project"><SelectValue placeholder="Select…" /></SelectTrigger>
               <SelectContent>
                 {(projects?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
               </SelectContent>
@@ -60,7 +60,7 @@ export function GuaranteeForm() {
           )} />
         </div>
         <div>
-          <Label htmlFor="bg-type">Tipe</Label>
+          <Label htmlFor="bg-type">Type</Label>
           <Controller name="guaranteeType" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="bg-type"><SelectValue /></SelectTrigger>
@@ -81,11 +81,11 @@ export function GuaranteeForm() {
           {errors.bankName && <p className="mt-1 text-caption text-destructive-600">{errors.bankName.message}</p>}
         </div>
         <div>
-          <Label htmlFor="bg-amt">Nilai <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="bg-amt">Amount <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="bg-amt" type="number" min={0} className="w-32" error={!!errors.amount} {...register('amount')} />
           {errors.amount && <p className="mt-1 text-caption text-destructive-600">{errors.amount.message}</p>}
         </div>
-        <Button type="submit" loading={create.isPending}>Buat BG</Button>
+        <Button type="submit" loading={create.isPending}>Create BG</Button>
       </div>
     </form>
   );
