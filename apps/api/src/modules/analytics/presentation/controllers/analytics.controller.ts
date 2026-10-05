@@ -27,6 +27,12 @@ export class AnalyticsController {
     return this.analytics.anomalies();
   }
 
+  @Get('signals')
+  @Permissions(Permission.AnalyticsView)
+  signals(@Query() query: AnalyticsFilterParams) {
+    return this.analytics.signals(query);
+  }
+
   @Get('cash-flow')
   @Permissions(Permission.AnalyticsView)
   cashFlow(@Query() query: AnalyticsFilterParams) {

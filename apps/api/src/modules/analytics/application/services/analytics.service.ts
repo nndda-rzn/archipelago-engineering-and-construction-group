@@ -67,6 +67,45 @@ export class AnalyticsService {
     });
   }
 
+  async signals(filter: AnalyticsFilterParams = {}) {
+    return this.cache.wrap(analyticsCacheKey('analytics:signals', filter), 30, async () => {
+      const projectWhere = filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {};
+      const ageDays = (rows: { createdAt: Date }[]) =>
+        rows.length === 0 ? 0 : Math.floor((Date.now() - Math.min(...rows.map((r) => r.createdAt.getTime()))) / 86400000);
+
+      const [ncrs, incidents, punch, claims, pms, approvals] = await this.prisma.$transaction([
+        this.prisma.ncr.findMany({ where: { status: { not: 'CLOSED' }, ...projectWhere }, select: { createdAt: true } }),
+        this.prisma.hseIncident.findMany({ where: { status: { not: 'RESOLVED' }, ...projectWhere }, select: { createdAt: true } }),
+        this.prisma.punchListItem.findMany({ where: { status: 'OPEN', ...projectWhere }, select: { createdAt: true } }),
+        this.prisma.progressClaim.findMany({ where: { status: 'DRAFT', ...projectWhere }, select: { createdAt: true } }),
+        this.prisma.equipmentPm.findMany({ where: { status: 'SCHEDULED', dueDate: { lt: new Date() } }, select: { createdAt: true } }),
+        this.prisma.approvalTask.findMany({ where: { status: 'PENDING' }, select: { createdAt: true } }),
+      ]);
+
+      const build = (
+        key: string,
+        severity: 'HIGH' | 'MEDIUM' | 'LOW',
+        rows: { createdAt: Date }[],
+        label: string,
+        to: string,
+      ) => (rows.length === 0 ? null : { key, severity, count: rows.length, oldestAgeDays: ageDays(rows), label, to });
+
+      const signals = [
+        build('ncrs', 'HIGH', ncrs, 'NCRs', '/quality?tab=ncrs&status=OPEN'),
+        build('incidents', 'HIGH', incidents, 'Incidents', '/hse?tab=incidents&status=OPEN'),
+        build('pm', 'MEDIUM', pms, 'PM overdue', '/hcm/equipment'),
+        build('claims', 'LOW', claims, 'Claims DRAFT', '/finance/progress-claims?status=DRAFT'),
+        build('approvals', 'LOW', approvals, 'Approvals', '/approvals'),
+        build('punch', 'LOW', punch, 'Punch items', '/quality?tab=punch&status=OPEN'),
+      ].filter((s): s is NonNullable<typeof s> => s != null);
+
+      const rank = { HIGH: 0, MEDIUM: 1, LOW: 2 } as const;
+      signals.sort((a, b) => rank[a.severity] - rank[b.severity] || b.oldestAgeDays - a.oldestAgeDays || b.count - a.count);
+
+      return { signals, generatedAt: new Date().toISOString() };
+    });
+  }
+
   async anomalies() {
     return this.cache.wrap(ANALYTICS_CACHE_KEYS.anomalies, 60, async () => {
     const anomalies: Array<{ type: string; severity: 'LOW' | 'MEDIUM' | 'HIGH'; projectCode?: string; message: string }> = [];
