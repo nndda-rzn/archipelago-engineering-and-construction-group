@@ -1,4 +1,4 @@
-import { Button, EntitySelect, SegmentedControl } from '@aec/ui';
+import { Button, EntitySelect, FilterChip, SegmentedControl } from '@aec/ui';
 import { useLegalEntities } from '@/entities/legal-entity';
 import { useUrlFilter } from '@/shared/lib/use-url-state';
 import { resolvePeriod, type DashboardFilter, type PeriodPreset } from '@/shared/lib/dashboard-period';
@@ -10,6 +10,15 @@ const PERIOD_OPTIONS = [
   { value: 'YTD', label: 'YTD' },
   { value: '12M', label: '12M' },
 ];
+
+/** Filter yang sedang aktif (bukan preset periode). Urut: entity, health, bucket. */
+export function activeFilters(input: { period: string; entity: string; health: string; bucket: string }): { key: string; label: string }[] {
+  const list: { key: string; label: string }[] = [];
+  if (input.entity) list.push({ key: 'entity', label: `Entity: ${input.entity}` });
+  if (input.health) list.push({ key: 'health', label: `Health: ${input.health}` });
+  if (input.bucket) list.push({ key: 'bucket', label: `Aging: ${input.bucket}` });
+  return list;
+}
 
 /** State filter dashboard yang hidup di URL (periode + legal entity). */
 export function useDashboardFilter(): {
@@ -76,17 +85,35 @@ export function DashboardFilterBarView({
 export function DashboardFilterBar({ queryKey }: { queryKey?: readonly unknown[] }) {
   const { preset, entityId, setPreset, setEntity } = useDashboardFilter();
   const entities = useLegalEntities({ page: 1, pageSize: 200 });
+  const [health, setHealth] = useUrlFilter('health');
+  const [bucket, setBucket] = useUrlFilter('bucket');
+
+  const chips = activeFilters({ period: preset, entity: entityId, health, bucket });
+  const clear = (key: string) => {
+    if (key === 'entity') setEntity('');
+    else if (key === 'health') setHealth('');
+    else if (key === 'bucket') setBucket('');
+  };
 
   return (
-    <DashboardFilterBarView
-      preset={preset}
-      onPresetChange={setPreset}
-      entityId={entityId}
-      onEntityChange={setEntity}
-      entities={(entities.data?.items ?? []).map((e) => ({ value: e.id, label: `${e.code} · ${e.legalName}` }))}
-      onReload={() => entities.refetch()}
-      isLoading={entities.isLoading}
-      queryKey={queryKey}
-    />
+    <div className="flex flex-col gap-2">
+      <DashboardFilterBarView
+        preset={preset}
+        onPresetChange={setPreset}
+        entityId={entityId}
+        onEntityChange={setEntity}
+        entities={(entities.data?.items ?? []).map((e) => ({ value: e.id, label: `${e.code} · ${e.legalName}` }))}
+        onReload={() => entities.refetch()}
+        isLoading={entities.isLoading}
+        queryKey={queryKey}
+      />
+      {chips.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {chips.map((c) => (
+            <FilterChip key={c.key} label={c.label} onRemove={() => clear(c.key)} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
