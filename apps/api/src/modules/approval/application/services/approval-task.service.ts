@@ -133,6 +133,10 @@ export class ApprovalTaskService {
     return updated;
   }
 
+  async pendingCount(): Promise<number> {
+    return this.prisma.approvalTask.count({ where: { status: 'PENDING' } });
+  }
+
   async listTasks(actorId: string, page = 1, pageSize = 20) {
     const skip = (page - 1) * pageSize;
     const [tasks, total] = await Promise.all([

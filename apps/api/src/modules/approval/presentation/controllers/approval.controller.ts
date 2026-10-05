@@ -39,6 +39,12 @@ export class ApprovalController {
     return this.task.decide(dto, request.user?.sub ?? 'system');
   }
 
+  @Get('pending-count')
+  @Permissions(Permission.ApprovalView)
+  async pendingCount() {
+    return { count: await this.task.pendingCount() };
+  }
+
   @Get('workflows')
   @Permissions(Permission.WorkflowView)
   listDefinitions() {
