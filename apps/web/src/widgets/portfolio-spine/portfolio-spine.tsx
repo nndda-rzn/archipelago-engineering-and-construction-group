@@ -126,19 +126,21 @@ export const portfolioColumns = [
   }),
 ];
 
-export function PortfolioSpine({ filter = {} }: { filter?: DashboardFilter }) {
+export function PortfolioSpine({ filter = {}, health = '' }: { filter?: DashboardFilter; health?: string }) {
   const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = usePortfolio(filter);
   const evm = usePortfolioEvm(filter);
 
   const evmById = new Map((evm.data?.items ?? []).map((e) => [e.projectId, e]));
-  const rows: PortfolioRow[] = (data?.items ?? []).map((p) => {
-    const e = evmById.get(p.projectId);
-    return {
-      ...p,
-      evm: e ? { hasEvm: e.hasEvm, cpi: e.cpi, spi: e.spi } : undefined,
-    };
-  });
+  const rows: PortfolioRow[] = (data?.items ?? [])
+    .filter((p) => (health ? p.health === health : true))
+    .map((p) => {
+      const e = evmById.get(p.projectId);
+      return {
+        ...p,
+        evm: e ? { hasEvm: e.hasEvm, cpi: e.cpi, spi: e.spi } : undefined,
+      };
+    });
 
   return (
     <div className="rounded-md border border-neutral-200 bg-white shadow-xs">

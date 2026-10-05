@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildEvmPoints } from './portfolio-canvas';
+import { buildEvmPoints, filterByHealth } from './portfolio-canvas';
 
 const portfolio = [
   { projectId: 'p1', projectCode: 'PRJ-1', projectName: 'A', client: 'C', status: 'ACTIVE', contractValue: 100, budget: 0, actual: 0, revenue: 0, variance: 0, utilization: null, health: 'NO_BUDGET' as const },
@@ -32,5 +32,22 @@ describe('buildEvmPoints', () => {
 
   it('returns empty array for empty portfolio', () => {
     expect(buildEvmPoints([], [])).toEqual([]);
+  });
+});
+
+describe('filterByHealth', () => {
+  const pts = [
+    { projectId: 'p1', health: 'CRITICAL' as const },
+    { projectId: 'p2', health: 'ON_TRACK' as const },
+  ];
+
+  it('returns all points when health is empty', () => {
+    expect(filterByHealth(pts as never[], '').length).toBe(2);
+  });
+  it('keeps only matching points', () => {
+    expect(filterByHealth(pts as never[], 'CRITICAL').map((p) => (p as { projectId: string }).projectId)).toEqual(['p1']);
+  });
+  it('returns empty for a filter that matches nothing', () => {
+    expect(filterByHealth([{ projectId: 'p1', health: 'ON_TRACK' as const }] as never[], 'CRITICAL')).toEqual([]);
   });
 });

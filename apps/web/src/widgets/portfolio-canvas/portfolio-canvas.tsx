@@ -59,6 +59,11 @@ interface TooltipPayload {
   payload?: EvmPoint;
 }
 
+/** Saring titik berdasarkan health terpilih; kosong = semua. */
+export function filterByHealth<T extends { health: string }>(points: T[], health: string): T[] {
+  return health ? points.filter((p) => p.health === health) : points;
+}
+
 function CanvasTooltip({ active, payload }: { active?: boolean; payload?: TooltipPayload[] }) {
   if (!active || !payload?.length) return null;
   const p = payload[0]?.payload;
@@ -79,7 +84,7 @@ function CanvasTooltip({ active, payload }: { active?: boolean; payload?: Toolti
   );
 }
 
-export function PortfolioCanvas({ filter = {} }: { filter?: DashboardFilter }) {
+export function PortfolioCanvas({ filter = {}, health = '', onSelectHealth }: { filter?: DashboardFilter; health?: string; onSelectHealth?: (h: string) => void }) {
   const navigate = useNavigate();
   const portfolio = usePortfolio(filter);
   const evm = usePortfolioEvm(filter);
@@ -107,7 +112,7 @@ export function PortfolioCanvas({ filter = {} }: { filter?: DashboardFilter }) {
               <Cell
                 key={p.projectId}
                 fill={HEALTH_COLORS[p.health]}
-                fillOpacity={p.hasEvm ? 1 : 0.35}
+                fillOpacity={health && p.health !== health ? 0.2 : p.hasEvm ? 1 : 0.35}
                 cursor="pointer"
               />
             ))}
@@ -117,14 +122,22 @@ export function PortfolioCanvas({ filter = {} }: { filter?: DashboardFilter }) {
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
         {(Object.keys(HEALTH_LABEL) as Array<keyof typeof HEALTH_LABEL>).map((k) => (
-          <Badge key={k} variant="outline" className="gap-1.5">
+          <button
+            key={k}
+            type="button"
+            aria-pressed={health === k}
+            onClick={() => onSelectHealth?.(health === k ? '' : k)}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-caption transition-colors duration-fast ${
+              health === k ? 'border-racing-red-600 text-racing-red-700' : 'border-neutral-300 text-neutral-600 hover:border-neutral-400'
+            }`}
+          >
             <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: HEALTH_COLORS[k] }} aria-hidden="true" />
             {HEALTH_LABEL[k]}
-          </Badge>
+          </button>
         ))}
         <Badge variant="outline" className="gap-1.5 text-neutral-500">No EVM data</Badge>
       </div>
-      <p className="mt-2 text-caption text-neutral-500">X = CPI (cost efficiency) · Y = SPI (schedule efficiency) · crosshair at 1.0</p>
+      <p className="mt-2 text-caption text-neutral-500">X = CPI (cost efficiency) · Y = SPI (schedule efficiency) · crosshair at 1.0 · click a legend to filter</p>
     </div>
   );
 }

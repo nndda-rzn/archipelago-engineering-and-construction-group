@@ -7,6 +7,7 @@ import { LiquidityPanel } from '@/widgets/liquidity-panel';
 import { FinancialBand } from '@/widgets/financial-band';
 import { PortfolioCanvas } from '@/widgets/portfolio-canvas';
 import { PortfolioSpine } from '@/widgets/portfolio-spine';
+import { AnomalyTriage } from '@/widgets/anomaly-triage';
 import type { DashboardFilter } from '@/shared/lib/dashboard-period';
 
 const VIEW_OPTIONS = [
@@ -14,7 +15,7 @@ const VIEW_OPTIONS = [
   { value: 'tabel', label: 'Tabel' },
 ];
 
-function PortfolioZone({ filter }: { filter: DashboardFilter }) {
+function PortfolioZone({ filter, health, onSelectHealth }: { filter: DashboardFilter; health: string; onSelectHealth: (h: string) => void }) {
   const [view, setView] = useUrlFilter('view', 'canvas');
   return (
     <section>
@@ -22,13 +23,19 @@ function PortfolioZone({ filter }: { filter: DashboardFilter }) {
         <h2 className="text-h2 text-neutral-950">Portfolio</h2>
         <SegmentedControl aria-label="Portfolio view" options={VIEW_OPTIONS} value={view} onValueChange={setView} />
       </div>
-      {view === 'tabel' ? <PortfolioSpine filter={filter} /> : <PortfolioCanvas filter={filter} />}
+      {view === 'tabel' ? (
+        <PortfolioSpine filter={filter} health={health} />
+      ) : (
+        <PortfolioCanvas filter={filter} health={health} onSelectHealth={onSelectHealth} />
+      )}
     </section>
   );
 }
 
 export function DashboardPage() {
   const { filter } = useDashboardFilter();
+  const [health, setHealth] = useUrlFilter('health');
+  const [bucket, setBucket] = useUrlFilter('bucket');
 
   const zones = [
     <DashboardFilterBar key="filter" />,
@@ -39,10 +46,11 @@ export function DashboardPage() {
       </div>
       <div className="flex flex-col gap-6 xl:col-span-5">
         <LiquidityPanel filter={filter} />
-        <FinancialBand filter={filter} />
+        <FinancialBand filter={filter} bucket={bucket} onSelectBucket={setBucket} />
       </div>
     </div>,
-    <PortfolioZone key="portfolio" filter={filter} />,
+    <PortfolioZone key="portfolio" filter={filter} health={health} onSelectHealth={setHealth} />,
+    <AnomalyTriage key="triage" />,
   ];
 
   return (

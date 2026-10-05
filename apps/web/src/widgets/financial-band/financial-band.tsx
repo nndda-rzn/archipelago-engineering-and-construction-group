@@ -20,7 +20,7 @@ function total(buckets: AgingBucket[]): number {
   return buckets.reduce((s, b) => s + b.amount, 0);
 }
 
-export function FinancialBand({ filter = {} }: { filter?: DashboardFilter }) {
+export function FinancialBand({ filter = {}, bucket = '', onSelectBucket }: { filter?: DashboardFilter; bucket?: string; onSelectBucket?: (b: string) => void }) {
   const cashFlow = useCashFlow(filter);
   const aging = useAging(filter);
   const portfolio = usePortfolio(filter);
@@ -28,6 +28,25 @@ export function FinancialBand({ filter = {} }: { filter?: DashboardFilter }) {
   const totals = portfolio.data?.totals;
   const budget = totals?.totalBudget ?? 0;
   const actual = totals?.totalActual ?? 0;
+
+  const bucketButtons = (buckets: AgingBucket[], side: string) => (
+    <div className="mt-1 flex flex-wrap gap-1">
+      {buckets.map((b) => (
+        <button
+          key={`${side}-${b.bucket}`}
+          type="button"
+          aria-pressed={bucket === b.bucket}
+          disabled={b.amount <= 0}
+          onClick={() => onSelectBucket?.(bucket === b.bucket ? '' : b.bucket)}
+          className={`rounded px-1.5 py-0.5 font-mono text-caption tabular-nums transition-colors duration-fast disabled:opacity-40 ${
+            bucket === b.bucket ? 'bg-racing-red-600 text-white' : 'text-neutral-500 hover:bg-neutral-100'
+          }`}
+        >
+          {b.bucket}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -57,6 +76,7 @@ export function FinancialBand({ filter = {} }: { filter?: DashboardFilter }) {
             ) : (
               <p className="text-body-sm text-neutral-500">No outstanding receivables.</p>
             )}
+            {bucketButtons(aging.data?.ar ?? [], 'ar')}
           </div>
           <div>
             <p className="mb-1 text-caption text-neutral-500">Payable · {formatIdr(total(aging.data?.ap ?? []))}</p>
@@ -65,6 +85,7 @@ export function FinancialBand({ filter = {} }: { filter?: DashboardFilter }) {
             ) : (
               <p className="text-body-sm text-neutral-500">No outstanding payables.</p>
             )}
+            {bucketButtons(aging.data?.ap ?? [], 'ap')}
           </div>
         </div>
       </div>
