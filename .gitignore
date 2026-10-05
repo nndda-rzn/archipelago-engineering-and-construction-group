@@ -35,3 +35,6 @@ test-results/
 
 # MinIO / local storage
 .local-storage/
+
+# superpowers executing-plans scratch
+.superpowers/
