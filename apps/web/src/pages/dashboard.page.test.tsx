@@ -27,4 +27,20 @@ describe('DashboardPage', () => {
       expect(screen.getByTestId(id)).toBeTruthy();
     }
   });
+
+  it('caps content width so ultra-wide screens do not stretch the layout', async () => {
+    const { DashboardPage } = await import('./dashboard.page');
+    const { container } = render(<DashboardPage />);
+    expect(container.querySelector('.max-w-\\[1600px\\]')).toBeTruthy();
+  });
+
+  it('renders the financial band as its own zone, not nested under the hero/liquidity row', async () => {
+    const { DashboardPage } = await import('./dashboard.page');
+    render(<DashboardPage />);
+    const hero = screen.getByTestId('hero-band');
+    const financial = screen.getByTestId('financial-band');
+    const row = hero.closest('[data-slot="hero-liquidity-row"]');
+    expect(row).toBeTruthy();
+    expect(row?.contains(financial)).toBe(false);
+  });
 });

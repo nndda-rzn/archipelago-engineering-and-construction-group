@@ -28,10 +28,11 @@ const helper = createColumnHelper<PortfolioRow>();
 export const portfolioColumns = [
   helper.accessor('projectCode', {
     header: 'Project',
+    size: 220,
     cell: (info) => {
       const p = info.row.original;
       return (
-        <span>
+        <span className="whitespace-nowrap">
           <span className="font-mono text-neutral-600">{p.projectCode}</span>
           <span className="ml-2 text-neutral-800">{p.projectName}</span>
         </span>
@@ -40,15 +41,17 @@ export const portfolioColumns = [
   }),
   helper.accessor('client', {
     header: 'Client',
+    size: 140,
     cell: (info) => <span className="text-neutral-600">{info.getValue()}</span>,
   }),
   helper.accessor('health', {
     id: 'health',
     header: 'Health',
+    size: 120,
     cell: (info) => {
       const meta = healthMeta[info.getValue()];
       return (
-        <Badge variant={meta.badgeVariant} className="gap-1.5">
+        <Badge variant={meta.badgeVariant} className="gap-1.5 whitespace-nowrap">
           <span className={`inline-block h-2 w-2 rounded-full ${meta.dotClass}`} aria-hidden="true" />
           {meta.label}
         </Badge>
@@ -58,19 +61,21 @@ export const portfolioColumns = [
   helper.display({
     id: 'utilization',
     header: 'Utilization',
+    size: 130,
     cell: (info) => (
-      <div className="w-32">
+      <div className="w-28">
         <BulletBar value={info.row.original.utilization ?? 0} max={100} label="Utilization" />
       </div>
     ),
   }),
   helper.display({
     id: 'budgetVsActual',
-    header: 'Budget vs Actual',
+    header: 'Budget / Actual',
+    size: 130,
     cell: (info) => {
       const p = info.row.original;
       return (
-        <div className="w-32">
+        <div className="w-28">
           <MiniStackedBar primary={p.actual} secondary={Math.max(0, p.budget - p.actual)} label="Budget vs Actual" />
         </div>
       );
@@ -79,6 +84,8 @@ export const portfolioColumns = [
   helper.accessor('variance', {
     id: 'variance',
     header: 'Variance',
+    size: 130,
+    meta: { align: 'right' },
     cell: (info) => {
       const v = info.getValue();
       return (
@@ -91,11 +98,15 @@ export const portfolioColumns = [
   helper.accessor('revenue', {
     id: 'revenue',
     header: 'Revenue',
+    size: 130,
+    meta: { align: 'right' },
     cell: (info) => <span className="font-mono tabular-nums text-neutral-700">{formatIdr(info.getValue())}</span>,
   }),
   helper.display({
     id: 'margin',
     header: 'Margin',
+    size: 90,
+    meta: { align: 'right' },
     cell: (info) => {
       const p = info.row.original;
       const margin = p.revenue > 0 ? ((p.revenue - p.actual) / p.revenue) * 100 : 0;
@@ -109,6 +120,8 @@ export const portfolioColumns = [
   helper.display({
     id: 'evm',
     header: 'CPI / SPI',
+    size: 100,
+    meta: { align: 'right' },
     cell: (info) => {
       const evm = info.row.original.evm;
       if (!evm || !evm.hasEvm || evm.cpi == null || evm.spi == null) {
@@ -116,7 +129,7 @@ export const portfolioColumns = [
       }
       const cls = (v: number) => (v >= 1 ? 'text-success-700' : 'text-destructive-600');
       return (
-        <span className="font-mono text-caption tabular-nums">
+        <span className="font-mono text-caption tabular-nums whitespace-nowrap">
           <span className={cls(evm.cpi)}>{evm.cpi.toFixed(2)}</span>
           <span className="text-neutral-300"> · </span>
           <span className={cls(evm.spi)}>{evm.spi.toFixed(2)}</span>

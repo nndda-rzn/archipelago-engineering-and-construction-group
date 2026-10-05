@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router';
+import { ShieldCheck } from 'lucide-react';
 import { EmptyState, SignalChip, type SignalSeverity } from '@aec/ui';
 import { useSignals } from '@/features/analytics';
 import type { DashboardFilter } from '@/shared/lib/dashboard-period';
@@ -66,14 +67,21 @@ export function buildSignals(input: SignalInput): Signal[] {
 
 export function SignalRailView({ signals }: { signals: Signal[] }) {
   if (signals.length === 0) {
-    return <EmptyState title="All clear" description="No open signals." />;
+    return (
+      <EmptyState
+        tone="success"
+        icon={<ShieldCheck className="h-5 w-5" aria-hidden="true" />}
+        title="All clear"
+        description="No open signals."
+      />
+    );
   }
   return (
-    <div className="flex flex-wrap gap-2">
+    <div data-slot="signal-rail" aria-label="Signals" className="flex gap-2 overflow-x-auto pb-1">
       {signals.map((s) => {
-        const context = s.ageDays > 0 ? `${s.context ?? ''} · ${s.ageDays}d`.trim() : s.context;
+        const context = s.ageDays > 0 ? [s.context, `oldest ${s.ageDays}d`].filter(Boolean).join(' · ') : s.context;
         return (
-          <Link key={s.key} to={s.to} aria-label={`${s.label}: ${s.count} ${context ?? ''}`.trim()}>
+          <Link key={s.key} to={s.to} className="shrink-0" aria-label={`${s.label}: ${s.count} ${context ?? ''}`.trim()}>
             <SignalChip severity={s.severity} count={s.count} label={s.label} context={context} />
           </Link>
         );

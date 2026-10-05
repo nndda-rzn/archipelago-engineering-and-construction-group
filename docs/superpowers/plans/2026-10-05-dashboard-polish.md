@@ -2,6 +2,24 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax.
 
+> **AMENDMENT (Zona 0–4 UI/UX refinement).** This brief supersedes two earlier
+> decisions in this plan:
+> 1. **Selection colour reversal.** `SegmentedControl`'s selected segment is now
+>    `bg-neutral-800`, **not** `bg-racing-red-600`. Red means attention/action,
+>    never "selected". Applied primitive-wide (dashboard + every consumer). The
+>    same rule now governs the aging bucket buttons (`financial-band`) and the
+>    canvas health-legend active border.
+> 2. **Zero is neutral.** Financial values of exactly `0` (cash on hand, net cash
+>    flow, working-capital gap) render neutral (`text-neutral-950`), never green —
+>    new helper `apps/web/src/shared/lib/value-tone.ts`.
+>
+> Additional zone work delivered in this amendment: scrollable Signal Rail with
+> `oldest Nd`; `ChartSkeleton`/`ListSkeleton` shaped loaders; `EmptyState` gains
+> `icon`/`tone`; educational Portfolio Canvas empty state (faint axes + crosshair
+> + watermark + Indonesian copy); calm enterprise icons on the all-clear states;
+> `AgingStackedBar` legend + `BudgetBullet` target marker. Tasks 5 and 7 below are
+> now **done** (see commits). Remaining: Task 6 (ranking), 8–11 as scoped.
+
 **Goal:** Turn the dashboard from "a table and some KPI cards" into a dense, analytical instrument panel: token-compliant charts, shaped loading skeletons, informative empty states, a balanced Z-pattern layout, and five purposeful new visualisations (cost composition, cash-flow area+trend, aging stacked bar, project ranking, budget bullet) — all inside the existing AEC design system.
 
 **Architecture:** One additive API endpoint (`GET /analytics/cost-composition`). A shared `chart-colors.ts` sourced from design tokens replaces all hardcoded hex. New chart components live in `apps/web/src/widgets/dashboard-charts/`. Cards adopt the `Card` primitive. The demo seed is enriched so the dashboard has realistic data. No new colors/fonts/radii.
@@ -316,6 +334,8 @@ describe('toAreaSeries', () => {
 **Interfaces:**
 - Produces: `AgingStackedBar({ buckets, label })`.
 
+**Status: DONE** — implemented with a per-bucket legend (swatch + label + amount) and `role="img"` aria-label.
+
 - [ ] **Step 1: Write the failing test**
 
 ```tsx
@@ -396,6 +416,8 @@ describe('rankByVariance', () => {
 
 **Interfaces:**
 - Produces: `bulletWidth(actual, budget): number`; `BudgetBullet({ actual, budget, target? })`.
+
+**Status: DONE** — implemented with an optional target marker (`data-slot="bullet-target"`) and `role="img"` aria-label.
 
 - [ ] **Step 1: Write the failing test**
 

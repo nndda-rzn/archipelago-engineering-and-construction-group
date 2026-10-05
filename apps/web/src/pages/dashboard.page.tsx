@@ -40,21 +40,21 @@ export function DashboardPage() {
   const zones = [
     <DashboardFilterBar key="filter" />,
     <SignalRail key="signal" filter={filter} />,
-    <div key="bands" className="grid gap-6 xl:grid-cols-12">
+    <div key="bands" data-slot="hero-liquidity-row" className="grid gap-6 xl:grid-cols-12">
       <div className="xl:col-span-7">
         <HeroBand filter={filter} health={health} />
       </div>
-      <div className="flex flex-col gap-6 xl:col-span-5">
+      <div className="xl:col-span-5">
         <LiquidityPanel filter={filter} />
-        <FinancialBand filter={filter} bucket={bucket} onSelectBucket={setBucket} />
       </div>
     </div>,
+    <FinancialBand key="financial" filter={filter} bucket={bucket} onSelectBucket={setBucket} />,
     <PortfolioZone key="portfolio" filter={filter} health={health} onSelectHealth={setHealth} />,
     <AnomalyTriage key="triage" />,
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-[1600px] space-y-6">
       <div>
         <h1 className="text-h1 text-neutral-950">Dashboard</h1>
         <p className="mt-1 text-body-sm text-neutral-500">Portfolio command center · cost, cash &amp; health</p>

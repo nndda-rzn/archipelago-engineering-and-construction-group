@@ -39,7 +39,30 @@ describe('SignalRailView age', () => {
     );
     expect(screen.getByText(/12d/)).toBeTruthy();
   });
+
+  it('labels the age explicitly as "oldest"', () => {
+    render(
+      <SignalRailView
+        signals={[{ key: 'ncrs', severity: 'high', count: 2, label: 'NCRs', context: 'open', ageDays: 12, to: '/quality?tab=ncrs&status=OPEN' }]}
+      />,
+    );
+    expect(screen.getByText(/oldest 12d/i)).toBeTruthy();
+  });
 });
+
+describe('SignalRailView rail', () => {
+  it('renders a horizontally scrollable rail of non-wrapping chips', () => {
+    const { container } = render(
+      <SignalRailView
+        signals={[{ key: 'ncrs', severity: 'high', count: 2, label: 'NCRs', context: 'open', ageDays: 12, to: '/quality?tab=ncrs&status=OPEN' }]}
+      />,
+    );
+    const rail = container.querySelector('[data-slot="signal-rail"]');
+    expect(rail?.className).toContain('overflow-x-auto');
+    expect(rail?.className).not.toContain('flex-wrap');
+  });
+});
+
 
 describe('SignalRail empty state', () => {
   it('renders all-clear when every signal is zero', () => {

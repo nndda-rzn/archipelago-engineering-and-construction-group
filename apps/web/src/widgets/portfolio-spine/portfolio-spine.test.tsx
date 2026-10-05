@@ -33,4 +33,17 @@ describe('portfolioColumns', () => {
     expect(screen.getByText('—')).toBeTruthy();
     expect(screen.getByText(/1\.25/)).toBeTruthy();
   });
+
+  it('gives numeric columns an explicit size so 9 columns do not squeeze the header', () => {
+    const sized = portfolioColumns.filter((c) => (c as { size?: number }).size !== undefined);
+    expect(sized.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it('right-aligns numeric columns via meta', () => {
+    const numericIds = ['variance', 'revenue', 'margin', 'evm'];
+    for (const id of numericIds) {
+      const col = portfolioColumns.find((c) => (c as { id?: string }).id === id) as { meta?: { align?: string } };
+      expect(col.meta?.align).toBe('right');
+    }
+  });
 });
