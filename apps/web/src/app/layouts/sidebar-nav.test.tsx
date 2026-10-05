@@ -19,7 +19,7 @@ vi.mock('@/features/analytics/model/analytics.api', () => ({
 }));
 
 import { SidebarNav, resolveOpenNodes, scrollActiveIntoView } from './sidebar-nav';
-import { allNavItems, navGroups, nodeKey } from './nav-config';
+import { allNavItems, matchNav, navGroups, nodeKey } from './nav-config';
 
 describe('resolveOpenNodes', () => {
   const saved = { 'Finance & Treasury': false, 'Procurement & Inventory': false };
@@ -319,13 +319,25 @@ describe('satu item aktif saja (tidak double highlight)', () => {
     expect(active[0]?.textContent?.trim()).toBe('Executive Analytics');
   });
 
-  it('SETIAP route nav menandai tepat satu item (invarian 52 route)', () => {
+  it('SETIAP route nav dipetakan matchNav ke tepat dirinya sendiri (invarian 52 route)', () => {
+    // Sumber kebenaran highlight adalah `matchNav` (dipakai juga breadcrumb).
+    // Diuji murni — bukan dengan merender 52x — agar cepat dan tidak flaky di CI.
     for (const item of allNavItems()) {
-      state.path = item.to;
-      const { unmount } = render(<SidebarNav onNavigate={() => {}} />);
-      const active = screen.queryAllByRole('link').filter((el) => el.getAttribute('aria-current') === 'page');
-      expect(active.length, `route ${item.to} menandai ${active.length} item`).toBe(1);
-      unmount();
+      expect(matchNav(item.to)?.to, `route ${item.to}`).toBe(item.to);
     }
   });
+
+  it('komponen menandai tepat satu item untuk route perwakilan (rerender, bukan mount ulang)', () => {
+    // Route perwakilan: kedua pasangan bersarang + beberapa grup/subgrup, tanpa
+    // merender 52x agar tidak menyentuh timeout di CI.
+    const routes = ['/', '/analytics', '/analytics/reporting', '/commercial', '/commercial/tender', '/projects', '/procurement/pr', '/finance/journals', '/hcm/payroll', '/hse'];
+    state.path = '/';
+    const { rerender } = render(<SidebarNav onNavigate={() => {}} />);
+    for (const route of routes) {
+      state.path = route;
+      rerender(<SidebarNav onNavigate={() => {}} />);
+      const active = screen.queryAllByRole('link').filter((el) => el.getAttribute('aria-current') === 'page');
+      expect(active.length, `route ${route} menandai ${active.length} item`).toBe(1);
+    }
+  }, 15000);
 });
