@@ -107,6 +107,45 @@ describe('ProjectDetailPage', () => {
     expect(screen.getByRole('link', { name: /Budget/i }).getAttribute('href')).toContain('/budget');
   });
 
+  it('renders an entity avatar tile (a component, not just text)', () => {
+    const { container } = renderWithProviders(<ProjectDetailPage />);
+    const avatar = container.querySelector('[data-slot="entity-avatar"]');
+    expect(avatar).not.toBeNull();
+    expect(avatar?.textContent).toBe('AE'); // "Alpha EPC"
+  });
+
+  it('shows metadata as labelled pairs instead of a middot-separated sentence', () => {
+    const { container } = renderWithProviders(<ProjectDetailPage />);
+    const header = container.querySelector('header');
+    expect(header).not.toBeNull();
+    // Label ada sebagai elemen sendiri (bukan dijejalkan dalam satu kalimat).
+    const labels = Array.from(header!.querySelectorAll('dt')).map((el) => el.textContent);
+    expect(labels).toEqual(expect.arrayContaining(['Client', 'Manager', 'Director', 'Schedule', 'Legal entity', 'Currency', 'Location', 'Budget used']));
+    // …dan tidak ada lagi kalimat berjalan dengan pemisah middot.
+    expect(header?.textContent).not.toMatch(/Manager Andi ·/);
+    expect(header?.textContent).not.toMatch(/Director Budi ·/);
+  });
+
+  it('puts the status pill on the same row as the title', () => {
+    const { container } = renderWithProviders(<ProjectDetailPage />);
+    const row = container.querySelector('[data-slot="title-row"]');
+    expect(row?.querySelector('h1')).not.toBeNull();
+    expect(row?.textContent).toMatch(/At Risk/);
+  });
+
+  it('keeps a single h1 and puts the edit action inside the header', () => {
+    const { container } = renderWithProviders(<ProjectDetailPage />);
+    expect(container.querySelectorAll('h1')).toHaveLength(1);
+    expect(container.querySelector('header')?.querySelector('button')).not.toBeNull();
+  });
+
+  it('renders related-page navigation as chips in a separate nav', () => {
+    const { container } = renderWithProviders(<ProjectDetailPage />);
+    const nav = container.querySelector('nav[aria-label="Related pages"]');
+    expect(nav).not.toBeNull();
+    expect(nav?.querySelectorAll('a').length).toBe(4);
+  });
+
   it('offers a back link to the project list', () => {
     renderWithProviders(<ProjectDetailPage />);
     expect(screen.getByRole('link', { name: /Projects/i }).getAttribute('href')).toBe('/projects');
