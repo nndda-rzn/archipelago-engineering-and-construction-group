@@ -1,5 +1,22 @@
 import { z } from 'zod';
 
+/** Satu titik seri bulanan untuk tren (aliran per bulan, bukan stok). */
+export const trendPointSchema = z.object({
+  month: z.string(),
+  value: z.number(),
+});
+export type TrendPoint = z.infer<typeof trendPointSchema>;
+
+export const executiveTrendSchema = z.object({
+  cashIn: z.array(trendPointSchema),
+  cashOut: z.array(trendPointSchema),
+  newProjects: z.array(trendPointSchema),
+  newBudget: z.array(trendPointSchema),
+  newNcrs: z.array(trendPointSchema),
+  newIncidents: z.array(trendPointSchema),
+});
+export type ExecutiveTrend = z.infer<typeof executiveTrendSchema>;
+
 export const executiveDashboardSchema = z.object({
   projects: z.object({
     total: z.number(),
@@ -21,6 +38,8 @@ export const executiveDashboardSchema = z.object({
     overduePm: z.number(),
     openPunchItems: z.number(),
   }),
+  /** Seri 6 bulan per metrik — untuk sparkline. Aditif & opsional (klien lama tetap valid). */
+  trend: executiveTrendSchema.optional(),
   delta: z.record(z.string(), z.object({
     current: z.number(),
     previous: z.number(),
