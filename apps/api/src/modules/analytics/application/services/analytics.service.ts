@@ -1,8 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Readable } from 'node:stream';
+import type { AnalyticsFilterParams } from '@aec/api-contracts';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { CacheService } from '@/shared/cache/cache.service';
-import { ANALYTICS_CACHE_KEYS } from '@/shared/cache/analytics-cache';
+import { ANALYTICS_CACHE_KEYS, analyticsCacheKey } from '@/shared/cache/analytics-cache';
+import { resolveDateRange } from '@/shared/utils/date-range';
 import { toCsvLines } from '@/shared/export/csv';
 
 @Injectable()
@@ -12,52 +14,56 @@ export class AnalyticsService {
     @Inject(CacheService) private readonly cache: CacheService,
   ) {}
 
-  async executive() {
-    return this.cache.wrap(ANALYTICS_CACHE_KEYS.executive, 30, async () => {
-    const [projects, budgetAgg, vendorInvoiceAgg, paymentAgg, collectionAgg, clientInvoiceAgg] = await this.prisma.$transaction([
-      this.prisma.project.findMany({ select: { id: true, code: true, name: true, status: true, contractValue: true, advanceAmount: true } }),
-      this.prisma.budgetItem.aggregate({ _sum: { amount: true } }),
-      this.prisma.vendorInvoice.aggregate({ where: { status: 'POSTED' }, _sum: { totalAmount: true } }),
-      this.prisma.payment.aggregate({ where: { status: 'PAID' }, _sum: { totalAmount: true } }),
-      this.prisma.collection.aggregate({ where: { status: 'POSTED' }, _sum: { totalAmount: true } }),
-      this.prisma.clientInvoice.aggregate({ where: { status: 'POSTED' }, _sum: { totalAmount: true } }),
-    ]);
+  async executive(filter: AnalyticsFilterParams = {}) {
+    return this.cache.wrap(analyticsCacheKey(ANALYTICS_CACHE_KEYS.executive, filter), 30, async () => {
+      const { from, to } = resolveDateRange(filter.from, filter.to);
+      const projectWhere = filter.legalEntityId ? { legalEntityId: filter.legalEntityId } : {};
+      const dateWhere = from || to ? { gte: from, lte: to } : undefined;
 
-    const statusGroups = await this.prisma.project.groupBy({ by: ['status'], _count: { _all: true } });
-    const projectStatusCount = Object.fromEntries(statusGroups.map((r) => [r.status, r._count._all]));
-    const totalContractValue = projects.reduce((s, p) => s + (p.contractValue != null ? Number(p.contractValue) : 0), 0);
+      const [projects, budgetAgg, vendorInvoiceAgg, paymentAgg, collectionAgg, clientInvoiceAgg] = await this.prisma.$transaction([
+        this.prisma.project.findMany({ where: projectWhere, select: { id: true, code: true, name: true, status: true, contractValue: true, advanceAmount: true } }),
+        this.prisma.budgetItem.aggregate({ _sum: { amount: true } }),
+        this.prisma.vendorInvoice.aggregate({ where: { status: 'POSTED', ...(filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {}), ...(dateWhere ? { invoiceDate: dateWhere } : {}) }, _sum: { totalAmount: true } }),
+        this.prisma.payment.aggregate({ where: { status: 'PAID', ...(filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {}), ...(dateWhere ? { paymentDate: dateWhere } : {}) }, _sum: { totalAmount: true } }),
+        this.prisma.collection.aggregate({ where: { status: 'POSTED', ...(filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {}), ...(dateWhere ? { collectedAt: dateWhere } : {}) }, _sum: { totalAmount: true } }),
+        this.prisma.clientInvoice.aggregate({ where: { status: 'POSTED', ...(filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {}), ...(dateWhere ? { invoiceDate: dateWhere } : {}) }, _sum: { totalAmount: true } }),
+      ]);
 
-    const [openClaims, openNcrs, openIncidents, overduePm, openPunch] = await this.prisma.$transaction([
-      this.prisma.progressClaim.count({ where: { status: 'DRAFT' } }),
-      this.prisma.ncr.count({ where: { status: { not: 'CLOSED' } } }),
-      this.prisma.hseIncident.count({ where: { status: { not: 'RESOLVED' } } }),
-      this.prisma.equipmentPm.count({ where: { status: 'SCHEDULED', dueDate: { lt: new Date() } } }),
-      this.prisma.punchListItem.count({ where: { status: 'OPEN' } }),
-    ]);
+      const statusGroups = await this.prisma.project.groupBy({ by: ['status'], where: projectWhere, _count: { _all: true } });
+      const projectStatusCount = Object.fromEntries(statusGroups.map((r) => [r.status, r._count._all]));
+      const totalContractValue = projects.reduce((s, p) => s + (p.contractValue != null ? Number(p.contractValue) : 0), 0);
 
-    return {
-      projects: {
-        total: projects.length,
-        byStatus: projectStatusCount,
-        totalContractValue,
-        totalAdvance: projects.reduce((s, p) => s + (p.advanceAmount != null ? Number(p.advanceAmount) : 0), 0),
-      },
-      finance: {
-        totalBudget: Number(budgetAgg._sum.amount ?? 0),
-        postedVendorInvoice: Number(vendorInvoiceAgg._sum.totalAmount ?? 0),
-        postedClientInvoice: Number(clientInvoiceAgg._sum.totalAmount ?? 0),
-        cashIn: Number(collectionAgg._sum?.totalAmount ?? 0),
-        cashOut: Number(paymentAgg._sum?.totalAmount ?? 0),
-      },
-      operational: {
-        openClaims: openClaims,
-        openNcrs: openNcrs,
-        openIncidents: openIncidents,
-        overduePm: overduePm,
-        openPunchItems: openPunch,
-      },
-      generatedAt: new Date().toISOString(),
-    };
+      const [openClaims, openNcrs, openIncidents, overduePm, openPunch] = await this.prisma.$transaction([
+        this.prisma.progressClaim.count({ where: { status: 'DRAFT', ...(filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {}) } }),
+        this.prisma.ncr.count({ where: { status: { not: 'CLOSED' }, ...(filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {}) } }),
+        this.prisma.hseIncident.count({ where: { status: { not: 'RESOLVED' }, ...(filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {}) } }),
+        this.prisma.equipmentPm.count({ where: { status: 'SCHEDULED', dueDate: { lt: new Date() } } }),
+        this.prisma.punchListItem.count({ where: { status: 'OPEN', ...(filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {}) } }),
+      ]);
+
+      return {
+        projects: {
+          total: projects.length,
+          byStatus: projectStatusCount,
+          totalContractValue,
+          totalAdvance: projects.reduce((s, p) => s + (p.advanceAmount != null ? Number(p.advanceAmount) : 0), 0),
+        },
+        finance: {
+          totalBudget: Number(budgetAgg._sum.amount ?? 0),
+          postedVendorInvoice: Number(vendorInvoiceAgg._sum.totalAmount ?? 0),
+          postedClientInvoice: Number(clientInvoiceAgg._sum.totalAmount ?? 0),
+          cashIn: Number(collectionAgg._sum?.totalAmount ?? 0),
+          cashOut: Number(paymentAgg._sum?.totalAmount ?? 0),
+        },
+        operational: {
+          openClaims: openClaims,
+          openNcrs: openNcrs,
+          openIncidents: openIncidents,
+          overduePm: overduePm,
+          openPunchItems: openPunch,
+        },
+        generatedAt: new Date().toISOString(),
+      };
     });
   }
 
@@ -117,11 +123,14 @@ export class AnalyticsService {
     });
   }
 
-  async cashFlow() {
-    return this.cache.wrap(ANALYTICS_CACHE_KEYS.cashFlow, 60, async () => {
+  async cashFlow(filter: AnalyticsFilterParams = {}) {
+    return this.cache.wrap(analyticsCacheKey(ANALYTICS_CACHE_KEYS.cashFlow, filter), 60, async () => {
+    const { from, to } = resolveDateRange(filter.from, filter.to);
+    const dateWhere = from || to ? { gte: from, lte: to } : undefined;
+    const projectWhere = filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {};
     const [collections, payments] = await this.prisma.$transaction([
-      this.prisma.collection.findMany({ where: { status: 'POSTED' }, select: { totalAmount: true, collectedAt: true } }),
-      this.prisma.payment.findMany({ where: { status: 'PAID' }, select: { totalAmount: true, paymentDate: true } }),
+      this.prisma.collection.findMany({ where: { status: 'POSTED', ...projectWhere, ...(dateWhere ? { collectedAt: dateWhere } : {}) }, select: { totalAmount: true, collectedAt: true } }),
+      this.prisma.payment.findMany({ where: { status: 'PAID', ...projectWhere, ...(dateWhere ? { paymentDate: dateWhere } : {}) }, select: { totalAmount: true, paymentDate: true } }),
     ]);
 
     const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -149,8 +158,8 @@ export class AnalyticsService {
     });
   }
 
-  async aging() {
-    return this.cache.wrap(ANALYTICS_CACHE_KEYS.aging, 60, async () => {
+  async aging(filter: AnalyticsFilterParams = {}) {
+    return this.cache.wrap(analyticsCacheKey(ANALYTICS_CACHE_KEYS.aging, filter), 60, async () => {
     const today = new Date();
     const bucket = (d: Date): string => {
       const days = Math.floor((today.getTime() - d.getTime()) / 86400000);
@@ -160,9 +169,10 @@ export class AnalyticsService {
       if (days <= 90) return '61-90';
       return '90+';
     };
+    const projectWhere = filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {};
 
     const clientInvoices = await this.prisma.clientInvoice.findMany({
-      where: { status: 'POSTED' },
+      where: { status: 'POSTED', ...projectWhere },
       include: { collections: { select: { amount: true } } },
     });
     const arBuckets = new Map<string, number>();
@@ -176,7 +186,7 @@ export class AnalyticsService {
     }
 
     const vendorInvoices = await this.prisma.vendorInvoice.findMany({
-      where: { status: 'POSTED' },
+      where: { status: 'POSTED', ...projectWhere },
       include: { payments: { select: { amount: true } } },
     });
     const apBuckets = new Map<string, number>();
