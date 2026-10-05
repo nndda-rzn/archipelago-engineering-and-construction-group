@@ -17,6 +17,7 @@ export { Input, type InputProps } from './primitives/input';
 export { Badge, type BadgeProps, type BadgeVariant } from './primitives/badge';
 export { Card, CardHeader, CardTitle } from './primitives/card';
 export { StatCard, type StatCardProps } from './primitives/stat-card';
+export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } from './primitives/segmented-control';
 export { Label } from './primitives/label';
 export { Dialog, DialogTrigger, DialogClose, DialogOverlay, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, ConfirmDialog } from './primitives/dialog';
 export { Select, SelectGroup, SelectValue, SelectTrigger, SelectContent, SelectItem } from './primitives/select';
