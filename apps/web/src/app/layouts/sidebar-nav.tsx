@@ -59,12 +59,54 @@ function useOpenNodes(pathname: string) {
   return { open: resolveOpenNodes(pathname, saved), toggle };
 }
 
-/** Panduan vertikal "tree" — elemen nyata (bukan pseudo-element) agar bisa diuji. */
-function TreeGuide({ active, className }: { active: boolean; className: string }) {
-  return <span data-tree-guide aria-hidden="true" className={cn('absolute inset-y-0 w-px', active ? 'bg-neutral-900' : 'bg-neutral-200', className)} />;
+/**
+ * Garis pemandu pohon. Elemen nyata (bukan pseudo-element) agar bisa diuji.
+ * Empat bentuk:
+ * - `full`   : garis leluhur setinggi baris — menjaga batang tetap menyambung
+ *              melewati blok anak (mis. garis level-1 terus turun saat subgrup terbuka)
+ * - `top`    : setengah batang atas, menyambung dari baris sebelumnya
+ * - `bottom` : setengah batang bawah, menyambung ke baris berikutnya
+ * - `stub`   : konektor horizontal dari batang ke label (bentuk ├─ / └─)
+ */
+type GuideX = 'left-5' | 'left-8';
+
+interface GuideSpec {
+  x: GuideX;
+  kind: 'full' | 'top' | 'bottom' | 'stub';
+  active: boolean;
 }
 
-function NavLink({ item, active, badge, guide, className, onNavigate }: { item: NavItem; active: boolean; badge?: number; guide?: string; className?: string; onNavigate: () => void }) {
+function Guides({ specs }: { specs: GuideSpec[] }) {
+  return (
+    <>
+      {specs.map((spec, index) => (
+        <span
+          key={index}
+          data-tree-guide={spec.kind === 'full' ? 'full' : spec.kind === 'stub' ? 'stub' : `trunk-${spec.kind}`}
+          aria-hidden="true"
+          className={cn(
+            'pointer-events-none absolute',
+            spec.x,
+            spec.active ? 'bg-neutral-900' : 'bg-neutral-200',
+            spec.kind === 'full' && 'inset-y-0 w-px',
+            spec.kind === 'top' && 'top-0 h-1/2 w-px',
+            spec.kind === 'bottom' && 'bottom-0 h-1/2 w-px',
+            spec.kind === 'stub' && 'top-1/2 h-px w-3 -translate-y-1/2',
+          )}
+        />
+      ))}
+    </>
+  );
+}
+
+function NavLink({ item, active, badge, x, isLast, ancestorFull, onNavigate }: { item: NavItem; active: boolean; badge?: number; x: GuideX; isLast: boolean; ancestorFull: boolean; onNavigate: () => void }) {
+  const specs: GuideSpec[] = [];
+  // Garis leluhur (level induk di atasnya) harus tetap turun agar tidak putus.
+  if (ancestorFull) specs.push({ x: 'left-5', kind: 'full', active });
+  specs.push({ x, kind: 'top', active });
+  if (!isLast) specs.push({ x, kind: 'bottom', active });
+  specs.push({ x, kind: 'stub', active });
+
   return (
     <Link
       to={item.to}
@@ -73,11 +115,11 @@ function NavLink({ item, active, badge, guide, className, onNavigate }: { item: 
       aria-label={badge ? `${item.label}, ${badge} pending` : undefined}
       className={cn(
         'relative flex min-h-7 items-center gap-2 rounded-md py-1 pr-2 text-body-sm',
+        x === 'left-8' ? 'pl-11' : 'pl-8',
         active ? 'bg-neutral-100 font-medium text-neutral-900' : 'text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900',
-        className,
       )}
     >
-      {guide ? <TreeGuide active={active} className={guide} /> : null}
+      <Guides specs={specs} />
       <span className="truncate">{item.label}</span>
       {badge ? (
         <Badge variant="warning" className="ml-auto shrink-0 tabular-nums">
@@ -112,13 +154,13 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
 
   const headerClass = (active: boolean) =>
     cn(
-      'group flex w-full items-center gap-2 rounded-md py-1.5 pl-3 pr-2 text-overline uppercase transition-colors duration-fast',
+      'group relative flex w-full items-center gap-2 rounded-md py-1.5 pl-3 pr-2 text-overline uppercase transition-colors duration-fast',
       active ? 'text-neutral-900' : 'text-neutral-500 hover:text-neutral-800',
     );
 
   const subHeaderClass = (active: boolean) =>
     cn(
-      'group flex w-full items-center gap-2 rounded-md py-1 pl-7 pr-2 text-body-sm font-medium transition-colors duration-fast',
+      'group relative flex w-full items-center gap-2 rounded-md py-1 pl-8 pr-2 text-body-sm font-medium transition-colors duration-fast',
       active ? 'text-neutral-900' : 'text-neutral-600 hover:text-neutral-900',
     );
 
@@ -167,33 +209,62 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
             return (
               <Collapsible key={group.label} open={isOpen} onOpenChange={() => toggle(group.label)} className="mb-1">
                 <CollapsibleTrigger className={headerClass(groupActive)}>
+                  {/* Batang dari header turun ke anak-anaknya — menyambung sampai anak terakhir. */}
+                  {isOpen ? <Guides specs={[{ x: 'left-5', kind: 'bottom', active: groupActive }]} /> : null}
                   <Icon className={cn('h-4 w-4 shrink-0', groupActive ? 'text-neutral-700' : 'text-neutral-400 group-hover:text-neutral-600')} aria-hidden="true" />
                   <span className="truncate">{group.label}</span>
                   <ChevronDown className={cn('ml-auto h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform duration-fast', isOpen ? '' : '-rotate-90')} aria-hidden="true" />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
                   {group.subgroups
-                    ? group.subgroups.map((sub) => {
+                    ? group.subgroups.map((sub, subIndex) => {
                         const key = nodeKey(group.label, sub.label);
                         const subOpen = open[key] === true;
                         const subActive = sub.items.some((item) => isItemActive(item.to));
+                        const isLastSub = subIndex === (group.subgroups?.length ?? 0) - 1;
+                        const subSpecs: GuideSpec[] = [
+                          { x: 'left-5', kind: 'top', active: subActive },
+                          { x: 'left-5', kind: 'stub', active: subActive },
+                        ];
+                        // Batang level-1 berlanjut ke bawah bila subgrup ini bukan yang terakhir.
+                        if (!isLastSub) subSpecs.push({ x: 'left-5', kind: 'bottom', active: subActive });
                         return (
                           <Collapsible key={key} open={subOpen} onOpenChange={() => toggle(key)}>
                             <CollapsibleTrigger className={subHeaderClass(subActive)}>
-                              <TreeGuide active={subActive} className="left-4" />
+                              <Guides specs={subSpecs} />
+                              {/* Batang ke anak-anak subgrup, sejajar dengan batang item (left-8). */}
+                              {subOpen ? <Guides specs={[{ x: 'left-8', kind: 'bottom', active: subActive }]} /> : null}
                               <span className="truncate">{sub.label}</span>
                               <ChevronDown className={cn('ml-auto h-3 w-3 shrink-0 text-neutral-400 transition-transform duration-fast', subOpen ? '' : '-rotate-90')} aria-hidden="true" />
                             </CollapsibleTrigger>
                             <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
-                              {sub.items.map((item) => (
-                                <NavLink key={item.to} item={item} active={isItemActive(item.to)} badge={item.to === '/approvals' ? pendingCount : undefined} guide="left-8" className="pl-11" onNavigate={onNavigate} />
+                              {sub.items.map((item, index) => (
+                                <NavLink
+                                  key={item.to}
+                                  item={item}
+                                  active={isItemActive(item.to)}
+                                  badge={item.to === '/approvals' ? pendingCount : undefined}
+                                  x="left-8"
+                                  isLast={index === sub.items.length - 1}
+                                  ancestorFull
+                                  onNavigate={onNavigate}
+                                />
                               ))}
                             </CollapsibleContent>
                           </Collapsible>
                         );
                       })
-                    : (group.items ?? []).map((item) => (
-                        <NavLink key={item.to} item={item} active={isItemActive(item.to)} badge={item.to === '/approvals' ? pendingCount : undefined} guide="left-4" className="pl-7" onNavigate={onNavigate} />
+                    : (group.items ?? []).map((item, index, all) => (
+                        <NavLink
+                          key={item.to}
+                          item={item}
+                          active={isItemActive(item.to)}
+                          badge={item.to === '/approvals' ? pendingCount : undefined}
+                          x="left-5"
+                          isLast={index === all.length - 1}
+                          ancestorFull={false}
+                          onNavigate={onNavigate}
+                        />
                       ))}
                 </CollapsibleContent>
               </Collapsible>
