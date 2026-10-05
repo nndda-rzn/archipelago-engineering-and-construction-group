@@ -3,6 +3,7 @@ import { useUrlFilter } from '@/shared/lib/use-url-state';
 import { DashboardFilterBar, useDashboardFilter } from '@/widgets/dashboard-filter-bar';
 import { SignalRail } from '@/widgets/signal-rail';
 import { HeroBand } from '@/widgets/hero-band';
+import { LiquidityPanel } from '@/widgets/liquidity-panel';
 import { FinancialBand } from '@/widgets/financial-band';
 import { PortfolioCanvas } from '@/widgets/portfolio-canvas';
 import { PortfolioSpine } from '@/widgets/portfolio-spine';
@@ -36,7 +37,8 @@ export function DashboardPage() {
       <div className="xl:col-span-7">
         <HeroBand filter={filter} />
       </div>
-      <div className="xl:col-span-5">
+      <div className="flex flex-col gap-6 xl:col-span-5">
+        <LiquidityPanel filter={filter} />
         <FinancialBand filter={filter} />
       </div>
     </div>,
