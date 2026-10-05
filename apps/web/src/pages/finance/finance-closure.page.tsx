@@ -36,7 +36,7 @@ export function FinanceClosurePage() {
           isLoading={intercompany.isLoading}
           isError={intercompany.isError}
           onRetry={() => intercompany.refetch()}
-          emptyMessage="Belum ada transaksi intercompany"
+          emptyMessage="No intercompany transactions yet"
         />
         {(intercompany.data?.total ?? 0) > PAGE_SIZE && (
           <div className="mt-2 flex gap-2">
@@ -60,7 +60,7 @@ export function FinanceClosurePage() {
 
       {}
       <section>
-        <h2 className="mb-3 text-h5 font-medium text-neutral-800">Rekonsiliasi Intercompany</h2>
+        <h2 className="mb-3 text-h5 font-medium text-neutral-800">Intercompany Reconciliation</h2>
         {reconciliation.data && <ReconciliationSummary data={reconciliation.data} />}
       </section>
 
@@ -74,13 +74,13 @@ export function FinanceClosurePage() {
           rowCount={periodCloses.data?.items.length ?? 0}
           isLoading={periodCloses.isLoading}
           isError={false}
-          emptyMessage="Belum ada period close"
+          emptyMessage="No period close yet"
         />
       </section>
 
       {}
       <section>
-        <h2 className="mb-3 text-h5 font-medium text-neutral-800">Laporan Keuangan</h2>
+        <h2 className="mb-3 text-h5 font-medium text-neutral-800">Financial Statements</h2>
         <EntitySelector entityId={entityId} setEntityId={setEntityId} />
         {entityId && incomeStatement.data && (
           <IncomeStatementSection data={incomeStatement.data} />
@@ -93,7 +93,7 @@ export function FinanceClosurePage() {
       {}
       {consolidation.data && (
         <section>
-          <h2 className="mb-3 text-h5 font-medium text-neutral-800">Konsolidasi</h2>
+          <h2 className="mb-3 text-h5 font-medium text-neutral-800">Consolidation</h2>
           <ConsolidationSection data={consolidation.data} />
         </section>
       )}

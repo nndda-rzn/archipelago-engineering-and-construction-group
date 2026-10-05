@@ -8,8 +8,8 @@ import { useCreateAccessReview, useCreateAudit, useCreateLegalCase, useCreateRis
 const riskSchema = z.object({
   title: createRiskSchema.shape.title,
   category: z.enum(['TECHNICAL', 'FINANCIAL', 'SCHEDULE', 'HSE', 'COMMERCIAL', 'OTHER']),
-  likelihood: z.string().min(1, 'Likelihood wajib diisi').refine((v) => Number(v) >= 1 && Number(v) <= 5, 'Likelihood harus 1–5'),
-  impact: z.string().min(1, 'Impact wajib diisi').refine((v) => Number(v) >= 1 && Number(v) <= 5, 'Impact harus 1–5'),
+  likelihood: z.string().min(1, 'Likelihood is required').refine((v) => Number(v) >= 1 && Number(v) <= 5, 'Likelihood must be 1–5'),
+  impact: z.string().min(1, 'Impact is required').refine((v) => Number(v) >= 1 && Number(v) <= 5, 'Impact must be 1–5'),
   owner: createRiskSchema.shape.owner,
 });
 type RiskValues = z.infer<typeof riskSchema>;
@@ -40,7 +40,7 @@ export function RiskForm({ onDone }: { onDone: () => void }) {
           {errors.title && <p className="mt-1 text-caption text-destructive-600">{errors.title.message}</p>}
         </div>
         <div>
-          <Label htmlFor="risk-cat">Kategori</Label>
+          <Label htmlFor="risk-cat">Category</Label>
           <Controller name="category" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="risk-cat">
@@ -67,8 +67,8 @@ export function RiskForm({ onDone }: { onDone: () => void }) {
           <Input id="risk-owner" error={!!errors.owner} {...register('owner')} />
           {errors.owner && <p className="mt-1 text-caption text-destructive-600">{errors.owner.message}</p>}
         </div>
-        <div className="pb-2 text-caption text-neutral-500">Skor: <span className="font-mono font-bold">{score}</span></div>
-        <Button type="submit" loading={create.isPending}>Buat Risk</Button>
+        <div className="pb-2 text-caption text-neutral-500">Score: <span className="font-mono font-bold">{score}</span></div>
+        <Button type="submit" loading={create.isPending}>Create Risk</Button>
       </div>
     </form>
   );
@@ -95,7 +95,7 @@ export function AuditForm({ onDone }: { onDone: () => void }) {
     <form onSubmit={onSubmit} className="mb-4 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="flex items-end gap-3">
         <div className="flex-1">
-          <Label htmlFor="audit-title">Judul Audit <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="audit-title">Audit Title <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="audit-title" error={!!errors.title} {...register('title')} />
           {errors.title && <p className="mt-1 text-caption text-destructive-600">{errors.title.message}</p>}
         </div>
@@ -104,7 +104,7 @@ export function AuditForm({ onDone }: { onDone: () => void }) {
           <Input id="audit-scope" error={!!errors.scope} {...register('scope')} />
           {errors.scope && <p className="mt-1 text-caption text-destructive-600">{errors.scope.message}</p>}
         </div>
-        <Button type="submit" loading={create.isPending}>Buat Audit</Button>
+        <Button type="submit" loading={create.isPending}>Create Audit</Button>
       </div>
     </form>
   );
@@ -132,12 +132,12 @@ export function LegalForm({ onDone }: { onDone: () => void }) {
     <form onSubmit={onSubmit} className="mb-4 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="flex items-end gap-3">
         <div className="flex-1">
-          <Label htmlFor="legal-title">Judul Kasus <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="legal-title">Case Title <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="legal-title" error={!!errors.title} {...register('title')} />
           {errors.title && <p className="mt-1 text-caption text-destructive-600">{errors.title.message}</p>}
         </div>
         <div>
-          <Label htmlFor="legal-type">Tipe</Label>
+          <Label htmlFor="legal-type">Type</Label>
           <Controller name="caseType" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="legal-type">
@@ -150,18 +150,18 @@ export function LegalForm({ onDone }: { onDone: () => void }) {
           )} />
         </div>
         <div>
-          <Label htmlFor="legal-cp">Pihak Lawan</Label>
+          <Label htmlFor="legal-cp">Counterparty</Label>
           <Input id="legal-cp" error={!!errors.counterpart} {...register('counterpart')} />
           {errors.counterpart && <p className="mt-1 text-caption text-destructive-600">{errors.counterpart.message}</p>}
         </div>
-        <Button type="submit" loading={create.isPending}>Buat Kasus</Button>
+        <Button type="submit" loading={create.isPending}>Create Case</Button>
       </div>
     </form>
   );
 }
 
 const reviewSchema = z.object({
-  period: z.string().min(1, 'Periode wajib diisi'),
+  period: z.string().min(1, 'Period is required'),
 });
 type ReviewValues = z.infer<typeof reviewSchema>;
 
@@ -180,11 +180,11 @@ export function ReviewForm({ onDone }: { onDone: () => void }) {
     <form onSubmit={onSubmit} className="mb-4 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="flex items-end gap-3">
         <div>
-          <Label htmlFor="review-period">Periode (mis. 2026-Q3) <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="review-period">Period (e.g. 2026-Q3) <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="review-period" error={!!errors.period} {...register('period')} />
           {errors.period && <p className="mt-1 text-caption text-destructive-600">{errors.period.message}</p>}
         </div>
-        <Button type="submit" loading={create.isPending}>Buat Review</Button>
+        <Button type="submit" loading={create.isPending}>Create Review</Button>
       </div>
     </form>
   );

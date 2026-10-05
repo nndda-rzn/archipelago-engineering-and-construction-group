@@ -6,10 +6,10 @@ import { formatIdr as fmt } from '@/shared/lib/format';
 export type ProjectHealthLevel = ProjectHealth['health'];
 
 export const healthLabel: Record<ProjectHealthLevel, string> = {
-  NO_BUDGET: 'Belum Ada Budget',
-  ON_TRACK: 'Sehat (On Track)',
-  AT_RISK: 'Berisiko (At Risk)',
-  CRITICAL: 'Kritis (Critical)',
+  NO_BUDGET: 'No Budget',
+  ON_TRACK: 'On Track',
+  AT_RISK: 'At Risk',
+  CRITICAL: 'Critical',
 };
 
 export function getHealthBarColor(health: ProjectHealth['health']): string {
@@ -35,7 +35,7 @@ export function HealthSummary({ data }: { data: ProjectHealth }) {
         <MetricCard label="Budget" value={fmt(data.totalBudget)} />
         <MetricCard label="Actual Cost" value={fmt(data.totalActual)} />
         <MetricCard label="Revenue" value={fmt(data.revenue)} />
-        <MetricCard label="Utilisasi" value={data.utilization != null ? `${data.utilization}%` : <EmptyCell />} />
+        <MetricCard label="Utilization" value={data.utilization != null ? `${data.utilization}%` : <EmptyCell />} />
       </div>
 
       <div className="mt-3 flex items-center gap-4 text-caption text-neutral-500">
@@ -45,7 +45,7 @@ export function HealthSummary({ data }: { data: ProjectHealth }) {
             {fmt(data.variance)}
           </span>
         </span>
-        <span>Kontrak: {fmt(data.contractValue)}</span>
+        <span>Contract: {fmt(data.contractValue)}</span>
       </div>
     </div>
   );

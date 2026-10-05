@@ -15,7 +15,7 @@ async function expectCode(promise: Promise<unknown>, code: string) {
 describe('VariationService.approveVariation', () => {
   let service: VariationService;
   const audit = { record: jest.fn() };
-  const cache = { del: jest.fn(), get: jest.fn(), set: jest.fn(), wrap: jest.fn() };
+  const cache = { del: jest.fn(), delByPattern: jest.fn(), get: jest.fn(), set: jest.fn(), wrap: jest.fn() };
 
   interface TxMock {
     projectVariation: { update: jest.Mock };

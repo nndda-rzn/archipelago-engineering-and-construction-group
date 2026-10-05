@@ -20,7 +20,7 @@ export function EmployeesPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Employees</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Master karyawan + project assignment (FR-HCM-001/002/003)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Employee master + project assignment (FR-HCM-001/002/003)</p>
         </div>
         <div className="flex items-center gap-2">
           <Select aria-label="Filter status" value={statusFilter} onValueChange={setStatusFilter}>
@@ -33,7 +33,7 @@ export function EmployeesPage() {
             </SelectContent>
           </Select>
           <Button size="sm" onClick={() => setShowForm((s) => !s)}>
-            {showForm ? 'Tutup' : '+ Buat Employee'}
+            {showForm ? 'Close' : '+ Create Employee'}
           </Button>
         </div>
       </div>
@@ -53,7 +53,7 @@ export function EmployeesPage() {
            onRowClick={(row) => setSelectedId(row.original.id)}
            selectedRowId={selectedId ?? undefined}
            getRowId={(row) => row.id}
-           emptyMessage="Belum ada employee"
+           emptyMessage="No employees yet"
         />
       </div>
 
@@ -63,7 +63,7 @@ export function EmployeesPage() {
           <p className="text-caption text-neutral-500">{selected.position} · {selected.department ?? <EmptyCell />} · Klik baris lain untuk ganti</p>
           <AssignmentForm employee={selected} />
           <div className="mt-4">
-            <DataGrid columns={assignmentColumns} data={assignData?.items ?? []} isLoading={assignLoading} emptyMessage="Belum ada assignment" hideToolbar />
+            <DataGrid columns={assignmentColumns} data={assignData?.items ?? []} isLoading={assignLoading} emptyMessage="No assignments yet" hideToolbar />
           </div>
         </div>
       )}

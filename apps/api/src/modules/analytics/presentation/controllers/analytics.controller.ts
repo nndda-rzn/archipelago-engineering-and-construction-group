@@ -1,5 +1,6 @@
-import { Controller, Get, Inject, Res, StreamableFile, UseGuards } from '@nestjs/common';
+import { Controller, Get, Inject, Query, Res, StreamableFile, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
+import type { AnalyticsFilterParams } from '@aec/api-contracts';
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
@@ -16,8 +17,8 @@ export class AnalyticsController {
 
   @Get('executive')
   @Permissions(Permission.AnalyticsView)
-  executive() {
-    return this.analytics.executive();
+  executive(@Query() query: AnalyticsFilterParams) {
+    return this.analytics.executive(query);
   }
 
   @Get('anomalies')
@@ -28,14 +29,14 @@ export class AnalyticsController {
 
   @Get('cash-flow')
   @Permissions(Permission.AnalyticsView)
-  cashFlow() {
-    return this.analytics.cashFlow();
+  cashFlow(@Query() query: AnalyticsFilterParams) {
+    return this.analytics.cashFlow(query);
   }
 
   @Get('aging')
   @Permissions(Permission.AnalyticsView)
-  aging() {
-    return this.analytics.aging();
+  aging(@Query() query: AnalyticsFilterParams) {
+    return this.analytics.aging(query);
   }
 
   @Get('project-cost-summary')

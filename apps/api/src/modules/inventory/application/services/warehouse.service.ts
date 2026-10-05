@@ -14,7 +14,7 @@ export class WarehouseService {
   async createWarehouse(dto: CreateWarehouseDto, actorId: string) {
     if (dto.projectId) {
       const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
-      if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+      if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
     }
 
     const warehouse = await this.prisma.warehouse.create({

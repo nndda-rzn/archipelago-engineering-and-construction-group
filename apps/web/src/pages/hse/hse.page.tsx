@@ -8,8 +8,8 @@ import { useUrlFilter, useUrlPagination } from '@/shared/lib/use-url-state';
 type Tab = 'observations' | 'incidents' | 'permits';
 
 const TAB_LABELS: Record<Tab, string> = {
-  observations: 'Observasi',
-  incidents: 'Insiden',
+  observations: 'Observations',
+  incidents: 'Incidents',
   permits: 'Permit to Work',
 };
 
@@ -33,10 +33,10 @@ export function HsePage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">HSE</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Safety observation, insiden, permit to work, corrective action (FR-HSE-001..005)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Safety observation, incident, permit to work, corrective action (FR-HSE-001..005)</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>
-          {showForm ? 'Tutup' : '+ Buat Baru'}
+          {showForm ? 'Close' : '+ Create New'}
         </Button>
       </div>
 
@@ -49,7 +49,7 @@ export function HsePage() {
               tab === t ? 'bg-racing-red-600 text-white' : 'border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300'
             }`}
           >
-            {t === 'incidents' ? `Insiden (${incidents.data?.total ?? 0})` : TAB_LABELS[t]}
+            {t === 'incidents' ? `Incidents (${incidents.data?.total ?? 0})` : TAB_LABELS[t]}
           </button>
         ))}
       </div>
@@ -60,37 +60,37 @@ export function HsePage() {
 
       {tab === 'observations' && (
         <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-          <DataGrid columns={observationColumns} data={obs.data?.items ?? []} rowCount={obs.data?.total ?? 0} isLoading={obs.isLoading} isError={obs.isError} onRetry={() => obs.refetch()} emptyMessage="Belum ada observasi" {...gridProps} />
+          <DataGrid columns={observationColumns} data={obs.data?.items ?? []} rowCount={obs.data?.total ?? 0} isLoading={obs.isLoading} isError={obs.isError} onRetry={() => obs.refetch()} emptyMessage="No observations yet" {...gridProps} />
         </div>
       )}
 
       {tab === 'incidents' && (
         <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-          <DataGrid columns={incidentColumns} data={incidents.data?.items ?? []} rowCount={incidents.data?.total ?? 0} isLoading={incidents.isLoading} isError={incidents.isError} onRetry={() => incidents.refetch()} onRowClick={(row) => setSelectedIncident(row.original)} selectedRowId={selectedIncident?.id} getRowId={(row) => row.id} emptyMessage="Belum ada insiden" {...gridProps} />
+          <DataGrid columns={incidentColumns} data={incidents.data?.items ?? []} rowCount={incidents.data?.total ?? 0} isLoading={incidents.isLoading} isError={incidents.isError} onRetry={() => incidents.refetch()} onRowClick={(row) => setSelectedIncident(row.original)} selectedRowId={selectedIncident?.id} getRowId={(row) => row.id} emptyMessage="No incidents yet" {...gridProps} />
         </div>
       )}
 
       {tab === 'permits' && (
         <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-          <DataGrid columns={permitColumns} data={permits.data?.items ?? []} rowCount={permits.data?.total ?? 0} isLoading={permits.isLoading} isError={permits.isError} onRetry={() => permits.refetch()} emptyMessage="Belum ada permit" {...gridProps} />
+          <DataGrid columns={permitColumns} data={permits.data?.items ?? []} rowCount={permits.data?.total ?? 0} isLoading={permits.isLoading} isError={permits.isError} onRetry={() => permits.refetch()} emptyMessage="No permits yet" {...gridProps} />
         </div>
       )}
 
       {selectedIncident && (
         <div className="mt-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
           <h2 className="text-h2 text-neutral-950">{selectedIncident.incidentNumber} - Corrective Actions</h2>
-          <p className="text-caption text-neutral-500">{selectedIncident.description} · Klik baris lain untuk ganti</p>
+          <p className="text-caption text-neutral-500">{selectedIncident.description} · Click another row to switch</p>
           <div className="mt-4 flex flex-wrap items-end gap-2 border-t border-neutral-100 pt-4">
             <div>
-              <Label htmlFor="ca-action">Tindakan</Label>
-              <Input id="ca-action" placeholder="mis. Pasang railing" value={caAction} onChange={(e) => setCaAction(e.target.value)} />
+              <Label htmlFor="ca-action">Action</Label>
+              <Input id="ca-action" placeholder="e.g. Install railing" value={caAction} onChange={(e) => setCaAction(e.target.value)} />
             </div>
             <div>
               <Label htmlFor="ca-owner">Owner</Label>
-              <Input id="ca-owner" placeholder="mis. Tim HSE" value={caOwner} onChange={(e) => setCaOwner(e.target.value)} />
+              <Input id="ca-owner" placeholder="e.g. HSE Team" value={caOwner} onChange={(e) => setCaOwner(e.target.value)} />
             </div>
             <div>
-              <Label htmlFor="ca-due">Jatuh Tempo</Label>
+              <Label htmlFor="ca-due">Due Date</Label>
               <Input id="ca-due" type="date" value={caDue} onChange={(e) => setCaDue(e.target.value)} />
             </div>
             <Button
@@ -103,11 +103,11 @@ export function HsePage() {
                 );
               }}
             >
-              Tambah CA
+              Add CA
             </Button>
           </div>
           <div className="mt-4">
-            <DataGrid columns={caColumns} data={selectedIncident.correctiveActions ?? []} emptyMessage="Belum ada corrective action" />
+            <DataGrid columns={caColumns} data={selectedIncident.correctiveActions ?? []} emptyMessage="No corrective actions yet" />
           </div>
         </div>
       )}

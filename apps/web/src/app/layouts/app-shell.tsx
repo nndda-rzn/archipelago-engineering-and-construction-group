@@ -80,20 +80,20 @@ export function AppShell() {
         href="#main-content"
         className="fixed -top-10 left-2 z-command rounded bg-racing-red-600 px-3 py-2 text-body-sm text-white focus-visible:top-2"
       >
-        Lewati ke konten
+        Skip to content
       </a>
 
       {}
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-neutral-200 bg-white lg:flex" aria-label="Navigasi">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-neutral-200 bg-white lg:flex" aria-label="Navigation">
         {sidebarContent}
       </aside>
 
       {}
       {mobileOpen && (
-        <div className="fixed inset-0 z-drawer lg:hidden" role="dialog" aria-modal="true" aria-label="Navigasi">
+        <div className="fixed inset-0 z-drawer lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
           <button
             type="button"
-            aria-label="Tutup menu"
+            aria-label="Close menu"
             onClick={() => setMobileOpen(false)}
             className="absolute inset-0 bg-neutral-950/40"
           />
@@ -105,7 +105,7 @@ export function AppShell() {
               </div>
               <button
                 type="button"
-                aria-label="Tutup menu"
+                aria-label="Close menu"
                 onClick={() => setMobileOpen(false)}
                 className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100"
               >
@@ -127,7 +127,7 @@ export function AppShell() {
           <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
-              aria-label="Buka menu"
+              aria-label="Open menu"
               onClick={() => setMobileOpen(true)}
               className="rounded-md p-1.5 text-neutral-500 transition-colors duration-fast hover:bg-neutral-100 lg:hidden"
             >

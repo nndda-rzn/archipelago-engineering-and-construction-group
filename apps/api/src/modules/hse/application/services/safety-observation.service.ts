@@ -34,9 +34,9 @@ export class SafetyObservationService {
 
   async resolveObservation(id: string, actorId: string) {
     const obs = await this.prisma.safetyObservation.findUnique({ where: { id } });
-    if (!obs) throw new NotFoundException({ code: 'OBSERVATION_NOT_FOUND', message: 'Observasi tidak ditemukan' });
+    if (!obs) throw new NotFoundException({ code: 'OBSERVATION_NOT_FOUND', message: 'Observation not found' });
     if (obs.status !== 'OPEN') {
-      throw new ConflictException({ code: 'NOT_OPEN', message: `Hanya OPEN yang bisa di-resolve (${obs.status})` });
+      throw new ConflictException({ code: 'NOT_OPEN', message: `Only OPEN can be resolved (${obs.status})` });
     }
     const resolved = await this.prisma.safetyObservation.update({ where: { id }, data: { status: 'RESOLVED', resolvedAt: new Date() } });
     await this.audit.record({ userId: actorId, action: 'SafetyObservation.RESOLVE', resource: 'SafetyObservation', resourceId: id, newValue: { observationNumber: obs.observationNumber }, source: 'api' });

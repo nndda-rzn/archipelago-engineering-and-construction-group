@@ -1,6 +1,5 @@
 import { Global, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { PrismaService } from '@/shared/database/prisma.service';
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
 import { Reflector } from '@nestjs/core';
@@ -28,7 +27,7 @@ import { CurrencyService } from './application/services/currency.service';
     }),
   ],
   controllers: [AuthController, AuditController, UserController, RoleController, LegalEntityController, FoundationHardeningController],
-  providers: [AuthService, AuditService, UserService, RoleService, LegalEntityService, OrganizationService, DoaService, CurrencyService, PrismaService, Reflector, AuthGuard, PermissionsGuard],
-  exports: [AuthService, AuditService, JwtModule, AuthGuard, PermissionsGuard, PrismaService],
+  providers: [AuthService, AuditService, UserService, RoleService, LegalEntityService, OrganizationService, DoaService, CurrencyService, Reflector, AuthGuard, PermissionsGuard],
+  exports: [AuthService, AuditService, JwtModule, AuthGuard, PermissionsGuard],
 })
 export class FoundationModule {}

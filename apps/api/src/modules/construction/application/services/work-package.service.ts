@@ -51,11 +51,11 @@ export class WorkPackageService {
 
   async create(projectId: string, dto: CreateWorkPackageDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const wbs = await this.prisma.wbsItem.findUnique({ where: { id: dto.wbsItemId } });
     if (!wbs || wbs.projectId !== projectId) {
-      throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: 'WBS tidak ditemukan di project ini' });
+      throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: 'WBS not found in this project' });
     }
 
     const wp = await this.prisma.$transaction(async (tx) => {
@@ -96,9 +96,9 @@ export class WorkPackageService {
 
   async start(id: string, actorId: string) {
     const wp = await this.prisma.constructionWorkPackage.findUnique({ where: { id } });
-    if (!wp) throw new NotFoundException({ code: 'WP_NOT_FOUND', message: 'Work package tidak ditemukan' });
+    if (!wp) throw new NotFoundException({ code: 'WP_NOT_FOUND', message: 'Work package not found' });
     if (wp.status !== 'DRAFT') {
-      throw new ConflictException({ code: 'WP_NOT_DRAFT', message: `Hanya DRAFT yang bisa dimulai (${wp.status})` });
+      throw new ConflictException({ code: 'WP_NOT_DRAFT', message: `Only DRAFT can be started (${wp.status})` });
     }
 
     if (wp.requiresIFC) {
@@ -106,13 +106,13 @@ export class WorkPackageService {
       if (ifcCount === 0) {
         // Guard murni: tidak menulis apa pun saat gagal. Status BLOCKED/READY pada WP
         // dipersist oleh endpoint readiness() (GET .../readiness), bukan oleh start() yang gagal.
-        throw new ConflictException({ code: 'READINESS_GATE_BLOCKED', message: 'Work package butuh current IFC — belum tersedia (FR-CON-002)' });
+        throw new ConflictException({ code: 'READINESS_GATE_BLOCKED', message: 'Work package requires current IFC - not yet available (FR-CON-002)' });
       }
     }
 
     const updated = await this.prisma.constructionWorkPackage.update({
       where: { id },
-      data: { status: 'IN_PROGRESS', readyStatus: 'READY', readyNote: 'Prerequisite terpenuhi' },
+      data: { status: 'IN_PROGRESS', readyStatus: 'READY', readyNote: 'Prerequisites met' },
     });
 
     await this.audit.record({
@@ -129,7 +129,7 @@ export class WorkPackageService {
 
   async readiness(id: string) {
     const wp = await this.prisma.constructionWorkPackage.findUnique({ where: { id } });
-    if (!wp) throw new NotFoundException({ code: 'WP_NOT_FOUND', message: 'Work package tidak ditemukan' });
+    if (!wp) throw new NotFoundException({ code: 'WP_NOT_FOUND', message: 'Work package not found' });
 
     const ifcCount = await this.prisma.drawing.count({ where: { projectId: wp.projectId, isIFC: true } });
     const ready = !wp.requiresIFC || ifcCount > 0;
@@ -138,7 +138,7 @@ export class WorkPackageService {
       where: { id },
       data: {
         readyStatus: ready ? 'READY' : 'BLOCKED',
-        readyNote: ready ? 'Prerequisite terpenuhi' : 'Current IFC belum tersedia (FR-CON-002)',
+        readyNote: ready ? 'Prerequisites met' : 'Current IFC not yet available (FR-CON-002)',
       },
     });
 
@@ -147,9 +147,9 @@ export class WorkPackageService {
 
   async complete(id: string, actorId: string) {
     const wp = await this.prisma.constructionWorkPackage.findUnique({ where: { id } });
-    if (!wp) throw new NotFoundException({ code: 'WP_NOT_FOUND', message: 'Work package tidak ditemukan' });
+    if (!wp) throw new NotFoundException({ code: 'WP_NOT_FOUND', message: 'Work package not found' });
     if (wp.status === 'DRAFT' || wp.status === 'CANCELLED') {
-      throw new ConflictException({ code: 'WP_NOT_IN_PROGRESS', message: `Work package harus IN_PROGRESS (${wp.status})` });
+      throw new ConflictException({ code: 'WP_NOT_IN_PROGRESS', message: `Work package must be IN_PROGRESS (${wp.status})` });
     }
 
     const updated = await this.prisma.constructionWorkPackage.update({
@@ -171,9 +171,9 @@ export class WorkPackageService {
 
   async addProgress(id: string, dto: CreateProgressDto, actorId: string) {
     const wp = await this.prisma.constructionWorkPackage.findUnique({ where: { id } });
-    if (!wp) throw new NotFoundException({ code: 'WP_NOT_FOUND', message: 'Work package tidak ditemukan' });
+    if (!wp) throw new NotFoundException({ code: 'WP_NOT_FOUND', message: 'Work package not found' });
     if (wp.status === 'DRAFT') {
-      throw new ConflictException({ code: 'WP_NOT_STARTED', message: 'Work package harus IN_PROGRESS sebelum catat progress' });
+      throw new ConflictException({ code: 'WP_NOT_STARTED', message: 'Work package must be IN_PROGRESS before recording progress' });
     }
 
     const latest = await this.prisma.workPackageProgress.findFirst({
@@ -183,7 +183,7 @@ export class WorkPackageService {
     if (latest && Number(dto.physicalProgress) < Number(latest.physicalProgress)) {
       throw new ConflictException({
         code: 'PROGRESS_REGRESSION',
-        message: `Progress tidak boleh turun dari ${latest.physicalProgress}% (kumulatif)`,
+        message: `Progress cannot decrease below ${latest.physicalProgress}% (cumulative)`,
       });
     }
 

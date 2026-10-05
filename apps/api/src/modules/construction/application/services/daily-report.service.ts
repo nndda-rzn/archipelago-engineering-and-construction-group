@@ -33,7 +33,7 @@ export class DailyReportService {
 
   async create(projectId: string, dto: CreateDailyReportDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const manpowerLines = dto.manpowerLines ?? [];
     const manpowerTotal = manpowerLines.reduce((sum, l) => sum + l.manpowerCount, 0);

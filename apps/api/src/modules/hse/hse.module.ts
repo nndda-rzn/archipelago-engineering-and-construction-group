@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { PrismaService } from '@/shared/database/prisma.service';
 import { SharedModule } from '@/shared/shared.module';
 import { HseController } from './presentation/controllers/hse.controller';
 import { SafetyObservationService } from './application/services/safety-observation.service';
@@ -10,6 +9,6 @@ import { CorrectiveActionService } from './application/services/corrective-actio
 @Module({
   imports: [SharedModule],
   controllers: [HseController],
-  providers: [PrismaService, SafetyObservationService, HseIncidentService, PermitToWorkService, CorrectiveActionService],
+  providers: [SafetyObservationService, HseIncidentService, PermitToWorkService, CorrectiveActionService],
 })
 export class HseModule {}

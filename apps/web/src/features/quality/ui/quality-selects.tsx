@@ -17,7 +17,7 @@ export function ProjectSelect({ projectId, setProjectId }: { projectId: string; 
       <Label htmlFor="qp-project">Project</Label>
       <Select value={projectId} onValueChange={setProjectId}>
         <SelectTrigger id="qp-project">
-          <SelectValue placeholder="Pilih project…" />
+          <SelectValue placeholder="Select project…" />
         </SelectTrigger>
         <SelectContent>
           {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
@@ -33,7 +33,7 @@ export function WpSelect({ id, projectId, value, onChange, workPackages }: { id:
       <Label htmlFor={id}>Work Package</Label>
       <Select value={value} onValueChange={onChange} disabled={!projectId}>
         <SelectTrigger id={id}>
-          <SelectValue placeholder="Tanpa WP" />
+          <SelectValue placeholder="No WP" />
         </SelectTrigger>
         <SelectContent>
           {(workPackages?.items ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{w.wpNumber}{w.title ? ` · ${w.title}` : ''}</SelectItem>)}

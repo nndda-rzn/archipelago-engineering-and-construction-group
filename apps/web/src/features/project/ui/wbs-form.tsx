@@ -24,14 +24,14 @@ export function WbsForm({ projectId, parentId, projectCode, tree, onDone }: { pr
       <div className="mb-3 flex items-center gap-2 text-body-sm text-neutral-600">
         <FolderTree className="h-4 w-4" aria-hidden="true" />
         {projectCode}
-        {parentId && <span className="text-neutral-400">→ sub dari {findWbsCode(tree, parentId) ?? '…'}</span>}
+        {parentId && <span className="text-neutral-400">→ child of {findWbsCode(tree, parentId) ?? '…'}</span>}
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div><Label htmlFor="code">Kode WBS</Label><Input id="code" placeholder="1.1" spellCheck={false} error={!!errors.code} {...register('code')} />{errors.code && <p className="mt-1 text-caption text-destructive-600">{errors.code.message}</p>}</div>
-        <div><Label htmlFor="name">Nama</Label><Input id="name" placeholder="Detail Engineering" error={!!errors.name} {...register('name')} />{errors.name && <p className="mt-1 text-caption text-destructive-600">{errors.name.message}</p>}</div>
+        <div><Label htmlFor="code">WBS Code</Label><Input id="code" placeholder="1.1" spellCheck={false} error={!!errors.code} {...register('code')} />{errors.code && <p className="mt-1 text-caption text-destructive-600">{errors.code.message}</p>}</div>
+        <div><Label htmlFor="name">Name</Label><Input id="name" placeholder="Detail Engineering" error={!!errors.name} {...register('name')} />{errors.name && <p className="mt-1 text-caption text-destructive-600">{errors.name.message}</p>}</div>
       </div>
-      <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Batal</Button><Button type="submit" loading={create.isPending}>Simpan</Button></div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600">Gagal menyimpan. Kode mungkin sudah ada.</p>}
+      <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Cancel</Button><Button type="submit" loading={create.isPending}>Save</Button></div>
+      {create.isError && <p className="mt-2 text-caption text-destructive-600">Failed to save. The code may already exist.</p>}
     </form>
   );
 }

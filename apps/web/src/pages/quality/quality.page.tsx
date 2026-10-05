@@ -37,10 +37,10 @@ export function QualityPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Quality</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">ITP, inspeksi, NCR, punch list (FR-QA-001..004)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">ITP, inspection, NCR, punch list (FR-QA-001..004)</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>
-          {showForm ? 'Tutup' : '+ Buat Baru'}
+          {showForm ? 'Close' : '+ Create New'}
         </Button>
       </div>
 
@@ -65,16 +65,16 @@ export function QualityPage() {
 
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
         {tab === 'itp' && (
-          <DataGrid columns={itpColumns} data={itps.data?.items ?? []} rowCount={itps.data?.total ?? 0} isLoading={itps.isLoading} isError={itps.isError} onRetry={() => itps.refetch()} emptyMessage="Belum ada ITP" {...gridProps} />
+          <DataGrid columns={itpColumns} data={itps.data?.items ?? []} rowCount={itps.data?.total ?? 0} isLoading={itps.isLoading} isError={itps.isError} onRetry={() => itps.refetch()} emptyMessage="No ITP yet" {...gridProps} />
         )}
         {tab === 'inspections' && (
-          <DataGrid columns={insColumns} data={inspections.data?.items ?? []} rowCount={inspections.data?.total ?? 0} isLoading={inspections.isLoading} isError={inspections.isError} onRetry={() => inspections.refetch()} emptyMessage="Belum ada inspeksi" {...gridProps} />
+          <DataGrid columns={insColumns} data={inspections.data?.items ?? []} rowCount={inspections.data?.total ?? 0} isLoading={inspections.isLoading} isError={inspections.isError} onRetry={() => inspections.refetch()} emptyMessage="No inspections yet" {...gridProps} />
         )}
         {tab === 'ncrs' && (
-          <DataGrid columns={ncrColumns} data={ncrs.data?.items ?? []} rowCount={ncrs.data?.total ?? 0} isLoading={ncrs.isLoading} isError={ncrs.isError} onRetry={() => ncrs.refetch()} emptyMessage="Belum ada NCR" {...gridProps} />
+          <DataGrid columns={ncrColumns} data={ncrs.data?.items ?? []} rowCount={ncrs.data?.total ?? 0} isLoading={ncrs.isLoading} isError={ncrs.isError} onRetry={() => ncrs.refetch()} emptyMessage="No NCR yet" {...gridProps} />
         )}
         {tab === 'punch' && (
-          <DataGrid columns={punchColumns} data={punch.data?.items ?? []} rowCount={punch.data?.total ?? 0} isLoading={punch.isLoading} isError={punch.isError} onRetry={() => punch.refetch()} emptyMessage="Belum ada punch item" {...gridProps} />
+          <DataGrid columns={punchColumns} data={punch.data?.items ?? []} rowCount={punch.data?.total ?? 0} isLoading={punch.isLoading} isError={punch.isError} onRetry={() => punch.refetch()} emptyMessage="No punch items yet" {...gridProps} />
         )}
       </div>
     </div>

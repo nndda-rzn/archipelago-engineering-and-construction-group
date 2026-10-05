@@ -15,12 +15,12 @@ export class IntercompanyService {
 
   async createIntercompany(dto: CreateIntercompanyDto, actorId: string) {
     if (dto.fromEntityId === dto.toEntityId) {
-      throw new ConflictException({ code: 'SAME_ENTITY', message: 'Entity asal dan tujuan harus berbeda' });
+      throw new ConflictException({ code: 'SAME_ENTITY', message: 'Source and target entity must differ' });
     }
     const from = await this.prisma.legalEntity.findUnique({ where: { id: dto.fromEntityId } });
     const to = await this.prisma.legalEntity.findUnique({ where: { id: dto.toEntityId } });
-    if (!from) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Entity asal tidak ditemukan' });
-    if (!to) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Entity tujuan tidak ditemukan' });
+    if (!from) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Source entity not found' });
+    if (!to) throw new NotFoundException({ code: 'ENTITY_NOT_FOUND', message: 'Target entity not found' });
 
     const ic = await this.prisma.$transaction(async (tx) => {
       const transactionNumber = await this.seq.next('IC', `IC-${new Date().getFullYear()}-`, tx);
@@ -42,9 +42,9 @@ export class IntercompanyService {
 
   async postIntercompany(id: string, actorId: string) {
     const ic = await this.prisma.intercompanyTransaction.findUnique({ where: { id } });
-    if (!ic) throw new NotFoundException({ code: 'IC_NOT_FOUND', message: 'Transaksi intercompany tidak ditemukan' });
+    if (!ic) throw new NotFoundException({ code: 'IC_NOT_FOUND', message: 'Intercompany transaction not found' });
     if (ic.status !== 'DRAFT') {
-      throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa diposting (${ic.status})` });
+      throw new ConflictException({ code: 'NOT_DRAFT', message: `Only DRAFT can be posted (${ic.status})` });
     }
     const posted = await this.prisma.intercompanyTransaction.update({
       where: { id },

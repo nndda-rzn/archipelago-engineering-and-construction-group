@@ -13,7 +13,7 @@ const progColumnHelper = createColumnHelper<SubcontractProgress>();
 
 export const subcontractColumns = [
   columnHelper.accessor('subconNumber', {
-    header: 'No. Subkon',
+    header: 'Subcon No.',
     cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span>,
   }),
   columnHelper.accessor('project', {
@@ -25,11 +25,11 @@ export const subcontractColumns = [
     cell: (info) => <span className="text-neutral-800">{info.getValue()}</span>,
   }),
   columnHelper.accessor('title', {
-    header: 'Judul',
+    header: 'Title',
     cell: (info) => <span className="text-neutral-700">{info.getValue()}</span>,
   }),
   columnHelper.accessor('contractValue', {
-    header: 'Nilai Kontrak',
+    header: 'Contract Value',
     cell: (info) => <span className="font-mono font-medium tabular-nums text-neutral-800">{fmt(info.getValue())}</span>,
   }),
   columnHelper.accessor('status', {
@@ -40,11 +40,11 @@ export const subcontractColumns = [
 
 export const progressColumns = [
   progColumnHelper.accessor('period', {
-    header: 'Periode',
+    header: 'Period',
     cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   progColumnHelper.accessor('progressDate', {
-    header: 'Tanggal',
+    header: 'Date',
     cell: (info) => <span className="font-mono text-neutral-600">{formatDate(info.getValue())}</span>,
   }),
   progColumnHelper.accessor('progressPercent', {
@@ -52,7 +52,7 @@ export const progressColumns = [
     cell: (info) => <span className="font-mono tabular-nums text-neutral-700">{info.getValue()}%</span>,
   }),
   progColumnHelper.accessor('verifiedAmount', {
-    header: 'Nilai Bayar',
+    header: 'Payable Amount',
     cell: (info) => <span className="font-mono font-medium tabular-nums text-neutral-800">{fmt(info.getValue())}</span>,
   }),
   progColumnHelper.accessor('status', {
@@ -73,10 +73,10 @@ function ProgressActions({ entry }: { entry: SubcontractProgress }) {
   return (
     <div className="flex items-center gap-1">
       <Button size="sm" variant="secondary" loading={verify.isPending} onClick={() => verify.mutate({ subcontractId: entry.subcontractId, progressId: entry.id })}>
-        Verifikasi
+        Verify
       </Button>
-      <ConfirmActionButton size="sm" variant="ghost" confirmTitle="Tolak progress?" confirmDescription="Pengajuan progress akan ditolak." confirmLabel="Tolak" onConfirm={() => reject.mutate({ subcontractId: entry.subcontractId, progressId: entry.id })}>
-        Tolak
+      <ConfirmActionButton size="sm" variant="ghost" confirmTitle="Reject progress?" confirmDescription="The progress submission will be rejected." confirmLabel="Reject" onConfirm={() => reject.mutate({ subcontractId: entry.subcontractId, progressId: entry.id })}>
+        Reject
       </ConfirmActionButton>
     </div>
   );

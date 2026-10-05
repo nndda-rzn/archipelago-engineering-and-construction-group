@@ -15,7 +15,7 @@ const columnHelper = createColumnHelper<StockLedgerEntry>();
 
 export const ledgerColumns = [
   columnHelper.accessor('createdAt', {
-    header: 'Tanggal',
+    header: 'Date',
     cell: (info) => <span className="tabular-nums text-neutral-500">{formatDateTime(info.getValue())}</span>,
   }),
   columnHelper.accessor('documentType', {

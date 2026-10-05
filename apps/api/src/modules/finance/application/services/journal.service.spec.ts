@@ -26,6 +26,17 @@ describe('JournalService', () => {
   }
   let prisma: PrismaMock;
 
+  /** tx tiruan generik: periodClose mengembalikan null = periode terbuka. */
+  const makeTx = (over: Record<string, unknown> = {}) => ({
+    periodClose: { findUnique: jest.fn().mockResolvedValue(null) },
+    journal: {
+      create: jest.fn().mockResolvedValue({ id: 'j-1', journalNumber: 'JRN-2026-EPC-000001' }),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'j-1', status: 'POSTED' }),
+    },
+    ...over,
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     prisma = {
@@ -98,7 +109,7 @@ describe('JournalService', () => {
     prisma.chartOfAccount.findUnique.mockResolvedValue({ id: 'acc-1', code: '1100', isActive: true, legalEntityId: 'ent-1' });
     gl.generateJournalNumber.mockResolvedValue('JRN-2026-EPC-000001');
 
-    const tx = { journal: { create: jest.fn().mockResolvedValue({ id: 'j-1', journalNumber: 'JRN-2026-EPC-000001' }) } };
+    const tx = makeTx({ journal: { create: jest.fn().mockResolvedValue({ id: 'j-1', journalNumber: 'JRN-2026-EPC-000001' }) } });
     prisma.$transaction.mockImplementation((cb: (t: typeof tx) => unknown) => cb(tx));
 
     const result = await service.createJournal(dto(), 'user-1');
@@ -109,6 +120,27 @@ describe('JournalService', () => {
     );
     expect(result.id).toBe('j-1');
     expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ action: 'Journal.CREATE', resource: 'Journal' }));
+  });
+
+  it('createJournal ke periode CLOSED -> Conflict PERIOD_CLOSED, tidak ada journal.create', async () => {
+    primeEntity();
+    prisma.chartOfAccount.findUnique.mockResolvedValue({ id: 'acc-1', code: '1100', isActive: true, legalEntityId: 'ent-1' });
+
+    const tx = makeTx({ periodClose: { findUnique: jest.fn().mockResolvedValue({ status: 'CLOSED' }) } });
+    prisma.$transaction.mockImplementation((cb: (t: typeof tx) => unknown) => cb(tx));
+
+    await expectCode(service.createJournal(dto(), 'user-1'), 'PERIOD_CLOSED');
+    expect(tx.journal.create).not.toHaveBeenCalled();
+  });
+
+  it('createJournal ke periode LOCKED -> Conflict PERIOD_LOCKED', async () => {
+    primeEntity();
+    prisma.chartOfAccount.findUnique.mockResolvedValue({ id: 'acc-1', code: '1100', isActive: true, legalEntityId: 'ent-1' });
+
+    const tx = makeTx({ periodClose: { findUnique: jest.fn().mockResolvedValue({ status: 'LOCKED' }) } });
+    prisma.$transaction.mockImplementation((cb: (t: typeof tx) => unknown) => cb(tx));
+
+    await expectCode(service.createJournal(dto(), 'user-1'), 'PERIOD_LOCKED');
   });
 
   describe('postJournal', () => {
@@ -122,15 +154,35 @@ describe('JournalService', () => {
       await expectCode(service.postJournal('j-1', 'user-1'), 'UNBALANCED_JOURNAL');
     });
 
-    it('valid DRAFT balanced -> status POSTED', async () => {
-      prisma.journal.findUnique.mockResolvedValue({ id: 'j-1', journalNumber: 'JRN-1', status: 'DRAFT', lines: [{ debit: 100, credit: 0 }, { debit: 0, credit: 100 }] });
-      prisma.journal.update.mockResolvedValue({ id: 'j-1', status: 'POSTED' });
+    it('valid DRAFT balanced -> status POSTED via tx + CAS', async () => {
+      prisma.journal.findUnique.mockResolvedValue({ id: 'j-1', journalNumber: 'JRN-1', status: 'DRAFT', legalEntityId: 'ent-1', date: new Date('2026-08-15T00:00:00Z'), lines: [{ debit: 100, credit: 0 }, { debit: 0, credit: 100 }] });
+      const tx = makeTx();
+      prisma.$transaction.mockImplementation((cb: (t: typeof tx) => unknown) => cb(tx));
 
       const result = await service.postJournal('j-1', 'user-1');
 
-      expect(prisma.journal.update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'j-1' }, data: expect.objectContaining({ status: 'POSTED' }) }));
+      expect(tx.journal.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'j-1', status: 'DRAFT' }, data: expect.objectContaining({ status: 'POSTED' }) }),
+      );
       expect(result.status).toBe('POSTED');
       expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ action: 'Journal.POST' }));
+    });
+
+    it('periode LOCKED -> Conflict PERIOD_LOCKED, CAS tidak dijalankan', async () => {
+      prisma.journal.findUnique.mockResolvedValue({ id: 'j-1', journalNumber: 'JRN-1', status: 'DRAFT', legalEntityId: 'ent-1', date: new Date('2026-08-15T00:00:00Z'), lines: [{ debit: 100, credit: 0 }, { debit: 0, credit: 100 }] });
+      const tx = makeTx({ periodClose: { findUnique: jest.fn().mockResolvedValue({ status: 'LOCKED' }) } });
+      prisma.$transaction.mockImplementation((cb: (t: typeof tx) => unknown) => cb(tx));
+
+      await expectCode(service.postJournal('j-1', 'user-1'), 'PERIOD_LOCKED');
+      expect(tx.journal.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('CAS kalah (sudah diposting pihak lain) -> Conflict NOT_DRAFT', async () => {
+      prisma.journal.findUnique.mockResolvedValue({ id: 'j-1', journalNumber: 'JRN-1', status: 'DRAFT', legalEntityId: 'ent-1', date: new Date('2026-08-15T00:00:00Z'), lines: [{ debit: 100, credit: 0 }, { debit: 0, credit: 100 }] });
+      const tx = makeTx({ journal: { updateMany: jest.fn().mockResolvedValue({ count: 0 }), findUniqueOrThrow: jest.fn() } });
+      prisma.$transaction.mockImplementation((cb: (t: typeof tx) => unknown) => cb(tx));
+
+      await expectCode(service.postJournal('j-1', 'user-1'), 'NOT_DRAFT');
     });
   });
 });

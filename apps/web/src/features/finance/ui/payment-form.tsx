@@ -9,14 +9,14 @@ import { formatIdr } from '@/shared/lib/format';
 import { UnsavedGuard } from '@/shared/lib/unsaved-guard';
 
 const formSchema = z.object({
-  projectId: z.string().min(1, 'Project wajib dipilih'),
+  projectId: z.string().min(1, 'Project is required'),
   vendor: createPaymentSchema.shape.vendor,
   bankAccount: z.string().max(100),
   reference: z.string().max(100),
   items: z.array(z.object({
     invoiceId: z.string(),
     amount: z.number(),
-  })).refine((items) => items.some((i) => i.amount > 0), 'Pilih minimal satu invoice dengan jumlah > 0'),
+  })).refine((items) => items.some((i) => i.amount > 0), 'Select at least one invoice with an amount > 0'),
 });
 type FormValues = z.infer<typeof formSchema>;
 
@@ -51,7 +51,7 @@ export function PaymentForm({ onDone }: { onDone: () => void }) {
           <Label htmlFor="pay-project">Project <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="projectId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={(v) => { field.onChange(v); replace([]); }}>
-              <SelectTrigger id="pay-project"><SelectValue placeholder="Pilih project…" /></SelectTrigger>
+              <SelectTrigger id="pay-project"><SelectValue placeholder="Select project…" /></SelectTrigger>
               <SelectContent>
                 {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
               </SelectContent>
@@ -65,12 +65,12 @@ export function PaymentForm({ onDone }: { onDone: () => void }) {
           {errors.vendor && <p className="mt-1 text-caption text-destructive-600">{errors.vendor.message}</p>}
         </div>
         <div>
-          <Label htmlFor="pay-bank">Rekening (opsional)</Label>
-          <Input id="pay-bank" placeholder="No. rekening" {...register('bankAccount')} />
+          <Label htmlFor="pay-bank">Bank Account (optional)</Label>
+          <Input id="pay-bank" placeholder="Account no." {...register('bankAccount')} />
         </div>
         <div>
-          <Label htmlFor="pay-ref">Referensi (opsional)</Label>
-          <Input id="pay-ref" placeholder="No. transfer" {...register('reference')} />
+          <Label htmlFor="pay-ref">Reference (optional)</Label>
+          <Input id="pay-ref" placeholder="Transfer no." {...register('reference')} />
         </div>
       </div>
       <div className="mt-4 overflow-hidden rounded-md border border-neutral-200">
@@ -79,7 +79,7 @@ export function PaymentForm({ onDone }: { onDone: () => void }) {
             <tr>
               <th className="px-3 py-2">Invoice POSTED</th>
               <th className="px-3 py-2 text-right">Total</th>
-              <th className="px-3 py-2 text-right">Bayar</th>
+              <th className="px-3 py-2 text-right">Pay</th>
               <th className="px-3 py-2"></th>
             </tr>
           </thead>
@@ -102,21 +102,21 @@ export function PaymentForm({ onDone }: { onDone: () => void }) {
                     )}
                   </td>
                   <td className="px-3 py-2 text-right">
-                    {added ? <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)}>Batal</Button> : <Button type="button" variant="secondary" size="sm" onClick={() => append({ invoiceId: inv.id, amount: Number(inv.totalAmount ?? 0) })}>+ Pilih</Button>}
+                    {added ? <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)}>Remove</Button> : <Button type="button" variant="secondary" size="sm" onClick={() => append({ invoiceId: inv.id, amount: Number(inv.totalAmount ?? 0) })}>+ Select</Button>}
                   </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
-        {postedInvoices.length === 0 && <p className="p-3 text-caption text-neutral-500">Tidak ada invoice POSTED.</p>}
+        {postedInvoices.length === 0 && <p className="p-3 text-caption text-neutral-500">No POSTED invoices.</p>}
       </div>
       {errors.items && <p className="mt-2 text-caption text-destructive-600">{errors.items.message}</p>}
       <div className="mt-4 flex justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={onDone}>Batal</Button>
-        <Button type="submit" loading={create.isPending}>Buat Payment DRAFT</Button>
+        <Button type="button" variant="ghost" onClick={onDone}>Cancel</Button>
+        <Button type="submit" loading={create.isPending}>Create DRAFT Payment</Button>
       </div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600">Gagal. Jumlah tidak boleh melebihi AP open.</p>}
+      {create.isError && <p className="mt-2 text-caption text-destructive-600">Failed. The amount cannot exceed AP open.</p>}
     </form>
   );
 }

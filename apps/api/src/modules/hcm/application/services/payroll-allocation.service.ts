@@ -13,7 +13,7 @@ export class PayrollAllocationService {
 
   async createPayrollAllocation(dto: CreatePayrollAllocationDto, actorId: string) {
     const employee = await this.prisma.employee.findUnique({ where: { id: dto.employeeId } });
-    if (!employee) throw new NotFoundException({ code: 'EMPLOYEE_NOT_FOUND', message: 'Employee tidak ditemukan' });
+    if (!employee) throw new NotFoundException({ code: 'EMPLOYEE_NOT_FOUND', message: 'Employee not found' });
 
     const gross = Number(dto.grossAmount);
     const projectAmount = Number(dto.projectAmount ?? 0);
@@ -21,7 +21,7 @@ export class PayrollAllocationService {
     if (Math.abs(gross - projectAmount - overheadAmount) > 0.01) {
       throw new BadRequestException({
         code: 'ALLOCATION_UNBALANCED',
-        message: `Alokasi harus balance: project ${projectAmount} + overhead ${overheadAmount} ≠ gross ${gross}`,
+        message: `Allocation must balance: project ${projectAmount} + overhead ${overheadAmount} != gross ${gross}`,
       });
     }
 

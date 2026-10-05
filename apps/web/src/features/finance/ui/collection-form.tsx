@@ -10,13 +10,13 @@ import { formatIdr } from '@/shared/lib/format';
 import { UnsavedGuard } from '@/shared/lib/unsaved-guard';
 
 const formSchema = z.object({
-  projectId: z.string().min(1, 'Project wajib dipilih'),
+  projectId: z.string().min(1, 'Project is required'),
   client: createCollectionSchema.shape.client,
   reference: z.string().max(100),
   items: z.array(z.object({
     clientInvoiceId: z.string(),
     amount: z.number(),
-  })).refine((items) => items.some((i) => i.amount > 0), 'Pilih minimal satu invoice dengan jumlah > 0'),
+  })).refine((items) => items.some((i) => i.amount > 0), 'Select at least one invoice with an amount > 0'),
 });
 type FormValues = z.infer<typeof formSchema>;
 
@@ -51,7 +51,7 @@ export function CollectionForm({ onDone }: { onDone: () => void }) {
           <Label htmlFor="col-project">Project <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="projectId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={(v) => { field.onChange(v); replace([]); }}>
-              <SelectTrigger id="col-project"><SelectValue placeholder="Pilih project…" /></SelectTrigger>
+              <SelectTrigger id="col-project"><SelectValue placeholder="Select project…" /></SelectTrigger>
               <SelectContent>
                 {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
               </SelectContent>
@@ -60,12 +60,12 @@ export function CollectionForm({ onDone }: { onDone: () => void }) {
           {errors.projectId && <p className="mt-1 text-caption text-destructive-600">{errors.projectId.message}</p>}
         </div>
         <div>
-          <Label htmlFor="col-client">Klien <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="col-client">Client <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="col-client" placeholder="PT Klien Utama" error={!!errors.client} {...register('client')} />
           {errors.client && <p className="mt-1 text-caption text-destructive-600">{errors.client.message}</p>}
         </div>
         <div>
-          <Label htmlFor="col-ref">Referensi (opsional)</Label>
+          <Label htmlFor="col-ref">Reference (optional)</Label>
           <Input id="col-ref" {...register('reference')} />
         </div>
       </div>
@@ -73,7 +73,7 @@ export function CollectionForm({ onDone }: { onDone: () => void }) {
       <div className="mt-4 overflow-hidden rounded-md border border-neutral-200">
         <table className="w-full text-left text-body">
           <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
-            <tr><th className="px-3 py-2">Client Invoice POSTED</th><th className="px-3 py-2 text-right">Total</th><th className="px-3 py-2 text-right">Diterima</th><th className="px-3 py-2"></th></tr>
+            <tr><th className="px-3 py-2">Client Invoice POSTED</th><th className="px-3 py-2 text-right">Total</th><th className="px-3 py-2 text-right">Received</th><th className="px-3 py-2"></th></tr>
           </thead>
           <tbody>
             {postedInvoices.map((inv) => {
@@ -88,19 +88,19 @@ export function CollectionForm({ onDone }: { onDone: () => void }) {
                     {added ? <Input type="number" min={0} step={100000} value={line?.amount || ''} onChange={(e) => setValue(`items.${index}.amount`, Number(e.target.value))} className="h-8 w-32 text-right" /> : <span className="text-caption text-neutral-400">-</span>}
                   </td>
                   <td className="px-3 py-2 text-right">
-                    {added ? <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)}>Batal</Button> : <Button type="button" variant="secondary" size="sm" onClick={() => append({ clientInvoiceId: inv.id, amount: Number(inv.totalAmount ?? 0) })}>+ Pilih</Button>}
+                    {added ? <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)}>Remove</Button> : <Button type="button" variant="secondary" size="sm" onClick={() => append({ clientInvoiceId: inv.id, amount: Number(inv.totalAmount ?? 0) })}>+ Select</Button>}
                   </td>
                 </tr>
               );
             })}
-            {postedInvoices.length === 0 && <tr><td colSpan={4} className="p-3 text-caption text-neutral-500">Tidak ada client invoice POSTED.</td></tr>}
+            {postedInvoices.length === 0 && <tr><td colSpan={4} className="p-3 text-caption text-neutral-500">No POSTED client invoices.</td></tr>}
           </tbody>
         </table>
       </div>
       {errors.items && <p className="mt-2 text-caption text-destructive-600">{errors.items.message}</p>}
 
-      <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Batal</Button><Button type="submit" loading={create.isPending}>Buat Collection DRAFT</Button></div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600">Gagal. Jumlah tidak boleh melebihi sisa piutang.</p>}
+      <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Cancel</Button><Button type="submit" loading={create.isPending}>Create DRAFT Collection</Button></div>
+      {create.isError && <p className="mt-2 text-caption text-destructive-600">Failed. The amount cannot exceed the outstanding receivable.</p>}
     </form>
   );
 }

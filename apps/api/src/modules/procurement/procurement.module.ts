@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { PrismaService } from '@/shared/database/prisma.service';
 import { SharedModule } from '@/shared/shared.module';
 import { ProcurementController } from './presentation/controllers/procurement.controller';
 import { ProcurementHardeningController } from './presentation/controllers/procurement-hardening.controller';
@@ -11,6 +10,6 @@ import { ProcurementHardeningService } from './application/services/procurement-
 @Module({
   imports: [SharedModule],
   controllers: [ProcurementController, ProcurementHardeningController],
-  providers: [PrismaService, PurchaseRequisitionService, PurchaseOrderService, RfqService, ProcurementHardeningService],
+  providers: [PurchaseRequisitionService, PurchaseOrderService, RfqService, ProcurementHardeningService],
 })
 export class ProcurementModule {}

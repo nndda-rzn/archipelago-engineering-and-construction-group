@@ -14,16 +14,16 @@ export class ApprovalTaskService {
 
   private async resolveApproverId(approverRoleCode: string, actorId: string) {
     const role = await this.prisma.role.findUnique({ where: { code: approverRoleCode } });
-    if (!role) throw new NotFoundException({ code: 'ROLE_NOT_FOUND', message: `Role approver ${approverRoleCode} tidak ada` });
+    if (!role) throw new NotFoundException({ code: 'ROLE_NOT_FOUND', message: `Approver role ${approverRoleCode} not found` });
 
     const assignment = await this.prisma.userRole.findFirst({
       where: { roleId: role.id, OR: [{ effectiveTo: null }, { effectiveTo: { gt: new Date() } }] },
       orderBy: { effectiveFrom: 'asc' },
     });
-    if (!assignment) throw new ConflictException({ code: 'NO_APPROVER', message: `Tidak ada user dengan role ${approverRoleCode}` });
+    if (!assignment) throw new ConflictException({ code: 'NO_APPROVER', message: `No user holds role ${approverRoleCode}` });
 
     if (assignment.userId === actorId) {
-      throw new ConflictException({ code: 'MAKER_CHECKER', message: 'Requester tidak boleh menjadi approver sendiri (BR-003)' });
+      throw new ConflictException({ code: 'MAKER_CHECKER', message: 'Requester cannot be their own approver (BR-003)' });
     }
     return assignment.userId;
   }
@@ -49,9 +49,9 @@ export class ApprovalTaskService {
     const { transactionType, transactionId, transactionCode } = dto;
 
     const doc = await this.evaluator.getTransaction(transactionType, transactionId);
-    if (!doc) throw new NotFoundException({ code: 'TRANSACTION_NOT_FOUND', message: 'Transaksi tidak ditemukan' });
+    if (!doc) throw new NotFoundException({ code: 'TRANSACTION_NOT_FOUND', message: 'Transaction not found' });
     if ((doc as Record<string, unknown>).status !== 'DRAFT') {
-      throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa disubmit (status saat ini ${(doc as Record<string, unknown>).status})` });
+      throw new ConflictException({ code: 'NOT_DRAFT', message: `Only DRAFT can be submitted (current status ${(doc as Record<string, unknown>).status})` });
     }
 
     const workflow = await this.getActiveDefinition(transactionType);
@@ -63,7 +63,7 @@ export class ApprovalTaskService {
       const docValue = this.evaluator.getDocValue(doc as unknown as Record<string, unknown>, firstStep?.conditionField ?? null);
       const applicable = steps.filter((step) => this.evaluator.evaluateCondition(step, docValue));
       if (applicable.length === 0) {
-        throw new ConflictException({ code: 'NO_APPLICABLE_STEP', message: 'Tidak ada step workflow yang berlaku untuk transaksi ini' });
+        throw new ConflictException({ code: 'NO_APPLICABLE_STEP', message: 'No workflow step applies to this transaction' });
       }
       approverRoleCode = applicable[0]!.approverRoleCode;
     }
@@ -72,7 +72,7 @@ export class ApprovalTaskService {
 
     const task = await this.prisma.$transaction(async (tx) => {
       const existing = await tx.approvalTask.findUnique({ where: { transactionType_transactionId: { transactionType, transactionId } } });
-      if (existing) throw new ConflictException({ code: 'ALREADY_SUBMITTED', message: 'Transaksi sudah disubmit untuk approval' });
+      if (existing) throw new ConflictException({ code: 'ALREADY_SUBMITTED', message: 'Transaction has already been submitted for approval' });
 
       const created = await tx.approvalTask.create({
         data: { transactionType, transactionId, transactionCode: transactionCode ?? null, approverRoleCode, requesterId: actorId, status: 'PENDING' },
@@ -97,13 +97,13 @@ export class ApprovalTaskService {
   async decide(dto: ApproveTaskDto, actorId: string) {
     const { taskId, decision, comment } = dto;
     const task = await this.prisma.approvalTask.findUnique({ where: { id: taskId } });
-    if (!task) throw new NotFoundException({ code: 'TASK_NOT_FOUND', message: 'Approval task tidak ditemukan' });
-    if (task.status !== 'PENDING') throw new ConflictException({ code: 'TASK_NOT_PENDING', message: 'Task sudah diputuskan' });
+    if (!task) throw new NotFoundException({ code: 'TASK_NOT_FOUND', message: 'Approval task not found' });
+    if (task.status !== 'PENDING') throw new ConflictException({ code: 'TASK_NOT_PENDING', message: 'Task has already been decided' });
     if (task.requesterId === actorId) {
-      throw new ConflictException({ code: 'MAKER_CHECKER', message: 'Requester tidak boleh approve transaksi sendiri (BR-003)' });
+      throw new ConflictException({ code: 'MAKER_CHECKER', message: 'Requester cannot approve their own transaction (BR-003)' });
     }
     if (!(await this.hasRole(actorId, task.approverRoleCode))) {
-      throw new ForbiddenException({ code: 'NOT_APPROVER', message: `Anda tidak punya role ${task.approverRoleCode}` });
+      throw new ForbiddenException({ code: 'NOT_APPROVER', message: `You do not hold role ${task.approverRoleCode}` });
     }
 
     const nextStatus = decision === 'APPROVE' ? 'APPROVED' : 'REJECTED';
@@ -115,7 +115,7 @@ export class ApprovalTaskService {
         where: { id: taskId, status: 'PENDING' },
         data: { status: nextStatus, approverId: actorId, comment: comment ?? null, decidedAt: new Date() },
       });
-      if (cas.count === 0) throw new ConflictException({ code: 'TASK_NOT_PENDING', message: 'Task sudah diputuskan' });
+      if (cas.count === 0) throw new ConflictException({ code: 'TASK_NOT_PENDING', message: 'Task has already been decided' });
 
       await this.evaluator.updateTransactionStatus(tx, task.transactionType, task.transactionId, nextStatus);
       return tx.approvalTask.findUniqueOrThrow({ where: { id: taskId } });
@@ -131,6 +131,10 @@ export class ApprovalTaskService {
     });
 
     return updated;
+  }
+
+  async pendingCount(): Promise<number> {
+    return this.prisma.approvalTask.count({ where: { status: 'PENDING' } });
   }
 
   async listTasks(actorId: string, page = 1, pageSize = 20) {

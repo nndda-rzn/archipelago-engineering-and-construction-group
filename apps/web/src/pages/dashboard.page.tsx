@@ -1,108 +1,60 @@
-import { Badge, Button, EmptyCell, EmptyState, ErrorState, KpiSkeleton } from '@aec/ui';
-import { usePortfolio } from '@/features/project';
-import { DashboardGrid, healthMeta, type HealthKey } from '@/widgets/dashboard-grid';
-import { HealthDonut } from '@/widgets/dashboard-charts';
-import { LastUpdated } from '@/widgets/last-updated';
-import { formatIdr as fmt } from '@/shared/lib/format';
+import { SegmentedControl } from '@aec/ui';
+import { useUrlFilter } from '@/shared/lib/use-url-state';
+import { DashboardFilterBar, useDashboardFilter } from '@/widgets/dashboard-filter-bar';
+import { SignalRail } from '@/widgets/signal-rail';
+import { HeroBand } from '@/widgets/hero-band';
+import { FinancialBand } from '@/widgets/financial-band';
+import { PortfolioCanvas } from '@/widgets/portfolio-canvas';
+import { PortfolioSpine } from '@/widgets/portfolio-spine';
+import type { DashboardFilter } from '@/shared/lib/dashboard-period';
 
-const PORTFOLIO_KEY = ['projects', 'analytics', 'portfolio'] as const;
+const VIEW_OPTIONS = [
+  { value: 'canvas', label: 'Canvas' },
+  { value: 'tabel', label: 'Tabel' },
+];
+
+function PortfolioZone({ filter }: { filter: DashboardFilter }) {
+  const [view, setView] = useUrlFilter('view', 'canvas');
+  return (
+    <section>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-h2 text-neutral-950">Portfolio</h2>
+        <SegmentedControl aria-label="Portfolio view" options={VIEW_OPTIONS} value={view} onValueChange={setView} />
+      </div>
+      {view === 'tabel' ? <PortfolioSpine filter={filter} /> : <PortfolioCanvas filter={filter} />}
+    </section>
+  );
+}
 
 export function DashboardPage() {
-  const { data, isLoading, isError, refetch } = usePortfolio();
+  const { filter } = useDashboardFilter();
+
+  const zones = [
+    <DashboardFilterBar key="filter" />,
+    <SignalRail key="signal" filter={filter} />,
+    <div key="bands" className="grid gap-6 xl:grid-cols-12">
+      <div className="xl:col-span-7">
+        <HeroBand filter={filter} />
+      </div>
+      <div className="xl:col-span-5">
+        <FinancialBand filter={filter} />
+      </div>
+    </div>,
+    <PortfolioZone key="portfolio" filter={filter} />,
+  ];
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-neutral-950">Dashboard Eksekutif</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Portfolio project · cost, revenue &amp; health</p>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={isLoading}>Muat Ulang</Button>
-          <LastUpdated queryKey={PORTFOLIO_KEY} />
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-h1 text-neutral-950">Dashboard</h1>
+        <p className="mt-1 text-body-sm text-neutral-500">Portfolio command center · cost, cash &amp; health</p>
       </div>
 
-      {isLoading && <KpiSkeleton count={4} />}
-      {isError && (
-        <ErrorState
-          message="Portfolio tidak dapat dimuat."
-          onRetry={() => refetch()}
-          className="rounded-md border border-neutral-200 bg-white shadow-xs"
-        />
-      )}
-
-      {!isLoading && !isError && data && (
-        <>
-          <DashboardGrid totals={data.totals} healthCounts={data.healthCounts} projectCount={data.totals.projectCount} />
-
-          <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
-            <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs xl:col-span-1">
-              <h2 className="mb-2 text-h2 text-neutral-950">Distribusi Health</h2>
-              <HealthDonut
-                data={Object.entries(data.healthCounts).map(([k, v]) => ({ name: k, value: v }))}
-              />
-            </div>
-            <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs xl:col-span-2">
-              <h2 className="mb-3 text-h2 text-neutral-950">Portfolio Project</h2>
-            {data.items.length === 0 ? (
-              <EmptyState title="Belum ada project" description="Buat project pertama untuk mulai mengelola portfolio." />
-            ) : (
-            <div className="overflow-x-auto">
-            <table className="w-full text-left text-body">
-              <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
-                <tr>
-                  <th className="px-4 py-2">Project</th>
-                  <th className="px-4 py-2">Klien</th>
-                  <th className="px-4 py-2 text-right">Kontrak</th>
-                  <th className="px-4 py-2 text-right">Budget</th>
-                  <th className="px-4 py-2 text-right">Actual</th>
-                  <th className="px-4 py-2 text-right">Revenue</th>
-                  <th className="px-4 py-2 text-right">Utilisasi</th>
-                  <th className="px-4 py-2">Health</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((p) => (
-                  <tr key={p.projectId} className="border-t border-neutral-100 hover:bg-neutral-50">
-                    <td className="px-4 py-2">
-                      <span className="font-mono text-neutral-600">{p.projectCode}</span>
-                      <span className="ml-2 text-neutral-800">{p.projectName}</span>
-                    </td>
-                    <td className="px-4 py-2 text-neutral-600">{p.client}</td>
-                    <td className="px-4 py-2 text-right tabular-nums text-neutral-600">{fmt(p.contractValue)}</td>
-                    <td className="px-4 py-2 text-right tabular-nums text-neutral-700">{p.budget > 0 ? fmt(p.budget) : <EmptyCell />}</td>
-                    <td className="px-4 py-2 text-right tabular-nums text-neutral-700">{p.actual > 0 ? fmt(p.actual) : <EmptyCell />}</td>
-                    <td className="px-4 py-2 text-right tabular-nums text-neutral-700">{p.revenue > 0 ? fmt(p.revenue) : <EmptyCell />}</td>
-                    <td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-700">{p.utilization != null ? `${p.utilization}%` : <EmptyCell />}</td>
-                    <td className="px-4 py-2">
-                      <Badge variant={healthMeta[p.health as HealthKey]?.badgeVariant ?? 'default'}>
-                        {healthMeta[p.health as HealthKey]?.label ?? p.health}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
-                {data.items.length === 0 && (
-                  <tr><td colSpan={8} className="px-4 py-4 text-caption text-neutral-500">Belum ada project.</td></tr>
-                )}
-              </tbody>
-              <tfoot className="border-t border-neutral-200 bg-neutral-50 font-medium">
-                <tr>
-                  <td colSpan={3} className="px-4 py-2 text-caption uppercase tracking-wide text-neutral-500">Total</td>
-                  <td className="px-4 py-2 text-right tabular-nums text-neutral-800">{fmt(data.totals.totalBudget)}</td>
-                  <td className="px-4 py-2 text-right tabular-nums text-neutral-800">{fmt(data.totals.totalActual)}</td>
-                  <td className="px-4 py-2 text-right tabular-nums text-neutral-800">{fmt(data.totals.totalRevenue)}</td>
-                  <td className="px-4 py-2"></td>
-                  <td className="px-4 py-2"></td>
-                </tr>
-              </tfoot>
-            </table>
-            </div>
-            )}
-            </div>
-          </div>
-        </>
-      )}
+      {zones.map((zone, i) => (
+        <div key={i} className="animate-slide-up" style={{ animationDelay: `${i * 40}ms` }}>
+          {zone}
+        </div>
+      ))}
     </div>
   );
 }

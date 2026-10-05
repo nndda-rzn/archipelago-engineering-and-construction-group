@@ -15,7 +15,7 @@ export class BudgetService {
 
   async findAll(projectId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const items = await this.prisma.budgetItem.findMany({
       where: { projectId },
@@ -53,11 +53,11 @@ export class BudgetService {
 
   async upsert(projectId: string, dto: UpsertBudgetItemDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const wbs = await this.prisma.wbsItem.findUnique({ where: { id: dto.wbsItemId } });
     if (!wbs || wbs.projectId !== projectId) {
-      throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: 'WBS tidak ditemukan di project ini' });
+      throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: 'WBS not found in this project' });
     }
 
     const costType = dto.costType ?? 'DIRECT';
@@ -66,7 +66,7 @@ export class BudgetService {
       where: { projectId_wbsItemId_costType: { projectId, wbsItemId: dto.wbsItemId, costType } },
     });
     if (existing?.status === 'PUBLISHED') {
-      throw new ConflictException({ code: 'BUDGET_PUBLISHED', message: 'Budget sudah publish — gunakan versi baru' });
+      throw new ConflictException({ code: 'BUDGET_PUBLISHED', message: 'Budget is already published - use a new version' });
     }
 
     const item = await this.prisma.budgetItem.upsert({
@@ -91,11 +91,11 @@ export class BudgetService {
 
   async publish(projectId: string, _dto: PublishBudgetDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const draftItems = await this.prisma.budgetItem.findMany({ where: { projectId, status: 'DRAFT' } });
     if (draftItems.length === 0) {
-      throw new ConflictException({ code: 'BUDGET_EMPTY', message: 'Belum ada budget untuk di-publish' });
+      throw new ConflictException({ code: 'BUDGET_EMPTY', message: 'No budget to publish' });
     }
 
     await this.prisma.budgetItem.updateMany({

@@ -18,22 +18,22 @@ export function WorkflowDefinitionPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Workflow Definition</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Definisi + versioning approval (FR-FND-007)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Approval definition + versioning (FR-FND-007)</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={isLoading}>Muat Ulang</Button>
-          <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Tutup' : '+ Buat Workflow'}</Button>
+          <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={isLoading}>Reload</Button>
+          <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Close' : '+ Create Workflow'}</Button>
         </div>
       </div>
 
       {showForm && <CreateWorkflowForm onDone={() => setShowForm(false)} />}
 
-      {isLoading && <p className="text-body-sm text-neutral-500">Memuat…</p>}
-      {isError && <p className="text-body-sm text-destructive-600">Gagal memuat workflow.</p>}
+      {isLoading && <p className="text-body-sm text-neutral-500">Loading…</p>}
+      {isError && <p className="text-body-sm text-destructive-600">Failed to load workflows.</p>}
       {!isLoading && !isError && (
         <div className="space-y-4">
           {sorted.map((wf) => <WorkflowCard key={wf.id} workflow={wf} />)}
-          {sorted.length === 0 && <p className="text-body-sm text-neutral-500">Belum ada workflow.</p>}
+          {sorted.length === 0 && <p className="text-body-sm text-neutral-500">No workflows yet.</p>}
         </div>
       )}
     </div>

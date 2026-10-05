@@ -16,7 +16,7 @@ export class ProgressClaimService {
 
   async createProgressClaim(dto: CreateProgressClaimDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     let physicalProgressAtClaim: number | null = null;
     if (dto.workPackageId) {
@@ -25,7 +25,7 @@ export class ProgressClaimService {
         include: { progress: { orderBy: { progressDate: 'desc' }, take: 1, select: { physicalProgress: true } } },
       });
       if (!wp || wp.projectId !== dto.projectId) {
-        throw new NotFoundException({ code: 'WP_NOT_FOUND', message: 'Work package tidak ditemukan di project ini' });
+        throw new NotFoundException({ code: 'WP_NOT_FOUND', message: 'Work package not found in this project' });
       }
       physicalProgressAtClaim = dto.physicalProgressAtClaim ?? Number(wp.progress[0]?.physicalProgress ?? 0);
     }
@@ -83,9 +83,9 @@ export class ProgressClaimService {
       where: { id },
       include: { project: { select: { advanceAmount: true, advanceRecoveryRate: true } } },
     });
-    if (!claim) throw new NotFoundException({ code: 'CLAIM_NOT_FOUND', message: 'Claim tidak ditemukan' });
+    if (!claim) throw new NotFoundException({ code: 'CLAIM_NOT_FOUND', message: 'Claim not found' });
     if (claim.status !== 'DRAFT') {
-      throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa disertifikasi (${claim.status})` });
+      throw new ConflictException({ code: 'NOT_DRAFT', message: `Only DRAFT can be certified (${claim.status})` });
     }
 
     const certifiedAmount = Number(dto.certifiedAmount);

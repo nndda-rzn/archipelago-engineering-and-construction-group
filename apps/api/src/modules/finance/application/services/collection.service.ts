@@ -5,6 +5,7 @@ import { AuditService } from '@/modules/foundation';
 import { GlHelper } from './shared/gl.helper';
 import { CacheService } from '@/shared/cache/cache.service';
 import { invalidateAnalytics } from '@/shared/cache/analytics-cache';
+import { withSerializableRetry } from '@/shared/database/serializable-tx';
 import type { CreateCollectionDto, ListCollectionQueryDto } from '../../presentation/dto/finance.dto';
 
 @Injectable()
@@ -18,7 +19,7 @@ export class CollectionService {
 
   async createCollection(dto: CreateCollectionDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const invoiceIds = dto.items.map((i) => i.clientInvoiceId);
     const invoices = await this.prisma.clientInvoice.findMany({ where: { id: { in: invoiceIds } } });
@@ -35,19 +36,19 @@ export class CollectionService {
     const items: Array<{ clientInvoiceId: string; amount: number }> = [];
     for (const item of dto.items) {
       const invoice = invoiceMap.get(item.clientInvoiceId);
-      if (!invoice) throw new NotFoundException({ code: 'CLIENT_INVOICE_NOT_FOUND', message: 'Client invoice tidak ditemukan' });
+      if (!invoice) throw new NotFoundException({ code: 'CLIENT_INVOICE_NOT_FOUND', message: 'Client invoice not found' });
       if (invoice.status !== 'POSTED') {
-        throw new ConflictException({ code: 'INVOICE_NOT_POSTED', message: `Client invoice ${invoice.invoiceNumber} harus POSTED` });
+        throw new ConflictException({ code: 'INVOICE_NOT_POSTED', message: `Client invoice ${invoice.invoiceNumber} must be POSTED` });
       }
       if (invoice.projectId !== dto.projectId) {
-        throw new ConflictException({ code: 'INVOICE_PROJECT_MISMATCH', message: 'Invoice bukan milik project ini' });
+        throw new ConflictException({ code: 'INVOICE_PROJECT_MISMATCH', message: 'Invoice does not belong to this project' });
       }
 
       const open = Number(invoice.totalAmount) - (collectedMap.get(invoice.id) ?? 0);
       if (Number(item.amount) > open + 0.001) {
         throw new ConflictException({
           code: 'EXCEED_AR_OPEN',
-          message: `Penerimaan melebihi saldo invoice ${invoice.invoiceNumber} (open ${open})`,
+          message: `Collection exceeds invoice outstanding balance ${invoice.invoiceNumber} (open ${open})`,
         });
       }
       totalAmount += Number(item.amount);
@@ -93,15 +94,34 @@ export class CollectionService {
       where: { id },
       include: { project: { select: { legalEntityId: true } } },
     });
-    if (!collection) throw new NotFoundException({ code: 'COLLECTION_NOT_FOUND', message: 'Collection tidak ditemukan' });
+    if (!collection) throw new NotFoundException({ code: 'COLLECTION_NOT_FOUND', message: 'Collection not found' });
     if (collection.status !== 'DRAFT') {
-      throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa diposting (${collection.status})` });
+      throw new ConflictException({ code: 'NOT_DRAFT', message: `Only DRAFT can be posted (${collection.status})` });
     }
 
-    const posted = await this.prisma.collection.update({
-      where: { id },
-      data: { status: 'POSTED', collectedBy: actorId, collectedAt: new Date() },
-    });
+    // Jurnal + CAS status dalam SATU transaksi: bila jurnal gagal, status tidak berubah;
+    // bila status sudah bukan DRAFT (dua post paralel), jurnal ikut dibatalkan.
+    const posted = await withSerializableRetry(
+      this.prisma,
+      async (tx) => {
+        await this.gl.postCollectionJournal(
+          tx,
+          { id: collection.id, collectionNumber: collection.collectionNumber, legalEntityId: collection.project.legalEntityId, totalAmount: Number(collection.totalAmount) },
+          actorId,
+        );
+
+        const cas = await tx.collection.updateMany({
+          where: { id, status: 'DRAFT' },
+          data: { status: 'POSTED', collectedBy: actorId, collectedAt: new Date() },
+        });
+        if (cas.count === 0) {
+          throw new ConflictException({ code: 'NOT_DRAFT', message: `Only DRAFT can be posted (${collection.status})` });
+        }
+
+        return tx.collection.findUniqueOrThrow({ where: { id } });
+      },
+      { label: 'Collection.post' },
+    );
 
     await this.audit.record({
       userId: actorId,
@@ -111,11 +131,6 @@ export class CollectionService {
       newValue: { collectionNumber: collection.collectionNumber, totalAmount: Number(collection.totalAmount) },
       source: 'api',
     });
-
-    await this.gl.postCollectionJournal(
-      { id: collection.id, collectionNumber: collection.collectionNumber, legalEntityId: collection.project.legalEntityId, totalAmount: Number(collection.totalAmount) },
-      actorId,
-    );
 
     await invalidateAnalytics(this.cache);
 

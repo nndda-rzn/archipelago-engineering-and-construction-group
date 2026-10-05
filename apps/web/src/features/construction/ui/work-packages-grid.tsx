@@ -6,22 +6,22 @@ type WorkPackageStatus = 'DRAFT' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
 export const statusLabel: Record<WorkPackageStatus, string> = {
   DRAFT: 'Draft',
-  IN_PROGRESS: 'Berjalan',
-  COMPLETED: 'Selesai',
-  CANCELLED: 'Dibatalkan',
+  IN_PROGRESS: 'In Progress',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
 };
 
 const columnHelper = createColumnHelper<WorkPackage>();
 
 export const workPackageColumns = [
-  columnHelper.accessor('wpNumber', { header: 'Nomor', cell: (info) => <span className="font-mono text-neutral-600">{info.getValue()}</span> }),
+  columnHelper.accessor('wpNumber', { header: 'Number', cell: (info) => <span className="font-mono text-neutral-600">{info.getValue()}</span> }),
   columnHelper.accessor('title', { header: 'Work Package' }),
   columnHelper.accessor('wbs', {
     header: 'WBS',
     cell: (info) => (info.getValue() ? <span className="font-mono text-neutral-600">{info.getValue()?.code}</span> : <EmptyCell />),
   }),
   columnHelper.accessor('plannedQty', {
-    header: 'Qty Rencana',
+    header: 'Planned Qty',
     cell: (info) => `${info.getValue()} ${info.row.original.unit}`,
   }),
   columnHelper.accessor('latestProgress', {

@@ -35,7 +35,7 @@ export class DeliverableService {
 
   async updateDeliverableStatus(id: string, dto: UpdateDeliverableStatusDto, actorId: string) {
     const item = await this.prisma.deliverable.findUnique({ where: { id } });
-    if (!item) throw new NotFoundException({ code: 'DELIVERABLE_NOT_FOUND', message: 'Deliverable tidak ditemukan' });
+    if (!item) throw new NotFoundException({ code: 'DELIVERABLE_NOT_FOUND', message: 'Deliverable not found' });
     const updated = await this.prisma.deliverable.update({
       where: { id },
       data: {

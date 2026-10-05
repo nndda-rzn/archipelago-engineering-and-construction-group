@@ -12,12 +12,12 @@ export class EquipmentAssignmentService {
 
   async createAssignment(equipmentId: string, dto: CreateEquipmentAssignmentDto, actorId: string) {
     const equipment = await this.prisma.equipment.findUnique({ where: { id: equipmentId } });
-    if (!equipment) throw new NotFoundException({ code: 'EQUIPMENT_NOT_FOUND', message: 'Equipment tidak ditemukan' });
+    if (!equipment) throw new NotFoundException({ code: 'EQUIPMENT_NOT_FOUND', message: 'Equipment not found' });
     if (equipment.status !== 'AVAILABLE' && equipment.status !== 'ASSIGNED') {
-      throw new ConflictException({ code: 'EQUIPMENT_UNAVAILABLE', message: `Equipment ${equipment.status} — tidak bisa di-assign` });
+      throw new ConflictException({ code: 'EQUIPMENT_UNAVAILABLE', message: `Equipment ${equipment.status} - cannot be assigned` });
     }
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const assignment = await this.prisma.$transaction(async (tx) => {
       const created = await tx.equipmentAssignment.create({
@@ -50,10 +50,10 @@ export class EquipmentAssignmentService {
   async endAssignment(equipmentId: string, assignmentId: string, actorId: string) {
     const assignment = await this.prisma.equipmentAssignment.findUnique({ where: { id: assignmentId } });
     if (!assignment || assignment.equipmentId !== equipmentId) {
-      throw new NotFoundException({ code: 'ASSIGNMENT_NOT_FOUND', message: 'Assignment tidak ditemukan' });
+      throw new NotFoundException({ code: 'ASSIGNMENT_NOT_FOUND', message: 'Assignment not found' });
     }
     if (assignment.status !== 'ACTIVE') {
-      throw new ConflictException({ code: 'NOT_ACTIVE', message: `Hanya ACTIVE yang bisa diakhiri (${assignment.status})` });
+      throw new ConflictException({ code: 'NOT_ACTIVE', message: `Only ACTIVE can be ended (${assignment.status})` });
     }
 
     const ended = await this.prisma.$transaction(async (tx) => {

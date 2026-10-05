@@ -39,7 +39,7 @@ export function EquipmentPage() {
             </SelectContent>
           </Select>
           <Button size="sm" onClick={() => setShowForm((s) => !s)}>
-            {showForm ? 'Tutup' : '+ Buat Equipment'}
+            {showForm ? 'Close' : '+ Create Equipment'}
           </Button>
         </div>
       </div>
@@ -59,7 +59,7 @@ export function EquipmentPage() {
            onRowClick={(row) => setSelectedId(row.original.id)}
            selectedRowId={selectedId || undefined}
            getRowId={(row) => row.id}
-           emptyMessage="Belum ada equipment"
+           emptyMessage="No equipment yet"
         />
       </div>
 

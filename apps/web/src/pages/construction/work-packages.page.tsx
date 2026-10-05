@@ -17,15 +17,15 @@ export function WorkPackagesPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Work Packages</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Unit kerja konstruksi · rencana vs progress fisik (FR-CON)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Construction work units · plan vs physical progress (FR-CON)</p>
         </div>
         <div className="flex items-center gap-2">
           <EntitySelect
             value={projectId}
             onValueChange={(v) => { setProjectId(v); setPagination({ pageIndex: 0, pageSize: PAGE_SIZE }); }}
             options={(projects?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
-            placeholder="Pilih Project…"
-            searchPlaceholder="Cari project…"
+            placeholder="Select Project…"
+            searchPlaceholder="Search project…"
             className="w-64"
           />
           {projectId && <Button size="sm" onClick={() => setShowForm(true)} disabled={showForm}>+ Work Package</Button>}
@@ -33,12 +33,12 @@ export function WorkPackagesPage() {
       </div>
 
       {showForm && projectId && <div className="mb-6"><CreateWorkPackageForm projectId={projectId} onDone={() => setShowForm(false)} /></div>}
-      {!projectId && <p className="text-body-sm text-neutral-500">Pilih project untuk melihat work packages.</p>}
+      {!projectId && <p className="text-body-sm text-neutral-500">Select a project to view work packages.</p>}
 
       {projectId && (
         <>
           <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-            <DataGrid columns={workPackageColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={setPagination} isLoading={isLoading} isError={isError} onRetry={refetch} emptyMessage="Belum ada work package" />
+            <DataGrid columns={workPackageColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={setPagination} isLoading={isLoading} isError={isError} onRetry={refetch} emptyMessage="No work packages yet" />
           </div>
           {(data?.items ?? []).some((wp) => wp.status === 'IN_PROGRESS' || wp.status === 'DRAFT') && (
             <WorkPackageActionsPanel projectId={projectId} items={data?.items ?? []} />

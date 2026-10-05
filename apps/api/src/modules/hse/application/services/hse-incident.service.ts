@@ -39,9 +39,9 @@ export class HseIncidentService {
 
   async investigateIncident(id: string, dto: { rootCause?: string }, actorId: string) {
     const incident = await this.prisma.hseIncident.findUnique({ where: { id } });
-    if (!incident) throw new NotFoundException({ code: 'INCIDENT_NOT_FOUND', message: 'Insiden tidak ditemukan' });
+    if (!incident) throw new NotFoundException({ code: 'INCIDENT_NOT_FOUND', message: 'Incident not found' });
     if (incident.status === 'RESOLVED') {
-      throw new ConflictException({ code: 'ALREADY_RESOLVED', message: 'Insiden sudah resolved' });
+      throw new ConflictException({ code: 'ALREADY_RESOLVED', message: 'Incident is already resolved' });
     }
     const updated = await this.prisma.hseIncident.update({ where: { id }, data: { rootCause: dto.rootCause ?? incident.rootCause, status: 'INVESTIGATING' } });
     await this.audit.record({ userId: actorId, action: 'HseIncident.INVESTIGATE', resource: 'HseIncident', resourceId: id, newValue: { incidentNumber: incident.incidentNumber }, source: 'api' });
@@ -51,9 +51,9 @@ export class HseIncidentService {
 
   async resolveIncident(id: string, actorId: string) {
     const incident = await this.prisma.hseIncident.findUnique({ where: { id } });
-    if (!incident) throw new NotFoundException({ code: 'INCIDENT_NOT_FOUND', message: 'Insiden tidak ditemukan' });
+    if (!incident) throw new NotFoundException({ code: 'INCIDENT_NOT_FOUND', message: 'Incident not found' });
     if (incident.status === 'RESOLVED') {
-      throw new ConflictException({ code: 'ALREADY_RESOLVED', message: 'Insiden sudah resolved' });
+      throw new ConflictException({ code: 'ALREADY_RESOLVED', message: 'Incident is already resolved' });
     }
     const resolved = await this.prisma.hseIncident.update({ where: { id }, data: { status: 'RESOLVED', resolvedAt: new Date() } });
     await this.audit.record({ userId: actorId, action: 'HseIncident.RESOLVE', resource: 'HseIncident', resourceId: id, newValue: { incidentNumber: incident.incidentNumber }, source: 'api' });

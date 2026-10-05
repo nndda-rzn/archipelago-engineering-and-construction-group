@@ -21,11 +21,11 @@ export function AuditDetail({ audit }: { audit: AuditEngagement }) {
           loading={create.isPending}
           onClick={() => create.mutate({ auditId: audit.id, title }, { onSuccess: () => setTitle('') })}
         >
-          Tambah Finding
+          Add Finding
         </Button>
       </div>
       <div className="mt-4">
-        <DataGrid columns={findingColumns} data={audit.findings ?? []} emptyMessage="Belum ada finding" />
+        <DataGrid columns={findingColumns} data={audit.findings ?? []} emptyMessage="No findings yet" />
       </div>
     </div>
   );

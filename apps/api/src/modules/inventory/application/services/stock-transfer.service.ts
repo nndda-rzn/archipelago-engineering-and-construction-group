@@ -16,17 +16,17 @@ export class StockTransferService {
 
   async createStockTransfer(dto: CreateStockTransferDto, actorId: string) {
     if (dto.fromWarehouseId === dto.toWarehouseId) {
-      throw new BadRequestException({ code: 'SAME_WAREHOUSE', message: 'Warehouse asal dan tujuan harus berbeda' });
+      throw new BadRequestException({ code: 'SAME_WAREHOUSE', message: 'Source and target warehouse must differ' });
     }
 
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const [fromWh, toWh] = await Promise.all([
       this.prisma.warehouse.findUnique({ where: { id: dto.fromWarehouseId } }),
       this.prisma.warehouse.findUnique({ where: { id: dto.toWarehouseId } }),
     ]);
-    if (!fromWh || !toWh) throw new NotFoundException({ code: 'WAREHOUSE_NOT_FOUND', message: 'Warehouse tidak ditemukan' });
+    if (!fromWh || !toWh) throw new NotFoundException({ code: 'WAREHOUSE_NOT_FOUND', message: 'Warehouse not found' });
 
     const wbsIds = dto.items.filter((i) => i.wbsItemId).map((i) => i.wbsItemId!);
     if (wbsIds.length > 0) {
@@ -36,7 +36,7 @@ export class StockTransferService {
         if (!item.wbsItemId) continue;
         const ownerProjectId = wbsByProject.get(item.wbsItemId);
         if (ownerProjectId !== dto.projectId) {
-          throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: `WBS ${item.wbsItemId} tidak ada di project ini` });
+          throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: `WBS ${item.wbsItemId} not found in this project` });
         }
       }
     }
@@ -70,7 +70,7 @@ export class StockTransferService {
           if (b.requiredQty > onHand) {
             throw new ConflictException({
               code: 'INSUFFICIENT_STOCK',
-              message: `Stok tidak cukup di ${fromWh.code} (tersedia ${onHand})`,
+              message: `Insufficient stock at ${fromWh.code} (available ${onHand})`,
             });
           }
         }

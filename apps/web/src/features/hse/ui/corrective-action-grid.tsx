@@ -9,7 +9,7 @@ const caHelper = createColumnHelper<CorrectiveAction>();
 function VerifyCaCell({ ca }: { ca: CorrectiveAction }) {
   const verify = useVerifyCorrectiveAction();
   if (ca.status === 'VERIFIED') return null;
-  return <Button size="sm" variant="secondary" loading={verify.isPending} onClick={() => verify.mutate({ id: ca.id, evidence: 'done' })}>Verifikasi</Button>;
+  return <Button size="sm" variant="secondary" loading={verify.isPending} onClick={() => verify.mutate({ id: ca.id, evidence: 'done' })}>Verify</Button>;
 }
 
 export const caColumns = [

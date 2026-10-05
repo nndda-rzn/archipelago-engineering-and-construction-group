@@ -33,12 +33,12 @@ export class InspectionService {
 
   async inspect(id: string, dto: InspectDto, actorId: string) {
     const ins = await this.prisma.inspectionRequest.findUnique({ where: { id } });
-    if (!ins) throw new NotFoundException({ code: 'INSPECTION_NOT_FOUND', message: 'Inspection tidak ditemukan' });
+    if (!ins) throw new NotFoundException({ code: 'INSPECTION_NOT_FOUND', message: 'Inspection not found' });
     if (ins.status === 'CLOSED') {
-      throw new ConflictException({ code: 'ALREADY_CLOSED', message: 'Inspection sudah closed' });
+      throw new ConflictException({ code: 'ALREADY_CLOSED', message: 'Inspection is already closed' });
     }
     if (!['PASS', 'FAIL'].includes(dto.result)) {
-      throw new BadRequestException({ code: 'INVALID_RESULT', message: 'Result harus PASS atau FAIL' });
+      throw new BadRequestException({ code: 'INVALID_RESULT', message: 'Result must be PASS or FAIL' });
     }
     const updated = await this.prisma.inspectionRequest.update({ where: { id }, data: { result: dto.result, status: 'CLOSED', inspectedAt: new Date(), inspectedBy: actorId } });
     await this.audit.record({ userId: actorId, action: 'InspectionRequest.INSPECT', resource: 'InspectionRequest', resourceId: id, newValue: { result: dto.result }, source: 'api' });

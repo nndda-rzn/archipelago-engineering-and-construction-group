@@ -15,7 +15,7 @@ function AdvanceAuditCell({ audit }: { audit: AuditEngagement }) {
 
 export const auditColumns = [
   auditHelper.accessor('auditNumber', { header: 'No. Audit', cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span> }),
-  auditHelper.accessor('title', { header: 'Judul', cell: (info) => <span className="text-neutral-800">{info.getValue()}</span> }),
+  auditHelper.accessor('title', { header: 'Title', cell: (info) => <span className="text-neutral-800">{info.getValue()}</span> }),
   auditHelper.accessor('status', { header: 'Status', cell: (info) => <StatusBadge status={info.getValue()} /> }),
   auditHelper.display({ id: 'actions', header: '', cell: ({ row }) => <AdvanceAuditCell audit={row.original} /> }),
 ];

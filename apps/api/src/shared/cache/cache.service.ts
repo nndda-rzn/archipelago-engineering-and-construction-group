@@ -48,6 +48,18 @@ export class CacheService {
     }
   }
 
+  /** Hapus semua key yang cocok dengan pola glob (mis. `analytics:executive:*`). */
+  async delByPattern(pattern: string): Promise<void> {
+    try {
+      const stream = this.client.scanStream({ match: pattern, count: 100 });
+      for await (const keys of stream) {
+        if (keys.length > 0) await this.client.del(...(keys as string[]));
+      }
+    } catch (err) {
+      this.logger.warn(`Cache delByPattern fail ${pattern}: ${(err as Error).message}`);
+    }
+  }
+
   async wrap<T>(key: string, ttlSeconds: number, compute: () => Promise<T>): Promise<T> {
     const cached = await this.get<T>(key);
     if (cached != null) return cached;

@@ -10,10 +10,10 @@ import { claimTypeLabel } from './progress-claim-grid';
 const CLAIM_TYPES = ['PROGRESS', 'COST', 'TIME', 'EOT', 'CONTRACTUAL'] as const;
 
 const formSchema = z.object({
-  projectId: z.string().min(1, 'Project wajib dipilih'),
+  projectId: z.string().min(1, 'Project is required'),
   period: z.string().max(30),
   claimType: z.enum(['PROGRESS', 'COST', 'TIME', 'EOT', 'CONTRACTUAL']),
-  amount: z.string().refine((v) => Number(v) > 0, 'Nilai klaim harus lebih dari 0'),
+  amount: z.string().refine((v) => Number(v) > 0, 'Claim amount must be greater than 0'),
   requestedExtensionDays: z.string(),
   workPackageId: z.string(),
   billableProgress: z.string(),
@@ -60,7 +60,7 @@ export function ClaimForm({ onDone }: { onDone: () => void }) {
           <Label htmlFor="clm-project">Project <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="projectId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={(v) => { field.onChange(v); setValue('workPackageId', ''); }}>
-              <SelectTrigger id="clm-project"><SelectValue placeholder="Pilih project…" /></SelectTrigger>
+              <SelectTrigger id="clm-project"><SelectValue placeholder="Select project…" /></SelectTrigger>
               <SelectContent>
                 {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
               </SelectContent>
@@ -69,7 +69,7 @@ export function ClaimForm({ onDone }: { onDone: () => void }) {
           {errors.projectId && <p className="mt-1 text-caption text-destructive-600">{errors.projectId.message}</p>}
         </div>
         <div>
-          <Label htmlFor="clm-type">Tipe Klaim</Label>
+          <Label htmlFor="clm-type">Claim Type</Label>
           <Controller name="claimType" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
               <SelectTrigger id="clm-type"><SelectValue /></SelectTrigger>
@@ -79,9 +79,9 @@ export function ClaimForm({ onDone }: { onDone: () => void }) {
             </Select>
           )} />
         </div>
-        <div><Label htmlFor="clm-period">Periode</Label><Input id="clm-period" placeholder="mis. 2026-08" {...register('period')} /></div>
+        <div><Label htmlFor="clm-period">Period</Label><Input id="clm-period" placeholder="e.g. 2026-08" {...register('period')} /></div>
         <div>
-          <Label htmlFor="clm-amount">Nilai Klaim <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="clm-amount">Claim Amount <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="clm-amount" type="number" min={0} step={100000} error={!!errors.amount} {...register('amount')} />
           {errors.amount && <p className="mt-1 text-caption text-destructive-600">{errors.amount.message}</p>}
         </div>
@@ -90,7 +90,7 @@ export function ClaimForm({ onDone }: { onDone: () => void }) {
           <Label htmlFor="clm-wp">Work Package</Label>
           <Controller name="workPackageId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange} disabled={!projectId}>
-              <SelectTrigger id="clm-wp"><SelectValue placeholder="Tanpa work package" /></SelectTrigger>
+              <SelectTrigger id="clm-wp"><SelectValue placeholder="No work package" /></SelectTrigger>
               <SelectContent>
                 {(workPackages?.items ?? []).map((w) => <SelectItem key={w.id} value={w.id}>{w.wpNumber} · {w.title} ({w.latestProgress ?? 0}%)</SelectItem>)}
               </SelectContent>
@@ -98,10 +98,10 @@ export function ClaimForm({ onDone }: { onDone: () => void }) {
           )} />
         </div>
         <div><Label htmlFor="clm-billable">Billable Progress (%)</Label><Input id="clm-billable" type="number" min={0} max={100} disabled={!selectedWp} {...register('billableProgress')} /></div>
-        <div><Label htmlFor="clm-desc">Deskripsi</Label><Input id="clm-desc" {...register('description')} /></div>
+        <div><Label htmlFor="clm-desc">Description</Label><Input id="clm-desc" {...register('description')} /></div>
       </div>
-      <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Batal</Button><Button type="submit" loading={create.isPending}>Buat Klaim DRAFT</Button></div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600">Gagal membuat klaim.</p>}
+      <div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={onDone}>Cancel</Button><Button type="submit" loading={create.isPending}>Create DRAFT Claim</Button></div>
+      {create.isError && <p className="mt-2 text-caption text-destructive-600">Failed to create the claim.</p>}
     </form>
   );
 }

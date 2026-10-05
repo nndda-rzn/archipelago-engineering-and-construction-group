@@ -13,7 +13,7 @@ function CompleteReviewCell({ review }: { review: AccessReview }) {
 
 export const reviewColumns = [
   reviewHelper.accessor('reviewNumber', { header: 'No. Review', cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span> }),
-  reviewHelper.accessor('period', { header: 'Periode', cell: (info) => <span className="font-mono text-neutral-600">{info.getValue()}</span> }),
+  reviewHelper.accessor('period', { header: 'Period', cell: (info) => <span className="font-mono text-neutral-600">{info.getValue()}</span> }),
   reviewHelper.accessor('status', { header: 'Status', cell: (info) => <StatusBadge status={info.getValue()} /> }),
   reviewHelper.display({ id: 'actions', header: '', cell: ({ row }) => <CompleteReviewCell review={row.original} /> }),
 ];

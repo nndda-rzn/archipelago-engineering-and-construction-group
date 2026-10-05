@@ -13,18 +13,18 @@ export class ChartOfAccountService {
 
   async createChartOfAccount(dto: CreateChartOfAccountDto, actorId: string) {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
-    if (!entity) throw new NotFoundException({ code: 'LEGAL_ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });
+    if (!entity) throw new NotFoundException({ code: 'LEGAL_ENTITY_NOT_FOUND', message: 'Legal entity not found' });
 
     const existing = await this.prisma.chartOfAccount.findUnique({
       where: { legalEntityId_code: { legalEntityId: dto.legalEntityId, code: dto.code } },
     });
-    if (existing) throw new ConflictException({ code: 'ACCOUNT_CODE_EXISTS', message: `Kode akun ${dto.code} sudah ada` });
+    if (existing) throw new ConflictException({ code: 'ACCOUNT_CODE_EXISTS', message: `Account code ${dto.code} already exists` });
 
     if (dto.parentId) {
       const parent = await this.prisma.chartOfAccount.findUnique({ where: { id: dto.parentId } });
-      if (!parent) throw new NotFoundException({ code: 'PARENT_ACCOUNT_NOT_FOUND', message: 'Akun parent tidak ditemukan' });
+      if (!parent) throw new NotFoundException({ code: 'PARENT_ACCOUNT_NOT_FOUND', message: 'Parent account not found' });
       if (parent.legalEntityId !== dto.legalEntityId) {
-        throw new ConflictException({ code: 'ACCOUNT_ENTITY_MISMATCH', message: 'Parent akun beda legal entity' });
+        throw new ConflictException({ code: 'ACCOUNT_ENTITY_MISMATCH', message: 'Parent account belongs to a different legal entity' });
       }
     }
 

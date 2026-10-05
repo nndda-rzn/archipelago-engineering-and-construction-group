@@ -36,9 +36,9 @@ export class PunchListService {
 
   async closePunchItem(id: string, dto: ClosePunchItemDto, actorId: string) {
     const item = await this.prisma.punchListItem.findUnique({ where: { id } });
-    if (!item) throw new NotFoundException({ code: 'PUNCH_NOT_FOUND', message: 'Punch item tidak ditemukan' });
+    if (!item) throw new NotFoundException({ code: 'PUNCH_NOT_FOUND', message: 'Punch item not found' });
     if (item.status === 'CLOSED') {
-      throw new ConflictException({ code: 'ALREADY_CLOSED', message: 'Punch item sudah closed' });
+      throw new ConflictException({ code: 'ALREADY_CLOSED', message: 'Punch item is already closed' });
     }
     const updated = await this.prisma.punchListItem.update({ where: { id }, data: { status: 'CLOSED', closedAt: new Date(), closedBy: actorId } });
     await this.audit.record({ userId: actorId, action: 'PunchListItem.CLOSE', resource: 'PunchListItem', resourceId: id, newValue: { punchNumber: item.punchNumber }, source: 'api' });

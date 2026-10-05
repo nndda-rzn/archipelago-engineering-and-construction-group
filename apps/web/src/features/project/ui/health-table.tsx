@@ -15,7 +15,7 @@ export function HealthTable({ data }: { data: ProjectHealth }) {
             <th className="px-4 py-2 text-right">Budget</th>
             <th className="px-4 py-2 text-right">Actual</th>
             <th className="px-4 py-2 text-right">Variance</th>
-            <th className="px-4 py-2">Utilisasi</th>
+            <th className="px-4 py-2">Utilization</th>
           </tr>
         </thead>
         <tbody>
@@ -43,7 +43,7 @@ export function HealthTable({ data }: { data: ProjectHealth }) {
             </tr>
           ))}
           {data.wbs.length === 0 && (
-            <tr><td colSpan={5} className="px-4 py-4 text-caption text-neutral-500">Belum ada WBS.</td></tr>
+            <tr><td colSpan={5} className="px-4 py-4 text-caption text-neutral-500">No WBS yet.</td></tr>
           )}
         </tbody>
       </table>

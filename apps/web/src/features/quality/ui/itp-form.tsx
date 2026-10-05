@@ -35,7 +35,7 @@ export function ItpForm({ onDone }: { onDone: () => void }) {
           <WpSelect id="itp-wp" projectId={projectId} value={field.value} onChange={field.onChange} workPackages={workPackages} />
         )} />
         <div className="flex-1">
-          <Label htmlFor="itp-title">Judul ITP <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="itp-title">ITP Title <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="itp-title" error={!!errors.title} {...register('title')} />
           {errors.title && <p className="mt-1 text-caption text-destructive-600">{errors.title.message}</p>}
         </div>

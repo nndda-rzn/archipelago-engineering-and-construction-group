@@ -49,13 +49,13 @@ export class ProjectService {
       where: { id },
       include: { legalEntity: { select: { code: true, legalName: true } } },
     });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
     return project;
   }
 
   async create(dto: CreateProjectDto, actorId: string) {
     const existing = await this.prisma.project.findUnique({ where: { code: dto.code } });
-    if (existing) throw new ConflictException({ code: 'PROJECT_EXISTS', message: 'Kode project sudah digunakan' });
+    if (existing) throw new ConflictException({ code: 'PROJECT_EXISTS', message: 'Project code already in use' });
 
     const project = await this.prisma.project.create({
       data: {

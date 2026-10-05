@@ -36,7 +36,7 @@ export class HandoverService {
 
   async create(projectId: string, dto: CreateHandoverDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const items = dto.items ?? [];
     const ho = await this.prisma.$transaction(async (tx) => {
@@ -79,14 +79,14 @@ export class HandoverService {
 
   async approve(id: string, actorId: string) {
     const ho = await this.prisma.handoverPackage.findUnique({ where: { id }, include: { items: true } });
-    if (!ho) throw new NotFoundException({ code: 'HO_NOT_FOUND', message: 'Handover tidak ditemukan' });
+    if (!ho) throw new NotFoundException({ code: 'HO_NOT_FOUND', message: 'Handover not found' });
     if (ho.status !== 'SUBMITTED') {
-      throw new ConflictException({ code: 'HO_NOT_SUBMITTED', message: `Handover harus SUBMITTED sebelum approve (${ho.status})` });
+      throw new ConflictException({ code: 'HO_NOT_SUBMITTED', message: `Handover must be SUBMITTED before approval (${ho.status})` });
     }
 
     const allVerified = ho.items.every((i) => i.status === 'VERIFIED');
     if (!allVerified) {
-      throw new ConflictException({ code: 'HO_ITEMS_PENDING', message: 'Semua item dokumen harus VERIFIED sebelum approve' });
+      throw new ConflictException({ code: 'HO_ITEMS_PENDING', message: 'All document items must be VERIFIED before approval' });
     }
 
     const updated = await this.prisma.handoverPackage.update({
@@ -109,7 +109,7 @@ export class HandoverService {
 
   async verifyItem(handoverId: string, itemId: string, actorId: string) {
     const item = await this.prisma.handoverItem.findFirst({ where: { id: itemId, handoverId } });
-    if (!item) throw new NotFoundException({ code: 'HO_ITEM_NOT_FOUND', message: 'Item handover tidak ditemukan' });
+    if (!item) throw new NotFoundException({ code: 'HO_ITEM_NOT_FOUND', message: 'Handover item not found' });
 
     return this.prisma.handoverItem.update({
       where: { id: itemId },
@@ -119,9 +119,9 @@ export class HandoverService {
 
   async submit(id: string) {
     const ho = await this.prisma.handoverPackage.findUnique({ where: { id } });
-    if (!ho) throw new NotFoundException({ code: 'HO_NOT_FOUND', message: 'Handover tidak ditemukan' });
+    if (!ho) throw new NotFoundException({ code: 'HO_NOT_FOUND', message: 'Handover not found' });
     if (ho.status !== 'DRAFT') {
-      throw new ConflictException({ code: 'HO_NOT_DRAFT', message: `Hanya DRAFT yang bisa di-submit (${ho.status})` });
+      throw new ConflictException({ code: 'HO_NOT_DRAFT', message: `Only DRAFT can be submitted (${ho.status})` });
     }
     return this.prisma.handoverPackage.update({ where: { id }, data: { status: 'SUBMITTED' } });
   }

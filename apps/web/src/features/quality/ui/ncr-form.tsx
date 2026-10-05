@@ -68,7 +68,7 @@ export function NcrForm({ onDone }: { onDone: () => void }) {
           )} />
         </div>
         <div className="flex-1">
-          <Label htmlFor="ncr-desc">Deskripsi NCR <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="ncr-desc">NCR Description <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="ncr-desc" error={!!errors.description} {...register('description')} />
           {errors.description && <p className="mt-1 text-caption text-destructive-600">{errors.description.message}</p>}
         </div>

@@ -8,10 +8,10 @@ import { useCreateSubcontract, useCreateSubcontractProgress } from '../model/sub
 import type { Subcontract } from '@aec/api-contracts';
 
 const subconSchema = z.object({
-  projectId: z.string().min(1, 'Project wajib dipilih'),
+  projectId: z.string().min(1, 'Project is required'),
   vendor: createSubcontractSchema.shape.vendor,
   title: createSubcontractSchema.shape.title,
-  contractValue: z.string().refine((v) => Number(v) > 0, 'Nilai kontrak harus lebih dari 0'),
+  contractValue: z.string().refine((v) => Number(v) > 0, 'Contract value must be greater than 0'),
 });
 type SubconValues = z.infer<typeof subconSchema>;
 
@@ -37,7 +37,7 @@ export function SubconForm({ onDone }: { onDone: () => void }) {
           <Label htmlFor="sc-project">Project <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="projectId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger id="sc-project"><SelectValue placeholder="Pilih project…" /></SelectTrigger>
+              <SelectTrigger id="sc-project"><SelectValue placeholder="Select project…" /></SelectTrigger>
               <SelectContent>
                 {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
               </SelectContent>
@@ -46,26 +46,26 @@ export function SubconForm({ onDone }: { onDone: () => void }) {
           {errors.projectId && <p className="mt-1 text-caption text-destructive-600">{errors.projectId.message}</p>}
         </div>
         <div>
-          <Label htmlFor="sc-vendor">Vendor Subkon <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="sc-vendor">Subcontractor Vendor <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="sc-vendor" placeholder="PT. Subkon Sejahtera" error={!!errors.vendor} {...register('vendor')} />
           {errors.vendor && <p className="mt-1 text-caption text-destructive-600">{errors.vendor.message}</p>}
         </div>
         <div>
-          <Label htmlFor="sc-title">Judul Pekerjaan <span aria-hidden="true" className="text-destructive-600">*</span></Label>
-          <Input id="sc-title" placeholder="mis. Struktur baja area B" error={!!errors.title} {...register('title')} />
+          <Label htmlFor="sc-title">Work Title <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Input id="sc-title" placeholder="e.g. Steel structure area B" error={!!errors.title} {...register('title')} />
           {errors.title && <p className="mt-1 text-caption text-destructive-600">{errors.title.message}</p>}
         </div>
         <div>
-          <Label htmlFor="sc-value">Nilai Kontrak <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="sc-value">Contract Value <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="sc-value" type="number" min={0} step={100000} error={!!errors.contractValue} {...register('contractValue')} />
           {errors.contractValue && <p className="mt-1 text-caption text-destructive-600">{errors.contractValue.message}</p>}
         </div>
       </div>
       <div className="mt-4 flex justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={onDone}>Batal</Button>
-        <Button type="submit" loading={create.isPending}>Buat Subcontract</Button>
+        <Button type="button" variant="ghost" onClick={onDone}>Cancel</Button>
+        <Button type="submit" loading={create.isPending}>Create Subcontract</Button>
       </div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600">Gagal membuat subcontract.</p>}
+      {create.isError && <p className="mt-2 text-caption text-destructive-600">Failed to create the subcontract.</p>}
     </form>
   );
 }
@@ -92,14 +92,14 @@ export function ProgressForm({ subcontract }: { subcontract: Subcontract }) {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-2">
-      <div><Label htmlFor="scp-period">Periode</Label><Input id="scp-period" placeholder="mis. 2026-09" {...register('period')} /></div>
+      <div><Label htmlFor="scp-period">Period</Label><Input id="scp-period" placeholder="e.g. 2026-09" {...register('period')} /></div>
       <div>
-        <Label htmlFor="scp-progress">Progress Fisik (%)</Label>
-        <Input id="scp-progress" type="number" min={0} max={100} placeholder="mis. 35" error={!!errors.progressPercent} {...register('progressPercent')} />
+        <Label htmlFor="scp-progress">Physical Progress (%)</Label>
+        <Input id="scp-progress" type="number" min={0} max={100} placeholder="e.g. 35" error={!!errors.progressPercent} {...register('progressPercent')} />
         {errors.progressPercent && <p className="mt-1 text-caption text-destructive-600">{errors.progressPercent.message}</p>}
       </div>
-      <Button type="submit" loading={create.isPending}>Kirim Progress</Button>
-      {create.isError && <p className="text-caption text-destructive-600">Gagal kirim progress.</p>}
+      <Button type="submit" loading={create.isPending}>Submit Progress</Button>
+      {create.isError && <p className="text-caption text-destructive-600">Failed to submit progress.</p>}
     </form>
   );
 }

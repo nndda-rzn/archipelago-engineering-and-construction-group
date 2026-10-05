@@ -20,7 +20,7 @@ export function BudgetPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Budget Baseline</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Anggaran per WBS (FR-PRJ-005/006)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Budget per WBS (FR-PRJ-005/006)</p>
         </div>
         {data && <BudgetStatusBadge published={published} publishPending={publish.isPending} onPublish={() => publish.mutate()} />}
       </div>
@@ -33,16 +33,16 @@ export function BudgetPage() {
           value={projectId}
           onValueChange={setProjectId}
           options={(projects.data?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
-          placeholder="Pilih project…"
-          searchPlaceholder="Cari project…"
+          placeholder="Select project…"
+          searchPlaceholder="Search project…"
         />
       </div>
 
-      {isLoading && <p className="text-body-sm text-neutral-500">Memuat…</p>}
+      {isLoading && <p className="text-body-sm text-neutral-500">Loading…</p>}
       {isError && (
         <p className="text-body-sm text-destructive-600">
-          Gagal memuat budget.{' '}
-          <Button variant="secondary" size="sm" onClick={() => refetch()}>Coba lagi</Button>
+          Failed to load budget.{' '}
+          <Button variant="secondary" size="sm" onClick={() => refetch()}>Retry</Button>
         </p>
       )}
 
@@ -50,7 +50,7 @@ export function BudgetPage() {
         <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
           <BudgetTotalBar total={data.totalBudget} currency={selectedProject?.currency ?? 'IDR'} />
           {data.wbs.length === 0 ? (
-            <p className="p-6 text-center text-body-sm text-neutral-500">Belum ada WBS. Tambah di halaman WBS dulu.</p>
+            <p className="p-6 text-center text-body-sm text-neutral-500">No WBS yet. Add one on the WBS page first.</p>
           ) : (
             data.wbs.map((w) => (
               <BudgetRow
@@ -68,9 +68,9 @@ export function BudgetPage() {
       )}
 
       {upsert.isError && (
-        <p className="mt-3 text-body-sm text-destructive-600">Gagal menyimpan budget.{published ? ' Budget sudah publish.' : ''}</p>
+        <p className="mt-3 text-body-sm text-destructive-600">Failed to save the budget.{published ? ' The budget is already published.' : ''}</p>
       )}
-      {publish.isError && <p className="mt-3 text-body-sm text-destructive-600">Gagal publish. Periksa data budget.</p>}
+      {publish.isError && <p className="mt-3 text-body-sm text-destructive-600">Failed to publish. Check the budget data.</p>}
     </div>
   );
 }

@@ -8,7 +8,7 @@ export class TrialBalanceService {
 
   async trialBalance(legalEntityId: string, from?: string, to?: string) {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: legalEntityId } });
-    if (!entity) throw new NotFoundException({ code: 'LEGAL_ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });
+    if (!entity) throw new NotFoundException({ code: 'LEGAL_ENTITY_NOT_FOUND', message: 'Legal entity not found' });
 
     const where: Prisma.JournalLineWhereInput = {
       journal: { legalEntityId, status: 'POSTED' },

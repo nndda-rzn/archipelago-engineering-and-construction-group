@@ -41,7 +41,7 @@ describe('HealthSummary', () => {
 
   it('render label health ON_TRACK', () => {
     const { container } = render(<HealthSummary data={baseHealth} />);
-    expect(container.textContent).toContain('Sehat (On Track)');
+    expect(container.textContent).toContain('On Track');
   });
 
   it('render metric Budget dengan format IDR', () => {

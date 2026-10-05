@@ -15,7 +15,7 @@ export class SubcontractService {
 
   async createSubcontract(dto: CreateSubcontractDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const subcon = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
@@ -55,13 +55,13 @@ export class SubcontractService {
 
   async createProgress(dto: CreateSubcontractProgressDto, actorId: string) {
     const subcon = await this.prisma.subcontract.findUnique({ where: { id: dto.subcontractId } });
-    if (!subcon) throw new NotFoundException({ code: 'SUBCON_NOT_FOUND', message: 'Subcontract tidak ditemukan' });
+    if (!subcon) throw new NotFoundException({ code: 'SUBCON_NOT_FOUND', message: 'Subcontract not found' });
     if (subcon.status === 'COMPLETED' || subcon.status === 'TERMINATED') {
-      throw new ConflictException({ code: 'SUBCON_INACTIVE', message: `Subcontract ${subcon.status} — tidak bisa progress` });
+      throw new ConflictException({ code: 'SUBCON_INACTIVE', message: `Subcontract ${subcon.status} - cannot add progress` });
     }
 
     const progressPercent = Number(dto.progressPercent);
-    if (progressPercent > 100) throw new BadRequestException({ code: 'INVALID_PROGRESS', message: 'Progress maksimal 100%' });
+    if (progressPercent > 100) throw new BadRequestException({ code: 'INVALID_PROGRESS', message: 'Progress cannot exceed 100%' });
 
     const last = await this.prisma.subcontractProgress.findFirst({
       where: { subcontractId: subcon.id, status: { in: ['SUBMITTED', 'VERIFIED'] } },
@@ -69,7 +69,7 @@ export class SubcontractService {
       select: { progressPercent: true },
     });
     if (last && progressPercent <= Number(last.progressPercent)) {
-      throw new ConflictException({ code: 'PROGRESS_REGRESSION', message: `Progress harus di atas progress tertinggi (${last.progressPercent}%)` });
+      throw new ConflictException({ code: 'PROGRESS_REGRESSION', message: `Progress must exceed the highest recorded progress (${last.progressPercent}%)` });
     }
 
     const verifiedAmount = Math.round(Number(subcon.contractValue) * progressPercent) / 100;
@@ -100,10 +100,10 @@ export class SubcontractService {
   async verifyProgress(subcontractId: string, progressId: string, actorId: string) {
     const entry = await this.prisma.subcontractProgress.findUnique({ where: { id: progressId } });
     if (!entry || entry.subcontractId !== subcontractId) {
-      throw new NotFoundException({ code: 'PROGRESS_NOT_FOUND', message: 'Progress entry tidak ditemukan' });
+      throw new NotFoundException({ code: 'PROGRESS_NOT_FOUND', message: 'Progress entry not found' });
     }
     if (entry.status !== 'SUBMITTED') {
-      throw new ConflictException({ code: 'NOT_SUBMITTED', message: `Hanya SUBMITTED yang bisa diverifikasi (${entry.status})` });
+      throw new ConflictException({ code: 'NOT_SUBMITTED', message: `Only SUBMITTED can be verified (${entry.status})` });
     }
 
     const verified = await this.prisma.subcontractProgress.update({
@@ -126,10 +126,10 @@ export class SubcontractService {
   async rejectProgress(subcontractId: string, progressId: string, actorId: string) {
     const entry = await this.prisma.subcontractProgress.findUnique({ where: { id: progressId } });
     if (!entry || entry.subcontractId !== subcontractId) {
-      throw new NotFoundException({ code: 'PROGRESS_NOT_FOUND', message: 'Progress entry tidak ditemukan' });
+      throw new NotFoundException({ code: 'PROGRESS_NOT_FOUND', message: 'Progress entry not found' });
     }
     if (entry.status !== 'SUBMITTED') {
-      throw new ConflictException({ code: 'NOT_SUBMITTED', message: `Hanya SUBMITTED yang bisa ditolak (${entry.status})` });
+      throw new ConflictException({ code: 'NOT_SUBMITTED', message: `Only SUBMITTED can be rejected (${entry.status})` });
     }
 
     const rejected = await this.prisma.subcontractProgress.update({

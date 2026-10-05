@@ -54,23 +54,23 @@ export const icColumns = [
     cell: (i) => <span className="font-mono text-neutral-800">{i.getValue()}</span>,
   }),
   icHelper.accessor('fromEntity', {
-    header: 'Dari',
+    header: 'From',
     cell: (i) => <span className="font-mono text-neutral-700">{i.getValue()?.code}</span>,
   }),
   icHelper.accessor('toEntity', {
-    header: 'Ke',
+    header: 'To',
     cell: (i) => <span className="font-mono text-neutral-700">{i.getValue()?.code}</span>,
   }),
   icHelper.accessor('amount', {
-    header: 'Nilai',
+    header: 'Amount',
     cell: (i) => <span className="font-mono tabular-nums text-neutral-800">{fmt(i.getValue())}</span>,
   }),
   icHelper.accessor('currency', {
-    header: 'Mata Uang',
+    header: 'Currency',
     cell: (i) => <Badge variant="default">{i.getValue()}</Badge>,
   }),
   icHelper.accessor('description', {
-    header: 'Keterangan',
+    header: 'Description',
     cell: (i) => <span className="max-w-[200px] truncate text-neutral-600">{i.getValue() ?? <EmptyCell />}</span>,
   }),
   icHelper.accessor('status', {
@@ -90,7 +90,7 @@ export const pcColumns = [
     cell: (i) => <span className="font-mono text-neutral-700">{i.getValue()?.code}</span>,
   }),
   pcHelper.accessor('period', {
-    header: 'Periode',
+    header: 'Period',
     cell: (i) => <span className="font-mono text-neutral-800">{i.getValue()}</span>,
   }),
   pcHelper.accessor('journalCount', {

@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { PrismaService } from '@/shared/database/prisma.service';
 import { SharedModule } from '@/shared/shared.module';
 import { HcmController } from './presentation/controllers/hcm.controller';
 import { EmployeeMasterService } from './application/services/employee-master.service';
@@ -17,7 +16,6 @@ import { EquipmentUsageService } from './application/services/equipment-usage.se
   imports: [SharedModule],
   controllers: [HcmController],
   providers: [
-    PrismaService,
     EmployeeMasterService,
     ProjectAssignmentService,
     TimesheetService,

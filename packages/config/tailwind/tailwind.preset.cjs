@@ -76,6 +76,7 @@ module.exports = {
       fontSize: {
         // h1 adalah judul halaman. Dinaikkan 20px -> 24px (PR-2) agar judul jelas
         // mendominasi; tetap lebih kecil dari 28px agar hierarchy dengan h2 (16px) terjaga.
+        display: ['2.5rem', { lineHeight: '1.1', fontWeight: '600' }],
         h1: ['1.5rem', { lineHeight: '1.25', fontWeight: '600' }],
         h2: ['1rem', { lineHeight: '1.4', fontWeight: '600' }],
         h3: ['0.875rem', { lineHeight: '1.4', fontWeight: '600' }],

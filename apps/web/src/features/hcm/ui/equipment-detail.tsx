@@ -25,11 +25,11 @@ export function EquipmentForm({ onDone }: { onDone: () => void }) {
     <div className="mb-4 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="flex items-end gap-3">
         <div className="flex-1">
-          <Label htmlFor="eq-name">Nama</Label>
+          <Label htmlFor="eq-name">Name</Label>
           <Input id="eq-name" value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div>
-          <Label htmlFor="eq-cat">Kategori</Label>
+          <Label htmlFor="eq-cat">Category</Label>
           <Select value={category} onValueChange={setCategory}>
             <SelectTrigger id="eq-cat">
               <SelectValue />
@@ -43,7 +43,7 @@ export function EquipmentForm({ onDone }: { onDone: () => void }) {
           <Label htmlFor="eq-serial">Serial</Label>
           <Input id="eq-serial" value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} />
         </div>
-        <Button onClick={onSubmit} loading={create.isPending}>Buat Equipment</Button>
+        <Button onClick={onSubmit} loading={create.isPending}>Create Equipment</Button>
       </div>
     </div>
   );
@@ -76,7 +76,7 @@ export function EquipmentDetail({ equipment }: { equipment: Equipment }) {
     <div className="mt-6 space-y-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div>
         <h2 className="text-h2 text-neutral-950">{equipment.equipmentNumber} · {equipment.name}</h2>
-        <p className="text-caption text-neutral-500">{equipment.category} · Status: {equipment.status} · Meter: {Number(equipment.currentMeter).toLocaleString('id-ID')} jam</p>
+        <p className="text-caption text-neutral-500">{equipment.category} · Status: {equipment.status} · Meter: {Number(equipment.currentMeter).toLocaleString('id-ID')} hrs</p>
       </div>
 
       <div>
@@ -86,7 +86,7 @@ export function EquipmentDetail({ equipment }: { equipment: Equipment }) {
             <Label htmlFor="as-proj">Project</Label>
             <Select value={assignProject} onValueChange={setAssignProject}>
               <SelectTrigger id="as-proj">
-                <SelectValue placeholder="Pilih…" />
+                <SelectValue placeholder="Select…" />
               </SelectTrigger>
               <SelectContent>
                 {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
@@ -95,7 +95,7 @@ export function EquipmentDetail({ equipment }: { equipment: Equipment }) {
           </div>
           <Button size="sm" onClick={() => { if (assignProject) createAssign.mutate({ equipmentId: equipment.id, projectId: assignProject }, { onSuccess: () => setAssignProject('') }); }} loading={createAssign.isPending}>Assign</Button>
         </div>
-        <DataGrid columns={assignmentColumns} data={assignments.data?.items ?? []} emptyMessage="Belum ada assignment" hideToolbar />
+        <DataGrid columns={assignmentColumns} data={assignments.data?.items ?? []} emptyMessage="No assignments yet" hideToolbar />
       </div>
 
       <div>
@@ -113,32 +113,32 @@ export function EquipmentDetail({ equipment }: { equipment: Equipment }) {
             </Select>
           </div>
           <div><Label htmlFor="pm-meter">Due Meter</Label><Input id="pm-meter" type="number" value={pmMeter} onChange={(e) => setPmMeter(e.target.value)} className="w-28" /></div>
-          <Button size="sm" onClick={() => { if (pmMeter) createPm.mutate({ equipmentId: equipment.id, triggerType: pmTrigger, dueMeter: Number(pmMeter) }, { onSuccess: () => setPmMeter('') }); }} loading={createPm.isPending}>Buat PM</Button>
+          <Button size="sm" onClick={() => { if (pmMeter) createPm.mutate({ equipmentId: equipment.id, triggerType: pmTrigger, dueMeter: Number(pmMeter) }, { onSuccess: () => setPmMeter('') }); }} loading={createPm.isPending}>Create PM</Button>
         </div>
-        <DataGrid columns={pmColumns} data={pms.data?.items ?? []} emptyMessage="Belum ada PM" hideToolbar />
+        <DataGrid columns={pmColumns} data={pms.data?.items ?? []} emptyMessage="No PM yet" hideToolbar />
       </div>
 
       <div>
         <h3 className="mb-2 text-h3 text-neutral-800">Breakdown</h3>
         <div className="mb-3 flex items-end gap-3">
-          <div><Label htmlFor="bd-dt">Downtime (jam)</Label><Input id="bd-dt" type="number" value={downtime} onChange={(e) => setDowntime(e.target.value)} className="w-24" /></div>
-          <div><Label htmlFor="bd-cost">Dampak Biaya</Label><Input id="bd-cost" type="number" value={cost} onChange={(e) => setCost(e.target.value)} className="w-32" /></div>
-          <Button size="sm" onClick={() => { if (downtime) createBd.mutate({ equipmentId: equipment.id, downtimeHours: Number(downtime), costImpact: cost ? Number(cost) : undefined }, { onSuccess: () => { setDowntime(''); setCost(''); } }); }} loading={createBd.isPending}>Catat</Button>
+          <div><Label htmlFor="bd-dt">Downtime (hrs)</Label><Input id="bd-dt" type="number" value={downtime} onChange={(e) => setDowntime(e.target.value)} className="w-24" /></div>
+          <div><Label htmlFor="bd-cost">Cost Impact</Label><Input id="bd-cost" type="number" value={cost} onChange={(e) => setCost(e.target.value)} className="w-32" /></div>
+          <Button size="sm" onClick={() => { if (downtime) createBd.mutate({ equipmentId: equipment.id, downtimeHours: Number(downtime), costImpact: cost ? Number(cost) : undefined }, { onSuccess: () => { setDowntime(''); setCost(''); } }); }} loading={createBd.isPending}>Record</Button>
         </div>
-        <DataGrid columns={breakdownColumns} data={breakdowns.data?.items ?? []} emptyMessage="Belum ada breakdown" hideToolbar />
+        <DataGrid columns={breakdownColumns} data={breakdowns.data?.items ?? []} emptyMessage="No breakdowns yet" hideToolbar />
       </div>
 
       <div>
         <h3 className="mb-2 text-h3 text-neutral-800">Utilization & Usage</h3>
         <div className="flex flex-wrap items-end gap-3">
-          <div><Label htmlFor="avail-hrs">Tersedia (jam)</Label><Input id="avail-hrs" type="number" value={availHours} onChange={(e) => setAvailHours(e.target.value)} className="w-24" /></div>
-          <div><Label htmlFor="oper-hrs">Operasi (jam)</Label><Input id="oper-hrs" type="number" value={operHours} onChange={(e) => setOperHours(e.target.value)} className="w-24" /></div>
-          <Button size="sm" variant="secondary" onClick={() => { if (availHours && operHours) createUtil.mutate({ equipmentId: equipment.id, availableHours: Number(availHours), operatingHours: Number(operHours) }, { onSuccess: () => { setAvailHours(''); setOperHours(''); } }); }} loading={createUtil.isPending}>Catat Utilization</Button>
+          <div><Label htmlFor="avail-hrs">Available (hrs)</Label><Input id="avail-hrs" type="number" value={availHours} onChange={(e) => setAvailHours(e.target.value)} className="w-24" /></div>
+          <div><Label htmlFor="oper-hrs">Operating (hrs)</Label><Input id="oper-hrs" type="number" value={operHours} onChange={(e) => setOperHours(e.target.value)} className="w-24" /></div>
+          <Button size="sm" variant="secondary" onClick={() => { if (availHours && operHours) createUtil.mutate({ equipmentId: equipment.id, availableHours: Number(availHours), operatingHours: Number(operHours) }, { onSuccess: () => { setAvailHours(''); setOperHours(''); } }); }} loading={createUtil.isPending}>Record Utilization</Button>
           <div>
             <Label htmlFor="usage-proj">Project</Label>
             <Select value={usageProject} onValueChange={setUsageProject}>
               <SelectTrigger id="usage-proj">
-                <SelectValue placeholder="Pilih…" />
+                <SelectValue placeholder="Select…" />
               </SelectTrigger>
               <SelectContent>
                 {(projects.data?.items ?? []).map((p) => <SelectItem key={p.id} value={p.id}>{p.code}</SelectItem>)}
@@ -146,7 +146,7 @@ export function EquipmentDetail({ equipment }: { equipment: Equipment }) {
             </Select>
           </div>
           <div><Label htmlFor="usage-hrs">Usage Hours</Label><Input id="usage-hrs" type="number" value={usageHours} onChange={(e) => setUsageHours(e.target.value)} className="w-24" /></div>
-          <div><Label htmlFor="usage-cost">Biaya</Label><Input id="usage-cost" type="number" value={usageCost} onChange={(e) => setUsageCost(e.target.value)} className="w-28" /></div>
+          <div><Label htmlFor="usage-cost">Cost</Label><Input id="usage-cost" type="number" value={usageCost} onChange={(e) => setUsageCost(e.target.value)} className="w-28" /></div>
           <Button size="sm" variant="secondary" onClick={() => { if (usageHours && usageProject && usageCost) createUsage.mutate({ equipmentId: equipment.id, projectId: usageProject, hours: Number(usageHours), costAmount: Number(usageCost) }, { onSuccess: () => { setUsageHours(''); setUsageCost(''); } }); }} loading={createUsage.isPending}>Update Meter</Button>
         </div>
       </div>

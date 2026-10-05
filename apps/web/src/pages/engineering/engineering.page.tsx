@@ -38,11 +38,11 @@ export function EngineeringPage() {
         <div>
           <h1 className="text-h1 text-neutral-950">Engineering</h1>
           <p className="text-body text-neutral-500">
-            Kelola deliverable, drawing, RFI, submittal, transmittal (FR-ENG-001..005)
+            Manage deliverables, drawings, RFI, submittals, transmittals (FR-ENG-001..005)
           </p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>
-          {showForm ? 'Tutup' : '+ Buat Baru'}
+          {showForm ? 'Close' : '+ Create New'}
         </Button>
       </div>
 
@@ -77,7 +77,7 @@ export function EngineeringPage() {
             isLoading={deliverables.isLoading}
             isError={deliverables.isError}
             onRetry={() => deliverables.refetch()}
-            emptyMessage="Belum ada deliverable"
+            emptyMessage="No deliverables yet"
             {...gridProps}
           />
         )}
@@ -89,7 +89,7 @@ export function EngineeringPage() {
             isLoading={drawings.isLoading}
             isError={drawings.isError}
             onRetry={() => drawings.refetch()}
-            emptyMessage="Belum ada drawing"
+            emptyMessage="No drawings yet"
             {...gridProps}
           />
         )}
@@ -101,7 +101,7 @@ export function EngineeringPage() {
             isLoading={rfis.isLoading}
             isError={rfis.isError}
             onRetry={() => rfis.refetch()}
-            emptyMessage="Belum ada RFI"
+            emptyMessage="No RFIs yet"
             {...gridProps}
           />
         )}
@@ -113,7 +113,7 @@ export function EngineeringPage() {
             isLoading={submittals.isLoading}
             isError={submittals.isError}
             onRetry={() => submittals.refetch()}
-            emptyMessage="Belum ada submittal"
+            emptyMessage="No submittals yet"
             {...gridProps}
           />
         )}
@@ -125,7 +125,7 @@ export function EngineeringPage() {
             isLoading={transmittals.isLoading}
             isError={transmittals.isError}
             onRetry={() => transmittals.refetch()}
-            emptyMessage="Belum ada transmittal"
+            emptyMessage="No transmittals yet"
             {...gridProps}
           />
         )}

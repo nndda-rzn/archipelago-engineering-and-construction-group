@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { PrismaService } from '@/shared/database/prisma.service';
 import { SharedModule } from '@/shared/shared.module';
 import { EngineeringController } from './presentation/controllers/engineering.controller';
 import { DeliverableService } from './application/services/deliverable.service';
@@ -12,7 +11,6 @@ import { TransmittalService } from './application/services/transmittal.service';
   imports: [SharedModule],
   controllers: [EngineeringController],
   providers: [
-    PrismaService,
     DeliverableService,
     DrawingService,
     RfiService,

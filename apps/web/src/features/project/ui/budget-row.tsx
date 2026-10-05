@@ -45,7 +45,7 @@ export function BudgetRow({
         className="h-8 w-36 font-mono text-body-sm"
       />
       <Button size="sm" variant="secondary" onClick={handleSave} disabled={saving || !touched || value === String(amount)}>
-        {saving ? 'Menyimpan…' : 'Simpan'}
+        {saving ? 'Saving…' : 'Save'}
       </Button>
     </div>
   );

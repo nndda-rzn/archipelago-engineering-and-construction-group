@@ -13,15 +13,15 @@ export class CostCodeService {
 
   async createCostCode(projectId: string, dto: CreateCostCodeDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     if (dto.wbsItemId) {
       const wbs = await this.prisma.wbsItem.findUnique({ where: { id: dto.wbsItemId } });
-      if (!wbs || wbs.projectId !== projectId) throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: 'WBS tidak ditemukan di project ini' });
+      if (!wbs || wbs.projectId !== projectId) throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: 'WBS not found in this project' });
     }
 
     const exists = await this.prisma.costCode.findUnique({ where: { projectId_code: { projectId, code: dto.code } } });
-    if (exists) throw new ConflictException({ code: 'COST_CODE_EXISTS', message: 'Kode cost code sudah digunakan' });
+    if (exists) throw new ConflictException({ code: 'COST_CODE_EXISTS', message: 'Cost code already in use' });
 
     const costCode = await this.prisma.costCode.create({
       data: { projectId, wbsItemId: dto.wbsItemId ?? null, code: dto.code, name: dto.name, costType: dto.costType ?? 'DIRECT' },

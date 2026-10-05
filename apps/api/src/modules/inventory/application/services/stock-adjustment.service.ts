@@ -16,10 +16,10 @@ export class StockAdjustmentService {
 
   async createStockAdjustment(dto: CreateStockAdjustmentDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const warehouse = await this.prisma.warehouse.findUnique({ where: { id: dto.warehouseId } });
-    if (!warehouse) throw new NotFoundException({ code: 'WAREHOUSE_NOT_FOUND', message: 'Warehouse tidak ditemukan' });
+    if (!warehouse) throw new NotFoundException({ code: 'WAREHOUSE_NOT_FOUND', message: 'Warehouse not found' });
 
     const wbsIds = dto.items.map((i) => i.wbsItemId).filter((id): id is string => Boolean(id));
     if (wbsIds.length > 0) {
@@ -31,7 +31,7 @@ export class StockAdjustmentService {
       for (const item of dto.items) {
         if (!item.wbsItemId) continue;
         if (!validWbsIds.has(item.wbsItemId)) {
-          throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: `WBS ${item.wbsItemId} tidak ada di project ini` });
+          throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: `WBS ${item.wbsItemId} not found in this project` });
         }
       }
     }
@@ -83,9 +83,9 @@ export class StockAdjustmentService {
       this.prisma,
       async (tx) => {
         const adjustment = await tx.stockAdjustment.findUnique({ where: { id }, include: { items: true } });
-        if (!adjustment) throw new NotFoundException({ code: 'ADJUSTMENT_NOT_FOUND', message: 'Adjustment tidak ditemukan' });
+        if (!adjustment) throw new NotFoundException({ code: 'ADJUSTMENT_NOT_FOUND', message: 'Adjustment not found' });
         if (adjustment.status !== 'DRAFT') {
-          throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa di-approve (${adjustment.status})` });
+          throw new ConflictException({ code: 'NOT_DRAFT', message: `Only DRAFT can be approved (${adjustment.status})` });
         }
 
         const hasNegative = adjustment.items.some((item) => Number(item.quantity) < 0);

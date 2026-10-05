@@ -87,3 +87,10 @@ export const projectCostSummarySchema = z.object({
   generatedAt: z.string(),
 });
 export type ProjectCostSummary = z.infer<typeof projectCostSummarySchema>;
+
+export const analyticsFilterParamsSchema = z.object({
+  legalEntityId: z.string().optional(),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+export type AnalyticsFilterParams = z.infer<typeof analyticsFilterParamsSchema>;

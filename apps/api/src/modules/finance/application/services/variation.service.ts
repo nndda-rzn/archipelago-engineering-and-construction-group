@@ -16,7 +16,7 @@ export class VariationService {
 
   async createVariation(dto: CreateVariationDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const variation = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
@@ -54,9 +54,9 @@ export class VariationService {
 
   async approveVariation(id: string, actorId: string) {
     const variation = await this.prisma.projectVariation.findUnique({ where: { id } });
-    if (!variation) throw new NotFoundException({ code: 'VARIATION_NOT_FOUND', message: 'Variation tidak ditemukan' });
+    if (!variation) throw new NotFoundException({ code: 'VARIATION_NOT_FOUND', message: 'Variation not found' });
     if (variation.status !== 'POTENTIAL') {
-      throw new ConflictException({ code: 'NOT_POTENTIAL', message: `Hanya POTENTIAL yang bisa disetujui (${variation.status})` });
+      throw new ConflictException({ code: 'NOT_POTENTIAL', message: `Only POTENTIAL can be approved (${variation.status})` });
     }
 
     const approved = await this.prisma.$transaction(async (tx) => {
@@ -100,9 +100,9 @@ export class VariationService {
 
   async rejectVariation(id: string, actorId: string) {
     const variation = await this.prisma.projectVariation.findUnique({ where: { id } });
-    if (!variation) throw new NotFoundException({ code: 'VARIATION_NOT_FOUND', message: 'Variation tidak ditemukan' });
+    if (!variation) throw new NotFoundException({ code: 'VARIATION_NOT_FOUND', message: 'Variation not found' });
     if (variation.status !== 'POTENTIAL') {
-      throw new ConflictException({ code: 'NOT_POTENTIAL', message: `Hanya POTENTIAL yang bisa ditolak (${variation.status})` });
+      throw new ConflictException({ code: 'NOT_POTENTIAL', message: `Only POTENTIAL can be rejected (${variation.status})` });
     }
 
     const rejected = await this.prisma.projectVariation.update({

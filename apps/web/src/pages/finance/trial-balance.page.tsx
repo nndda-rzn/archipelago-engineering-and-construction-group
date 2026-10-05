@@ -38,14 +38,14 @@ export function TrialBalancePage() {
         <div>
           <label htmlFor="tb-entity" className="mb-1 block text-caption font-medium uppercase tracking-wide text-neutral-500">Legal Entity</label>
           <Select value={defaultEntityId} onValueChange={setEntityId}>
-            <SelectTrigger id="tb-entity" className="w-48"><SelectValue placeholder="Pilih entity…" /></SelectTrigger>
+            <SelectTrigger id="tb-entity" className="w-48"><SelectValue placeholder="Select entity…" /></SelectTrigger>
             <SelectContent>
               {(entities.data?.items ?? []).map((en) => <SelectItem key={en.id} value={en.id}>{en.code}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
         <div>
-          <label htmlFor="tb-from" className="mb-1 block text-caption font-medium uppercase tracking-wide text-neutral-500">Dari</label>
+          <label htmlFor="tb-from" className="mb-1 block text-caption font-medium uppercase tracking-wide text-neutral-500">From</label>
           <Input
             id="tb-from"
             type="date"
@@ -55,7 +55,7 @@ export function TrialBalancePage() {
           />
         </div>
         <div>
-          <label htmlFor="tb-to" className="mb-1 block text-caption font-medium uppercase tracking-wide text-neutral-500">Sampai</label>
+          <label htmlFor="tb-to" className="mb-1 block text-caption font-medium uppercase tracking-wide text-neutral-500">To</label>
           <Input
             id="tb-to"
             type="date"
@@ -64,15 +64,15 @@ export function TrialBalancePage() {
             className="w-44"
           />
         </div>
-        <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={isLoading}>Muat Ulang</Button>
+        <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={isLoading}>Reload</Button>
       </div>
 
-      {!defaultEntityId && <p className="text-body-sm text-neutral-500">Pilih legal entity untuk melihat neraca saldo.</p>}
+      {!defaultEntityId && <p className="text-body-sm text-neutral-500">Select a legal entity to view the trial balance.</p>}
 
       {defaultEntityId && (
         <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-          {isLoading && <p className="p-4 text-body-sm text-neutral-500">Menghitung…</p>}
-          {isError && <p className="p-4 text-body-sm text-destructive-600">Gagal memuat trial balance.</p>}
+          {isLoading && <p className="p-4 text-body-sm text-neutral-500">Computing…</p>}
+          {isError && <p className="p-4 text-body-sm text-destructive-600">Failed to load the trial balance.</p>}
           {!isLoading && !isError && data && (
             <>
               <div className="flex items-center gap-4 border-b border-neutral-200 px-4 py-3">
@@ -90,12 +90,12 @@ export function TrialBalancePage() {
               <table className="w-full text-left text-body">
                 <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
                   <tr>
-                    <th className="px-4 py-2">Kode</th>
-                    <th className="px-4 py-2">Akun</th>
-                    <th className="px-4 py-2">Tipe</th>
+                    <th className="px-4 py-2">Code</th>
+                    <th className="px-4 py-2">Account</th>
+                    <th className="px-4 py-2">Type</th>
                     <th className="px-4 py-2 text-right">Debit</th>
-                    <th className="px-4 py-2 text-right">Kredit</th>
-                    <th className="px-4 py-2 text-right">Saldo</th>
+                    <th className="px-4 py-2 text-right">Credit</th>
+                    <th className="px-4 py-2 text-right">Balance</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -110,7 +110,7 @@ export function TrialBalancePage() {
                     </tr>
                   ))}
                   {data.lines.length === 0 && (
-                    <tr><td colSpan={6} className="px-4 py-4 text-caption text-neutral-500">Belum ada journal ter-posting.</td></tr>
+                    <tr><td colSpan={6} className="px-4 py-4 text-caption text-neutral-500">No posted journals yet.</td></tr>
                   )}
                 </tbody>
                 <tfoot className="border-t border-neutral-200 bg-neutral-50 font-medium">

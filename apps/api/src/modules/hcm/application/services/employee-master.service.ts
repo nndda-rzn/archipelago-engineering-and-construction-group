@@ -15,7 +15,7 @@ export class EmployeeMasterService {
 
   async createEmployee(dto: CreateEmployeeDto, actorId: string) {
     const legalEntity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
-    if (!legalEntity) throw new NotFoundException({ code: 'LEGAL_ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });
+    if (!legalEntity) throw new NotFoundException({ code: 'LEGAL_ENTITY_NOT_FOUND', message: 'Legal entity not found' });
 
     const employee = await this.prisma.$transaction(async (tx) => {
       const seq = await this.seq.next('EMP', `EMP-${new Date().getFullYear()}-`, tx);

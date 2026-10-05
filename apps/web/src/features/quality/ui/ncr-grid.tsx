@@ -24,11 +24,11 @@ function NcrActions({ ncr }: { ncr: Ncr }) {
       ) : null}
       {ncr.status === 'UNDER_REVIEW' ? (
         <>
-          <Input placeholder="Tindakan" value={action} onChange={(e) => setAction(e.target.value)} className="h-8 w-32" />
+          <Input placeholder="Corrective action" value={action} onChange={(e) => setAction(e.target.value)} className="h-8 w-32" />
           <Button size="sm" variant="secondary" loading={reinspect.isPending} onClick={() => reinspect.mutate({ id: ncr.id, result: 'PASS' })}>
-            Re-inspeksi PASS
+            Re-inspect PASS
           </Button>
-          <ConfirmActionButton size="sm" variant="ghost" loading={reinspect.isPending} confirmTitle="Tandai gagal?" confirmDescription="NCR akan ditandai gagal inspeksi." confirmLabel="FAIL" onConfirm={() => reinspect.mutate({ id: ncr.id, result: 'FAIL' })}>
+          <ConfirmActionButton size="sm" variant="ghost" loading={reinspect.isPending} confirmTitle="Mark as failed?" confirmDescription="The NCR will be marked as failed inspection." confirmLabel="FAIL" onConfirm={() => reinspect.mutate({ id: ncr.id, result: 'FAIL' })}>
             FAIL
           </ConfirmActionButton>
         </>
@@ -40,9 +40,9 @@ function NcrActions({ ncr }: { ncr: Ncr }) {
 export const ncrColumns = [
   ncrHelper.accessor('ncrNumber', { header: 'No. NCR', cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span> }),
   ncrHelper.accessor('severity', { header: 'Severity', cell: (info) => <Badge variant={info.getValue() === 'CRITICAL' ? 'warning' : info.getValue() === 'MAJOR' ? 'warning' : 'default'}>{info.getValue()}</Badge> }),
-  ncrHelper.accessor('category', { header: 'Kategori', cell: (info) => <Badge variant="default">{info.getValue()}</Badge> }),
-  ncrHelper.accessor('description', { header: 'Deskripsi', cell: (info) => <span className="max-w-xs truncate text-neutral-700">{info.getValue()}</span> }),
-  ncrHelper.accessor('reinspectionResult', { header: 'Re-inspeksi', cell: (info) => (info.getValue() ? <Badge variant={info.getValue() === 'PASS' ? 'success' : 'warning'}>{info.getValue()}</Badge> : <EmptyCell />) }),
+  ncrHelper.accessor('category', { header: 'Category', cell: (info) => <Badge variant="default">{info.getValue()}</Badge> }),
+  ncrHelper.accessor('description', { header: 'Description', cell: (info) => <span className="max-w-xs truncate text-neutral-700">{info.getValue()}</span> }),
+  ncrHelper.accessor('reinspectionResult', { header: 'Re-inspection', cell: (info) => (info.getValue() ? <Badge variant={info.getValue() === 'PASS' ? 'success' : 'warning'}>{info.getValue()}</Badge> : <EmptyCell />) }),
   ncrHelper.accessor('status', { header: 'Status', cell: ({ row }) => <StatusBadge status={row.original.status} /> }),
   ncrHelper.display({ id: 'actions', header: '', cell: ({ row }) => <NcrActions ncr={row.original} /> }),
 ];

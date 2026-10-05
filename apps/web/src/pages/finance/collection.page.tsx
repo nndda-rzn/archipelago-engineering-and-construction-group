@@ -14,10 +14,10 @@ export function CollectionPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Collection</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Terima pembayaran dari klien · kurangi AR (FR-FIN-010)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Receive client payments · reduce AR (FR-FIN-010)</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>
-          {showForm ? 'Tutup' : '+ Buat Collection'}
+          {showForm ? 'Close' : '+ Create Collection'}
         </Button>
       </div>
 
@@ -33,7 +33,7 @@ export function CollectionPage() {
           isLoading={isLoading}
           isError={isError}
           onRetry={() => refetch()}
-          emptyMessage="Belum ada collection"
+          emptyMessage="No collections yet"
           exportFilename="collections"
         />
       </div>

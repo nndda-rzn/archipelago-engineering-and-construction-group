@@ -10,8 +10,9 @@ export class PortfolioService {
     @Inject(ActualCostCalculator) private readonly actualCost: ActualCostCalculator,
   ) {}
 
-  async portfolio() {
+  async portfolio(filter: { legalEntityId?: string } = {}) {
     const projects = await this.prisma.project.findMany({
+      where: filter.legalEntityId ? { legalEntityId: filter.legalEntityId } : {},
       select: { id: true, code: true, name: true, client: true, contractValue: true, status: true },
       orderBy: { createdAt: 'desc' },
     });

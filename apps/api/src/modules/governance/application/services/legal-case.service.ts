@@ -35,10 +35,10 @@ export class LegalCaseService {
 
   async updateLegalCaseStatus(id: string, dto: { status?: string }, actorId: string) {
     const legalCase = await this.prisma.legalCase.findUnique({ where: { id } });
-    if (!legalCase) throw new NotFoundException({ code: 'LEGAL_CASE_NOT_FOUND', message: 'Legal case tidak ditemukan' });
+    if (!legalCase) throw new NotFoundException({ code: 'LEGAL_CASE_NOT_FOUND', message: 'Legal case not found' });
     const status = dto.status ?? legalCase.status;
     if (!['OPEN', 'IN_PROGRESS', 'WON', 'LOST', 'SETTLED'].includes(status)) {
-      throw new BadRequestException({ code: 'INVALID_STATUS', message: 'Status legal case tidak valid' });
+      throw new BadRequestException({ code: 'INVALID_STATUS', message: 'Invalid legal case status' });
     }
     const updated = await this.prisma.legalCase.update({ where: { id }, data: { status } });
     await this.audit.record({ userId: actorId, action: 'LegalCase.STATUS', resource: 'LegalCase', resourceId: id, newValue: { caseNumber: legalCase.caseNumber, status }, source: 'api' });

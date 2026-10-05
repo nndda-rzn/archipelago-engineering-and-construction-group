@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { PrismaService } from '@/shared/database/prisma.service';
 import { SharedModule } from '@/shared/shared.module';
 import { TreasuryController } from './presentation/controllers/treasury.controller';
 import { BankAccountService } from './application/services/bank-account.service';
@@ -12,7 +11,6 @@ import { FxExposureService } from './application/services/fx-exposure.service';
   imports: [SharedModule],
   controllers: [TreasuryController],
   providers: [
-    PrismaService,
     BankAccountService,
     PaymentProposalService,
     BankGuaranteeService,

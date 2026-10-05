@@ -1,21 +1,33 @@
 import { useQuery } from '@tanstack/react-query';
-import { executiveDashboardSchema, anomalyListSchema, cashFlowSchema, agingSchema, projectCostSummarySchema } from '@aec/api-contracts';
+import { executiveDashboardSchema, anomalyListSchema, cashFlowSchema, agingSchema, projectCostSummarySchema, pendingApprovalCountSchema } from '@aec/api-contracts';
 import { getJson, downloadFile } from '@/shared/lib/http';
+import type { DashboardFilter } from '@/shared/lib/dashboard-period';
 
 export const analyticsKeys = {
   all: ['analytics'] as const,
-  executive: ['analytics-executive'] as const,
+  executive: (filter: DashboardFilter = {}) => ['analytics-executive', filter] as const,
   anomalies: ['analytics-anomalies'] as const,
-  cashFlow: ['analytics-cash-flow'] as const,
-  aging: ['analytics-aging'] as const,
+  cashFlow: (filter: DashboardFilter = {}) => ['analytics-cash-flow', filter] as const,
+  aging: (filter: DashboardFilter = {}) => ['analytics-aging', filter] as const,
   costSummary: ['analytics-cost-summary'] as const,
+  pendingApprovals: ['approvals', 'pending-count'] as const,
 };
 
-export function useExecutiveDashboard() {
+/** Bangun query string dari filter (entity + rentang tanggal), mengabaikan nilai kosong. */
+function filterQuery(filter: DashboardFilter): string {
+  const params = new URLSearchParams();
+  if (filter.legalEntityId) params.set('legalEntityId', filter.legalEntityId);
+  if (filter.from) params.set('from', filter.from);
+  if (filter.to) params.set('to', filter.to);
+  const qs = params.toString();
+  return qs ? `?${qs}` : '';
+}
+
+export function useExecutiveDashboard(filter: DashboardFilter = {}) {
   return useQuery({
-    queryKey: analyticsKeys.executive,
+    queryKey: analyticsKeys.executive(filter),
     queryFn: async () => {
-      const data = await getJson<unknown>('/analytics/executive');
+      const data = await getJson<unknown>(`/analytics/executive${filterQuery(filter)}`);
       return executiveDashboardSchema.parse(data);
     },
   });
@@ -31,23 +43,34 @@ export function useAnomalies() {
   });
 }
 
-export function useCashFlow() {
+export function useCashFlow(filter: DashboardFilter = {}) {
   return useQuery({
-    queryKey: analyticsKeys.cashFlow,
+    queryKey: analyticsKeys.cashFlow(filter),
     queryFn: async () => {
-      const data = await getJson<unknown>('/analytics/cash-flow');
+      const data = await getJson<unknown>(`/analytics/cash-flow${filterQuery(filter)}`);
       return cashFlowSchema.parse(data);
     },
   });
 }
 
-export function useAging() {
+export function useAging(filter: DashboardFilter = {}) {
   return useQuery({
-    queryKey: analyticsKeys.aging,
+    queryKey: analyticsKeys.aging(filter),
     queryFn: async () => {
-      const data = await getJson<unknown>('/analytics/aging');
+      const params = new URLSearchParams();
+      if (filter.legalEntityId) params.set('legalEntityId', filter.legalEntityId);
+      const qs = params.toString();
+      const data = await getJson<unknown>(`/analytics/aging${qs ? `?${qs}` : ''}`);
       return agingSchema.parse(data);
     },
+  });
+}
+
+export function usePendingApprovals() {
+  return useQuery({
+    queryKey: analyticsKeys.pendingApprovals,
+    queryFn: async () => pendingApprovalCountSchema.parse(await getJson<unknown>('/approvals/pending-count')),
+    refetchInterval: 30000,
   });
 }
 

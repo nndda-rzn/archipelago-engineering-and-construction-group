@@ -16,7 +16,7 @@ export function TimesheetsPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Timesheet</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Jam kerja karyawan ke project/WBS (FR-HCM-004)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Employee work hours to project/WBS (FR-HCM-004)</p>
         </div>
         <div className="flex items-center gap-2">
           <Select aria-label="Filter status" value={statusFilter} onValueChange={setStatusFilter}>
@@ -28,13 +28,13 @@ export function TimesheetsPage() {
               <SelectItem value="APPROVED">APPROVED</SelectItem>
             </SelectContent>
           </Select>
-          <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Tutup' : '+ Kirim Timesheet'}</Button>
+          <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Close' : '+ Submit Timesheet'}</Button>
         </div>
       </div>
 
       {showForm && <TimesheetForm onDone={() => setShowForm(false)} />}
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-        <DataGrid columns={timesheetColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={onPaginationChange} isLoading={isLoading} isError={isError} onRetry={() => refetch()} emptyMessage="Belum ada timesheet" exportFilename="timesheets" />
+        <DataGrid columns={timesheetColumns} data={data?.items ?? []} rowCount={data?.total ?? 0} pagination={pagination} onPaginationChange={onPaginationChange} isLoading={isLoading} isError={isError} onRetry={() => refetch()} emptyMessage="No timesheets yet" exportFilename="timesheets" />
       </div>
     </div>
   );

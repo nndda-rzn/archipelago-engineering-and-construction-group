@@ -70,10 +70,10 @@ export function VendorInvoicePage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Vendor Invoice</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Invoice berbasis PO · three-way match PO + GR + Invoice (FR-PRO-009)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">PO-based invoice · three-way match PO + GR + Invoice (FR-PRO-009)</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>
-          {showForm ? 'Tutup' : '+ Buat Invoice'}
+          {showForm ? 'Close' : '+ Create Invoice'}
         </Button>
       </div>
 
@@ -89,7 +89,7 @@ export function VendorInvoicePage() {
           isLoading={isLoading}
           isError={isError}
           onRetry={() => refetch()}
-          emptyMessage="Belum ada vendor invoice"
+          emptyMessage="No vendor invoices yet"
         />
       </div>
     </div>

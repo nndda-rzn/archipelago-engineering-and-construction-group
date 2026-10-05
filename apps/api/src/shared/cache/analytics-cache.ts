@@ -15,12 +15,26 @@ export const ANALYTICS_CACHE_KEYS = {
 export const ANALYTICS_CACHE_KEY_VALUES = Object.values(ANALYTICS_CACHE_KEYS);
 
 /**
+ * Key cache analytics per-filter. Tanpa filter → `...:all::` sehingga bentuknya
+ * deterministik dan `invalidateAnalytics` dapat memurnikan semua varian.
+ */
+export function analyticsCacheKey(
+  base: string,
+  filter: { legalEntityId?: string; from?: string; to?: string },
+): string {
+  return `${base}:${filter.legalEntityId ?? 'all'}:${filter.from ?? ''}:${filter.to ?? ''}`;
+}
+
+/**
  * Hapus seluruh cache analytics. Dipanggil dari service yang mengubah input salah satu key
  * (transisi status POSTED/PAID/PUBLISHED/CERTIFIED/CLOSED/RESOLVED/DONE, dsb).
  *
  * Coarse by design: kelima key murah dihitung ulang (query agregat + TTL pendek), jadi
- * akurasi didahulukan atas invalasi selektif yang gampang bocor satu key.
+ * akurasi didahulukan atas invalasi selektif yang gampang bocor satu key. Setiap key
+ * dasar dihapus, lalu semua varian per-filter (`<key>:*`) dimurnikan.
  */
 export async function invalidateAnalytics(cache: CacheService): Promise<void> {
-  await Promise.all(ANALYTICS_CACHE_KEY_VALUES.map((key) => cache.del(key)));
+  await Promise.all(
+    ANALYTICS_CACHE_KEY_VALUES.flatMap((key) => [cache.del(key), cache.delByPattern(`${key}:*`)]),
+  );
 }

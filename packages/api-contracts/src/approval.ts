@@ -82,3 +82,6 @@ export const publishWorkflowSchema = z.object({
   description: z.string().max(500).optional(),
 });
 export type PublishWorkflow = z.infer<typeof publishWorkflowSchema>;
+
+export const pendingApprovalCountSchema = z.object({ count: z.number() });
+export type PendingApprovalCount = z.infer<typeof pendingApprovalCountSchema>;

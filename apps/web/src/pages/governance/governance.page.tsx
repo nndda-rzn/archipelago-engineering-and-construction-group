@@ -41,7 +41,7 @@ export function GovernancePage() {
           <p className="mt-1 text-body-sm text-neutral-500">Risk register, internal audit, legal case, access review (FR-GOV-001..004)</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>
-          {showForm ? 'Tutup' : '+ Buat Baru'}
+          {showForm ? 'Close' : '+ Create New'}
         </Button>
       </div>
 
@@ -66,16 +66,16 @@ export function GovernancePage() {
 
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
         {tab === 'risks' && (
-          <DataGrid columns={riskColumns} data={risks.data?.items ?? []} rowCount={risks.data?.total ?? 0} isLoading={risks.isLoading} isError={risks.isError} onRetry={() => risks.refetch()} emptyMessage="Belum ada risk" {...gridProps} />
+          <DataGrid columns={riskColumns} data={risks.data?.items ?? []} rowCount={risks.data?.total ?? 0} isLoading={risks.isLoading} isError={risks.isError} onRetry={() => risks.refetch()} emptyMessage="No risks yet" {...gridProps} />
         )}
         {tab === 'audits' && (
-            <DataGrid columns={auditColumns} data={audits.data?.items ?? []} rowCount={audits.data?.total ?? 0} isLoading={audits.isLoading} isError={audits.isError} onRetry={() => audits.refetch()} onRowClick={(row) => setSelectedAudit(row.original)} selectedRowId={selectedAudit?.id} getRowId={(row) => row.id} emptyMessage="Belum ada audit" {...gridProps} />
+            <DataGrid columns={auditColumns} data={audits.data?.items ?? []} rowCount={audits.data?.total ?? 0} isLoading={audits.isLoading} isError={audits.isError} onRetry={() => audits.refetch()} onRowClick={(row) => setSelectedAudit(row.original)} selectedRowId={selectedAudit?.id} getRowId={(row) => row.id} emptyMessage="No audits yet" {...gridProps} />
         )}
         {tab === 'legal' && (
-          <DataGrid columns={legalColumns} data={legal.data?.items ?? []} rowCount={legal.data?.total ?? 0} isLoading={legal.isLoading} isError={legal.isError} onRetry={() => legal.refetch()} emptyMessage="Belum ada kasus legal" {...gridProps} />
+          <DataGrid columns={legalColumns} data={legal.data?.items ?? []} rowCount={legal.data?.total ?? 0} isLoading={legal.isLoading} isError={legal.isError} onRetry={() => legal.refetch()} emptyMessage="No legal cases yet" {...gridProps} />
         )}
         {tab === 'reviews' && (
-          <DataGrid columns={reviewColumns} data={reviews.data?.items ?? []} rowCount={reviews.data?.total ?? 0} isLoading={reviews.isLoading} isError={reviews.isError} onRetry={() => reviews.refetch()} emptyMessage="Belum ada access review" {...gridProps} />
+          <DataGrid columns={reviewColumns} data={reviews.data?.items ?? []} rowCount={reviews.data?.total ?? 0} isLoading={reviews.isLoading} isError={reviews.isError} onRetry={() => reviews.refetch()} emptyMessage="No access reviews yet" {...gridProps} />
         )}
       </div>
 

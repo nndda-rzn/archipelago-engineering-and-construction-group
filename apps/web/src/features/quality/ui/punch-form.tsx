@@ -35,7 +35,7 @@ export function PunchForm({ onDone }: { onDone: () => void }) {
           <WpSelect id="punch-wp" projectId={projectId} value={field.value} onChange={field.onChange} workPackages={workPackages} />
         )} />
         <div className="flex-1">
-          <Label htmlFor="punch-desc">Deskripsi Punch <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="punch-desc">Punch Description <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="punch-desc" error={!!errors.description} {...register('description')} />
           {errors.description && <p className="mt-1 text-caption text-destructive-600">{errors.description.message}</p>}
         </div>

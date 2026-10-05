@@ -9,15 +9,15 @@ const assignHelper = createColumnHelper<ProjectAssignment>();
 
 export const employeeColumns = [
   columnHelper.accessor('employeeNumber', {
-    header: 'No. Karyawan',
+    header: 'Employee No.',
     cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span>,
   }),
   columnHelper.accessor('name', {
-    header: 'Nama',
+    header: 'Name',
     cell: (info) => <span className="text-neutral-800 font-medium">{info.getValue()}</span>,
   }),
   columnHelper.accessor('position', {
-    header: 'Posisi',
+    header: 'Position',
     cell: (info) => <span className="text-neutral-700">{info.getValue()}</span>,
   }),
   columnHelper.accessor('grade', {
@@ -25,7 +25,7 @@ export const employeeColumns = [
     cell: (info) => <span className="font-mono text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('department', {
-    header: 'Departemen',
+    header: 'Department',
     cell: (info) => <span className="text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   columnHelper.accessor('status', {
@@ -47,14 +47,14 @@ function StatusButtons({ employee }: { employee: Employee }) {
     <div className="flex items-center gap-1">
       {employee.status === 'INACTIVE' ? (
         <Button size="sm" variant="ghost" loading={pendingFor('ACTIVE')} onClick={() => change.mutate({ id: employee.id, status: 'ACTIVE' })}>
-          Aktifkan
+          Activate
         </Button>
       ) : (
-        <ConfirmActionButton size="sm" variant="ghost" loading={pendingFor('INACTIVE')} confirmTitle="Nonaktifkan karyawan?" confirmDescription="Karyawan akan berstatus nonaktif." confirmLabel="Nonaktifkan" onConfirm={() => change.mutate({ id: employee.id, status: 'INACTIVE' })}>
-          Nonaktifkan
+        <ConfirmActionButton size="sm" variant="ghost" loading={pendingFor('INACTIVE')} confirmTitle="Deactivate employee?" confirmDescription="The employee will be set to inactive." confirmLabel="Deactivate" onConfirm={() => change.mutate({ id: employee.id, status: 'INACTIVE' })}>
+          Deactivate
         </ConfirmActionButton>
       )}
-      <ConfirmActionButton size="sm" variant="ghost" className="text-destructive-600" loading={pendingFor('LEAVER')} confirmTitle="Ubah ke Leaver?" confirmDescription="Karyawan akan berstatus Leaver secara permanen dan kehilangan akses sistem." confirmLabel="Leaver" onConfirm={() => change.mutate({ id: employee.id, status: 'LEAVER' })}>
+      <ConfirmActionButton size="sm" variant="ghost" className="text-destructive-600" loading={pendingFor('LEAVER')} confirmTitle="Change to Leaver?" confirmDescription="The employee will be set to Leaver permanently and lose system access." confirmLabel="Leaver" onConfirm={() => change.mutate({ id: employee.id, status: 'LEAVER' })}>
         Leaver
       </ConfirmActionButton>
     </div>
@@ -67,15 +67,15 @@ export const assignmentColumns = [
     cell: (info) => <span className="text-neutral-700">{info.getValue()?.code}</span>,
   }),
   assignHelper.accessor('role', {
-    header: 'Peran',
+    header: 'Role',
     cell: (info) => <span className="text-neutral-600">{info.getValue() ?? <EmptyCell />}</span>,
   }),
   assignHelper.accessor('allocationPercent', {
-    header: 'Alokasi',
+    header: 'Allocation',
     cell: (info) => <span className="font-mono tabular-nums text-neutral-700">{info.getValue()}%</span>,
   }),
   assignHelper.accessor('startDate', {
-    header: 'Mulai',
+    header: 'Start',
     cell: (info) => <span className="font-mono text-neutral-600">{formatDate(info.getValue())}</span>,
   }),
   assignHelper.accessor('status', {

@@ -16,18 +16,18 @@ export const variationColumns = [
     cell: (info) => <span className="text-neutral-700">{info.getValue()?.code}</span>,
   }),
   columnHelper.accessor('title', {
-    header: 'Judul',
+    header: 'Title',
     cell: (info) => <span className="text-neutral-800">{info.getValue()}</span>,
   }),
   columnHelper.accessor('type', {
-    header: 'Tipe',
+    header: 'Type',
     cell: (info) => {
       const type = info.getValue();
       return <Badge variant={type === 'ADDITIVE' ? 'success' : 'warning'}>{type}</Badge>;
     },
   }),
   columnHelper.accessor('amountChange', {
-    header: 'Perubahan Nilai',
+    header: 'Amount Change',
     cell: (info) => {
       const value = Number(info.getValue());
       const isAdditive = info.row.original.type === 'ADDITIVE';
@@ -35,10 +35,10 @@ export const variationColumns = [
     },
   }),
   columnHelper.accessor('scheduleImpactDays', {
-    header: 'Dampak Jadwal',
+    header: 'Schedule Impact',
     cell: (info) => {
       const value = info.getValue();
-      return value != null ? <span className="font-mono tabular-nums text-neutral-700">{value > 0 ? `+${value} hari` : `${value} hari`}</span> : <EmptyCell />;
+      return value != null ? <span className="font-mono tabular-nums text-neutral-700">{value > 0 ? `+${value} days` : `${value} days`}</span> : <EmptyCell />;
     },
   }),
   columnHelper.accessor('status', {
@@ -59,10 +59,10 @@ function ActionButtons({ variation }: { variation: Variation }) {
   return (
     <div className="flex items-center gap-1">
       <Button size="sm" variant="secondary" loading={approve.isPending} onClick={() => approve.mutate({ id: variation.id })}>
-        Setujui
+        Approve
       </Button>
-      <ConfirmActionButton size="sm" variant="ghost" confirmTitle="Tolak variation?" confirmDescription="Variation order akan ditolak." confirmLabel="Tolak" onConfirm={() => reject.mutate({ id: variation.id })}>
-        Tolak
+      <ConfirmActionButton size="sm" variant="ghost" confirmTitle="Reject variation?" confirmDescription="The variation order will be rejected." confirmLabel="Reject" onConfirm={() => reject.mutate({ id: variation.id })}>
+        Reject
       </ConfirmActionButton>
     </div>
   );

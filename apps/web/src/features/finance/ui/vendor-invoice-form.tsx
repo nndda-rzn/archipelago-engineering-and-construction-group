@@ -8,14 +8,14 @@ import { useCreateVendorInvoice } from '../model/finance.api';
 import { UnsavedGuard } from '@/shared/lib/unsaved-guard';
 
 const formSchema = z.object({
-  poId: z.string().min(1, 'PO wajib dipilih'),
+  poId: z.string().min(1, 'PO is required'),
   vendorInvoiceNo: createVendorInvoiceSchema.shape.vendorInvoiceNo,
   taxAmount: z.string(),
   lines: z.array(z.object({
     poItemId: z.string(),
     quantity: z.number(),
     unitPrice: z.number(),
-  })).refine((lines) => lines.some((l) => l.quantity > 0), 'Pilih minimal satu item dengan qty > 0'),
+  })).refine((lines) => lines.some((l) => l.quantity > 0), 'Select at least one item with quantity > 0'),
 });
 type FormValues = z.infer<typeof formSchema>;
 
@@ -49,25 +49,25 @@ export function InvoiceForm({ onDone }: { onDone: () => void }) {
       <UnsavedGuard dirty={isDirty} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div>
-          <Label htmlFor="inv-po">PO (harus RELEASED) <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="inv-po">PO (must be RELEASED) <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Controller name="poId" control={control} render={({ field }) => (
             <Select value={field.value} onValueChange={(v) => { field.onChange(v); replace([]); }}>
-              <SelectTrigger id="inv-po"><SelectValue placeholder="Pilih PO…" /></SelectTrigger>
+              <SelectTrigger id="inv-po"><SelectValue placeholder="Select PO…" /></SelectTrigger>
               <SelectContent>
                 {releasedPos.map((po) => <SelectItem key={po.id} value={po.id}>{po.poNumber} · {po.vendor}</SelectItem>)}
               </SelectContent>
             </Select>
           )} />
-          {releasedPos.length === 0 && <p className="mt-1 text-caption text-neutral-500">Tidak ada PO RELEASED.</p>}
+          {releasedPos.length === 0 && <p className="mt-1 text-caption text-neutral-500">No RELEASED POs.</p>}
           {errors.poId && <p className="mt-1 text-caption text-destructive-600">{errors.poId.message}</p>}
         </div>
         <div>
-          <Label htmlFor="inv-no">No. Invoice Vendor <span aria-hidden="true" className="text-destructive-600">*</span></Label>
+          <Label htmlFor="inv-no">Vendor Invoice No. <span aria-hidden="true" className="text-destructive-600">*</span></Label>
           <Input id="inv-no" placeholder="V-2026-001" error={!!errors.vendorInvoiceNo} {...register('vendorInvoiceNo')} />
           {errors.vendorInvoiceNo && <p className="mt-1 text-caption text-destructive-600">{errors.vendorInvoiceNo.message}</p>}
         </div>
         <div>
-          <Label htmlFor="inv-tax">Pajak (opsional)</Label>
+          <Label htmlFor="inv-tax">Tax (optional)</Label>
           <Input id="inv-tax" type="number" placeholder="0" {...register('taxAmount')} />
         </div>
       </div>
@@ -76,7 +76,7 @@ export function InvoiceForm({ onDone }: { onDone: () => void }) {
           <table className="w-full text-left text-body">
             <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500">
               <tr>
-                <th className="px-3 py-2">Item PO</th>
+                <th className="px-3 py-2">PO Item</th>
                 <th className="px-3 py-2 text-right">Qty</th>
                 <th className="px-3 py-2 text-right">Unit Price</th>
                 <th className="px-3 py-2"></th>
@@ -93,13 +93,13 @@ export function InvoiceForm({ onDone }: { onDone: () => void }) {
                     <td className="px-3 py-2">
                       {added ? (
                         <Input type="number" min={0} step={1} value={line?.quantity || ''} onChange={(e) => setValue(`lines.${index}.quantity`, Number(e.target.value))} className="h-8 w-24 text-right" />
-                      ) : (<span className="text-caption text-neutral-500">belum dipilih</span>)}
+                      ) : (<span className="text-caption text-neutral-500">not selected</span>)}
                     </td>
                     <td className="px-3 py-2">
                       {added && <Input type="number" min={0} step={1000} value={line?.unitPrice || ''} onChange={(e) => setValue(`lines.${index}.unitPrice`, Number(e.target.value))} className="h-8 w-28 text-right" />}
                     </td>
                     <td className="px-3 py-2 text-right">
-                      {added ? <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)}>Batal</Button> : <Button type="button" variant="secondary" size="sm" onClick={() => append({ poItemId: item.id, quantity: 0, unitPrice: 0 })}>+ Pilih</Button>}
+                      {added ? <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)}>Remove</Button> : <Button type="button" variant="secondary" size="sm" onClick={() => append({ poItemId: item.id, quantity: 0, unitPrice: 0 })}>+ Select</Button>}
                     </td>
                   </tr>
                 );
@@ -110,10 +110,10 @@ export function InvoiceForm({ onDone }: { onDone: () => void }) {
       )}
       {errors.lines && <p className="mt-2 text-caption text-destructive-600">{errors.lines.message}</p>}
       <div className="mt-4 flex justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={onDone}>Batal</Button>
-        <Button type="submit" loading={create.isPending}>Buat Invoice</Button>
+        <Button type="button" variant="ghost" onClick={onDone}>Cancel</Button>
+        <Button type="submit" loading={create.isPending}>Create Invoice</Button>
       </div>
-      {create.isError && <p className="mt-2 text-caption text-destructive-600">Gagal. Qty invoice tidak boleh melebihi qty diterima (3-way match).</p>}
+      {create.isError && <p className="mt-2 text-caption text-destructive-600">Failed. Invoice quantity cannot exceed received quantity (3-way match).</p>}
     </form>
   );
 }

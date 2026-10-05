@@ -50,3 +50,22 @@ export function HealthDonut({ data }: { data: { name: string; value: number }[] 
     </ResponsiveContainer>
   );
 }
+
+const AGING_COLORS = ['#22c55e', '#a1a1aa', '#f59e0b', '#f97316', '#ef4444'];
+
+/** Batang tersegmentasi bucket aging (AR/AP). Aksesibel via aria-label berisi nilai. */
+export function AgingBar({ buckets, label }: { buckets: { label: string; value: number }[]; label: string }) {
+  const total = buckets.reduce((s, b) => s + b.value, 0);
+  if (total <= 0) return <p className="text-body-sm text-neutral-500">No outstanding {label}.</p>;
+  return (
+    <div
+      role="img"
+      aria-label={`${label}: ${buckets.map((b) => `${b.label} ${formatIdr(b.value)}`).join(', ')}`}
+      className="flex h-4 overflow-hidden rounded-md"
+    >
+      {buckets.map((b, i) => (
+        <div key={b.label} style={{ width: `${(b.value / total) * 100}%`, backgroundColor: AGING_COLORS[i] }} />
+      ))}
+    </div>
+  );
+}

@@ -12,12 +12,12 @@ export class EquipmentUtilizationService {
 
   async createUtilization(equipmentId: string, dto: CreateEquipmentUtilizationDto, actorId: string) {
     const equipment = await this.prisma.equipment.findUnique({ where: { id: equipmentId } });
-    if (!equipment) throw new NotFoundException({ code: 'EQUIPMENT_NOT_FOUND', message: 'Equipment tidak ditemukan' });
+    if (!equipment) throw new NotFoundException({ code: 'EQUIPMENT_NOT_FOUND', message: 'Equipment not found' });
 
     const operating = Number(dto.operatingHours);
     const available = Number(dto.availableHours ?? 0);
     if (operating > available) {
-      throw new BadRequestException({ code: 'INVALID_UTILIZATION', message: 'Operating hours tidak boleh melebihi available' });
+      throw new BadRequestException({ code: 'INVALID_UTILIZATION', message: 'Operating hours cannot exceed available hours' });
     }
 
     const util = await this.prisma.$transaction(async (tx) => {

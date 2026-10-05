@@ -63,18 +63,18 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Cari menu…"
-          aria-label="Cari menu"
+          placeholder="Search menu…"
+          aria-label="Search menu"
           spellCheck={false}
           className="h-8 pl-8 text-body-sm"
         />
       </div>
 
-      <nav className="text-body-sm" aria-label="Menu utama">
+      <nav className="text-body-sm" aria-label="Main menu">
         {results ? (
           <div className="mt-1">
             {results.length === 0 ? (
-              <p className="px-3 py-2 text-caption text-neutral-500">Menu tidak ditemukan.</p>
+              <p className="px-3 py-2 text-caption text-neutral-500">No menu found.</p>
             ) : (
               results.map((item) => (
                 <Link key={item.to} to={item.to} onClick={onNavigate} className={cn(itemClass(isItemActive(item.to)), 'flex-col items-start')}>
