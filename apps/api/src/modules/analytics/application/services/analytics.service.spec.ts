@@ -77,3 +77,22 @@ describe('AnalyticsService.computeDelta', () => {
     expect(d.direction).toBe('up');
   });
 });
+
+describe('AnalyticsService.costComposition', () => {
+  it('groups published budget by costType and totals it', async () => {
+    const prisma = {
+      budgetItem: {
+        groupBy: jest.fn().mockResolvedValue([
+          { costType: 'MATERIAL', _sum: { amount: 300 } },
+          { costType: 'LABOR', _sum: { amount: 100 } },
+        ]),
+      },
+    } as never;
+    const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
+    const svc = new AnalyticsService(prisma, cache);
+
+    const result = await svc.costComposition();
+    expect(result.total).toBe(400);
+    expect(result.items.find((i) => i.costType === 'MATERIAL')?.amount).toBe(300);
+  });
+});

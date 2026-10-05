@@ -116,3 +116,10 @@ export const signalListSchema = z.object({
   generatedAt: z.string(),
 });
 export type SignalList = z.infer<typeof signalListSchema>;
+
+export const costCompositionSchema = z.object({
+  items: z.array(z.object({ costType: z.string(), amount: z.number() })),
+  total: z.number(),
+  generatedAt: z.string(),
+});
+export type CostComposition = z.infer<typeof costCompositionSchema>;

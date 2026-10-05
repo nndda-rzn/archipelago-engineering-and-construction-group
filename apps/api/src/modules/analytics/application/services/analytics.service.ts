@@ -151,6 +151,19 @@ export class AnalyticsService {
     });
   }
 
+  async costComposition(filter: AnalyticsFilterParams = {}) {
+    return this.cache.wrap(analyticsCacheKey('analytics:cost-composition', filter), 60, async () => {
+      const groups = await this.prisma.budgetItem.groupBy({
+        by: ['costType'],
+        where: { status: 'PUBLISHED', ...(filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {}) },
+        _sum: { amount: true },
+      });
+      const items = groups.map((g) => ({ costType: g.costType, amount: Number(g._sum?.amount ?? 0) }));
+      const total = items.reduce((s, i) => s + i.amount, 0);
+      return { items, total, generatedAt: new Date().toISOString() };
+    });
+  }
+
   async anomalies() {
     return this.cache.wrap(ANALYTICS_CACHE_KEYS.anomalies, 60, async () => {
     const anomalies: Array<{ type: string; severity: 'LOW' | 'MEDIUM' | 'HIGH'; projectCode?: string; message: string }> = [];

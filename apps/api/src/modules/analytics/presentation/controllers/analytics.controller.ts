@@ -51,6 +51,12 @@ export class AnalyticsController {
     return this.analytics.projectCostSummary();
   }
 
+  @Get('cost-composition')
+  @Permissions(Permission.AnalyticsView)
+  costComposition(@Query() query: AnalyticsFilterParams) {
+    return this.analytics.costComposition(query);
+  }
+
   @Get('aging/export.csv')
   @Permissions(Permission.AnalyticsView)
   async exportAging(@Res({ passthrough: true }) res: Response) {
