@@ -21,6 +21,8 @@ export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } fr
 export { SignalChip, type SignalChipProps, type SignalSeverity } from './primitives/signal-chip';
 export { BulletBar, MiniStackedBar, type BulletBarProps, type MiniStackedBarProps } from './primitives/data-bar';
 export { Sparkline, type SparklineProps } from './primitives/sparkline';
+export { DeltaBadge, type DeltaBadgeProps, type DeltaDirection } from './primitives/delta-badge';
+export { FilterChip, type FilterChipProps } from './primitives/filter-chip';
 export { Label } from './primitives/label';
 export { Dialog, DialogTrigger, DialogClose, DialogOverlay, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, ConfirmDialog } from './primitives/dialog';
 export { Select, SelectGroup, SelectValue, SelectTrigger, SelectContent, SelectItem } from './primitives/select';

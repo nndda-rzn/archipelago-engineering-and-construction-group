@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { executiveDashboardSchema, anomalyListSchema, cashFlowSchema, agingSchema, projectCostSummarySchema, pendingApprovalCountSchema } from '@aec/api-contracts';
+import { executiveDashboardSchema, anomalyListSchema, cashFlowSchema, agingSchema, projectCostSummarySchema, pendingApprovalCountSchema, signalListSchema } from '@aec/api-contracts';
 import { getJson, downloadFile } from '@/shared/lib/http';
 import type { DashboardFilter } from '@/shared/lib/dashboard-period';
 
 export const analyticsKeys = {
   all: ['analytics'] as const,
-  executive: (filter: DashboardFilter = {}) => ['analytics-executive', filter] as const,
+  executive: (filter: DashboardFilter = {}, compare?: 'previous') => ['analytics-executive', filter, compare ?? null] as const,
   anomalies: ['analytics-anomalies'] as const,
+  signals: (filter: DashboardFilter = {}) => ['analytics-signals', filter] as const,
   cashFlow: (filter: DashboardFilter = {}) => ['analytics-cash-flow', filter] as const,
   aging: (filter: DashboardFilter = {}) => ['analytics-aging', filter] as const,
   costSummary: ['analytics-cost-summary'] as const,
@@ -14,22 +15,32 @@ export const analyticsKeys = {
 };
 
 /** Bangun query string dari filter (entity + rentang tanggal), mengabaikan nilai kosong. */
-function filterQuery(filter: DashboardFilter): string {
+function filterQuery(filter: DashboardFilter, extra?: Record<string, string>): string {
   const params = new URLSearchParams();
   if (filter.legalEntityId) params.set('legalEntityId', filter.legalEntityId);
   if (filter.from) params.set('from', filter.from);
   if (filter.to) params.set('to', filter.to);
+  if (extra) for (const [k, v] of Object.entries(extra)) params.set(k, v);
   const qs = params.toString();
   return qs ? `?${qs}` : '';
 }
 
-export function useExecutiveDashboard(filter: DashboardFilter = {}) {
+export function useExecutiveDashboard(filter: DashboardFilter = {}, opts?: { compare?: 'previous' }) {
+  const compare = opts?.compare;
   return useQuery({
-    queryKey: analyticsKeys.executive(filter),
+    queryKey: analyticsKeys.executive(filter, compare),
     queryFn: async () => {
-      const data = await getJson<unknown>(`/analytics/executive${filterQuery(filter)}`);
+      const data = await getJson<unknown>(`/analytics/executive${filterQuery(filter, compare ? { compare } : undefined)}`);
       return executiveDashboardSchema.parse(data);
     },
+  });
+}
+
+export function useSignals(filter: DashboardFilter = {}) {
+  return useQuery({
+    queryKey: analyticsKeys.signals(filter),
+    queryFn: async () => signalListSchema.parse(await getJson<unknown>(`/analytics/signals${filterQuery(filter)}`)),
+    refetchInterval: 30000,
   });
 }
 

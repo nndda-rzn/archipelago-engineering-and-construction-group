@@ -21,6 +21,12 @@ export const executiveDashboardSchema = z.object({
     overduePm: z.number(),
     openPunchItems: z.number(),
   }),
+  delta: z.record(z.string(), z.object({
+    current: z.number(),
+    previous: z.number(),
+    pctChange: z.number().nullable(),
+    direction: z.enum(['up', 'down', 'flat']),
+  })).optional(),
   generatedAt: z.string(),
 });
 export type ExecutiveDashboard = z.infer<typeof executiveDashboardSchema>;
@@ -94,3 +100,19 @@ export const analyticsFilterParamsSchema = z.object({
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 export type AnalyticsFilterParams = z.infer<typeof analyticsFilterParamsSchema>;
+
+export const signalSchema = z.object({
+  key: z.string(),
+  severity: z.enum(['HIGH', 'MEDIUM', 'LOW']),
+  count: z.number(),
+  oldestAgeDays: z.number(),
+  label: z.string(),
+  to: z.string(),
+});
+export type Signal = z.infer<typeof signalSchema>;
+
+export const signalListSchema = z.object({
+  signals: z.array(signalSchema),
+  generatedAt: z.string(),
+});
+export type SignalList = z.infer<typeof signalListSchema>;

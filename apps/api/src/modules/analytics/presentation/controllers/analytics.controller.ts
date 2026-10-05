@@ -17,14 +17,20 @@ export class AnalyticsController {
 
   @Get('executive')
   @Permissions(Permission.AnalyticsView)
-  executive(@Query() query: AnalyticsFilterParams) {
-    return this.analytics.executive(query);
+  executive(@Query() query: AnalyticsFilterParams, @Query('compare') compare?: string) {
+    return this.analytics.executive(query, compare === 'previous' ? 'previous' : undefined);
   }
 
   @Get('anomalies')
   @Permissions(Permission.AnalyticsView)
   anomalies() {
     return this.analytics.anomalies();
+  }
+
+  @Get('signals')
+  @Permissions(Permission.AnalyticsView)
+  signals(@Query() query: AnalyticsFilterParams) {
+    return this.analytics.signals(query);
   }
 
   @Get('cash-flow')

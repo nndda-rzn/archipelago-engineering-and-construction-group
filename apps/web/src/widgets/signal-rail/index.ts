@@ -1,2 +1,2 @@
-export { SignalRail, SignalRailView, buildSignals } from './signal-rail';
+export { SignalRail, SignalRailView, buildSignals, toSignals } from './signal-rail';
 export type { Signal, SignalInput } from './signal-rail';
