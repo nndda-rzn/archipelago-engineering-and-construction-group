@@ -24,6 +24,32 @@ export class AnalyticsService {
     return { current, previous, pctChange, direction };
   }
 
+  /**
+   * Kelompokkan baris bertimestamp menjadi seri bulanan (6 bulan terakhir, termasuk
+   * bulan berjalan). Bulan tanpa baris diisi 0 supaya grafik tidak "melebar" palsu.
+   * `value` boleh jumlah baris (default 1 per baris) atau nilai numerik yang disediakan.
+   *
+   * PENTING: ini mengukur **aliran** (berapa banyak dibuat/bulan), bukan **stok**
+   * (berapa banyak terbuka saat itu). Label UI harus mencerminkan itu.
+   */
+  monthlySeries(rows: { at: Date; value?: number }[], now: Date = new Date(), months = 6): { month: string; value: number }[] {
+    const key = (d: Date) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+    const buckets = new Map<string, number>();
+    const monthsList: string[] = [];
+    for (let i = months - 1; i >= 0; i--) {
+      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+      const k = key(d);
+      monthsList.push(k);
+      buckets.set(k, 0);
+    }
+    for (const r of rows) {
+      const k = key(r.at);
+      if (!buckets.has(k)) continue; // di luar jendela 6 bulan
+      buckets.set(k, (buckets.get(k) ?? 0) + (r.value ?? 1));
+    }
+    return monthsList.map((month) => ({ month, value: Math.round((buckets.get(month) ?? 0) * 100) / 100 }));
+  }
+
   async executive(
     filter: AnalyticsFilterParams = {},
     compare?: 'previous',
@@ -54,6 +80,18 @@ export class AnalyticsService {
         this.prisma.punchListItem.count({ where: { status: 'OPEN', ...(filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {}) } }),
       ]);
 
+      // Seri tren 6 bulan — semua dari timestamp nyata (aliran per bulan).
+      const trendSince = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() - 5, 1));
+      const trendProjectWhere = filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {};
+      const [collections, payments, newProjects, newBudget, newNcrs, newIncidents] = await this.prisma.$transaction([
+        this.prisma.collection.findMany({ where: { status: 'POSTED', ...trendProjectWhere, collectedAt: { gte: trendSince } }, select: { totalAmount: true, collectedAt: true } }),
+        this.prisma.payment.findMany({ where: { status: 'PAID', ...trendProjectWhere, paymentDate: { gte: trendSince } }, select: { totalAmount: true, paymentDate: true } }),
+        this.prisma.project.findMany({ where: { ...projectWhere, createdAt: { gte: trendSince } }, select: { createdAt: true } }),
+        this.prisma.budgetItem.findMany({ where: { ...(filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {}), createdAt: { gte: trendSince } }, select: { amount: true, createdAt: true } }),
+        this.prisma.ncr.findMany({ where: { ...trendProjectWhere, createdAt: { gte: trendSince } }, select: { createdAt: true } }),
+        this.prisma.hseIncident.findMany({ where: { ...trendProjectWhere, createdAt: { gte: trendSince } }, select: { createdAt: true } }),
+      ]);
+
       return {
         projects: {
           total: projects.length,
@@ -74,6 +112,14 @@ export class AnalyticsService {
           openIncidents: openIncidents,
           overduePm: overduePm,
           openPunchItems: openPunch,
+        },
+        trend: {
+          cashIn: this.monthlySeries(collections.map((c) => ({ at: new Date(c.collectedAt), value: Number(c.totalAmount) }))),
+          cashOut: this.monthlySeries(payments.map((p) => ({ at: new Date(p.paymentDate), value: Number(p.totalAmount) }))),
+          newProjects: this.monthlySeries(newProjects.map((p) => ({ at: new Date(p.createdAt) }))),
+          newBudget: this.monthlySeries(newBudget.map((b) => ({ at: new Date(b.createdAt), value: Number(b.amount) }))),
+          newNcrs: this.monthlySeries(newNcrs.map((n) => ({ at: new Date(n.createdAt) }))),
+          newIncidents: this.monthlySeries(newIncidents.map((i) => ({ at: new Date(i.createdAt) }))),
         },
         generatedAt: new Date().toISOString(),
       };
@@ -101,12 +147,17 @@ export class AnalyticsService {
     };
     const previous = await this.executive(prevFilter);
 
+    // Hanya metrik period-scoped yang dibandingkan. Snapshot (mis. overduePm,
+    // openPunchItems) sengaja dilewati — membandingkannya antar periode menyesatkan.
     const delta = {
       'finance.totalBudget': this.computeDelta(result.finance.totalBudget, previous.finance.totalBudget),
       'finance.cashIn': this.computeDelta(result.finance.cashIn, previous.finance.cashIn),
       'finance.cashOut': this.computeDelta(result.finance.cashOut, previous.finance.cashOut),
+      'finance.postedVendorInvoice': this.computeDelta(result.finance.postedVendorInvoice, previous.finance.postedVendorInvoice),
+      'finance.postedClientInvoice': this.computeDelta(result.finance.postedClientInvoice, previous.finance.postedClientInvoice),
       'operational.openNcrs': this.computeDelta(result.operational.openNcrs, previous.operational.openNcrs),
       'projects.total': this.computeDelta(result.projects.total, previous.projects.total),
+      'projects.totalContractValue': this.computeDelta(result.projects.totalContractValue, previous.projects.totalContractValue),
     };
 
     return { ...result, delta };
