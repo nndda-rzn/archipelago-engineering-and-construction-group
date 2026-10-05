@@ -20,26 +20,29 @@ describe('buildSignals', () => {
 
   it('orders by severity then count', () => {
     const sig = buildSignals(base);
-    expect(sig[0]!.severity).toBe('high'); // anomalies high=3
+    expect(sig[0]!.severity).toBe('high');
     expect(sig[0]!.key).toBe('anomalies');
   });
 
-  it('deep-links carry filter params', () => {
-    const ncrs = buildSignals(base).find((s) => s.key === 'ncrs')!;
-    expect(ncrs.to).toBe('/quality?tab=ncrs');
+  it('NCR signal deep-links with OPEN status filter', () => {
+    const s = buildSignals(base).find((x) => x.key === 'ncrs')!;
+    expect(s.to).toBe('/quality?tab=ncrs&status=OPEN');
+  });
+
+  it('incident signal deep-links with OPEN status filter', () => {
+    const s = buildSignals({ ...base, openIncidents: 1 }).find((x) => x.key === 'incidents')!;
+    expect(s.to).toBe('/hse?tab=incidents&status=OPEN');
+  });
+
+  it('claim signal deep-links with DRAFT status filter', () => {
+    const s = buildSignals(base).find((x) => x.key === 'claims')!;
+    expect(s.to).toBe('/finance/progress-claims?status=DRAFT');
   });
 });
 
 describe('SignalRail empty state', () => {
   it('renders all-clear when every signal is zero', () => {
-    const zero = {
-      ...base,
-      openNcrs: 0,
-      openIncidents: 0,
-      openClaims: 0,
-      pendingApprovals: 0,
-      anomalies: { high: 0, medium: 0, low: 0 },
-    };
+    const zero = { ...base, openNcrs: 0, openIncidents: 0, openClaims: 0, pendingApprovals: 0, anomalies: { high: 0, medium: 0, low: 0 } };
     render(<SignalRailView signals={buildSignals(zero)} />);
     expect(screen.getByText(/all clear/i)).toBeTruthy();
   });

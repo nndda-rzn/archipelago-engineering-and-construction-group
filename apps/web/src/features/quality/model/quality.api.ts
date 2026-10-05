@@ -107,11 +107,12 @@ export function useReinspectNcr() {
   });
 }
 
-export function usePunchItems(params: PaginationParams) {
+export function usePunchItems(params: PaginationParams & { status?: string }) {
   return useQuery({
     queryKey: qualityKeys.punch(params),
     queryFn: async () => {
       const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+      if (params.status) qs.set('status', params.status);
       const data = await getJson<{ items: unknown; total: number }>(`/quality/punch-items?${qs}`);
       return { items: punchListItemSchema.array().parse(data.items), total: data.total };
     },

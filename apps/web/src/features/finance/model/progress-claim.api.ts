@@ -5,12 +5,13 @@ import { type PaginationParams } from '@/shared/lib/pagination';
 
 export const claimKeys = { all: ['progress-claims'] as const, list: (params: PaginationParams & { claimType?: string }) => [...claimKeys.all, 'list', params] as const };
 
-export function useProgressClaims(params: PaginationParams & { claimType?: string }) {
+export function useProgressClaims(params: PaginationParams & { claimType?: string; status?: string }) {
   return useQuery({
     queryKey: claimKeys.list(params),
     queryFn: async () => {
       const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
       if (params.claimType) qs.set('claimType', params.claimType);
+      if (params.status) qs.set('status', params.status);
       const data = await getJson<{ items: unknown; total: number }>(`/progress-claims?${qs}`);
       return { items: progressClaimSchema.array().parse(data.items), total: data.total };
     },

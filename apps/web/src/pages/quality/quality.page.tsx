@@ -16,12 +16,13 @@ const TAB_LABELS: Record<Tab, string> = {
 
 export function QualityPage() {
   const [tab, setTab] = useUrlFilter('tab', 'itp') as [Tab, (v: string) => void];
+  const [status] = useUrlFilter('status');
   const [showForm, setShowForm] = useState(false);
   const { pagination, onPaginationChange } = useUrlPagination(PAGE_SIZE);
   const itps = useItps({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
   const inspections = useInspections({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
-  const ncrs = useNcrs({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
-  const punch = usePunchItems({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
+  const ncrs = useNcrs({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize, status: status || undefined });
+  const punch = usePunchItems({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize, status: status || undefined });
 
   const gridProps = { pagination, onPaginationChange };
 
