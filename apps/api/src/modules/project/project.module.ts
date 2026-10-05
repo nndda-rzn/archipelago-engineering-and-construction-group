@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { PrismaService } from '@/shared/database/prisma.service';
 import { SharedModule } from '@/shared/shared.module';
 import { ProjectController } from './presentation/controllers/project.controller';
 import { WbsController } from './presentation/controllers/wbs.controller';
@@ -20,7 +19,6 @@ import { EarnedValueService } from './application/services/earned-value.service'
   imports: [SharedModule],
   controllers: [ProjectController, WbsController, BudgetController, ProjectControlsController],
   providers: [
-    PrismaService,
     ProjectService,
     WbsService,
     BudgetService,

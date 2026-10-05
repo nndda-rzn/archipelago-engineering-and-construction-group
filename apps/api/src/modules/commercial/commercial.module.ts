@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { PrismaService } from '@/shared/database/prisma.service';
 import { SharedModule } from '@/shared/shared.module';
 import { CommercialController } from './presentation/controllers/commercial.controller';
 import { TenderController } from './presentation/controllers/tender.controller';
@@ -14,7 +13,6 @@ import { ContractAmendmentService } from './application/services/contract-amendm
   imports: [SharedModule],
   controllers: [CommercialController, TenderController],
   providers: [
-    PrismaService,
     CommercialService,
     BidDecisionService,
     EstimateService,

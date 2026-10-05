@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { PrismaService } from '@/shared/database/prisma.service';
 import { SharedModule } from '@/shared/shared.module';
 import { GovernanceController } from './presentation/controllers/governance.controller';
 import { RiskService } from './application/services/risk.service';
@@ -11,7 +10,6 @@ import { AccessReviewService } from './application/services/access-review.servic
   imports: [SharedModule],
   controllers: [GovernanceController],
   providers: [
-    PrismaService,
     RiskService,
     AuditEngagementService,
     LegalCaseService,
