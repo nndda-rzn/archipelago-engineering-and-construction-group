@@ -60,11 +60,9 @@ export function AppShell() {
 
   const sidebarContent = (
     <>
-      <div className="flex items-center gap-2 px-4 py-4" translate="no">
-        <span className="flex h-7 w-7 items-center justify-center rounded bg-racing-red-600 text-h2 font-bold text-white">
-          A
-        </span>
-        <span className="text-h2 font-semibold tracking-tight text-neutral-900">AEC ERP</span>
+      <div data-slot="brand-header" className="flex h-12 shrink-0 items-center gap-2.5 border-b border-neutral-200 px-4" translate="no">
+        <img src="/logo-mark.png" alt="" aria-hidden="true" className="h-7 w-7 shrink-0 object-contain" />
+        <span className="text-h2 font-semibold tracking-tight text-neutral-900">AEC</span>
       </div>
       <div className="flex-1 overflow-y-auto">
         <SidebarNav onNavigate={navigateAndClose} />
@@ -97,17 +95,17 @@ export function AppShell() {
             onClick={() => setMobileOpen(false)}
             className="absolute inset-0 bg-neutral-950/40"
           />
-          <aside ref={drawerRef} className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-neutral-200 bg-white shadow-lg">
-            <div className="flex items-center justify-between pr-2">
-              <div className="flex items-center gap-2 px-4 py-4" translate="no">
-                <span className="flex h-7 w-7 items-center justify-center rounded bg-racing-red-600 text-h2 font-bold text-white">A</span>
-                <span className="text-h2 font-semibold tracking-tight text-neutral-900">AEC ERP</span>
+          <aside ref={drawerRef} className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-neutral-200 bg-white shadow-md">
+            <div className="flex h-12 shrink-0 items-center justify-between border-b border-neutral-200 pr-2" data-slot="brand-header">
+              <div className="flex items-center gap-2.5 px-4" translate="no">
+                <img src="/logo-mark.png" alt="" aria-hidden="true" className="h-7 w-7 shrink-0 object-contain" />
+                <span className="text-h2 font-semibold tracking-tight text-neutral-900">AEC</span>
               </div>
               <button
                 type="button"
                 aria-label="Close menu"
                 onClick={() => setMobileOpen(false)}
-                className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100"
+                className="rounded-md p-2 text-neutral-500 hover:bg-neutral-100"
               >
                 <X className="h-4 w-4" aria-hidden="true" />
               </button>

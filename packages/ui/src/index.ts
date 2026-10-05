@@ -22,6 +22,7 @@ export { SignalChip, type SignalChipProps, type SignalSeverity } from './primiti
 export { BulletBar, MiniStackedBar, type BulletBarProps, type MiniStackedBarProps } from './primitives/data-bar';
 export { Sparkline, type SparklineProps } from './primitives/sparkline';
 export { DivergingBar, type DivergingBarProps } from './primitives/diverging-bar';
+export { Root as Collapsible, Trigger as CollapsibleTrigger, Content as CollapsibleContent, type CollapsibleRootProps } from './primitives/collapsible';
 export { DeltaBadge, type DeltaBadgeProps, type DeltaDirection } from './primitives/delta-badge';
 export { FilterChip, type FilterChipProps } from './primitives/filter-chip';
 export { Label } from './primitives/label';

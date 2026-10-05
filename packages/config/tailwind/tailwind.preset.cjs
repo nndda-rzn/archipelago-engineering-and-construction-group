@@ -137,10 +137,22 @@ module.exports = {
           from: { opacity: '0', transform: 'translateY(4px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
+        // Buka/tutup grup nav (Radix Collapsible). Tinggi diambil dari CSS var
+        // yang disuntik Radix, sehingga animasi bekerja tanpa `forceMount`.
+        'collapsible-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-collapsible-content-height)' },
+        },
+        'collapsible-up': {
+          from: { height: 'var(--radix-collapsible-content-height)' },
+          to: { height: '0' },
+        },
       },
       animation: {
         'slide-down': 'slide-down 200ms ease',
         'slide-up': 'slide-up 200ms ease',
+        'collapsible-down': 'collapsible-down 150ms ease',
+        'collapsible-up': 'collapsible-up 150ms ease',
       },
     },
   },
