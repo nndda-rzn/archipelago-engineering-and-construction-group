@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { executiveDashboardSchema, anomalyListSchema, cashFlowSchema, agingSchema, projectCostSummarySchema, pendingApprovalCountSchema, signalListSchema } from '@aec/api-contracts';
+import { executiveDashboardSchema, anomalyListSchema, cashFlowSchema, agingSchema, projectCostSummarySchema, pendingApprovalCountSchema, signalListSchema, costCompositionSchema } from '@aec/api-contracts';
 import { getJson, downloadFile } from '@/shared/lib/http';
 import type { DashboardFilter } from '@/shared/lib/dashboard-period';
 
@@ -92,6 +92,13 @@ export function useProjectCostSummary() {
       const data = await getJson<unknown>('/analytics/project-cost-summary');
       return projectCostSummarySchema.parse(data);
     },
+  });
+}
+
+export function useCostComposition(filter: DashboardFilter = {}) {
+  return useQuery({
+    queryKey: ['analytics-cost-composition', filter] as const,
+    queryFn: async () => costCompositionSchema.parse(await getJson<unknown>(`/analytics/cost-composition${filterQuery(filter)}`)),
   });
 }
 
