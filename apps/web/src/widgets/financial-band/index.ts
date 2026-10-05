@@ -1,1 +1,1 @@
-export { FinancialBand, agingSegments } from './financial-band';
+export { FinancialBand, agingSegments, hasOutstanding } from './financial-band';

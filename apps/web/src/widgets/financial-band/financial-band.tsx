@@ -11,6 +11,11 @@ export function agingSegments(buckets: AgingBucket[]): { label: string; value: n
   return buckets.map((b) => ({ label: b.bucket, value: b.amount }));
 }
 
+/** Apakah ada saldo tersisa di bucket mana pun. */
+export function hasOutstanding(buckets: AgingBucket[]): boolean {
+  return buckets.some((b) => b.amount > 0);
+}
+
 function total(buckets: AgingBucket[]): number {
   return buckets.reduce((s, b) => s + b.amount, 0);
 }
@@ -47,11 +52,19 @@ export function FinancialBand({ filter = {} }: { filter?: DashboardFilter }) {
         <div className="space-y-3">
           <div>
             <p className="mb-1 text-caption text-neutral-500">Receivable · {formatIdr(total(aging.data?.ar ?? []))}</p>
-            <AgingBar buckets={agingSegments(aging.data?.ar ?? [])} label="AR" />
+            {hasOutstanding(aging.data?.ar ?? []) ? (
+              <AgingBar buckets={agingSegments(aging.data?.ar ?? [])} label="AR" />
+            ) : (
+              <p className="text-body-sm text-neutral-500">No outstanding receivables.</p>
+            )}
           </div>
           <div>
             <p className="mb-1 text-caption text-neutral-500">Payable · {formatIdr(total(aging.data?.ap ?? []))}</p>
-            <AgingBar buckets={agingSegments(aging.data?.ap ?? [])} label="AP" />
+            {hasOutstanding(aging.data?.ap ?? []) ? (
+              <AgingBar buckets={agingSegments(aging.data?.ap ?? [])} label="AP" />
+            ) : (
+              <p className="text-body-sm text-neutral-500">No outstanding payables.</p>
+            )}
           </div>
         </div>
       </div>
