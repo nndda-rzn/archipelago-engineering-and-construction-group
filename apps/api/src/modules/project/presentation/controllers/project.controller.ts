@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import type { PortfolioFilterParams } from '@aec/api-contracts';
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
@@ -25,8 +26,8 @@ export class ProjectController {
 
   @Get('portfolio')
   @Permissions(Permission.ProjectView)
-  portfolio() {
-    return this.portfolioSvc.portfolio();
+  portfolio(@Query() query: PortfolioFilterParams) {
+    return this.portfolioSvc.portfolio(query);
   }
 
   @Get(':id')
