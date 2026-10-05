@@ -147,3 +147,116 @@ describe('SidebarNav rendering', () => {
     expect(screen.getByRole('button', { name: 'HCM' })).toBeTruthy();
   });
 });
+
+describe('pohon tersambung (garis pemandu)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    state.pendingCount = undefined;
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  /** Leluhur ber-positioning — syarat agar `absolute` tidak lolos ke viewport. */
+  function hasPositionedAncestorWithinNav(el: Element, nav: Element): boolean {
+    let node: Element | null = el.parentElement;
+    while (node && node !== nav) {
+      const style = node.getAttribute('class') ?? '';
+      if (/\b(relative|absolute|fixed|sticky)\b/.test(style)) return true;
+      node = node.parentElement;
+    }
+    return false;
+  }
+
+  it('setiap garis punya leluhur ber-positioning di dalam nav (tidak lolos ke viewport)', () => {
+    state.path = '/'; // Construction & HCM terbuka (default) → subgrup + item ter-render
+    const { container } = render(<SidebarNav onNavigate={() => {}} />);
+    const nav = container.querySelector('nav');
+    expect(nav).not.toBeNull();
+    const guides = Array.from(container.querySelectorAll('[data-tree-guide]'));
+    expect(guides.length).toBeGreaterThan(0);
+    for (const guide of guides) {
+      expect(
+        hasPositionedAncestorWithinNav(guide, nav as Element),
+        `garis tanpa leluhur relative: ${guide.getAttribute('class')}`,
+      ).toBe(true);
+    }
+  });
+
+  it('memberi batang + stub pada baris item, dan batang pada header subgrup', () => {
+    state.path = '/';
+    render(<SidebarNav onNavigate={() => {}} />);
+    // Subgrup Construction harus punya batang turun ke anaknya
+    const construction = screen.getByRole('button', { name: 'Construction' });
+    expect(construction.querySelector('[data-tree-guide="trunk-bottom"]')).not.toBeNull();
+    // Item di dalamnya punya batang penuh + stub horizontal
+    const wp = screen.getByRole('link', { name: 'Work Packages' });
+    expect(wp.querySelector('[data-tree-guide="trunk-top"]')).not.toBeNull();
+    expect(wp.querySelector('[data-tree-guide="stub"]')).not.toBeNull();
+  });
+
+  it('anak terakhir tidak menggambar batang ke bawah (elbow └─)', () => {
+    state.path = '/';
+    render(<SidebarNav onNavigate={() => {}} />);
+    const handover = screen.getByRole('link', { name: 'Handover' }); // anak terakhir Construction
+    expect(handover.querySelector('[data-tree-guide="trunk-bottom"]')).toBeNull();
+    const wp = screen.getByRole('link', { name: 'Work Packages' }); // bukan terakhir
+    expect(wp.querySelector('[data-tree-guide="trunk-bottom"]')).not.toBeNull();
+  });
+
+  it('menggambar garis leluhur penuh pada item agar batang level-1 tidak putus', () => {
+    state.path = '/';
+    render(<SidebarNav onNavigate={() => {}} />);
+    const wp = screen.getByRole('link', { name: 'Work Packages' });
+    const full = wp.querySelector('[data-tree-guide="full"]');
+    expect(full).not.toBeNull();
+    // garis leluhur berada di kolom subgrup (left-5), bukan kolom item (left-8)
+    expect(full?.className).toContain('left-5');
+    expect(full?.className).toContain('inset-y-0');
+  });
+
+  it('meneruskan batang level-1 melewati subgrup yang bukan terakhir', () => {
+    state.path = '/';
+    render(<SidebarNav onNavigate={() => {}} />);
+    const construction = screen.getByRole('button', { name: 'Construction' });
+    // Construction bukan subgrup terakhir (ada HCM) → wajib punya batang bawah di x=5
+    const bottoms = Array.from(construction.querySelectorAll('[data-tree-guide="trunk-bottom"]')).map((g) => g.className);
+    expect(bottoms.some((c) => c.includes('left-5'))).toBe(true);
+  });
+
+  it('tidak meneruskan batang level-1 pada subgrup terakhir', () => {
+    state.path = '/';
+    render(<SidebarNav onNavigate={() => {}} />);
+    const hcm = screen.getByRole('button', { name: 'HCM' });
+    const bottoms = Array.from(hcm.querySelectorAll('[data-tree-guide="trunk-bottom"]')).map((g) => g.className);
+    expect(bottoms.some((c) => c.includes('left-5'))).toBe(false);
+  });
+
+  it('menyambung batang dari header grup ke anaknya', () => {
+    state.path = '/';
+    render(<SidebarNav onNavigate={() => {}} />);
+    // Project & Engineering adalah grup flat (tanpa subgrup) → header harus punya batang turun
+    const header = screen.getByRole('button', { name: 'Project & Engineering' });
+    expect(header.querySelector('[data-tree-guide="trunk-bottom"]')).not.toBeNull();
+  });
+
+  it('menyelaraskan batang subgrup dengan batang item anaknya (tidak patah)', () => {
+    state.path = '/';
+    render(<SidebarNav onNavigate={() => {}} />);
+    const construction = screen.getByRole('button', { name: 'Construction' });
+    const child = screen.getByRole('link', { name: 'Work Packages' });
+    const subBottoms = Array.from(construction.querySelectorAll('[data-tree-guide="trunk-bottom"]')).map((g) => g.className);
+    const childTrunk = child.querySelector('[data-tree-guide="trunk-top"]');
+    expect(childTrunk).not.toBeNull();
+    // Subgrup harus menggambar batang turun di kolom anaknya (left-8), bukan hanya left-5.
+    expect(subBottoms.some((c) => c.includes('left-8'))).toBe(true);
+    expect(childTrunk?.className).toContain('left-8');
+  });
+
+  it('menyelaraskan batang header grup dengan batang item grup flat', () => {
+    state.path = '/';
+    render(<SidebarNav onNavigate={() => {}} />);
+    const header = screen.getByRole('button', { name: 'Project & Engineering' });
+    const child = screen.getByRole('link', { name: 'Projects' });
+    expect(header.querySelector('[data-tree-guide="trunk-bottom"]')?.className).toContain('left-5');
+    expect(child.querySelector('[data-tree-guide="trunk-top"]')?.className).toContain('left-5');
+  });
+});
