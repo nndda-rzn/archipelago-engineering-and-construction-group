@@ -18,7 +18,12 @@ function makePrisma(overrides: Record<string, unknown> = {}) {
   } as never;
 }
 
-const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn(), invalidate: jest.fn() } as never;
+const cache = {
+  wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn(),
+  invalidate: jest.fn(),
+  del: jest.fn(),
+  delByPattern: jest.fn(),
+} as never;
 const audit = { record: jest.fn() } as never;
 
 /** ActualCostCalculator palsu: hitung dari ledger OUT + invoice journal. */
@@ -90,5 +95,61 @@ describe('ProjectService.register', () => {
   it('exposes the whitelist used for sorting', () => {
     expect(PROJECT_SORT_FIELDS).toContain('contractValue');
     expect(PROJECT_SORT_FIELDS).not.toContain('legalEntityId');
+  });
+});
+
+describe('ProjectService.update', () => {
+  function makeUpdatePrisma() {
+    return {
+      project: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'p1', code: 'PRJ-01', name: 'Alpha', status: 'ACTIVE' }),
+        update: jest.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => Promise.resolve({ id: 'p1', ...data })),
+      },
+    } as never;
+  }
+
+  it('updates editable metadata and records an audit entry', async () => {
+    const prisma = makeUpdatePrisma();
+    const record = jest.fn();
+    const svc = new ProjectService(prisma, { record } as never, cache, makeActualCost());
+
+    await svc.update('p1', { name: 'Alpha v2', manager: 'Budi' }, 'user-1');
+
+    const update = (prisma as unknown as { project: { update: jest.Mock } }).project.update;
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'p1' }, data: expect.objectContaining({ name: 'Alpha v2', manager: 'Budi' }) }));
+    expect(record).toHaveBeenCalledWith(expect.objectContaining({ action: 'PROJECT.UPDATE', resourceId: 'p1' }));
+  });
+
+  it('rejects an unknown project with 404', async () => {
+    const prisma = { project: { findUnique: jest.fn().mockResolvedValue(null), update: jest.fn() } } as never;
+    const svc = new ProjectService(prisma, { record: jest.fn() } as never, cache, makeActualCost());
+    await expect(svc.update('nope', { name: 'X' }, 'u')).rejects.toThrow(/not found/i);
+  });
+
+  it('converts date strings to Date and empty strings to null', async () => {
+    const prisma = makeUpdatePrisma();
+    const svc = new ProjectService(prisma, { record: jest.fn() } as never, cache, makeActualCost());
+    await svc.update('p1', { startDate: '2026-03-01', completionDate: '' }, 'u');
+    const update = (prisma as unknown as { project: { update: jest.Mock } }).project.update;
+    const data = update.mock.calls[0]![0].data as Record<string, unknown>;
+    expect(data.startDate).toBeInstanceOf(Date);
+    expect(data.completionDate).toBeNull();
+  });
+
+  it('rejects a status outside the allowed set', async () => {
+    const prisma = makeUpdatePrisma();
+    const svc = new ProjectService(prisma, { record: jest.fn() } as never, cache, makeActualCost());
+    // Tipe sudah melarang ini; diuji di runtime untuk memastikan API juga menolak.
+    await expect(svc.update('p1', { status: 'BOGUS' as never }, 'u')).rejects.toThrow(/status/i);
+  });
+
+  it('ignores fields that are not editable (code, legalEntityId)', async () => {
+    const prisma = makeUpdatePrisma();
+    const svc = new ProjectService(prisma, { record: jest.fn() } as never, cache, makeActualCost());
+    await svc.update('p1', { code: 'HACKED', legalEntityId: 'other' } as never, 'u');
+    const update = (prisma as unknown as { project: { update: jest.Mock } }).project.update;
+    const data = update.mock.calls[0]![0].data as Record<string, unknown>;
+    expect(data.code).toBeUndefined();
+    expect(data.legalEntityId).toBeUndefined();
   });
 });

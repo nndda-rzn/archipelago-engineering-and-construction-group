@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '@/test/render';
 
 const params = vi.hoisted(() => ({ projectId: 'p1' }));
+const updateMutate = vi.hoisted(() => vi.fn());
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to, params: p, ...rest }: { children: React.ReactNode; to: string; params?: Record<string, string> }) => {
@@ -17,6 +18,7 @@ vi.mock('@/entities/project', async () => {
   const actual = await vi.importActual<typeof import('@/entities/project')>('@/entities/project');
   return {
     ...actual,
+    useUpdateProject: () => ({ mutate: updateMutate, isPending: false, isError: false }),
     useProject: () => ({
       data: {
         id: 'p1', code: 'PRJ-01', name: 'Alpha EPC', client: 'PT Klien', legalEntityId: 'le1',
@@ -108,5 +110,40 @@ describe('ProjectDetailPage', () => {
   it('offers a back link to the project list', () => {
     renderWithProviders(<ProjectDetailPage />);
     expect(screen.getByRole('link', { name: /Projects/i }).getAttribute('href')).toBe('/projects');
+  });
+
+  it('offers an edit action that opens a form pre-filled with current values', () => {
+    renderWithProviders(<ProjectDetailPage />);
+    fireEvent.click(screen.getByRole('button', { name: /Edit project/i }));
+    expect((screen.getByLabelText(/Project name/i) as HTMLInputElement).value).toBe('Alpha EPC');
+    expect((screen.getByLabelText(/Manager/i) as HTMLInputElement).value).toBe('Andi');
+  });
+
+  it('does not offer to edit the code or legal entity (identity fields)', () => {
+    renderWithProviders(<ProjectDetailPage />);
+    fireEvent.click(screen.getByRole('button', { name: /Edit project/i }));
+    expect(screen.queryByLabelText(/Project code/i)).toBeNull();
+    expect(screen.queryByLabelText(/Legal entity/i)).toBeNull();
+  });
+
+  it('offers a status control limited to the official statuses', () => {
+    renderWithProviders(<ProjectDetailPage />);
+    fireEvent.click(screen.getByRole('button', { name: /Edit project/i }));
+    const status = screen.getByLabelText(/Status/i);
+    expect(status.tagName).toBe('SELECT');
+    const values = Array.from(status.querySelectorAll('option')).map((o) => o.getAttribute('value'));
+    expect(values).toEqual(['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CLOSED']);
+  });
+
+  it('submits only editable fields (never code or legalEntityId)', async () => {
+    renderWithProviders(<ProjectDetailPage />);
+    fireEvent.click(screen.getByRole('button', { name: /Edit project/i }));
+    fireEvent.change(screen.getByLabelText(/Project name/i), { target: { value: 'Alpha v2' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Save/i }));
+    await waitFor(() => expect(updateMutate).toHaveBeenCalled());
+    const payload = updateMutate.mock.calls[0]![0] as Record<string, unknown>;
+    expect(payload.name).toBe('Alpha v2');
+    expect(payload.code).toBeUndefined();
+    expect(payload.legalEntityId).toBeUndefined();
   });
 });

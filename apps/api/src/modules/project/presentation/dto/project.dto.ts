@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsDateString, IsInt, IsOptional, IsString, Length, Max, Min } from 'class-validator';
+import { PartialType } from '@nestjs/mapped-types';
 
 export class CreateProjectDto {
   @IsString()
@@ -61,8 +62,7 @@ export class CreateProjectDto {
   manager?: string;
 }
 
-export class ListProjectQueryDto {
-  @IsOptional()
+export class ListProjectQueryDto {  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
@@ -92,3 +92,9 @@ export class ListProjectQueryDto {
   @IsString()
   order?: string;
 }
+
+/**
+ * Body `PATCH /projects/:id`. `code` & `legalEntityId` sengaja tidak ada —
+ * kode adalah identitas, entity menentukan pembukuan.
+ */
+export class UpdateProjectDto extends PartialType(CreateProjectDto) {}

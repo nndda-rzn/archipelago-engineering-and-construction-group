@@ -1,6 +1,6 @@
-import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
-import { PROJECT_SORT_FIELDS, type ProjectRegister, type ProjectSortField } from '@aec/api-contracts';
+import { PROJECT_SORT_FIELDS, PROJECT_STATUSES, type ProjectRegister, type ProjectSortField, type UpdateProject } from '@aec/api-contracts';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { CacheService } from '@/shared/cache/cache.service';
@@ -135,6 +135,49 @@ export class ProjectService {
     });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
     return project;
+  }
+
+  /**
+   * Ubah metadata proyek yang boleh diedit. **`code` dan `legalEntityId` sengaja
+   * tidak dapat diubah** (kode adalah identitas, entity menentukan pembukuan);
+   * keduanya diabaikan walau dikirim, bukan error — supaya klien lama tetap aman.
+   * Tanggal kosong ('') → `null`; status divalidasi terhadap daftar resmi.
+   */
+  async update(id: string, input: UpdateProject, actorId: string) {
+    const existing = await this.prisma.project.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
+
+    if (input.status !== undefined && !(PROJECT_STATUSES as readonly string[]).includes(input.status)) {
+      throw new BadRequestException({ code: 'PROJECT_STATUS_INVALID', message: `Unknown status: ${input.status}` });
+    }
+
+    const data: Prisma.ProjectUpdateInput = {};
+    if (input.name !== undefined) data.name = input.name;
+    if (input.client !== undefined) data.client = input.client;
+    if (input.businessUnit !== undefined) data.businessUnit = input.businessUnit || null;
+    if (input.location !== undefined) data.location = input.location || null;
+    if (input.contractValue !== undefined) data.contractValue = input.contractValue;
+    if (input.advanceAmount !== undefined) data.advanceAmount = input.advanceAmount;
+    if (input.advanceRecoveryRate !== undefined) data.advanceRecoveryRate = input.advanceRecoveryRate;
+    if (input.director !== undefined) data.director = input.director || null;
+    if (input.manager !== undefined) data.manager = input.manager || null;
+    if (input.status !== undefined) data.status = input.status;
+    if (input.startDate !== undefined) data.startDate = input.startDate ? new Date(input.startDate) : null;
+    if (input.completionDate !== undefined) data.completionDate = input.completionDate ? new Date(input.completionDate) : null;
+
+    const updated = await this.prisma.project.update({ where: { id }, data });
+
+    await this.audit.record({
+      userId: actorId,
+      action: 'PROJECT.UPDATE',
+      resource: 'Project',
+      resourceId: id,
+      newValue: data as Record<string, unknown>,
+      source: 'api',
+    });
+
+    await invalidateAnalytics(this.cache);
+    return updated;
   }
 
   async create(dto: CreateProjectDto, actorId: string) {
