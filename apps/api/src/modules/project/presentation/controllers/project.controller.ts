@@ -8,6 +8,7 @@ import { CreateProjectDto, ListProjectQueryDto } from '../dto/project.dto';
 import { ProjectService } from '../../application/services/project.service';
 import { ProjectHealthService } from '../../application/services/project-health.service';
 import { PortfolioService } from '../../application/services/portfolio.service';
+import { PortfolioEvmService } from '../../application/services/portfolio-evm.service';
 
 @Controller('projects')
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -16,6 +17,7 @@ export class ProjectController {
     @Inject(ProjectService) private readonly service: ProjectService,
     @Inject(ProjectHealthService) private readonly healthSvc: ProjectHealthService,
     @Inject(PortfolioService) private readonly portfolioSvc: PortfolioService,
+    @Inject(PortfolioEvmService) private readonly portfolioEvmSvc: PortfolioEvmService,
   ) {}
 
   @Get()
@@ -28,6 +30,12 @@ export class ProjectController {
   @Permissions(Permission.ProjectView)
   portfolio(@Query() query: PortfolioFilterParams) {
     return this.portfolioSvc.portfolio(query);
+  }
+
+  @Get('portfolio/evm')
+  @Permissions(Permission.ProjectView)
+  portfolioEvm(@Query() query: PortfolioFilterParams) {
+    return this.portfolioEvmSvc.portfolioEvm(query);
   }
 
   @Get(':id')

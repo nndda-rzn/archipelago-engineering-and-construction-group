@@ -39,7 +39,7 @@ export function InspectionForm({ onDone }: { onDone: () => void }) {
           <Input id="ins-desc" error={!!errors.description} {...register('description')} />
           {errors.description && <p className="mt-1 text-caption text-destructive-600">{errors.description.message}</p>}
         </div>
-        <Button type="submit" loading={create.isPending}>Buat Inspeksi</Button>
+        <Button type="submit" loading={create.isPending}>Create Inspection</Button>
       </div>
     </form>
   );

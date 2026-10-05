@@ -1,26 +1,23 @@
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Cell } from 'recharts';
 import { useNavigate } from '@tanstack/react-router';
 import { Badge } from '@aec/ui';
-import type { Portfolio } from '@aec/api-contracts';
-import { usePortfolio } from '@/features/project';
-import { useProjectCostSummary } from '@/features/analytics';
+import type { Portfolio, PortfolioEvmItem } from '@aec/api-contracts';
+import { usePortfolio, usePortfolioEvm } from '@/features/project';
 import type { DashboardFilter } from '@/shared/lib/dashboard-period';
 import { formatIdr } from '@/shared/lib/format';
 
-export interface CanvasPoint {
+export interface EvmPoint {
   projectId: string;
   projectCode: string;
   projectName: string;
-  usage: number;
-  margin: number;
+  cpi: number;
+  spi: number;
   contract: number;
   health: Portfolio['items'][number]['health'];
-  hasBudget: boolean;
-  hasRevenue: boolean;
+  hasEvm: boolean;
 }
 
 type PortfolioItem = Portfolio['items'][number];
-type CostItem = { projectCode: string; revenue: number; cost: number };
 
 const HEALTH_COLORS: Record<Portfolio['items'][number]['health'], string> = {
   ON_TRACK: '#22c55e',
@@ -37,33 +34,29 @@ const HEALTH_LABEL: Record<Portfolio['items'][number]['health'], string> = {
 };
 
 /**
- * Gabungkan portofolio + cost summary (join lewat `projectCode`) menjadi titik canvas.
- * Aman terhadap bagi nol: proyek tanpa budget/revenue → 0, bukan NaN/-Infinity.
+ * Gabungkan portofolio + EVM rollup (join lewat `projectId`) menjadi titik canvas.
+ * Proyek tanpa data EVM diletakkan di persilangan 1.0 dan ditandai `hasEvm:false`.
  */
-export function buildCanvasPoints(items: PortfolioItem[], costItems: CostItem[]): CanvasPoint[] {
-  const costByCode = new Map(costItems.map((c) => [c.projectCode, c]));
+export function buildEvmPoints(items: PortfolioItem[], evmItems: PortfolioEvmItem[]): EvmPoint[] {
+  const evmById = new Map(evmItems.map((e) => [e.projectId, e]));
   return items.map((p) => {
-    const cost = costByCode.get(p.projectCode);
-    const revenue = cost ? cost.revenue : 0;
-    const projectCost = cost ? cost.cost : 0;
-    const hasBudget = p.budget > 0;
-    const hasRevenue = revenue > 0;
+    const evm = evmById.get(p.projectId);
+    const hasEvm = evm?.hasEvm ?? false;
     return {
       projectId: p.projectId,
       projectCode: p.projectCode,
       projectName: p.projectName,
-      usage: hasBudget ? Math.round((p.actual / p.budget) * 1000) / 10 : 0,
-      margin: hasRevenue ? Math.round(((revenue - projectCost) / revenue) * 1000) / 10 : 0,
+      cpi: hasEvm && evm?.cpi != null ? evm.cpi : 1,
+      spi: hasEvm && evm?.spi != null ? evm.spi : 1,
       contract: p.contractValue,
       health: p.health,
-      hasBudget,
-      hasRevenue,
+      hasEvm,
     };
   });
 }
 
 interface TooltipPayload {
-  payload?: CanvasPoint;
+  payload?: EvmPoint;
 }
 
 function CanvasTooltip({ active, payload }: { active?: boolean; payload?: TooltipPayload[] }) {
@@ -73,8 +66,14 @@ function CanvasTooltip({ active, payload }: { active?: boolean; payload?: Toolti
   return (
     <div className="rounded-md border border-neutral-200 bg-white p-2 text-caption shadow-md">
       <p className="font-medium text-neutral-900">{p.projectCode} · {p.projectName}</p>
-      <p className="text-neutral-600">Usage: {p.hasBudget ? `${p.usage}%` : 'no budget'}</p>
-      <p className="text-neutral-600">Margin: {p.hasRevenue ? `${p.margin}%` : 'no revenue'}</p>
+      {p.hasEvm ? (
+        <>
+          <p className="text-neutral-600">CPI: {p.cpi.toFixed(2)}</p>
+          <p className="text-neutral-600">SPI: {p.spi.toFixed(2)}</p>
+        </>
+      ) : (
+        <p className="text-neutral-500">No EVM data</p>
+      )}
       <p className="text-neutral-600">Contract: {formatIdr(p.contract)}</p>
     </div>
   );
@@ -83,29 +82,34 @@ function CanvasTooltip({ active, payload }: { active?: boolean; payload?: Toolti
 export function PortfolioCanvas({ filter = {} }: { filter?: DashboardFilter }) {
   const navigate = useNavigate();
   const portfolio = usePortfolio(filter);
-  const costSummary = useProjectCostSummary();
+  const evm = usePortfolioEvm(filter);
 
-  const points = buildCanvasPoints(portfolio.data?.items ?? [], costSummary.data?.items ?? []);
+  const points = buildEvmPoints(portfolio.data?.items ?? [], evm.data?.items ?? []);
 
   return (
     <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <ResponsiveContainer width="100%" height={280}>
         <ScatterChart margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
-          <XAxis type="number" dataKey="usage" name="Budget usage %" tick={{ fontSize: 11, fill: '#71717a' }} axisLine={{ stroke: '#e4e4e7' }} tickLine={false} />
-          <YAxis type="number" dataKey="margin" name="Margin %" tick={{ fontSize: 11, fill: '#71717a' }} axisLine={{ stroke: '#e4e4e7' }} tickLine={false} width={48} />
-          <ReferenceLine x={100} stroke="#d4d4d8" />
-          <ReferenceLine y={0} stroke="#d4d4d8" />
+          <XAxis type="number" dataKey="cpi" name="CPI" domain={[0.6, 1.4]} tick={{ fontSize: 11, fill: '#71717a' }} axisLine={{ stroke: '#e4e4e7' }} tickLine={false} />
+          <YAxis type="number" dataKey="spi" name="SPI" domain={[0.6, 1.4]} tick={{ fontSize: 11, fill: '#71717a' }} axisLine={{ stroke: '#e4e4e7' }} tickLine={false} width={40} />
+          <ReferenceLine x={1} stroke="#d4d4d8" />
+          <ReferenceLine y={1} stroke="#d4d4d8" />
           <Tooltip content={<CanvasTooltip />} cursor={{ strokeDasharray: '3 3' }} />
           <Scatter
             data={points}
             onClick={(point: unknown) => {
-              const p = point as CanvasPoint;
+              const p = point as EvmPoint;
               if (p?.projectId) navigate({ to: '/project-health', search: { project: p.projectId } as never });
             }}
           >
             {points.map((p) => (
-              <Cell key={p.projectId} fill={HEALTH_COLORS[p.health]} cursor="pointer" />
+              <Cell
+                key={p.projectId}
+                fill={HEALTH_COLORS[p.health]}
+                fillOpacity={p.hasEvm ? 1 : 0.35}
+                cursor="pointer"
+              />
             ))}
           </Scatter>
         </ScatterChart>
@@ -118,7 +122,9 @@ export function PortfolioCanvas({ filter = {} }: { filter?: DashboardFilter }) {
             {HEALTH_LABEL[k]}
           </Badge>
         ))}
+        <Badge variant="outline" className="gap-1.5 text-neutral-500">No EVM data</Badge>
       </div>
+      <p className="mt-2 text-caption text-neutral-500">X = CPI (cost efficiency) · Y = SPI (schedule efficiency) · crosshair at 1.0</p>
     </div>
   );
 }

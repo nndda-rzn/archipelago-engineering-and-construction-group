@@ -2,7 +2,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { useNavigate } from '@tanstack/react-router';
 import { Badge, BulletBar, DataGrid, MiniStackedBar } from '@aec/ui';
 import type { Portfolio } from '@aec/api-contracts';
-import { usePortfolio } from '@/features/project';
+import { usePortfolio, usePortfolioEvm } from '@/features/project';
 import type { DashboardFilter } from '@/shared/lib/dashboard-period';
 import { formatIdr } from '@/shared/lib/format';
 
@@ -18,7 +18,12 @@ export const healthMeta: Record<HealthKey, { label: string; dotClass: string; ba
 
 type PortfolioItem = Portfolio['items'][number];
 
-const helper = createColumnHelper<PortfolioItem>();
+/** Baris spine = item portofolio + data EVM (opsional, dari rollup). */
+export interface PortfolioRow extends PortfolioItem {
+  evm?: { hasEvm: boolean; cpi: number | null; spi: number | null };
+}
+
+const helper = createColumnHelper<PortfolioRow>();
 
 export const portfolioColumns = [
   helper.accessor('projectCode', {
@@ -101,17 +106,45 @@ export const portfolioColumns = [
       );
     },
   }),
+  helper.display({
+    id: 'evm',
+    header: 'CPI / SPI',
+    cell: (info) => {
+      const evm = info.row.original.evm;
+      if (!evm || !evm.hasEvm || evm.cpi == null || evm.spi == null) {
+        return <span className="font-mono text-caption text-neutral-400">—</span>;
+      }
+      const cls = (v: number) => (v >= 1 ? 'text-success-700' : 'text-destructive-600');
+      return (
+        <span className="font-mono text-caption tabular-nums">
+          <span className={cls(evm.cpi)}>{evm.cpi.toFixed(2)}</span>
+          <span className="text-neutral-300"> · </span>
+          <span className={cls(evm.spi)}>{evm.spi.toFixed(2)}</span>
+        </span>
+      );
+    },
+  }),
 ];
 
 export function PortfolioSpine({ filter = {} }: { filter?: DashboardFilter }) {
   const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = usePortfolio(filter);
+  const evm = usePortfolioEvm(filter);
+
+  const evmById = new Map((evm.data?.items ?? []).map((e) => [e.projectId, e]));
+  const rows: PortfolioRow[] = (data?.items ?? []).map((p) => {
+    const e = evmById.get(p.projectId);
+    return {
+      ...p,
+      evm: e ? { hasEvm: e.hasEvm, cpi: e.cpi, spi: e.spi } : undefined,
+    };
+  });
 
   return (
     <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
       <DataGrid
         columns={portfolioColumns}
-        data={data?.items ?? []}
+        data={rows}
         isLoading={isLoading}
         isError={isError}
         onRetry={() => refetch()}

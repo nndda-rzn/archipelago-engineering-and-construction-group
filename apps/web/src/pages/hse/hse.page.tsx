@@ -15,11 +15,12 @@ const TAB_LABELS: Record<Tab, string> = {
 
 export function HsePage() {
   const [tab, setTab] = useUrlFilter('tab', 'observations') as [Tab, (v: string) => void];
+  const [status] = useUrlFilter('status');
   const [showForm, setShowForm] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<HseIncident | null>(null);
   const { pagination, onPaginationChange } = useUrlPagination(PAGE_SIZE);
   const obs = useObservations({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
-  const incidents = useIncidents({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
+  const incidents = useIncidents({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize, status: status || undefined });
   const permits = usePermits({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
   const createCa = useCreateCorrectiveAction();
   const [caAction, setCaAction] = useState('');

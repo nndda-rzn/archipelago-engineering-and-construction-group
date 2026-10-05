@@ -9,8 +9,9 @@ const CLAIM_TYPES = ['PROGRESS', 'COST', 'TIME', 'EOT', 'CONTRACTUAL'] as const;
 export function ProgressClaimPage() {
   const [showForm, setShowForm] = useState(false);
   const [claimTypeFilter, setClaimTypeFilter] = useUrlFilter('claimType');
+  const [statusFilter] = useUrlFilter('status');
   const { pagination, onPaginationChange } = useUrlPagination(PAGE_SIZE);
-  const { data, isLoading, isError, refetch } = useProgressClaims({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize, claimType: claimTypeFilter || undefined });
+  const { data, isLoading, isError, refetch } = useProgressClaims({ page: pagination.pageIndex + 1, pageSize: pagination.pageSize, claimType: claimTypeFilter || undefined, status: statusFilter || undefined });
 
   return (
     <div>

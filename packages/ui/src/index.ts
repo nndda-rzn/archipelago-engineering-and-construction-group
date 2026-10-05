@@ -20,6 +20,7 @@ export { StatCard, type StatCardProps } from './primitives/stat-card';
 export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } from './primitives/segmented-control';
 export { SignalChip, type SignalChipProps, type SignalSeverity } from './primitives/signal-chip';
 export { BulletBar, MiniStackedBar, type BulletBarProps, type MiniStackedBarProps } from './primitives/data-bar';
+export { Sparkline, type SparklineProps } from './primitives/sparkline';
 export { Label } from './primitives/label';
 export { Dialog, DialogTrigger, DialogClose, DialogOverlay, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, ConfirmDialog } from './primitives/dialog';
 export { Select, SelectGroup, SelectValue, SelectTrigger, SelectContent, SelectItem } from './primitives/select';

@@ -39,7 +39,7 @@ export function PunchForm({ onDone }: { onDone: () => void }) {
           <Input id="punch-desc" error={!!errors.description} {...register('description')} />
           {errors.description && <p className="mt-1 text-caption text-destructive-600">{errors.description.message}</p>}
         </div>
-        <Button type="submit" loading={create.isPending}>Buat Punch</Button>
+        <Button type="submit" loading={create.isPending}>Create Punch</Button>
       </div>
     </form>
   );

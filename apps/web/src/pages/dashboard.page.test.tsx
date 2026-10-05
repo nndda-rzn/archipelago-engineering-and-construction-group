@@ -12,6 +12,7 @@ vi.mock('@/widgets/dashboard-filter-bar', () => ({
 }));
 vi.mock('@/widgets/signal-rail', () => ({ SignalRail: () => <div data-testid="signal-rail" /> }));
 vi.mock('@/widgets/hero-band', () => ({ HeroBand: () => <div data-testid="hero-band" /> }));
+vi.mock('@/widgets/liquidity-panel', () => ({ LiquidityPanel: () => <div data-testid="liquidity" /> }));
 vi.mock('@/widgets/financial-band', () => ({ FinancialBand: () => <div data-testid="financial-band" /> }));
 vi.mock('@/widgets/portfolio-canvas', () => ({ PortfolioCanvas: () => <div data-testid="canvas" /> }));
 vi.mock('@/widgets/portfolio-spine', () => ({ PortfolioSpine: () => <div data-testid="spine" /> }));
@@ -21,7 +22,7 @@ describe('DashboardPage', () => {
     const { DashboardPage } = await import('./dashboard.page');
     render(<DashboardPage />);
     expect(screen.getByRole('heading', { level: 1 })).toBeTruthy();
-    for (const id of ['filter-bar', 'signal-rail', 'hero-band', 'financial-band']) {
+    for (const id of ['filter-bar', 'signal-rail', 'hero-band', 'liquidity', 'financial-band']) {
       expect(screen.getByTestId(id)).toBeTruthy();
     }
   });

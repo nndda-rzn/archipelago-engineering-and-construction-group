@@ -33,10 +33,10 @@ export function buildSignals(input: SignalInput): Signal[] {
     signals.push({ key: 'anomalies', severity: 'high', count: input.anomalies.high, label: 'Anomalies', context: 'high severity', to: '/analytics' });
   }
   if (input.openIncidents > 0) {
-    signals.push({ key: 'incidents', severity: 'high', count: input.openIncidents, label: 'Incidents', context: 'open', to: '/hse?tab=incidents' });
+    signals.push({ key: 'incidents', severity: 'high', count: input.openIncidents, label: 'Incidents', context: 'open', to: '/hse?tab=incidents&status=OPEN' });
   }
   if (input.openNcrs > 0) {
-    signals.push({ key: 'ncrs', severity: 'high', count: input.openNcrs, label: 'NCRs', context: 'open', to: '/quality?tab=ncrs' });
+    signals.push({ key: 'ncrs', severity: 'high', count: input.openNcrs, label: 'NCRs', context: 'open', to: '/quality?tab=ncrs&status=OPEN' });
   }
   if (input.anomalies.medium > 0) {
     signals.push({ key: 'anomalies-medium', severity: 'medium', count: input.anomalies.medium, label: 'Anomalies', context: 'medium severity', to: '/analytics' });
@@ -48,13 +48,13 @@ export function buildSignals(input: SignalInput): Signal[] {
     signals.push({ key: 'overdueAr', severity: 'medium', count: input.overdueAr, label: 'AR overdue', context: '61+ days', to: '/finance/client-invoices' });
   }
   if (input.openClaims > 0) {
-    signals.push({ key: 'claims', severity: 'low', count: input.openClaims, label: 'Claims DRAFT', context: 'need certification', to: '/finance/progress-claims' });
+    signals.push({ key: 'claims', severity: 'low', count: input.openClaims, label: 'Claims DRAFT', context: 'need certification', to: '/finance/progress-claims?status=DRAFT' });
   }
   if (input.pendingApprovals > 0) {
     signals.push({ key: 'approvals', severity: 'low', count: input.pendingApprovals, label: 'Approvals', context: 'pending', to: '/approvals' });
   }
   if (input.openPunchItems > 0) {
-    signals.push({ key: 'punch', severity: 'low', count: input.openPunchItems, label: 'Punch items', context: 'open', to: '/quality?tab=punch' });
+    signals.push({ key: 'punch', severity: 'low', count: input.openPunchItems, label: 'Punch items', context: 'open', to: '/quality?tab=punch&status=OPEN' });
   }
   if (input.anomalies.low > 0) {
     signals.push({ key: 'anomalies-low', severity: 'low', count: input.anomalies.low, label: 'Anomalies', context: 'low severity', to: '/analytics' });
