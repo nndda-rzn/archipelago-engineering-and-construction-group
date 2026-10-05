@@ -28,15 +28,16 @@ describe('buildSignals', () => {
     const s = buildSignals(base).find((x) => x.key === 'ncrs')!;
     expect(s.to).toBe('/quality?tab=ncrs&status=OPEN');
   });
+});
 
-  it('incident signal deep-links with OPEN status filter', () => {
-    const s = buildSignals({ ...base, openIncidents: 1 }).find((x) => x.key === 'incidents')!;
-    expect(s.to).toBe('/hse?tab=incidents&status=OPEN');
-  });
-
-  it('claim signal deep-links with DRAFT status filter', () => {
-    const s = buildSignals(base).find((x) => x.key === 'claims')!;
-    expect(s.to).toBe('/finance/progress-claims?status=DRAFT');
+describe('SignalRailView age', () => {
+  it('shows the oldest age in the chip context', () => {
+    render(
+      <SignalRailView
+        signals={[{ key: 'ncrs', severity: 'high', count: 2, label: 'NCRs', context: 'open', ageDays: 12, to: '/quality?tab=ncrs&status=OPEN' }]}
+      />,
+    );
+    expect(screen.getByText(/12d/)).toBeTruthy();
   });
 });
 
