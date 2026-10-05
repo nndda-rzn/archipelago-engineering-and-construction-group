@@ -181,6 +181,19 @@ describe('pohon tersambung (garis pemandu)', () => {
     }
   });
 
+  /** Baris pemilik garis (garis kini di luar `<a>`, jadi tak ikut tersorot). */
+  const rowOf = (link: HTMLElement) => link.closest('[data-nav-row]') as HTMLElement;
+
+  it('menempatkan garis di luar <a> agar tidak ikut tersorot saat diklik', () => {
+    state.path = '/';
+    render(<SidebarNav onNavigate={() => {}} />);
+    const wp = screen.getByRole('link', { name: 'Work Packages' });
+    // Inti permintaan: elemen yang bisa diklik tidak boleh memuat garis tree.
+    expect(wp.querySelectorAll('[data-tree-guide]').length).toBe(0);
+    // Tapi garisnya tetap ada, di baris yang sama.
+    expect(rowOf(wp).querySelectorAll('[data-tree-guide]').length).toBeGreaterThan(0);
+  });
+
   it('memberi batang + stub pada baris item, dan batang pada header subgrup', () => {
     state.path = '/';
     render(<SidebarNav onNavigate={() => {}} />);
@@ -188,7 +201,7 @@ describe('pohon tersambung (garis pemandu)', () => {
     const construction = screen.getByRole('button', { name: 'Construction' });
     expect(construction.querySelector('[data-tree-guide="trunk-bottom"]')).not.toBeNull();
     // Item di dalamnya punya batang penuh + stub horizontal
-    const wp = screen.getByRole('link', { name: 'Work Packages' });
+    const wp = rowOf(screen.getByRole('link', { name: 'Work Packages' }));
     expect(wp.querySelector('[data-tree-guide="trunk-top"]')).not.toBeNull();
     expect(wp.querySelector('[data-tree-guide="stub"]')).not.toBeNull();
   });
@@ -196,16 +209,16 @@ describe('pohon tersambung (garis pemandu)', () => {
   it('anak terakhir tidak menggambar batang ke bawah (elbow └─)', () => {
     state.path = '/';
     render(<SidebarNav onNavigate={() => {}} />);
-    const handover = screen.getByRole('link', { name: 'Handover' }); // anak terakhir Construction
+    const handover = rowOf(screen.getByRole('link', { name: 'Handover' })); // anak terakhir Construction
     expect(handover.querySelector('[data-tree-guide="trunk-bottom"]')).toBeNull();
-    const wp = screen.getByRole('link', { name: 'Work Packages' }); // bukan terakhir
+    const wp = rowOf(screen.getByRole('link', { name: 'Work Packages' })); // bukan terakhir
     expect(wp.querySelector('[data-tree-guide="trunk-bottom"]')).not.toBeNull();
   });
 
   it('menggambar garis leluhur penuh pada item agar batang level-1 tidak putus', () => {
     state.path = '/';
     render(<SidebarNav onNavigate={() => {}} />);
-    const wp = screen.getByRole('link', { name: 'Work Packages' });
+    const wp = rowOf(screen.getByRole('link', { name: 'Work Packages' }));
     const full = wp.querySelector('[data-tree-guide="full"]');
     expect(full).not.toBeNull();
     // garis leluhur berada di kolom subgrup (left-5), bukan kolom item (left-8)
@@ -242,7 +255,7 @@ describe('pohon tersambung (garis pemandu)', () => {
     state.path = '/';
     render(<SidebarNav onNavigate={() => {}} />);
     const construction = screen.getByRole('button', { name: 'Construction' });
-    const child = screen.getByRole('link', { name: 'Work Packages' });
+    const child = rowOf(screen.getByRole('link', { name: 'Work Packages' }));
     const subBottoms = Array.from(construction.querySelectorAll('[data-tree-guide="trunk-bottom"]')).map((g) => g.className);
     const childTrunk = child.querySelector('[data-tree-guide="trunk-top"]');
     expect(childTrunk).not.toBeNull();
@@ -255,8 +268,19 @@ describe('pohon tersambung (garis pemandu)', () => {
     state.path = '/';
     render(<SidebarNav onNavigate={() => {}} />);
     const header = screen.getByRole('button', { name: 'Project & Engineering' });
-    const child = screen.getByRole('link', { name: 'Projects' });
+    const child = rowOf(screen.getByRole('link', { name: 'Projects' }));
     expect(header.querySelector('[data-tree-guide="trunk-bottom"]')?.className).toContain('left-5');
     expect(child.querySelector('[data-tree-guide="trunk-top"]')?.className).toContain('left-5');
+  });
+
+  it('garis tree selalu netral (tidak menyala saat item aktif)', () => {
+    state.path = '/finance/journals';
+    const { container } = render(<SidebarNav onNavigate={() => {}} />);
+    const guides = Array.from(container.querySelectorAll('[data-tree-guide]'));
+    expect(guides.length).toBeGreaterThan(0);
+    for (const guide of guides) {
+      expect(guide.className).toContain('bg-neutral-200');
+      expect(guide.className).not.toContain('bg-neutral-900');
+    }
   });
 });
