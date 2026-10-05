@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createProjectSchema, projectListResponseSchema, projectRegisterSchema, projectSchema, type CreateProject, type Project } from '@aec/api-contracts';
-import { getJson, postJson } from '@/shared/lib/http';
+import { createProjectSchema, projectListResponseSchema, projectRegisterSchema, projectSchema, updateProjectSchema, type CreateProject, type Project, type UpdateProject } from '@aec/api-contracts';
+import { getJson, patchJson, postJson } from '@/shared/lib/http';
 
 export const projectKeys = {
   all: ['projects'] as const,
@@ -38,6 +38,24 @@ export function useProject(id: string) {
       return projectSchema.extend({ legalEntity: projectSchema.partial().optional() }).parse(data) as Project;
     },
     enabled: !!id,
+  });
+}
+
+/**
+ * Ubah metadata proyek (PATCH). `code` & `legalEntityId` tidak dikirim —
+ * keduanya bukan field yang dapat diubah.
+ */
+export function useUpdateProject(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: [...projectKeys.all, 'update', id],
+    mutationFn: async (input: UpdateProject) => {
+      const parsed = updateProjectSchema.parse(input);
+      return patchJson<unknown>(`/projects/${id}`, parsed);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: projectKeys.all });
+    },
   });
 }
 

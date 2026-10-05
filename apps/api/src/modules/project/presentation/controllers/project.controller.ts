@@ -1,10 +1,10 @@
-import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import type { PortfolioFilterParams } from '@aec/api-contracts';
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
 import { Permission } from '@/shared/permissions/permissions';
-import { CreateProjectDto, ListProjectQueryDto } from '../dto/project.dto';
+import { CreateProjectDto, ListProjectQueryDto, UpdateProjectDto } from '../dto/project.dto';
 import { ProjectService } from '../../application/services/project.service';
 import { ProjectHealthService } from '../../application/services/project-health.service';
 import { PortfolioService } from '../../application/services/portfolio.service';
@@ -65,5 +65,11 @@ export class ProjectController {
   @Permissions(Permission.ProjectCreate)
   create(@Body() dto: CreateProjectDto, @Req() request: { user?: { sub?: string } }) {
     return this.service.create(dto, request.user?.sub ?? 'system');
+  }
+
+  @Patch(':id')
+  @Permissions(Permission.ProjectEdit)
+  update(@Param('id') id: string, @Body() dto: UpdateProjectDto, @Req() request: { user?: { sub?: string } }) {
+    return this.service.update(id, dto, request.user?.sub ?? 'system');
   }
 }

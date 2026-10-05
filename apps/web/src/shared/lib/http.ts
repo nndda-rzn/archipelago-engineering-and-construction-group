@@ -81,6 +81,29 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
   return res.text().then((text) => JSON.parse(text, jsonReviver)) as Promise<T>;
 }
 
+/** Sama seperti `postJson`, tetapi memakai method PATCH (update sebagian). */
+export async function patchJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'PATCH',
+    headers: { ...AUTH_HEADERS(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    if (res.status === 401) handleUnauthorized();
+    const errBody = (await res.json().catch(() => null)) as {
+      error?: { code?: string; message?: string; correlationId?: string };
+    } | null;
+    throw new ApiError(
+      errBody?.error?.message ?? `Request failed: ${res.status}`,
+      errBody?.error?.code ?? 'HTTP_ERROR',
+      errBody?.error?.correlationId,
+    );
+  }
+
+  return res.text().then((text) => JSON.parse(text, jsonReviver)) as Promise<T>;
+}
+
 /**
  * Unduh berkas biner (mis. CSV export server-side) dengan header Authorization.
  * Menyimpan respons sebagai Blob dan memicu download; nama file diambil dari

@@ -76,6 +76,34 @@ export type ProjectRegister = z.infer<typeof projectRegisterSchema>;
 export const PROJECT_SORT_FIELDS = ['code', 'name', 'client', 'contractValue', 'startDate', 'status', 'createdAt'] as const;
 export type ProjectSortField = (typeof PROJECT_SORT_FIELDS)[number];
 
+/**
+ * Status proyek yang sah (mengikuti komentar `Project.status` di schema Prisma).
+ * Dipakai untuk memvalidasi input, bukan sekadar dokumentasi.
+ */
+export const PROJECT_STATUSES = ['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CLOSED'] as const;
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+
+/**
+ * Field yang boleh diubah lewat `PATCH /projects/:id`. `code` dan `legalEntityId`
+ * sengaja TIDAK ada di sini: kode adalah identitas proyek, entity menentukan
+ * pembukuan — mengubahnya akan memutus jejak audit.
+ */
+export const updateProjectSchema = z.object({
+  name: z.string().min(3).max(200).optional(),
+  client: z.string().min(2).max(200).optional(),
+  businessUnit: z.string().max(100).optional(),
+  location: z.string().max(200).optional(),
+  contractValue: z.number().optional(),
+  advanceAmount: z.number().optional(),
+  advanceRecoveryRate: z.number().min(0).max(100).optional(),
+  startDate: z.string().optional(),
+  completionDate: z.string().optional(),
+  director: z.string().max(200).optional(),
+  manager: z.string().max(200).optional(),
+  status: z.enum(PROJECT_STATUSES).optional(),
+});
+export type UpdateProject = z.infer<typeof updateProjectSchema>;
+
 export const createProjectSchema = z.object({
   code: z.string().min(3).max(30),
   name: z.string().min(3).max(200),

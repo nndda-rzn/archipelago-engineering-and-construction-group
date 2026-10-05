@@ -91,6 +91,7 @@ export const Permission = {
   ProgressClaimCreate: 'ProgressClaim.CREATE',
   ProgressClaimView: 'ProgressClaim.VIEW',
   ProjectCreate: 'Project.CREATE',
+  ProjectEdit: 'Project.EDIT',
   ProjectView: 'Project.VIEW',
   PurchaseOrderApprove: 'PurchaseOrder.APPROVE',
   PurchaseOrderCreate: 'PurchaseOrder.CREATE',
