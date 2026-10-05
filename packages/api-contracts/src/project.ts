@@ -108,6 +108,11 @@ export const portfolioSchema = z.object({
 });
 export type Portfolio = z.infer<typeof portfolioSchema>;
 
+export const portfolioFilterParamsSchema = z.object({
+  legalEntityId: z.string().optional(),
+});
+export type PortfolioFilterParams = z.infer<typeof portfolioFilterParamsSchema>;
+
 export const wbsItemSchema: z.ZodType<{
   id: string;
   code: string;
