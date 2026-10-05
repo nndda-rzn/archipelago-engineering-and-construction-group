@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { portfolioSchema, projectHealthSchema, type Portfolio, type ProjectHealth } from '@aec/api-contracts';
+import { portfolioSchema, portfolioEvmSchema, projectHealthSchema, type Portfolio, type ProjectHealth } from '@aec/api-contracts';
 import { getJson } from '@/shared/lib/http';
 import type { DashboardFilter } from '@/shared/lib/dashboard-period';
 
@@ -27,6 +27,17 @@ export function usePortfolio(filter: DashboardFilter = {}) {
       const qs = filter.legalEntityId ? `?legalEntityId=${encodeURIComponent(filter.legalEntityId)}` : '';
       const data = await getJson<unknown>(`/projects/portfolio${qs}`);
       return portfolioSchema.parse(data);
+    },
+  });
+}
+
+export function usePortfolioEvm(filter: DashboardFilter = {}) {
+  return useQuery({
+    queryKey: [...projectAnalyticsKeys.all, 'portfolio-evm', filter] as const,
+    queryFn: async () => {
+      const qs = filter.legalEntityId ? `?legalEntityId=${encodeURIComponent(filter.legalEntityId)}` : '';
+      const data = await getJson<unknown>(`/projects/portfolio/evm${qs}`);
+      return portfolioEvmSchema.parse(data);
     },
   });
 }
