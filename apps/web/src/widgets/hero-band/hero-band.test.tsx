@@ -1,18 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { heroNarrative, summarizePortfolio, HeroBandView } from './hero-band';
+import { formatIdr } from '@/shared/lib/format';
+import { heroFacts, summarizePortfolio, HeroBandView } from './hero-band';
 
-describe('heroNarrative', () => {
-  it('states cash on hand, net flow direction, critical projects and open NCRs', () => {
-    const text = heroNarrative({ cashOnHand: 18240500000, netCashFlow: 420000000, criticalProjects: 3, openNcrs: 2 });
-    expect(text).toMatch(/cash on hand/i);
-    expect(text).toMatch(/positive/i);
-    expect(text).toContain('3');
-    expect(text).toContain('2');
+describe('heroFacts', () => {
+  it('states only the facts that are not already shown elsewhere on the card', () => {
+    const text = heroFacts({ criticalProjects: 3, openNcrs: 2 });
+    expect(text).toBe('3 critical projects · 2 open NCRs');
   });
 
-  it('says negative flow when net cash flow is below zero', () => {
-    expect(heroNarrative({ cashOnHand: 0, netCashFlow: -5, criticalProjects: 0, openNcrs: 0 })).toMatch(/negative/i);
+  it('never repeats the cash figure (no currency token, no digits of the balance)', () => {
+    const text = heroFacts({ criticalProjects: 1, openNcrs: 1 });
+    expect(text).not.toMatch(/Rp/);
+  });
+
+  it('reads calmly when there is nothing to flag', () => {
+    expect(heroFacts({ criticalProjects: 0, openNcrs: 0 })).toBe('No critical projects or open NCRs');
   });
 });
 
@@ -100,5 +103,32 @@ describe('HeroBandView', () => {
     expect(screen.getByText('Contract Value')).toBeTruthy();
     expect(screen.getByText('Budget')).toBeTruthy();
     expect(screen.getByText('Actual Cost')).toBeTruthy();
+  });
+
+  it('shows the formatted cash figure exactly once (no duplication anywhere on the card)', () => {
+    const { container } = render(<HeroBandView {...baseView} />);
+    // Hitung kemunculan nilai kas SPESIFIK, bukan total "Rp" (net cash flow juga rupiah).
+    const cashText = formatIdr(baseView.cashOnHand);
+    const occurrences = (container.textContent ?? '').split(cashText).length - 1;
+    expect(occurrences).toBe(1);
+    expect(container.querySelector('[data-slot="cash-on-hand"]')?.textContent).toBe(cashText);
+  });
+
+  it('never renders a long sentence that repeats the cash figure', () => {
+    const { container } = render(<HeroBandView {...baseView} />);
+    expect(container.textContent).not.toMatch(/Cash on hand Rp/i);
+    expect(container.textContent).not.toMatch(/net cash flow positive/i);
+  });
+
+  it('keeps the facts line to a single line so the card height is stable', () => {
+    const { container } = render(<HeroBandView {...baseView} />);
+    const facts = container.querySelector('[data-slot="hero-facts"]');
+    expect(facts).not.toBeNull();
+    expect(facts?.className).toContain('truncate');
+  });
+
+  it('shows a calm facts line when there is nothing to flag', () => {
+    render(<HeroBandView {...baseView} criticalProjects={0} openNcrs={0} />);
+    expect(screen.getByText('No critical projects or open NCRs')).toBeTruthy();
   });
 });
