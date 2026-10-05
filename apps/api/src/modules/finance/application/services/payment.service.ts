@@ -5,6 +5,7 @@ import { AuditService } from '@/modules/foundation';
 import { GlHelper } from './shared/gl.helper';
 import { CacheService } from '@/shared/cache/cache.service';
 import { invalidateAnalytics } from '@/shared/cache/analytics-cache';
+import { withSerializableRetry } from '@/shared/database/serializable-tx';
 import type { CreatePaymentDto, ListPaymentQueryDto } from '../../presentation/dto/finance.dto';
 
 @Injectable()
@@ -18,7 +19,7 @@ export class PaymentService {
 
   async createPayment(dto: CreatePaymentDto, actorId: string) {
     const project = await this.prisma.project.findUnique({ where: { id: dto.projectId } });
-    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project tidak ditemukan' });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
     const invoiceIds = dto.items.map((i) => i.invoiceId);
     const invoices = await this.prisma.vendorInvoice.findMany({
@@ -37,19 +38,19 @@ export class PaymentService {
     const items: Array<{ invoiceId: string; amount: number }> = [];
     for (const item of dto.items) {
       const invoice = invoiceMap.get(item.invoiceId);
-      if (!invoice) throw new NotFoundException({ code: 'INVOICE_NOT_FOUND', message: `Invoice ${item.invoiceId} tidak ditemukan` });
+      if (!invoice) throw new NotFoundException({ code: 'INVOICE_NOT_FOUND', message: `Invoice ${item.invoiceId} not found` });
       if (invoice.status !== 'POSTED') {
-        throw new ConflictException({ code: 'INVOICE_NOT_POSTED', message: `Invoice ${invoice.invoiceNumber} harus POSTED sebelum dibayar` });
+        throw new ConflictException({ code: 'INVOICE_NOT_POSTED', message: `Invoice ${invoice.invoiceNumber} must be POSTED before payment` });
       }
       if (invoice.projectId !== dto.projectId) {
-        throw new ConflictException({ code: 'INVOICE_PROJECT_MISMATCH', message: 'Invoice bukan milik project ini' });
+        throw new ConflictException({ code: 'INVOICE_PROJECT_MISMATCH', message: 'Invoice does not belong to this project' });
       }
 
       const open = Number(invoice.totalAmount) - (paidMap.get(invoice.id) ?? 0);
       if (Number(item.amount) > open + 0.001) {
         throw new ConflictException({
           code: 'EXCEED_AP_OPEN',
-          message: `Pembayaran melebihi AP open invoice ${invoice.invoiceNumber} (open ${open})`,
+          message: `Payment exceeds AP outstanding balance for invoice ${invoice.invoiceNumber} (open ${open})`,
         });
       }
       totalAmount += Number(item.amount);
@@ -93,9 +94,9 @@ export class PaymentService {
 
   async approvePayment(id: string, actorId: string) {
     const payment = await this.prisma.payment.findUnique({ where: { id } });
-    if (!payment) throw new NotFoundException({ code: 'PAYMENT_NOT_FOUND', message: 'Payment tidak ditemukan' });
+    if (!payment) throw new NotFoundException({ code: 'PAYMENT_NOT_FOUND', message: 'Payment not found' });
     if (payment.status !== 'DRAFT') {
-      throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa di-approve (${payment.status})` });
+      throw new ConflictException({ code: 'NOT_DRAFT', message: `Only DRAFT can be approved (${payment.status})` });
     }
 
     const approved = await this.prisma.payment.update({
@@ -120,15 +121,34 @@ export class PaymentService {
       where: { id },
       include: { project: { select: { legalEntityId: true } } },
     });
-    if (!payment) throw new NotFoundException({ code: 'PAYMENT_NOT_FOUND', message: 'Payment tidak ditemukan' });
+    if (!payment) throw new NotFoundException({ code: 'PAYMENT_NOT_FOUND', message: 'Payment not found' });
     if (payment.status !== 'APPROVED') {
-      throw new ConflictException({ code: 'NOT_APPROVED', message: `Hanya APPROVED yang bisa dibayar (${payment.status})` });
+      throw new ConflictException({ code: 'NOT_APPROVED', message: `Only APPROVED can be paid (${payment.status})` });
     }
 
-    const paid = await this.prisma.payment.update({
-      where: { id },
-      data: { status: 'PAID', paidBy: actorId, paymentDate: new Date() },
-    });
+    // Jurnal + CAS status dalam SATU transaksi: bila jurnal gagal, status tidak berubah;
+    // bila status sudah bukan APPROVED (dua pay paralel), jurnal ikut dibatalkan.
+    const paid = await withSerializableRetry(
+      this.prisma,
+      async (tx) => {
+        await this.gl.postPaymentJournal(
+          tx,
+          { id: payment.id, paymentNumber: payment.paymentNumber, legalEntityId: payment.project.legalEntityId, totalAmount: Number(payment.totalAmount) },
+          actorId,
+        );
+
+        const cas = await tx.payment.updateMany({
+          where: { id, status: 'APPROVED' },
+          data: { status: 'PAID', paidBy: actorId, paymentDate: new Date() },
+        });
+        if (cas.count === 0) {
+          throw new ConflictException({ code: 'NOT_APPROVED', message: `Only APPROVED can be paid (${payment.status})` });
+        }
+
+        return tx.payment.findUniqueOrThrow({ where: { id } });
+      },
+      { label: 'Payment.pay' },
+    );
 
     await this.audit.record({
       userId: actorId,
@@ -138,11 +158,6 @@ export class PaymentService {
       newValue: { paymentNumber: payment.paymentNumber, totalAmount: Number(payment.totalAmount) },
       source: 'api',
     });
-
-    await this.gl.postPaymentJournal(
-      { id: payment.id, paymentNumber: payment.paymentNumber, legalEntityId: payment.project.legalEntityId, totalAmount: Number(payment.totalAmount) },
-      actorId,
-    );
 
     await invalidateAnalytics(this.cache);
 

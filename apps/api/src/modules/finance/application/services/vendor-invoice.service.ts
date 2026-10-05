@@ -22,9 +22,9 @@ export class VendorInvoiceService {
       where: { id: dto.poId },
       include: { items: true },
     });
-    if (!po) throw new NotFoundException({ code: 'PO_NOT_FOUND', message: 'PO tidak ditemukan' });
+    if (!po) throw new NotFoundException({ code: 'PO_NOT_FOUND', message: 'Purchase order not found' });
     if (po.status !== 'RELEASED') {
-      throw new ConflictException({ code: 'PO_NOT_RELEASED', message: 'PO harus RELEASED sebelum invoice' });
+      throw new ConflictException({ code: 'PO_NOT_RELEASED', message: 'Purchase order must be RELEASED before invoicing' });
     }
 
     const poItemMap = new Map(po.items.map((i) => [i.id, i]));
@@ -57,7 +57,7 @@ export class VendorInvoiceService {
         let amount = 0;
         const items = dto.items.map((item) => {
           const poItem = poItemMap.get(item.poItemId);
-          if (!poItem) throw new NotFoundException({ code: 'PO_ITEM_NOT_FOUND', message: `Item PO ${item.poItemId} tidak ada` });
+          if (!poItem) throw new NotFoundException({ code: 'PO_ITEM_NOT_FOUND', message: `PO item ${item.poItemId} not found` });
 
           const receivedQty = receivedMap.get(item.poItemId) ?? 0;
           const totalPrice = Number(item.quantity) * Number(item.unitPrice);
@@ -83,7 +83,7 @@ export class VendorInvoiceService {
         if (mismatchCount > 0) {
           throw new ConflictException({
             code: 'THREE_WAY_MISMATCH',
-            message: `Qty invoice melebihi qty diterima (GR) pada ${mismatchCount} item`,
+            message: `Invoice quantity exceeds received (GR) quantity on ${mismatchCount} item(s)`,
           });
         }
 
@@ -135,20 +135,43 @@ export class VendorInvoiceService {
       where: { id },
       include: { items: true, project: { select: { legalEntityId: true } } },
     });
-    if (!invoice) throw new NotFoundException({ code: 'INVOICE_NOT_FOUND', message: 'Invoice tidak ditemukan' });
+    if (!invoice) throw new NotFoundException({ code: 'INVOICE_NOT_FOUND', message: 'Invoice not found' });
     if (invoice.status !== 'MATCHED') {
-      throw new ConflictException({ code: 'NOT_MATCHED', message: `Hanya MATCHED yang bisa diposting (status: ${invoice.status})` });
+      throw new ConflictException({ code: 'NOT_MATCHED', message: `Only MATCHED can be posted (status: ${invoice.status})` });
     }
 
-    // Compare-and-set pada status: cegah double-post → jurnal GL ganda saat dua post paralel.
-    const cas = await this.prisma.vendorInvoice.updateMany({
-      where: { id, status: 'MATCHED' },
-      data: { status: 'POSTED', postedAt: new Date(), postedBy: actorId },
-    });
-    if (cas.count === 0) {
-      throw new ConflictException({ code: 'NOT_MATCHED', message: `Hanya MATCHED yang bisa diposting (status: ${invoice.status})` });
-    }
-    const posted = await this.prisma.vendorInvoice.findUniqueOrThrow({ where: { id } });
+    // Jurnal + CAS status dalam SATU transaksi:
+    //  - akun GL wajib hilang → rollback, status tetap MATCHED (tidak ada dokumen final tanpa jurnal);
+    //  - compare-and-set mencegah double-post → jurnal GL ganda saat dua post paralel.
+    // Jurnal ditulis SEBELUM CAS supaya kegagalan jurnal tidak menyentuh baris dokumen sama sekali.
+    const posted = await withSerializableRetry(
+      this.prisma,
+      async (tx) => {
+        await this.gl.postInvoiceJournal(
+          tx,
+          {
+            id: invoice.id,
+            invoiceNumber: invoice.invoiceNumber,
+            legalEntityId: invoice.project.legalEntityId,
+            totalAmount: Number(invoice.totalAmount),
+            amount: Number(invoice.amount),
+            taxAmount: invoice.taxAmount != null ? Number(invoice.taxAmount) : null,
+          },
+          actorId,
+        );
+
+        const cas = await tx.vendorInvoice.updateMany({
+          where: { id, status: 'MATCHED' },
+          data: { status: 'POSTED', postedAt: new Date(), postedBy: actorId },
+        });
+        if (cas.count === 0) {
+          throw new ConflictException({ code: 'NOT_MATCHED', message: `Only MATCHED can be posted (${invoice.status})` });
+        }
+
+        return tx.vendorInvoice.findUniqueOrThrow({ where: { id } });
+      },
+      { label: 'VendorInvoice.post' },
+    );
 
     await this.audit.record({
       userId: actorId,
@@ -158,18 +181,6 @@ export class VendorInvoiceService {
       newValue: { invoiceNumber: invoice.invoiceNumber, totalAmount: Number(invoice.totalAmount) },
       source: 'api',
     });
-
-    await this.gl.postInvoiceJournal(
-      {
-        id: invoice.id,
-        invoiceNumber: invoice.invoiceNumber,
-        legalEntityId: invoice.project.legalEntityId,
-        totalAmount: Number(invoice.totalAmount),
-        amount: Number(invoice.amount),
-        taxAmount: invoice.taxAmount != null ? Number(invoice.taxAmount) : null,
-      },
-      actorId,
-    );
 
     await invalidateAnalytics(this.cache);
 

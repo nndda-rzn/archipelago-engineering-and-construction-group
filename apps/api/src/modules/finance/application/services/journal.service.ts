@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { GlHelper } from './shared/gl.helper';
+import { assertPeriodOpen } from '@/shared/utils/period';
 import type { CreateJournalDto, ListJournalQueryDto } from '../../presentation/dto/finance.dto';
 
 @Injectable()
@@ -15,7 +16,7 @@ export class JournalService {
 
   async createJournal(dto: CreateJournalDto, actorId: string) {
     const entity = await this.prisma.legalEntity.findUnique({ where: { id: dto.legalEntityId } });
-    if (!entity) throw new NotFoundException({ code: 'LEGAL_ENTITY_NOT_FOUND', message: 'Legal entity tidak ditemukan' });
+    if (!entity) throw new NotFoundException({ code: 'LEGAL_ENTITY_NOT_FOUND', message: 'Legal entity not found' });
 
     let totalDebit = 0;
     let totalCredit = 0;
@@ -23,18 +24,18 @@ export class JournalService {
 
     for (const line of dto.lines) {
       const account = await this.prisma.chartOfAccount.findUnique({ where: { id: line.accountId } });
-      if (!account) throw new NotFoundException({ code: 'ACCOUNT_NOT_FOUND', message: `Akun ${line.accountId} tidak ditemukan` });
-      if (!account.isActive) throw new ConflictException({ code: 'ACCOUNT_INACTIVE', message: `Akun ${account.code} tidak aktif` });
+      if (!account) throw new NotFoundException({ code: 'ACCOUNT_NOT_FOUND', message: `Account ${line.accountId} not found` });
+      if (!account.isActive) throw new ConflictException({ code: 'ACCOUNT_INACTIVE', message: `Account ${account.code} is inactive` });
       if (account.legalEntityId !== dto.legalEntityId) {
-        throw new ConflictException({ code: 'ACCOUNT_ENTITY_MISMATCH', message: `Akun ${account.code} beda legal entity` });
+        throw new ConflictException({ code: 'ACCOUNT_ENTITY_MISMATCH', message: `Account ${account.code} belongs to a different legal entity` });
       }
       const debit = Number(line.debit);
       const credit = Number(line.credit);
       if (debit > 0 && credit > 0) {
-        throw new ConflictException({ code: 'LINE_BOTH_SIDES', message: 'Satu line tidak boleh debit dan credit sekaligus' });
+        throw new ConflictException({ code: 'LINE_BOTH_SIDES', message: 'A line cannot be both debit and credit' });
       }
       if (debit === 0 && credit === 0) {
-        throw new ConflictException({ code: 'LINE_ZERO', message: 'Line harus punya debit atau credit' });
+        throw new ConflictException({ code: 'LINE_ZERO', message: 'A line must have a debit or credit amount' });
       }
       totalDebit += debit;
       totalCredit += credit;
@@ -49,16 +50,20 @@ export class JournalService {
     }
 
     if (Math.abs(totalDebit - totalCredit) > 0.001) {
-      throw new ConflictException({ code: 'UNBALANCED_JOURNAL', message: `Journal tidak balance: debit ${totalDebit} vs credit ${totalCredit}` });
+      throw new ConflictException({ code: 'UNBALANCED_JOURNAL', message: `Journal is not balanced: debit ${totalDebit} vs credit ${totalCredit}` });
     }
 
+    const journalDate = dto.date ? new Date(dto.date) : new Date();
+
     const journal = await this.prisma.$transaction(async (tx) => {
+      // Periode CLOSED/LOCKED tidak menerima jurnal baru (koreksi diarahkan ke periode terbuka).
+      await assertPeriodOpen(tx, dto.legalEntityId, journalDate);
       const seq = await this.gl.generateJournalNumber(tx);
       return tx.journal.create({
         data: {
           journalNumber: seq,
           legalEntityId: dto.legalEntityId,
-          date: dto.date ? new Date(dto.date) : new Date(),
+          date: journalDate,
           source: 'MANUAL',
           reference: dto.reference ?? null,
           description: dto.description,
@@ -82,20 +87,30 @@ export class JournalService {
 
   async postJournal(id: string, actorId: string) {
     const journal = await this.prisma.journal.findUnique({ where: { id }, include: { lines: true } });
-    if (!journal) throw new NotFoundException({ code: 'JOURNAL_NOT_FOUND', message: 'Journal tidak ditemukan' });
+    if (!journal) throw new NotFoundException({ code: 'JOURNAL_NOT_FOUND', message: 'Journal not found' });
     if (journal.status !== 'DRAFT') {
-      throw new ConflictException({ code: 'NOT_DRAFT', message: `Hanya DRAFT yang bisa diposting (${journal.status})` });
+      throw new ConflictException({ code: 'NOT_DRAFT', message: `Only DRAFT can be posted (${journal.status})` });
     }
 
     const totalDebit = journal.lines.reduce((sum, l) => sum + Number(l.debit), 0);
     const totalCredit = journal.lines.reduce((sum, l) => sum + Number(l.credit), 0);
     if (Math.abs(totalDebit - totalCredit) > 0.001) {
-      throw new ConflictException({ code: 'UNBALANCED_JOURNAL', message: `Journal tidak balance: debit ${totalDebit} vs credit ${totalCredit}` });
+      throw new ConflictException({ code: 'UNBALANCED_JOURNAL', message: `Journal is not balanced: debit ${totalDebit} vs credit ${totalCredit}` });
     }
 
-    const posted = await this.prisma.journal.update({
-      where: { id },
-      data: { status: 'POSTED', postedAt: new Date(), postedBy: actorId },
+    // Posting jurnal manual memindahkan DRAFT → POSTED pada periode tanggal jurnal itu.
+    // Guard periode + CAS dalam SATU transaksi: dua post paralel tidak bisa sama-sama menang,
+    // dan periode yang dikunci di tengah jalan tidak bisa disisipi jurnal baru.
+    const posted = await this.prisma.$transaction(async (tx) => {
+      await assertPeriodOpen(tx, journal.legalEntityId, journal.date);
+      const cas = await tx.journal.updateMany({
+        where: { id, status: 'DRAFT' },
+        data: { status: 'POSTED', postedAt: new Date(), postedBy: actorId },
+      });
+      if (cas.count === 0) {
+        throw new ConflictException({ code: 'NOT_DRAFT', message: `Only DRAFT can be posted (${journal.status})` });
+      }
+      return tx.journal.findUniqueOrThrow({ where: { id } });
     });
 
     await this.audit.record({
