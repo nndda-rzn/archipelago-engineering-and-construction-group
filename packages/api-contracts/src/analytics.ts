@@ -21,6 +21,12 @@ export const executiveDashboardSchema = z.object({
     overduePm: z.number(),
     openPunchItems: z.number(),
   }),
+  delta: z.record(z.string(), z.object({
+    current: z.number(),
+    previous: z.number(),
+    pctChange: z.number().nullable(),
+    direction: z.enum(['up', 'down', 'flat']),
+  })).optional(),
   generatedAt: z.string(),
 });
 export type ExecutiveDashboard = z.infer<typeof executiveDashboardSchema>;

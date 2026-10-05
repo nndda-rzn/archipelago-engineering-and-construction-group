@@ -17,8 +17,8 @@ export class AnalyticsController {
 
   @Get('executive')
   @Permissions(Permission.AnalyticsView)
-  executive(@Query() query: AnalyticsFilterParams) {
-    return this.analytics.executive(query);
+  executive(@Query() query: AnalyticsFilterParams, @Query('compare') compare?: string) {
+    return this.analytics.executive(query, compare === 'previous' ? 'previous' : undefined);
   }
 
   @Get('anomalies')

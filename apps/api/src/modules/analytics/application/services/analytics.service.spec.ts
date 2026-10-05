@@ -56,3 +56,24 @@ describe('AnalyticsService.signals', () => {
     expect(result.signals.find((s) => s.key === 'incidents')).toBeUndefined();
   });
 });
+
+describe('AnalyticsService.computeDelta', () => {
+  const svc = new AnalyticsService({} as never, { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never);
+
+  it('is null pctChange when previous is zero', () => {
+    const d = svc.computeDelta(100, 0);
+    expect(d.pctChange).toBeNull();
+    expect(d.direction).toBe('up');
+  });
+
+  it('is flat when both are zero', () => {
+    const d = svc.computeDelta(0, 0);
+    expect(d.direction).toBe('flat');
+  });
+
+  it('computes pct change and direction', () => {
+    const d = svc.computeDelta(120, 100);
+    expect(d.pctChange).toBe(20);
+    expect(d.direction).toBe('up');
+  });
+});

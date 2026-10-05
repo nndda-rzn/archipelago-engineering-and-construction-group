@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Readable } from 'node:stream';
-import type { AnalyticsFilterParams } from '@aec/api-contracts';
+import type { AnalyticsFilterParams, ExecutiveDashboard } from '@aec/api-contracts';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { CacheService } from '@/shared/cache/cache.service';
 import { ANALYTICS_CACHE_KEYS, analyticsCacheKey } from '@/shared/cache/analytics-cache';
@@ -14,8 +14,21 @@ export class AnalyticsService {
     @Inject(CacheService) private readonly cache: CacheService,
   ) {}
 
-  async executive(filter: AnalyticsFilterParams = {}) {
-    return this.cache.wrap(analyticsCacheKey(ANALYTICS_CACHE_KEYS.executive, filter), 30, async () => {
+  /** Delta metrik periode ini vs periode sebelumnya. `pctChange` null bila pembanding 0. */
+  computeDelta(
+    current: number,
+    previous: number,
+  ): { current: number; previous: number; pctChange: number | null; direction: 'up' | 'down' | 'flat' } {
+    const pctChange = previous !== 0 ? Math.round(((current - previous) / Math.abs(previous)) * 1000) / 10 : null;
+    const direction = current > previous ? 'up' : current < previous ? 'down' : 'flat';
+    return { current, previous, pctChange, direction };
+  }
+
+  async executive(
+    filter: AnalyticsFilterParams = {},
+    compare?: 'previous',
+  ): Promise<ExecutiveDashboard> {
+    const result = (await this.cache.wrap(analyticsCacheKey(ANALYTICS_CACHE_KEYS.executive, filter), 30, async () => {
       const { from, to } = resolveDateRange(filter.from, filter.to);
       const projectWhere = filter.legalEntityId ? { legalEntityId: filter.legalEntityId } : {};
       const dateWhere = from || to ? { gte: from, lte: to } : undefined;
@@ -64,7 +77,39 @@ export class AnalyticsService {
         },
         generatedAt: new Date().toISOString(),
       };
-    });
+    })) as ExecutiveDashboard;
+
+    if (compare !== 'previous') return result;
+
+    // Periode pembanding: geser mundur sepanjang rentang; tanpa rentang → bulan sebelumnya.
+    const { from, to } = resolveDateRange(filter.from, filter.to);
+    let prevFrom: Date;
+    let prevTo: Date;
+    if (from && to) {
+      const spanMs = to.getTime() - from.getTime();
+      prevTo = new Date(from.getTime() - 1);
+      prevFrom = new Date(prevTo.getTime() - spanMs);
+    } else {
+      const base = to ?? new Date();
+      prevTo = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), 0));
+      prevFrom = new Date(Date.UTC(prevTo.getUTCFullYear(), prevTo.getUTCMonth(), 1));
+    }
+    const prevFilter = {
+      legalEntityId: filter.legalEntityId,
+      from: prevFrom.toISOString().slice(0, 10),
+      to: prevTo.toISOString().slice(0, 10),
+    };
+    const previous = await this.executive(prevFilter);
+
+    const delta = {
+      'finance.totalBudget': this.computeDelta(result.finance.totalBudget, previous.finance.totalBudget),
+      'finance.cashIn': this.computeDelta(result.finance.cashIn, previous.finance.cashIn),
+      'finance.cashOut': this.computeDelta(result.finance.cashOut, previous.finance.cashOut),
+      'operational.openNcrs': this.computeDelta(result.operational.openNcrs, previous.operational.openNcrs),
+      'projects.total': this.computeDelta(result.projects.total, previous.projects.total),
+    };
+
+    return { ...result, delta };
   }
 
   async signals(filter: AnalyticsFilterParams = {}) {
