@@ -59,4 +59,16 @@ describe('PortfolioEvmService', () => {
       expect.objectContaining({ where: { legalEntityId: 'LE1' } }),
     );
   });
+
+  it('returns null total cpi/spi when no project has a planned-value baseline', async () => {
+    const prisma = makePrisma({ controlAccount: { groupBy: jest.fn().mockResolvedValue([]) } });
+    const actualCost = { computeBatch: jest.fn().mockResolvedValue(new Map([['p1', 75]])) } as never;
+    const svc = new PortfolioEvmService(prisma, actualCost);
+
+    const result = await svc.portfolioEvm();
+
+    expect(result.totals.pv).toBe(0);
+    expect(result.totals.cpi).toBeNull();
+    expect(result.totals.spi).toBeNull();
+  });
 });

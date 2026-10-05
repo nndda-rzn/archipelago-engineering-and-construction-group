@@ -120,7 +120,7 @@ export class PortfolioEvmService {
       };
     });
 
-    const totalsCpi = acTotal > 0 ? round4(evTotal / acTotal) : null;
+    const totalsCpi = pvTotal > 0 && acTotal > 0 ? round4(evTotal / acTotal) : null;
     const totalsSpi = pvTotal > 0 ? round4(evTotal / pvTotal) : null;
     const totalsEac = totalsCpi != null && totalsCpi > 0 ? round2(bacTotal / totalsCpi) : round2(bacTotal);
 
