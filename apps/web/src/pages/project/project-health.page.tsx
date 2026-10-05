@@ -1,11 +1,11 @@
-import { useState } from 'react';
 import { Button, EntitySelect } from '@aec/ui';
 import { useProjects } from '@/entities/project';
 import { useProjectHealth } from '@/features/project';
 import { HealthSummary, HealthTable } from '@/features/project/ui';
+import { useUrlFilter } from '@/shared/lib/use-url-state';
 
 export function ProjectHealthPage() {
-  const [projectId, setProjectId] = useState('');
+  const [projectId, setProjectId] = useUrlFilter('project');
   const projects = useProjects({ page: 1, pageSize: 100 });
   const defaultProjectId = projectId || projects.data?.items[0]?.id || '';
   const { data, isLoading, isError, refetch } = useProjectHealth(defaultProjectId);
