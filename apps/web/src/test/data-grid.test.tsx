@@ -54,4 +54,21 @@ describe('DataGrid', () => {
     expect(th?.getAttribute('scope')).toBe('col');
     expect(th?.getAttribute('aria-sort')).toBe('none');
   });
+
+  it('menerapkan lebar kolom via size dan tidak membungkus header', () => {
+    const sized = [columnHelper.accessor('name', { header: 'Nama', size: 180, cell: (i) => i.getValue() })];
+    render(<DataGrid columns={sized} data={rows} />);
+    const th = screen.getByText('Nama').closest('th');
+    expect(th?.style.minWidth).toBe('180px');
+    expect(th?.className).toContain('whitespace-nowrap');
+  });
+
+  it('merata-kanan sel numerik lewat meta.align', () => {
+    const right = [columnHelper.accessor('name', { header: 'Nama', meta: { align: 'right' }, cell: (i) => i.getValue() })];
+    render(<DataGrid columns={right} data={rows} />);
+    const th = screen.getByText('Nama').closest('th');
+    const td = screen.getByText('Baris Satu').closest('td');
+    expect(th?.className).toContain('text-right');
+    expect(td?.className).toContain('text-right');
+  });
 });

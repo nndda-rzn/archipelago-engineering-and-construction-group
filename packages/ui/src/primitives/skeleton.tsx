@@ -45,3 +45,35 @@ export function KpiSkeleton({ count = 4 }: { count?: number }) {
     </div>
   );
 }
+
+/** Skeleton berbentuk grafik batang — menggantikan teks "Loading…" di panel chart. */
+export function ChartSkeleton({ bars = 12, className }: { bars?: number; className?: string }) {
+  const heights = [40, 62, 34, 78, 52, 88, 46, 70, 38, 84, 58, 66];
+  return (
+    <div aria-label="Loading chart" className={cn('flex h-[200px] items-end gap-2 px-1', className)}>
+      {Array.from({ length: bars }).map((_, i) => (
+        <Skeleton
+          key={i}
+          data-slot="skeleton-bar"
+          className="flex-1 rounded-sm"
+          style={{ height: `${heights[i % heights.length]}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/** Skeleton berbentuk daftar baris — untuk panel list seperti anomaly triage. */
+export function ListSkeleton({ rows = 3, className }: { rows?: number; className?: string }) {
+  return (
+    <div aria-label="Loading list" className={cn('space-y-2 py-1', className)}>
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} data-slot="skeleton-row" className="flex items-center gap-3">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-4 flex-1" />
+        </div>
+      ))}
+    </div>
+  );
+}
+

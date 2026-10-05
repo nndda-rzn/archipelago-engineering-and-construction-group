@@ -23,4 +23,22 @@ describe('Sparkline', () => {
     const { container } = render(<Sparkline values={[5, 5, 5]} label="Flat" />);
     expect(container.querySelector('polyline')).toBeTruthy();
   });
+
+  it('renders a zero baseline line when baseline is 0', () => {
+    const { container } = render(<Sparkline values={[3, -5, 4]} label="Net" baseline={0} />);
+    expect(container.querySelector('[data-slot="sparkline-baseline"]')).toBeTruthy();
+  });
+
+  it('renders no baseline line by default', () => {
+    const { container } = render(<Sparkline values={[3, 5, 4]} label="Burn" />);
+    expect(container.querySelector('[data-slot="sparkline-baseline"]')).toBeNull();
+  });
+
+  it('keeps the zero line inside the plot when values straddle zero', () => {
+    const { container } = render(<Sparkline values={[10, -10]} label="Net" baseline={0} height={28} />);
+    const line = container.querySelector('[data-slot="sparkline-baseline"]')!;
+    const y = Number(line.getAttribute('y1'));
+    expect(y).toBeGreaterThan(0);
+    expect(y).toBeLessThan(28);
+  });
 });

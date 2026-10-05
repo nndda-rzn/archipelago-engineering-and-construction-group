@@ -46,7 +46,7 @@ export function SegmentedControl({ options, value, onValueChange, className, ...
             onKeyDown={(e) => handleKeyDown(e, index)}
             className={cn(
               'rounded px-3 py-1 text-body-sm font-medium transition-colors duration-fast focus-visible:outline-none',
-              selected ? 'bg-racing-red-600 text-white' : 'text-neutral-600 hover:bg-neutral-50',
+              selected ? 'bg-neutral-800 text-white' : 'text-neutral-600 hover:bg-neutral-50',
             )}
           >
             {option.label}
