@@ -9,6 +9,7 @@ import { WbsService } from './application/services/wbs.service';
 import { BudgetService } from './application/services/budget.service';
 import { ProjectHealthService } from './application/services/project-health.service';
 import { PortfolioService } from './application/services/portfolio.service';
+import { PortfolioEvmService } from './application/services/portfolio-evm.service';
 import { CostCodeService } from './application/services/cost-code.service';
 import { ControlAccountService } from './application/services/control-account.service';
 import { CommitmentService } from './application/services/commitment.service';
@@ -24,6 +25,7 @@ import { EarnedValueService } from './application/services/earned-value.service'
     BudgetService,
     ProjectHealthService,
     PortfolioService,
+    PortfolioEvmService,
     CostCodeService,
     ControlAccountService,
     CommitmentService,
