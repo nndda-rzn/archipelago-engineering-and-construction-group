@@ -2,15 +2,22 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginRequestSchema, type LoginRequest } from '@aec/api-contracts';
-import { Button, Input, Label, labelErrorCode } from '@aec/ui';
-import { Eye, EyeOff, HardHat } from 'lucide-react';
+import { BulletBar, Button, Input, Label, StatusBadge, labelErrorCode } from '@aec/ui';
+import { Eye, EyeOff } from 'lucide-react';
 import { useLogin } from '@/features/auth';
 
-const DEMO_CREDENTIALS = [
+/**
+ * Akun demo untuk environment ini. Password TIDAK ditampilkan di UI — chip hanya
+ * mengisi otomatis. Nilai sudah diverifikasi cocok dengan `prisma/seed.ts`.
+ */
+const DEMO_ACCOUNTS = [
   { role: 'Admin', email: 'admin@aec.local', password: 'Admin' + '123!' },
   { role: 'Buyer', email: 'buyer@aec.local', password: 'Buyer' + '123!' },
   { role: 'CEO', email: 'ceo@aec.local', password: 'Demo' + '123!' },
 ];
+
+/** Alur kerja inti — ditulis sebagai alur, bukan jargon internal. */
+const WORKFLOW = ['Tender', 'Contract', 'Procurement', 'Construction', 'Reporting'];
 
 export function LoginPage() {
   const login = useLogin();
@@ -35,46 +42,61 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-neutral-50">
-      {  }
+    <div className="flex min-h-dvh bg-neutral-50">
+      {/* Panel kiri — konteks produk. Disembunyikan di layar kecil. */}
       <div className="hidden w-1/2 flex-col justify-between bg-neutral-950 p-10 lg:flex">
         <div className="flex items-center gap-3" translate="no">
-          <span className="flex h-9 w-9 items-center justify-center rounded bg-racing-red-600 text-h2 font-bold text-white">
-            A
-          </span>
+          {/* Varian putih: logo hitam tidak terlihat di latar gelap (kontras 0,93:1). */}
+          <img src="/logo-mark-light.png" alt="" aria-hidden="true" className="h-9 w-9 shrink-0 object-contain" />
           <div>
-            <p className="text-h2 font-semibold tracking-tight text-white">AEC ERP</p>
+            <p className="text-h2 font-semibold tracking-tight text-white">AEC</p>
             <p className="text-caption text-neutral-400">Archipelago Engineering &amp; Construction</p>
           </div>
         </div>
 
         <div>
           <h1 className="max-w-md text-h1 font-semibold leading-snug text-white">
-            Enterprise operating system for construction &amp; EPC.
+            Project-centric ERP for construction &amp; EPC.
           </h1>
           <p className="mt-3 max-w-md text-body-sm text-neutral-400">
-            Project-centric with integrated finance: from tender, contract, and procurement to construction and consolidated financial reporting.
+            Finance, procurement, and site execution share one project record — from tender to consolidated report.
           </p>
-          <ul className="mt-6 space-y-2 text-body-sm text-neutral-300">
-            {['Golden flow: client to project to report', 'Maker-checker & approval workflow', 'Project health, EVM, and treasury'].map((item) => (
-              <li key={item} className="flex items-center gap-2">
-                <HardHat className="h-4 w-4 shrink-0 text-racing-red-400" aria-hidden="true" />
-                {item}
+
+          {/* Kartu contoh: memperlihatkan bentuk produk, memakai komponen yang sudah ada. */}
+          <div className="mt-6 max-w-md rounded-md border border-neutral-800 bg-neutral-900 p-4">
+            <p className="text-overline uppercase text-neutral-500">Contoh tampilan</p>
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <span className="font-mono text-caption text-neutral-400">PRJ-EPC-2027-014</span>
+              <StatusBadge status="AT_RISK" />
+            </div>
+            <p className="mt-1 truncate text-body-sm text-neutral-200">EPC Industrial Processing Facility</p>
+            <div className="mt-3">
+              <p className="mb-1 text-caption text-neutral-500">Budget used · 72%</p>
+              <BulletBar value={72} max={100} label="Budget used" className="bg-neutral-800" />
+            </div>
+            <p className="mt-3 font-mono text-caption text-neutral-500">2026-01-15 → 2027-08-30</p>
+          </div>
+
+          <ol className="mt-6 flex max-w-md flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-neutral-300">
+            {WORKFLOW.map((step, i) => (
+              <li key={step} className="flex items-center gap-2">
+                {i > 0 && <span aria-hidden="true" className="text-neutral-600">→</span>}
+                {step}
               </li>
             ))}
-          </ul>
+          </ol>
         </div>
 
-        <p className="text-caption text-neutral-400">© 2026 AEC Group. Demo environment.</p>
+        <p className="text-caption text-neutral-400">© 2026 AEC Group · Demo environment.</p>
       </div>
 
-      {  }
+      {/* Panel kanan — formulir. */}
       <div className="flex w-full items-center justify-center px-6 lg:w-1/2">
         <div className="w-full max-w-sm">
           <div className="mb-8 lg:hidden">
             <div className="flex items-center gap-2" translate="no">
-              <span className="flex h-8 w-8 items-center justify-center rounded bg-racing-red-600 font-bold text-white">A</span>
-              <span className="text-h2 font-semibold text-neutral-900">AEC ERP</span>
+              <img src="/logo-mark.png" alt="" aria-hidden="true" className="h-8 w-8 shrink-0 object-contain" />
+              <span className="text-h2 font-semibold text-neutral-900">AEC</span>
             </div>
           </div>
 
@@ -92,8 +114,14 @@ export function LoginPage() {
                 placeholder="name@company.com"
                 error={!!errors.email}
                 {...register('email')}
+                aria-invalid={errors.email ? true : undefined}
+                aria-describedby={errors.email ? 'email-error' : undefined}
               />
-              {errors.email && <p className="mt-1 text-caption text-destructive-600">{errors.email.message}</p>}
+              {errors.email && (
+                <p id="email-error" className="mt-1 text-caption text-destructive-600">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
             <div>
@@ -108,29 +136,34 @@ export function LoginPage() {
                   error={!!errors.password}
                   className="pr-10"
                   {...register('password')}
+                  aria-invalid={errors.password ? true : undefined}
+                  aria-describedby={errors.password ? 'password-error' : undefined}
                 />
                 <button
                   type="button"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
                   onClick={() => setShowPassword((s) => !s)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-neutral-500 transition-colors duration-fast hover:bg-neutral-100 hover:text-neutral-700"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
                 </button>
               </div>
-              {errors.password && <p className="mt-1 text-caption text-destructive-600">{errors.password.message}</p>}
+              {errors.password && (
+                <p id="password-error" className="mt-1 text-caption text-destructive-600">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
+            {/* role="alert" agar kegagalan login diumumkan ke pembaca layar. */}
             {login.isError && (
-              <div className="rounded-md border border-destructive-200 bg-destructive-50 px-3 py-2">
+              <div role="alert" className="rounded-md border border-destructive-200 bg-destructive-50 px-3 py-2">
                 <p className="text-body-sm text-destructive-700">
                   {login.error instanceof Error ? login.error.message : 'Sign in failed. Check your email and password.'}
                 </p>
                 {login.error instanceof Error && 'code' in login.error && (
-                  <p
-                    className="mt-1 text-caption text-destructive-500"
-                    title={String((login.error as { code?: string }).code ?? '')}
-                  >
+                  <p className="mt-1 text-caption text-destructive-500" title={String((login.error as { code?: string }).code ?? '')}>
                     {labelErrorCode(String((login.error as { code?: string }).code ?? ''))}
                   </p>
                 )}
@@ -144,20 +177,20 @@ export function LoginPage() {
 
           <div className="mt-8">
             <p className="text-caption font-medium uppercase tracking-wide text-neutral-500">Demo accounts</p>
-            <div className="mt-2 space-y-2">
-              {DEMO_CREDENTIALS.map((c) => (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {DEMO_ACCOUNTS.map((c) => (
                 <button
                   key={c.role}
                   type="button"
                   onClick={() => fillDemo(c.email, c.password)}
-                  className="flex w-full items-center justify-between rounded-md border border-neutral-200 bg-white px-3 py-2 text-body-sm transition-colors duration-fast hover:border-neutral-300 hover:bg-neutral-50"
+                  aria-label={`Fill ${c.role} demo credentials`}
+                  className="inline-flex items-center rounded-md border border-neutral-200 bg-white px-3 py-1.5 text-body-sm font-medium text-neutral-700 transition-colors duration-fast hover:border-neutral-300 hover:bg-neutral-50"
                 >
-                  <span className="font-medium text-neutral-700">{c.role}</span>
-                  <span className="font-mono text-caption text-neutral-500">{c.email}</span>
+                  {c.role}
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-caption text-neutral-500">Click to autofill.</p>
+            <p className="mt-2 text-caption text-neutral-500">Click a role to fill the form.</p>
           </div>
         </div>
       </div>
