@@ -198,14 +198,27 @@ export function WorkflowDefinitionPage() {
         <p className="mt-1 text-pretty text-body-sm text-neutral-500">
           Configure the approval chain for purchase requisitions and purchase orders.
         </p>
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-body-sm text-neutral-700">
-          <span className="whitespace-nowrap"><span className="font-mono tabular-nums">{activeCount}</span> active</span>
-          <span className="whitespace-nowrap"><span className="font-mono tabular-nums">{draftCount}</span> draft</span>
-          <span className={warningCount > 0 ? 'inline-flex items-center gap-1.5 whitespace-nowrap text-destructive-600' : 'inline-flex items-center gap-1.5 whitespace-nowrap'}>
-            <AlertTriangle className={cn('h-4 w-4', warningCount > 0 ? 'text-destructive-500' : 'text-neutral-400')} aria-hidden="true" />
-            <span className="font-mono tabular-nums">{warningCount}</span> steps without an approver
-          </span>
-        </div>
+        {/* Fakta koleksi dipisah dengan pemisah, bukan tiga teks berbobot sama
+            yang berdesakan. Hierarki dibawa ukuran & jarak, bukan warna baru. */}
+        <dl className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-body-sm text-neutral-700">
+          <div className="flex items-center gap-1.5">
+            <dt className="text-neutral-500">Active</dt>
+            <dd className="font-mono tabular-nums text-neutral-900">{activeCount}</dd>
+          </div>
+          <span aria-hidden="true" className="h-4 w-px bg-neutral-200" />
+          <div className="flex items-center gap-1.5">
+            <dt className="text-neutral-500">Draft</dt>
+            <dd className="font-mono tabular-nums text-neutral-900">{draftCount}</dd>
+          </div>
+          <span aria-hidden="true" className="h-4 w-px bg-neutral-200" />
+          <div className={cn('flex items-center gap-1.5', warningCount > 0 && 'text-destructive-700')}>
+            <dt className="flex items-center gap-1.5">
+              {warningCount > 0 && <AlertTriangle className="h-4 w-4 shrink-0 text-destructive-500" aria-hidden="true" />}
+              Steps without an approver
+            </dt>
+            <dd className="font-mono tabular-nums">{warningCount}</dd>
+          </div>
+        </dl>
       </header>
 
       <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
@@ -292,83 +305,90 @@ export function WorkflowDefinitionPage() {
                 ← Back to workflows
               </button>
 
-              {/* Identitas + lifecycle + aksi */}
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-h2 text-neutral-950">{selected.name}</h2>
-                    <StatusBadge status={selected.status} label={VERSION_STATUS_LABEL[selected.status] ?? selected.status} />
-                    <span className="font-mono text-caption text-neutral-500">v{selected.version}</span>
+              {/* Identitas + lifecycle. Aksi dipisah ke grupnya sendiri supaya
+                  "apa yang sedang saya lihat" tidak tercampur dengan
+                  "apa yang bisa saya lakukan". */}
+              <div className="rounded-md border border-neutral-200 bg-white p-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div
+                    aria-label="Definition summary"
+                    className="min-w-0 flex-1"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-h2 text-neutral-950">{selected.name}</h2>
+                      <StatusBadge status={selected.status} label={VERSION_STATUS_LABEL[selected.status] ?? selected.status} />
+                      <span className="font-mono text-caption text-neutral-500">v{selected.version}</span>
+                    </div>
+                    <p className="mt-1 text-pretty text-caption text-neutral-500">
+                      <span className="font-mono text-neutral-600">{selected.code}</span>
+                      {' · '}{labelResource(selected.transactionType)} · {selected.steps.length} step{selected.steps.length === 1 ? '' : 's'}
+                      {selected.createdByName ? `, created by ${selected.createdByName}` : ''}
+                    </p>
+                    <WorkflowLifecycle
+                      status={selected.status}
+                      className="mt-3"
+                      publishAction={
+                        selected.status === 'DRAFT' ? (
+                          <Button size="sm" variant="primary" className="ml-1" onClick={() => setPublishOpen(true)}>
+                            Publish
+                          </Button>
+                        ) : undefined
+                      }
+                    />
                   </div>
-                  <p className="mt-1 text-caption text-neutral-500">
-                    <span className="font-mono text-neutral-600">{selected.code}</span>
-                    {' · '}{labelResource(selected.transactionType)} · {selected.steps.length} step{selected.steps.length === 1 ? '' : 's'}
-                    {selected.createdByName ? `, created by ${selected.createdByName}` : ''}
-                  </p>
-                  <WorkflowLifecycle
-                    status={selected.status}
-                    className="mt-3"
-                    publishAction={
-                      selected.status === 'DRAFT' ? (
-                        <Button size="sm" variant="primary" className="ml-1" onClick={() => setPublishOpen(true)}>
-                          Publish
-                        </Button>
-                      ) : undefined
-                    }
-                  />
-                </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  {selected.status === 'ACTIVE' && (
+                  <div role="group" aria-label="Workflow actions" className="flex flex-wrap items-center gap-2">
+                    {selected.status === 'ACTIVE' && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        loading={newVersion.isPending}
+                        onClick={() => newVersion.mutate(selected.code, {
+                          onSuccess: () => toast({ title: 'Draft version created', variant: 'success' }),
+                        })}
+                      >
+                        New version
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="secondary"
-                      loading={newVersion.isPending}
-                      onClick={() => newVersion.mutate(selected.code, {
-                        onSuccess: () => toast({ title: 'Draft version created', variant: 'success' }),
-                      })}
+                      loading={duplicate.isPending}
+                      onClick={doDuplicate}
                     >
-                      New version
+                      Duplicate
                     </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    loading={duplicate.isPending}
-                    onClick={doDuplicate}
-                  >
-                    Duplicate
-                  </Button>
-                  {selected.status === 'ACTIVE' && (
-                    <ConfirmActionButton
-                      size="sm"
-                      variant="secondary"
-                      confirmTitle="Archive workflow"
-                      confirmDescription={`Archive ${selected.code} v${selected.version}? It stops being used for new approvals.`}
-                      confirmLabel="Archive"
-                      loading={archive.isPending}
-                      onConfirm={() => archive.mutate(selected.id, {
-                        onSuccess: () => toast({ title: 'Workflow archived', variant: 'info' }),
-                      })}
-                    >
-                      Archive
-                    </ConfirmActionButton>
-                  )}
-                  {selected.status !== 'ACTIVE' && (
-                    <ConfirmActionButton
-                      size="sm"
-                      variant="destructive"
-                      confirmTitle="Delete workflow version"
-                      confirmDescription={`Delete ${selected.code} v${selected.version}? This cannot be undone.`}
-                      confirmLabel="Delete"
-                      loading={remove.isPending}
-                      onConfirm={() => remove.mutate(selected.id, {
-                        onSuccess: () => { setCode(''); toast({ title: 'Version deleted', variant: 'info' }); },
-                      })}
-                    >
-                      Delete
-                    </ConfirmActionButton>
-                  )}
+                    {selected.status === 'ACTIVE' && (
+                      <ConfirmActionButton
+                        size="sm"
+                        variant="secondary"
+                        confirmTitle="Archive workflow"
+                        confirmDescription={`Archive ${selected.code} v${selected.version}? It stops being used for new approvals.`}
+                        confirmLabel="Archive"
+                        loading={archive.isPending}
+                        onConfirm={() => archive.mutate(selected.id, {
+                          onSuccess: () => toast({ title: 'Workflow archived', variant: 'info' }),
+                        })}
+                      >
+                        Archive
+                      </ConfirmActionButton>
+                    )}
+                    {selected.status !== 'ACTIVE' && (
+                      <ConfirmActionButton
+                        size="sm"
+                        variant="destructive"
+                        confirmTitle="Delete workflow version"
+                        confirmDescription={`Delete ${selected.code} v${selected.version}? This cannot be undone.`}
+                        confirmLabel="Delete"
+                        loading={remove.isPending}
+                        onConfirm={() => remove.mutate(selected.id, {
+                          onSuccess: () => { setCode(''); toast({ title: 'Version deleted', variant: 'info' }); },
+                        })}
+                      >
+                        Delete
+                      </ConfirmActionButton>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -376,7 +396,7 @@ export function WorkflowDefinitionPage() {
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]">
                 <div className="flex min-w-0 flex-col gap-2">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h2 className="text-h2 text-neutral-950">Approval chain</h2>
+                    <h3 className="text-h3 text-neutral-950">Approval chain</h3>
                     {!locked && (
                       <Button
                         size="sm"
@@ -422,7 +442,7 @@ export function WorkflowDefinitionPage() {
                   ) : (
                     <>
                       <section aria-labelledby="wf-step-detail">
-                        <h2 id="wf-step-detail" className="sr-only">Step details</h2>
+                        <h3 id="wf-step-detail" className="sr-only">Step details</h3>
                         {selectedStep && (
                           <WorkflowStepForm
                             step={selectedStep}
@@ -453,7 +473,7 @@ export function WorkflowDefinitionPage() {
                       </section>
 
                       <section aria-labelledby="wf-simulate">
-                        <h2 id="wf-simulate" className="mb-3 text-h2 text-neutral-950">Simulate</h2>
+                        <h3 id="wf-simulate" className="mb-3 text-h3 text-neutral-950">Simulate</h3>
                         <WorkflowScenarios
                           steps={steps}
                           transactionType={selected.transactionType}

@@ -138,9 +138,9 @@ function VersionRow({
       className={cn(
         'grid w-full grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-x-2 rounded-md py-1.5 pl-2 pr-1.5 text-left',
         'transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400',
-        // Bar kiri menandai baris terpilih secara netral (merah bukan penanda seleksi).
-        'border-l-2',
-        selected ? 'border-neutral-800 bg-neutral-100' : 'border-transparent hover:bg-neutral-50',
+        // Seleksi lewat LATAR, konsisten dengan sidebar nav dan daftar rantai.
+        // Sebelumnya memakai `border-l-2`, satu-satunya di aplikasi.
+        selected ? 'bg-neutral-100' : 'hover:bg-neutral-50',
       )}
     >
       <span
