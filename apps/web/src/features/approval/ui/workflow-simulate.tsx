@@ -1,21 +1,21 @@
 import { useState } from 'react';
 import { Input, Label, cn } from '@aec/ui';
-import type { WorkflowStep } from '@aec/api-contracts';
+import { evaluateCondition, evaluateConditionGroup, type WorkflowStep } from '@aec/api-contracts';
 import { formatIdr } from '@/shared/lib/format';
 import { conditionFieldLabel, opLabel } from './workflow-labels';
 
-/** Aturan yang sama dipakai server (`condition-evaluator`). */
+/**
+ * Aturan yang sama dipakai server (`condition-evaluator`). Fungsi diambil dari
+ * kontrak (`@aec/api-contracts`) supaya UI dan server benar-benar memakai satu
+ * implementasi — dua salinan yang "seharusnya sama" adalah bug yang menunggu.
+ *
+ * Grup majemuk menang bila ada; kolom tunggal dipakai bila tidak. Langkah tanpa
+ * syarat selalu berlaku.
+ */
 export function evaluateStep(step: WorkflowStep, amount: number | null): boolean {
+  if (step.conditionGroup) return evaluateConditionGroup(step.conditionGroup, amount);
   if (!step.conditionField || !step.conditionOp || step.conditionValue == null || amount == null) return true;
-  const threshold = step.conditionValue;
-  switch (step.conditionOp) {
-    case '>': return amount > threshold;
-    case '<': return amount < threshold;
-    case '>=': return amount >= threshold;
-    case '<=': return amount <= threshold;
-    case '==': return amount === threshold;
-    default: return true;
-  }
+  return evaluateCondition({ op: step.conditionOp, value: step.conditionValue }, amount);
 }
 
 export interface WorkflowSimulateProps {

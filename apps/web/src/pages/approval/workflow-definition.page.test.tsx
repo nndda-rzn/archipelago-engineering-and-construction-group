@@ -351,8 +351,40 @@ describe('WorkflowDefinitionPage: condition builder terpandu', () => {
     openDrawer('Versions');
     fireEvent.click(screen.getByLabelText(/Version 3, Draft/));
     fireEvent.click(screen.getByLabelText(/Step 2: Finance review/));
-    expect(screen.getByLabelText('Condition field')).toBeTruthy();
-    expect(screen.getByLabelText('Condition operator')).toBeTruthy();
+    expect(screen.getByLabelText('Condition 1 field')).toBeTruthy();
+    expect(screen.getByLabelText('Condition 1 operator')).toBeTruthy();
+  });
+
+  it('adds a second rule and lets the user combine them with AND/OR', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    openDrawer('Versions');
+    fireEvent.click(screen.getByLabelText(/Version 3, Draft/));
+    fireEvent.click(screen.getByLabelText(/Step 2: Finance review/));
+
+    // Mulai dari satu aturan; belum ada penghubung.
+    expect(screen.queryByLabelText('Match')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Add rule/i }));
+
+    // Dua aturan → penghubung muncul, artinya rentang kini bisa diekspresikan.
+    expect(screen.getByLabelText('Match')).toBeTruthy();
+    expect(screen.getByLabelText('Condition 2 field')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Remove rule 2/i })).toBeTruthy();
+  });
+
+  it('sends the whole condition group to the server on save', async () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    openDrawer('Versions');
+    fireEvent.click(screen.getByLabelText(/Version 3, Draft/));
+    fireEvent.click(screen.getByLabelText(/Step 2: Finance review/));
+
+    fireEvent.click(screen.getByRole('button', { name: /Add rule/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Save step/i }));
+
+    await waitFor(() => expect(mutateSpy.updateStep).toHaveBeenCalledTimes(1));
+    const input = mutateSpy.updateStep.mock.calls[0]![0].input;
+    expect(input.conditionGroup).toBeTruthy();
+    expect(input.conditionGroup.conditions).toHaveLength(2);
+    expect(['AND', 'OR']).toContain(input.conditionGroup.combinator);
   });
 });
 

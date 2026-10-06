@@ -326,3 +326,65 @@ describe('WorkflowDefinitionService — duplikasi definisi', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
+
+describe('WorkflowDefinitionService — syarat majemuk', () => {
+  const group = {
+    combinator: 'AND' as const,
+    conditions: [
+      { field: 'estimatedTotal', op: '>' as const, value: 5_000_000 },
+      { field: 'estimatedTotal', op: '<=' as const, value: 50_000_000 },
+    ],
+  };
+
+  it('mirrors the first rule into the single columns when a group is written', async () => {
+    const create = jest.fn(async ({ data }: { data: Record<string, unknown> }) => ({ id: 'step-new', ...data }));
+    const prisma = makePrisma({
+      workflowDefinition: { ...makePrisma().workflowDefinition, findUnique: jest.fn().mockResolvedValue(draftDef()) },
+      workflowStep: { ...makePrisma().workflowStep, create },
+    });
+    const svc = makeService(prisma);
+
+    await svc.addStep('def-1', { stepOrder: 1, name: 'Board', approverRoleCode: 'PROCUREMENT_MANAGER', conditionGroup: group } as never, 'u1');
+
+    const data = create.mock.calls[0]![0].data as Record<string, unknown>;
+    expect(data.conditionField).toBe('estimatedTotal');
+    expect(data.conditionOp).toBe('>');
+    expect(data.conditionValue).toBe(5_000_000);
+    expect(data.conditionGroup).toEqual({ combinator: 'AND', conditions: group.conditions });
+  });
+
+  it('rejects a group whose field is not known for the transaction type', async () => {
+    const prisma = makePrisma({
+      workflowDefinition: { ...makePrisma().workflowDefinition, findUnique: jest.fn().mockResolvedValue(draftDef()) },
+    });
+    const svc = makeService(prisma);
+    await expect(
+      svc.addStep('def-1', {
+        stepOrder: 1,
+        name: 'Board',
+        approverRoleCode: 'PROCUREMENT_MANAGER',
+        conditionGroup: { combinator: 'AND', conditions: [{ field: 'madeUp', op: '>', value: 1 }] },
+      } as never, 'u1'),
+    ).rejects.toMatchObject({ response: { code: 'CONDITION_FIELD_UNKNOWN' } });
+  });
+
+  it('reads a stored group back as a group, not as raw JSON', async () => {
+    const prisma = makePrisma({
+      workflowDefinition: {
+        ...makePrisma().workflowDefinition,
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'def-1', code: 'PR_APPROVAL', name: 'PR', description: null, version: 1, status: 'DRAFT',
+            transactionType: 'PurchaseRequisition', createdBy: 'u1', createdAt: new Date(), updatedAt: new Date(),
+            steps: [
+              { id: 's1', definitionId: 'def-1', stepOrder: 1, name: 'Board', approverRoleCode: 'PROCUREMENT_MANAGER', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 5_000_000, conditionGroup: group },
+            ],
+          },
+        ]),
+      },
+    });
+    const svc = makeService(prisma);
+    const defs = await svc.listDefinitions();
+    expect(defs[0]!.steps[0]!.conditionGroup).toEqual(group);
+  });
+});

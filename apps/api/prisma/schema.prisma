@@ -602,6 +602,10 @@ model WorkflowStep {
   conditionField   String? // mis. "totalAmount" — conditional routing
   conditionOp      String? // ">" | "<" | ">=" | "<=" | "=="
   conditionValue   Decimal?           @db.Decimal(18, 2)
+  // Syarat majemuk (AND/OR): { combinator, conditions: [{ field, op, value }] }.
+  // Kolom tunggal di atas tetap dipakai untuk data lama dan sebagai cerminan
+  // aturan pertama, sehingga pembaca yang belum tahu grup tetap memahami langkah.
+  conditionGroup   Json?
   createdAt        DateTime           @default(now())
 
   @@unique([definitionId, stepOrder])

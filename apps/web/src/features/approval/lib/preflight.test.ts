@@ -12,6 +12,7 @@ function step(overrides: Partial<WorkflowStep> = {}): WorkflowStep {
     conditionField: null,
     conditionOp: null,
     conditionValue: null,
+    conditionGroup: null,
     ...overrides,
   };
 }
@@ -64,6 +65,25 @@ describe('preflight', () => {
   it('accepts a fully specified condition', () => {
     const issues = preflight({
       steps: [step({ conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 5_000_000 })],
+      holdersByRole: { PROCUREMENT_MANAGER: 1 },
+    });
+    expect(issues).toEqual([]);
+  });
+
+  it('accepts a complete condition group even when the mirrored columns are empty', () => {
+    const issues = preflight({
+      steps: [step({
+        conditionField: null,
+        conditionOp: null,
+        conditionValue: null,
+        conditionGroup: {
+          combinator: 'AND',
+          conditions: [
+            { field: 'estimatedTotal', op: '>', value: 5_000_000 },
+            { field: 'estimatedTotal', op: '<=', value: 50_000_000 },
+          ],
+        },
+      })],
       holdersByRole: { PROCUREMENT_MANAGER: 1 },
     });
     expect(issues).toEqual([]);

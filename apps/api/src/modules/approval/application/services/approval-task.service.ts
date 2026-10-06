@@ -72,14 +72,15 @@ export class ApprovalTaskService {
    * benar-benar menyaring langkah yang tidak relevan.
    */
   private applicableSteps(
-    workflow: { steps: Array<{ stepOrder: number; name: string; approverRoleCode: string; conditionField: string | null; conditionOp: string | null; conditionValue: unknown }> } | null,
+    workflow: { steps: Array<{ stepOrder: number; name: string; approverRoleCode: string; conditionField: string | null; conditionOp: string | null; conditionValue: unknown; conditionGroup?: unknown }> } | null,
     doc: Record<string, unknown>,
   ) {
     if (!workflow || workflow.steps.length === 0) return [];
     return workflow.steps
       .filter((step) => this.evaluator.evaluateCondition(
-        step as unknown as { conditionField: string | null; conditionOp: string | null; conditionValue: never },
+        step as unknown as { conditionField: string | null; conditionOp: string | null; conditionValue: never; conditionGroup?: never },
         this.evaluator.getDocValue(doc, step.conditionField),
+        (field) => this.evaluator.getDocValue(doc, field),
       ))
       .sort((a, b) => a.stepOrder - b.stepOrder);
   }

@@ -40,6 +40,11 @@ export type WorkflowCanvasNode = StepNode | AnchorNode;
 
 /** Ringkas syarat langkah menjadi satu baris manusiawi, mis. `Estimated total > 5.000.000`. */
 function conditionText(step: WorkflowStep): string | null {
+  if (step.conditionGroup) {
+    return step.conditionGroup.conditions
+      .map((c) => `${CONDITION_FIELD_LABELS[c.field] ?? c.field} ${opLabel(c.op)} ${formatIdr(c.value)}`)
+      .join(step.conditionGroup.combinator === 'OR' ? ' or ' : ' and ');
+  }
   if (!step.conditionField) return null;
   const field = CONDITION_FIELD_LABELS[step.conditionField] ?? step.conditionField;
   return `${field} ${opLabel(step.conditionOp)} ${formatIdr(step.conditionValue ?? 0)}`;

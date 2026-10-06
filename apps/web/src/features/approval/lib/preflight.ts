@@ -85,26 +85,42 @@ export function preflight(input: PreflightInput): PreflightIssue[] {
 
     // Syarat sebagian terisi tidak pernah cocok dengan dokumen mana pun, sehingga
     // langkah tampak bersyarat tetapi selalu berlaku. Ini kegagalan senyap.
-    const parts = [step.conditionField, step.conditionOp, step.conditionValue];
-    const filled = parts.filter((p) => p !== null && p !== undefined).length;
-    if (filled !== 0 && filled !== 3) {
-      issues.push({
-        severity: 'blocker',
-        code: 'INCOMPLETE_CONDITION',
-        message: `Step ${step.stepOrder} has an incomplete condition; it needs a field, an operator and a value.`,
-        stepId: step.id,
-        stepOrder: step.stepOrder,
-      });
-    }
+    const hasGroup = Boolean(step.conditionGroup && step.conditionGroup.conditions.length > 0);
+    if (hasGroup) {
+      // Grup adalah sumber kebenaran: nilai tidak positif tetap perlu ditinjau.
+      for (const [index, condition] of step.conditionGroup!.conditions.entries()) {
+        if (condition.value <= 0) {
+          issues.push({
+            severity: 'warning',
+            code: 'NON_POSITIVE_THRESHOLD',
+            message: `Step ${step.stepOrder} rule ${index + 1} triggers on ${conditionFieldLabel(condition.field)} ${opLabel(condition.op)} ${condition.value}, which is not a positive amount.`,
+            stepId: step.id,
+            stepOrder: step.stepOrder,
+          });
+        }
+      }
+    } else {
+      const parts = [step.conditionField, step.conditionOp, step.conditionValue];
+      const filled = parts.filter((p) => p !== null && p !== undefined).length;
+      if (filled !== 0 && filled !== 3) {
+        issues.push({
+          severity: 'blocker',
+          code: 'INCOMPLETE_CONDITION',
+          message: `Step ${step.stepOrder} has an incomplete condition; it needs a field, an operator and a value.`,
+          stepId: step.id,
+          stepOrder: step.stepOrder,
+        });
+      }
 
-    if (filled === 3 && step.conditionValue != null && step.conditionValue <= 0) {
-      issues.push({
-        severity: 'warning',
-        code: 'NON_POSITIVE_THRESHOLD',
-        message: `Step ${step.stepOrder} triggers on ${conditionFieldLabel(step.conditionField!)} ${opLabel(step.conditionOp)} ${step.conditionValue}, which is not a positive amount.`,
-        stepId: step.id,
-        stepOrder: step.stepOrder,
-      });
+      if (filled === 3 && step.conditionValue != null && step.conditionValue <= 0) {
+        issues.push({
+          severity: 'warning',
+          code: 'NON_POSITIVE_THRESHOLD',
+          message: `Step ${step.stepOrder} triggers on ${conditionFieldLabel(step.conditionField!)} ${opLabel(step.conditionOp)} ${step.conditionValue}, which is not a positive amount.`,
+          stepId: step.id,
+          stepOrder: step.stepOrder,
+        });
+      }
     }
   }
 
@@ -112,7 +128,8 @@ export function preflight(input: PreflightInput): PreflightIssue[] {
   for (let i = 1; i < steps.length; i += 1) {
     const prev = steps[i - 1]!;
     const curr = steps[i]!;
-    if (prev.approverRoleCode === curr.approverRoleCode && !curr.conditionField) {
+    const currConditional = Boolean(curr.conditionField) || Boolean(curr.conditionGroup?.conditions.length);
+    if (prev.approverRoleCode === curr.approverRoleCode && !currConditional) {
       issues.push({
         severity: 'warning',
         code: 'CONSECUTIVE_SAME_ROLE',

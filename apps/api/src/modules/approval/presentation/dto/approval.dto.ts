@@ -1,4 +1,5 @@
-import { IsArray, IsIn, IsInt, IsNumber, IsOptional, IsString, ArrayMaxSize, ArrayMinSize, Length, MaxLength, Min } from 'class-validator';
+import { IsArray, IsIn, IsInt, IsNumber, IsOptional, IsString, ArrayMaxSize, ArrayMinSize, Length, MaxLength, Min, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class WorkflowStepDto {
   @IsString()
@@ -20,6 +21,35 @@ export class WorkflowStepDto {
   @IsOptional()
   @IsNumber()
   conditionValue?: number;
+}
+
+/** Satu aturan di dalam grup syarat majemuk. */
+export class WorkflowConditionDto {
+  @IsString()
+  @Length(1, 50)
+  field!: string;
+
+  @IsIn(['>', '<', '>=', '<=', '=='])
+  op!: string;
+
+  @IsNumber()
+  value!: number;
+}
+
+/**
+ * Grup syarat majemuk. Divalidasi lebih dalam lagi di service: setiap `field`
+ * harus berasal dari `CONDITION_FIELDS` jenis transaksinya.
+ */
+export class ConditionGroupDto {
+  @IsIn(['AND', 'OR'])
+  combinator!: 'AND' | 'OR';
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(10)
+  @ValidateNested({ each: true })
+  @Type(() => WorkflowConditionDto)
+  conditions!: WorkflowConditionDto[];
 }
 
 export class CreateWorkflowDefinitionDto {
@@ -68,6 +98,11 @@ export class AddWorkflowStepDto {
   @IsOptional()
   @IsNumber()
   conditionValue?: number;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ConditionGroupDto)
+  conditionGroup?: ConditionGroupDto | null;
 }
 
 export class PublishWorkflowDto {
@@ -127,6 +162,11 @@ export class UpdateWorkflowStepDto {
   @IsOptional()
   @IsNumber()
   conditionValue?: number | null;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ConditionGroupDto)
+  conditionGroup?: ConditionGroupDto | null;
 }
 
 export class ReorderWorkflowStepsDto {

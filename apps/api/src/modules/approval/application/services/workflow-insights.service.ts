@@ -20,6 +20,20 @@ function monthKey(date: Date): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
+/** Bentuk grup syarat tersimpan (JSON) → bentuk yang bisa dibaca; `null` bila tak sah. */
+function toGroup(value: unknown): { combinator: 'AND' | 'OR'; conditions: Array<{ field: string; op: string; value: number }> } | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const raw = value as { combinator?: unknown; conditions?: unknown };
+  const combinator = raw.combinator === 'OR' ? 'OR' : raw.combinator === 'AND' ? 'AND' : null;
+  if (!combinator || !Array.isArray(raw.conditions)) return null;
+  const conditions = raw.conditions
+    .filter((c): c is Record<string, unknown> => typeof c === 'object' && c !== null)
+    .map((c) => ({ field: String(c.field), op: String(c.op), value: Number(c.value) }))
+    .filter((c) => Number.isFinite(c.value));
+  if (conditions.length === 0) return null;
+  return { combinator, conditions };
+}
+
 /**
  * Insight operasional sebuah definisi: di mana dokumen menumpuk, bagaimana
  * hasilnya, seberapa besar nominalnya, berapa yang kena syarat, dan apakah role
@@ -85,7 +99,7 @@ export class WorkflowInsightsService {
       condition: this.conditionText(step),
       matching: amounts.values.filter((value) =>
         this.evaluator.evaluateCondition(
-          step as unknown as { conditionField: string | null; conditionOp: string | null; conditionValue: never },
+          step as unknown as { conditionField: string | null; conditionOp: string | null; conditionValue: never; conditionGroup?: never },
           value,
         ),
       ).length,
@@ -113,15 +127,20 @@ export class WorkflowInsightsService {
     );
 
     // Ambang nyata tiap langkah, untuk digambar sebagai garis pada sebaran nilai.
+    // Untuk langkah bergrup, ambang diambil dari aturan pertama (garis tunggal
+    // tetap bermakna; menyembunyikannya akan membuat sebaran tak terbaca).
     const thresholds = definition.steps
-      .filter((s) => s.conditionField != null && s.conditionValue != null)
-      .map((s) => ({
-        stepOrder: s.stepOrder,
-        stepName: s.name,
-        field: s.conditionField as string,
-        op: s.conditionOp ?? '>',
-        value: Number(s.conditionValue),
-      }));
+      .map((s) => {
+        const group = toGroup(s.conditionGroup);
+        if (group && group.conditions[0]) {
+          return { stepOrder: s.stepOrder, stepName: s.name, field: group.conditions[0].field, op: group.conditions[0].op, value: Number(group.conditions[0].value) };
+        }
+        if (s.conditionField != null && s.conditionValue != null) {
+          return { stepOrder: s.stepOrder, stepName: s.name, field: s.conditionField, op: s.conditionOp ?? '>', value: Number(s.conditionValue) };
+        }
+        return null;
+      })
+      .filter((t): t is { stepOrder: number; stepName: string; field: string; op: string; value: number } => t !== null);
 
     return {
       transactionType,
@@ -136,7 +155,13 @@ export class WorkflowInsightsService {
     };
   }
 
-  private conditionText(step: { conditionField: string | null; conditionOp: string | null; conditionValue: unknown }): string | null {
+  private conditionText(step: { conditionField: string | null; conditionOp: string | null; conditionValue: unknown; conditionGroup?: unknown }): string | null {
+    const group = toGroup(step.conditionGroup);
+    if (group) {
+      return group.conditions
+        .map((c) => `${c.field} ${c.op === '==' ? '=' : c.op} ${Number(c.value).toLocaleString('id-ID')}`)
+        .join(group.combinator === 'OR' ? ' or ' : ' and ');
+    }
     if (!step.conditionField || !step.conditionOp || step.conditionValue == null) return null;
     const op = step.conditionOp === '==' ? '=' : step.conditionOp;
     return `${step.conditionField} ${op} ${Number(step.conditionValue).toLocaleString('id-ID')}`;

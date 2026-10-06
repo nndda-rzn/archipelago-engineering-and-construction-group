@@ -207,11 +207,79 @@ export const workflowStepSchema = z.object({
   stepOrder: z.number(),
   name: z.string(),
   approverRoleCode: z.string(),
+  /** Kolom tunggal lama — tetap dikirim untuk kompatibilitas; cerminan aturan pertama. */
   conditionField: z.string().nullable(),
   conditionOp: z.string().nullable(),
   conditionValue: z.number().nullable(),
+  /** Aturan majemuk (AND/OR). `null` berarti langkah selalu berlaku. */
+  conditionGroup: z.lazy(() => conditionGroupSchema.nullable()),
 });
 export type WorkflowStep = z.infer<typeof workflowStepSchema>;
+
+/**
+ * Satu aturan syarat: field, operator, nilai. Field harus berasal dari
+ * `CONDITION_FIELDS` jenis transaksinya (satu sumber kebenaran), sehingga aturan
+ * yang tidak pernah cocok tidak bisa dibuat.
+ */
+export const workflowConditionSchema = z.object({
+  field: z.string(),
+  op: z.enum(['>', '<', '>=', '<=', '==']),
+  value: z.number(),
+});
+export type WorkflowCondition = z.infer<typeof workflowConditionSchema>;
+
+/**
+ * Sekumpulan aturan dengan penghubung. `AND` = semua harus benar, `OR` = salah
+ * satu cukup. Inilah yang membuat rentang bisa diekspresikan
+ * (`> 5jt AND <= 50jt`) — hal yang mustahil dengan satu aturan tunggal.
+ */
+export const conditionGroupSchema = z.object({
+  combinator: z.enum(['AND', 'OR']),
+  conditions: z.array(workflowConditionSchema).min(1),
+});
+export type ConditionGroup = z.infer<typeof conditionGroupSchema>;
+
+/**
+ * Bentuk minimal yang dibutuhkan evaluator — dipakai bersama API dan web agar
+ * aturan yang sama dievaluasi di kedua sisi (bukan dua implementasi yang bisa
+ * berbeda diam-diam).
+ */
+export interface ConditionLike {
+  conditionField: string | null;
+  conditionOp: string | null;
+  conditionValue: number | null;
+}
+export interface ConditionGroupLike {
+  combinator: 'AND' | 'OR';
+  conditions: Array<{ field: string; op: string; value: number }>;
+}
+
+/** Satu aturan terhadap sebuah nilai dokumen. `null` pada nilai → tidak cocok. */
+export function evaluateCondition(condition: { op: string; value: number }, docValue: number | null): boolean {
+  if (docValue == null) return false;
+  switch (condition.op) {
+    case '>': return docValue > condition.value;
+    case '<': return docValue < condition.value;
+    case '>=': return docValue >= condition.value;
+    case '<=': return docValue <= condition.value;
+    case '==': return docValue === condition.value;
+    default: return false;
+  }
+}
+
+/**
+ * Sekumpulan aturan dengan penghubung AND/OR.
+ *
+ * Daftar kosong sengaja mengembalikan `true`: grup tanpa aturan berarti langkah
+ * tidak dibatasi, bukan langkah yang tidak pernah berlaku. Ini menjaga perilaku
+ * "kosong = selalu berlaku" yang sudah dipakai kolom tunggal.
+ */
+export function evaluateConditionGroup(group: ConditionGroupLike, docValue: number | null): boolean {
+  if (group.conditions.length === 0) return true;
+  return group.combinator === 'OR'
+    ? group.conditions.some((c) => evaluateCondition(c, docValue))
+    : group.conditions.every((c) => evaluateCondition(c, docValue));
+}
 
 export const workflowDefinitionSchema = z.object({
   id: z.string(),
@@ -262,10 +330,20 @@ export const updateWorkflowStepSchema = z
     conditionField: z.string().max(50).nullable().optional(),
     conditionOp: z.enum(['>', '<', '>=', '<=', '==']).nullable().optional(),
     conditionValue: z.number().nullable().optional(),
+    /**
+     * Syarat majemuk. Bila diisi, ia menggantikan kolom tunggal di atas; kolom
+     * tunggal tetap ditulis sebagai cerminan aturan pertama agar pembaca lama
+     * (dan data lama) tetap memahami langkah ini.
+     */
+    conditionGroup: conditionGroupSchema.nullable().optional(),
   })
   .superRefine((value, ctx) => {
-    // Syarat harus lengkap atau kosong — sebagian terisi menghasilkan langkah
-    // yang tampak bersyarat tetapi selalu berlaku.
+    // Bila grup majemuk dipakai, kolom tunggal tidak perlu lengkap — server yang
+    // akan menurunkannya dari aturan pertama.
+    if (value.conditionGroup !== undefined && value.conditionGroup !== null) return;
+
+    // Syarat tunggal harus lengkap atau kosong — sebagian terisi menghasilkan
+    // langkah yang tampak bersyarat tetapi selalu berlaku.
     const parts = [value.conditionField, value.conditionOp, value.conditionValue];
     const filled = parts.filter((p) => p !== undefined && p !== null).length;
     if (filled !== 0 && filled !== 3) {
@@ -413,6 +491,7 @@ export const addWorkflowStepSchema = z.object({
   conditionField: z.string().optional(),
   conditionOp: z.enum(['>', '<', '>=', '<=', '==']).optional(),
   conditionValue: z.number().optional(),
+  conditionGroup: conditionGroupSchema.nullable().optional(),
 });
 export type AddWorkflowStep = z.infer<typeof addWorkflowStepSchema>;
 
