@@ -1,15 +1,22 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { ConditionEvaluator } from './shared/condition-evaluator';
+import { summariseDocumentOutcomes, type TaskOutcomeRow } from './shared/document-outcomes';
 import type { WorkflowInsights } from '@aec/api-contracts';
 
-/** Bucket nominal tetap agar sebaran bisa dibandingkan antar waktu. */
+/**
+ * Bucket nominal tetap agar sebaran bisa dibandingkan antar waktu.
+ *
+ * Label memakai **satu satuan** (juta `jt`) untuk semua batas di bawah 1 miliar,
+ * lalu `M` untuk miliar. Sebelumnya label mencampur `100jt–1M` dan `1M–10M`
+ * sehingga mata harus menebak apakah `M` berarti juta atau miliar.
+ */
 const AMOUNT_BUCKETS: Array<{ label: string; from: number; to: number }> = [
   { label: '< 10jt', from: 0, to: 10_000_000 },
-  { label: '10–100jt', from: 10_000_000, to: 100_000_000 },
-  { label: '100jt–1M', from: 100_000_000, to: 1_000_000_000 },
-  { label: '1M–10M', from: 1_000_000_000, to: 10_000_000_000 },
-  { label: '> 10M', from: 10_000_000_000, to: Number.POSITIVE_INFINITY },
+  { label: '10jt – 100jt', from: 10_000_000, to: 100_000_000 },
+  { label: '100jt – 1.000jt', from: 100_000_000, to: 1_000_000_000 },
+  { label: '1.000jt – 10.000jt', from: 1_000_000_000, to: 10_000_000_000 },
+  { label: '> 10.000jt', from: 10_000_000_000, to: Number.POSITIVE_INFINITY },
 ];
 
 const INSIGHTS_NOTE =
@@ -46,7 +53,7 @@ export class WorkflowInsightsService {
     @Inject(ConditionEvaluator) private readonly evaluator: ConditionEvaluator,
   ) {}
 
-  async forDefinition(definitionId: string): Promise<WorkflowInsights> {
+  async forDefinition(definitionId: string, requestedScope: 'version' | 'type' = 'type'): Promise<WorkflowInsights> {
     const definition = await this.prisma.workflowDefinition.findUnique({
       where: { id: definitionId },
       include: { steps: { orderBy: { stepOrder: 'asc' } } },
@@ -54,11 +61,30 @@ export class WorkflowInsightsService {
     if (!definition) throw new NotFoundException({ code: 'WORKFLOW_NOT_FOUND', message: 'Workflow not found' });
 
     const transactionType = definition.transactionType;
-    const tasks = await this.prisma.approvalTask.findMany({
+
+    // Ambil SELURUH task jenis transaksi ini beserta `definitionId`-nya, lalu
+    // putuskan cakupannya di sini. Dengan begitu `versionBreakdown` bisa
+    // dilaporkan tanpa query kedua — dan campuran versi terlihat, bukan
+    // tersembunyi di balik satu angka.
+    const allTasks = await this.prisma.approvalTask.findMany({
       where: { transactionType },
-      select: { stepOrder: true, stepName: true, status: true, createdAt: true, decidedAt: true },
+      select: { stepOrder: true, stepName: true, status: true, createdAt: true, decidedAt: true, transactionId: true, definitionId: true },
       orderBy: { createdAt: 'asc' },
     });
+
+    // Versi lain (untuk memberi label pada breakdown) — diambil sekali.
+    const otherIds = [...new Set(allTasks.map((t) => t.definitionId).filter((id): id is string => id != null && id !== definitionId))];
+    const otherDefs = otherIds.length
+      ? await this.prisma.workflowDefinition.findMany({ where: { id: { in: otherIds } }, select: { id: true, code: true, version: true } })
+      : [];
+    const defById = new Map(otherDefs.map((d) => [d.id, d]));
+
+    const versionBreakdown = this.buildBreakdown(allTasks, definitionId, definition, defById);
+
+    const appliedScope: 'version' | 'type' = requestedScope;
+    const tasks = appliedScope === 'version'
+      ? allTasks.filter((t) => t.definitionId === definitionId)
+      : allTasks;
 
     const byStepMap = new Map<number, { stepOrder: number; stepName: string; total: number; approved: number; rejected: number; pending: number; cancelled: number }>();
     for (const task of tasks) {
@@ -73,6 +99,9 @@ export class WorkflowInsightsService {
       byStepMap.set(task.stepOrder, row);
     }
     const byStep = [...byStepMap.values()].sort((a, b) => a.stepOrder - b.stepOrder);
+
+    // Hasil per DOKUMEN — bukan penjumlahan baris langkah (lihat document-outcomes.ts).
+    const documents = summariseDocumentOutcomes(tasks as TaskOutcomeRow[]);
 
     const monthlyMap = new Map<string, { month: string; created: number; decided: number }>();
     for (const task of tasks) {
@@ -104,7 +133,6 @@ export class WorkflowInsightsService {
         ),
       ).length,
     }));
-
     const coverage = await Promise.all(
       definition.steps.map(async (step) => {
         const role = await this.prisma.role.findUnique({ where: { code: step.approverRoleCode } });
@@ -145,7 +173,14 @@ export class WorkflowInsightsService {
     return {
       transactionType,
       generatedAt: new Date().toISOString(),
+      scope: {
+        requested: { definitionId: definition.id, code: definition.code, version: definition.version },
+        applied: appliedScope,
+        taskCount: tasks.length,
+        versionBreakdown,
+      },
       byStep,
+      documents,
       monthly,
       amounts: { count: amounts.values.length, min: amounts.min, max: amounts.max, buckets: amounts.buckets },
       ruleHits,
@@ -153,6 +188,44 @@ export class WorkflowInsightsService {
       thresholds,
       note: INSIGHTS_NOTE,
     };
+  }
+
+  /**
+   * Sebaran task antar versi. `version: null` untuk task tanpa versi diketahui
+   * (task lama sebelum kolom `definitionId` ada, atau submit manual tanpa
+   * workflow) — dilaporkan apa adanya, bukan digabung diam-diam ke versi ini.
+   */
+  private buildBreakdown(
+    tasks: Array<{ definitionId: string | null }>,
+    currentId: string,
+    current: { id: string; code: string; version: number },
+    defById: Map<string, { id: string; code: string; version: number }>,
+  ): WorkflowInsights['scope']['versionBreakdown'] {
+    const counts = new Map<string, number>();
+    for (const task of tasks) {
+      const key = task.definitionId ?? '__unknown__';
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+
+    return [...counts.entries()]
+      .map(([key, count]) => {
+        if (key === '__unknown__') return { definitionId: null, version: null, code: null, tasks: count };
+        const def = key === currentId ? current : defById.get(key);
+        return {
+          definitionId: key,
+          version: def?.version ?? null,
+          code: def?.code ?? null,
+          tasks: count,
+        };
+      })
+      // Versi ini dulu (paling relevan), lalu versi lain, lalu tanpa versi.
+      .sort((a, b) => {
+        if (a.definitionId === currentId) return -1;
+        if (b.definitionId === currentId) return 1;
+        if (a.definitionId === null) return 1;
+        if (b.definitionId === null) return -1;
+        return (b.version ?? 0) - (a.version ?? 0);
+      });
   }
 
   private conditionText(step: { conditionField: string | null; conditionOp: string | null; conditionValue: unknown; conditionGroup?: unknown }): string | null {

@@ -89,15 +89,25 @@ const versionsData = vi.hoisted(() => [
 const insightsData = vi.hoisted(() => ({
   transactionType: 'PurchaseRequisition',
   generatedAt: '2026-10-06T00:00:00.000Z',
+  scope: {
+    requested: { definitionId: 'def-pr-v2', code: 'PR_APPROVAL', version: 2 },
+    applied: 'type' as const,
+    taskCount: 17,
+    versionBreakdown: [
+      { definitionId: 'def-pr-v2', version: 2, code: 'PR_APPROVAL', tasks: 17 },
+      { definitionId: null, version: null, code: null, tasks: 2 },
+    ],
+  },
   byStep: [
     { stepOrder: 1, stepName: 'Procurement manager approval', total: 11, approved: 7, rejected: 1, pending: 3, cancelled: 0 },
     { stepOrder: 2, stepName: 'Board approval', total: 6, approved: 4, rejected: 0, pending: 2, cancelled: 0 },
   ],
+  documents: { entered: 11, approved: 5, rejected: 1, pending: 5, cancelled: 0, approvalRate: 45 },
   monthly: [
     { month: '2026-08', created: 4, decided: 3 },
     { month: '2026-09', created: 5, decided: 4 },
   ],
-  amounts: { count: 11, min: 2_000_000, max: 150_000_000_000, buckets: [{ label: '< 10jt', count: 1, from: 0, to: 10_000_000 }, { label: '100jt-1M', count: 6, from: 100_000_000, to: 1_000_000_000 }] },
+  amounts: { count: 11, min: 2_000_000, max: 150_000_000_000, buckets: [{ label: '< 10jt', count: 1, from: 0, to: 10_000_000 }, { label: '100jt – 1.000jt', count: 6, from: 100_000_000, to: 1_000_000_000 }] },
   ruleHits: [{ stepOrder: 2, name: 'Board approval', condition: 'estimatedTotal > 5.000.000', matching: 10 }],
   coverage: [
     { stepOrder: 1, roleCode: 'PROCUREMENT_MANAGER', holders: 1, holderNames: ['AEC Administrator'] },
@@ -450,16 +460,39 @@ describe('WorkflowDefinitionPage: drawer menahan hal sekunder', () => {
   it('keeps versions and insights out of the way until asked', () => {
     renderWithProviders(<WorkflowDefinitionPage />);
     // Tertutup: tidak ada konten tab.
-    expect(screen.queryByText('Where documents go')).toBeNull();
+    expect(screen.queryByText('Across all versions')).toBeNull();
     expect(screen.queryByLabelText('Workflow versions')).toBeNull();
 
     openDrawer('Insights');
-    // Tier: ringkasan → alur → hasil → rincian.
-    expect(screen.getByText('Summary')).toBeTruthy();
-    expect(screen.getByText('Where documents go')).toBeTruthy();
-    expect(screen.getByText('Outcome by step')).toBeTruthy();
+    // Cakupan data dinyatakan: versi ini vs semua versi.
+    expect(screen.getByText('This version')).toBeTruthy();
+    expect(screen.getByText('Across all versions')).toBeTruthy();
+    expect(screen.getByText('Documents by step')).toBeTruthy();
     expect(screen.getByText('Rule impact')).toBeTruthy();
     expect(screen.getByText(/Based on recorded approval tasks/i)).toBeTruthy();
+  });
+
+  it('states the version breakdown instead of hiding that tasks span versions', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    openDrawer('Insights');
+    // 2 task tanpa versi diketahui harus disebut, bukan dilebur diam-diam.
+    expect(screen.getByText(/no recorded version/i)).toBeTruthy();
+  });
+
+  it('reports the approval rate over documents, not step rows', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    openDrawer('Insights');
+    // 5 dari 11 dokumen = 45%. Rumus lama (4/11) memberi 36%.
+    expect(screen.getByText('45%')).toBeTruthy();
+    expect(screen.getByText(/5 of 11 fully approved/)).toBeTruthy();
+    expect(screen.queryByText('36%')).toBeNull();
+  });
+
+  it('does not draw a funnel that reads skipped steps as lost documents', () => {
+    const { container } = renderWithProviders(<WorkflowDefinitionPage />);
+    openDrawer('Insights');
+    expect(container.querySelector('[data-slot="funnel-bar"]')).toBeNull();
+    expect(screen.queryByText('Where documents go')).toBeNull();
   });
 
   it('shows the version history with status and author in its own tab', () => {

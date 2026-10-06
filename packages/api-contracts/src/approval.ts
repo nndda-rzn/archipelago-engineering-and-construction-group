@@ -14,6 +14,11 @@ export const approvalTaskSchema = z.object({
   comment: z.string().nullable(),
   decidedAt: z.string().nullable(),
   createdAt: z.string(),
+  /**
+   * Definisi yang membuat task ini. `null` = versi tidak diketahui (task lama
+   * sebelum kolom ini ada, atau submit manual tanpa workflow).
+   */
+  definitionId: z.string().nullable().optional(),
   canApprove: z.boolean().optional(),
 });
 export type ApprovalTask = z.infer<typeof approvalTaskSchema>;
@@ -397,6 +402,36 @@ export type WorkflowVersionDiff = z.infer<typeof workflowVersionDiffSchema>;
 export const workflowInsightsSchema = z.object({
   transactionType: z.string(),
   generatedAt: z.string(),
+  /**
+   * **Cakupan data.** Ini menjawab masalah "konteks tercampur": sebagian angka
+   * dihitung per DEFINISI (mis. coverage), sebagian per JENIS TRANSAKSI (mis.
+   * `byStep`, `amounts`). Tanpa label, pengguna menyandingkan dua skala berbeda
+   * dan menyangka keduanya tentang hal yang sama.
+   *
+   * - `requested` = definisi yang diminta insight-nya.
+   * - `scope` = apakah angka task (`byStep`/`amounts`/`monthly`/`documents`)
+   *   difilter ke versi ini (`'version'`) atau mencakup semua versi (`'type'`).
+   * - `versionBreakdown` = sebaran task antar versi; memperlihatkan campurannya
+   *   alih-alih menyembunyikannya. `version: null` = task tanpa versi diketahui.
+   */
+  scope: z.object({
+    requested: z.object({
+      definitionId: z.string(),
+      code: z.string(),
+      version: z.number(),
+    }),
+    /** `type` = semua versi (perilaku lama). */
+    applied: z.enum(['version', 'type']),
+    taskCount: z.number(),
+    versionBreakdown: z.array(
+      z.object({
+        definitionId: z.string().nullable(),
+        version: z.number().nullable(),
+        code: z.string().nullable(),
+        tasks: z.number(),
+      }),
+    ),
+  }),
   /** Sebaran task menurut langkah + hasilnya. */
   byStep: z.array(
     z.object({
@@ -409,6 +444,22 @@ export const workflowInsightsSchema = z.object({
       cancelled: z.number(),
     }),
   ),
+  /**
+   * Hasil akhir **per dokumen**, dihitung dari seluruh langkahnya.
+   *
+   * Ini bentuk yang benar untuk "berapa yang disetujui": satu dokumen
+   * menghasilkan beberapa baris task, jadi menjumlahkan `approved` lintas langkah
+   * menghitung dokumen yang sama dua kali. `approvalRate` di sini = dokumen
+   * selesai / dokumen masuk.
+   */
+  documents: z.object({
+    entered: z.number(),
+    approved: z.number(),
+    rejected: z.number(),
+    pending: z.number(),
+    cancelled: z.number(),
+    approvalRate: z.number(),
+  }),
   /** Volume per bulan (UTC). Kosong bila tidak ada task. */
   monthly: z.array(z.object({ month: z.string(), created: z.number(), decided: z.number() })),
   /** Sebaran nominal dokumen + bucket tetap agar bisa dibandingkan antar waktu. */

@@ -124,6 +124,9 @@ export class ApprovalTaskService {
           approverRoleCode: firstStep.approverRoleCode,
           requesterId: actorId,
           status: 'PENDING',
+          // Versi yang benar-benar dipakai dokumen ini. `null` bila submit manual
+          // tanpa workflow — bukan menebak.
+          definitionId: workflow?.id ?? null,
         },
       });
 
@@ -242,6 +245,10 @@ export class ApprovalTaskService {
         approverRoleCode: next.approverRoleCode,
         requesterId: task.requesterId,
         status: 'PENDING',
+        // Langkah lanjutan memakai definisi yang sedang aktif saat dibuka. Bila
+        // versi berganti di tengah rantai, tiap task tetap jujur menyebut versi
+        // yang benar-benar membuatnya.
+        definitionId: workflow.id,
       },
     });
   }

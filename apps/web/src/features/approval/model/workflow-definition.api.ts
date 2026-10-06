@@ -67,12 +67,12 @@ export function useWorkflowVersionDiff(code: string | null, from: number | null,
   });
 }
 
-export function useWorkflowInsights(id: string | null) {
+export function useWorkflowInsights(id: string | null, scope: 'version' | 'type' = 'type') {
   return useQuery({
-    queryKey: workflowKeys.insights(id ?? ''),
+    queryKey: [...workflowKeys.insights(id ?? ''), scope],
     enabled: Boolean(id),
     queryFn: async (): Promise<WorkflowInsights> => {
-      const data = await getJson<unknown>(`/approvals/workflows/${id}/insights`);
+      const data = await getJson<unknown>(`/approvals/workflows/${id}/insights?scope=${scope}`);
       return workflowInsightsSchema.parse(data);
     },
   });

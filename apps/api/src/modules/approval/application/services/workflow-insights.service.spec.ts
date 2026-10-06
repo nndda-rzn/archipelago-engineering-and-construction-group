@@ -96,3 +96,81 @@ describe('WorkflowInsightsService: bucket membawa batasnya', () => {
     ]);
   });
 });
+
+describe('WorkflowInsightsService: cakupan data dinyatakan, tidak disembunyikan', () => {
+  /** Dua versi PR_APPROVAL, task tersebar di keduanya + satu tanpa versi. */
+  function scopedPrisma() {
+    return makePrisma({
+      workflowDefinition: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'def-v2',
+          code: 'PR_APPROVAL',
+          version: 2,
+          transactionType: 'PurchaseRequisition',
+          steps: [
+            { stepOrder: 1, name: 'Procurement manager approval', approverRoleCode: 'PROCUREMENT_MANAGER', conditionField: null, conditionOp: null, conditionValue: null },
+          ],
+        }),
+        // Dipakai untuk memberi label pada versi LAIN di breakdown.
+        findMany: jest.fn().mockResolvedValue([{ id: 'def-v1', code: 'PR_APPROVAL', version: 1 }]),
+      },
+      approvalTask: {
+        findMany: jest.fn().mockResolvedValue([
+          // Versi ini: 1 dokumen, disetujui.
+          { stepOrder: 1, stepName: 'A', status: 'APPROVED', createdAt: new Date('2026-09-01'), decidedAt: new Date('2026-09-02'), transactionId: 'D1', definitionId: 'def-v2' },
+          // Versi lain: 1 dokumen, ditolak.
+          { stepOrder: 1, stepName: 'A', status: 'REJECTED', createdAt: new Date('2026-09-01'), decidedAt: new Date('2026-09-02'), transactionId: 'D2', definitionId: 'def-v1' },
+          // Tanpa versi diketahui.
+          { stepOrder: 1, stepName: 'A', status: 'PENDING', createdAt: new Date('2026-09-01'), decidedAt: null, transactionId: 'D3', definitionId: null },
+        ]),
+      },
+    });
+  }
+
+  it('labels which definition the insight was requested for', async () => {
+    const svc = makeService(scopedPrisma());
+    const result = await svc.forDefinition('def-v2');
+    expect(result.scope.requested).toEqual({ definitionId: 'def-v2', code: 'PR_APPROVAL', version: 2 });
+  });
+
+  it('shows the version breakdown instead of hiding that tasks span versions', async () => {
+    const svc = makeService(scopedPrisma());
+    const result = await svc.forDefinition('def-v2');
+    expect(result.scope.versionBreakdown).toEqual([
+      { definitionId: 'def-v2', version: 2, code: 'PR_APPROVAL', tasks: 1 },
+      { definitionId: 'def-v1', version: 1, code: 'PR_APPROVAL', tasks: 1 },
+      { definitionId: null, version: null, code: null, tasks: 1 },
+    ]);
+  });
+
+  it('defaults to type scope so behaviour is unchanged unless asked', async () => {
+    const svc = makeService(scopedPrisma());
+    const result = await svc.forDefinition('def-v2');
+    expect(result.scope.applied).toBe('type');
+    // Semua task dihitung: 1 approved + 1 rejected + 1 pending.
+    expect(result.documents.entered).toBe(3);
+  });
+
+  it('filters byStep to this version when scope=version', async () => {
+    const svc = makeService(scopedPrisma());
+    const result = await svc.forDefinition('def-v2', 'version');
+    expect(result.scope.applied).toBe('version');
+    // Hanya D1 (versi ini) yang dihitung.
+    expect(result.documents.entered).toBe(1);
+    expect(result.documents.approved).toBe(1);
+    expect(result.byStep.reduce((n, s) => n + s.total, 0)).toBe(1);
+  });
+
+  it('reports document outcomes, not step-row sums', async () => {
+    const svc = makeService(scopedPrisma());
+    const result = await svc.forDefinition('def-v2');
+    expect(result.documents).toEqual({
+      entered: 3,
+      approved: 1,
+      rejected: 1,
+      pending: 1,
+      cancelled: 0,
+      approvalRate: 33,
+    });
+  });
+});

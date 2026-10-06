@@ -6,7 +6,14 @@ import { AmountThresholdChart, CoverageRing, MonthlyVolumeChart } from './workfl
 const base: WorkflowInsights = {
   transactionType: 'PurchaseRequisition',
   generatedAt: '2026-10-06T00:00:00.000Z',
+  scope: {
+    requested: { definitionId: 'def-1', code: 'PR_APPROVAL', version: 2 },
+    applied: 'type',
+    taskCount: 0,
+    versionBreakdown: [],
+  },
   byStep: [],
+  documents: { entered: 0, approved: 0, rejected: 0, pending: 0, cancelled: 0, approvalRate: 0 },
   monthly: [],
   amounts: { count: 0, min: null, max: null, buckets: [] },
   ruleHits: [],

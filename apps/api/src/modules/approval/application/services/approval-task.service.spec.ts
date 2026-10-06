@@ -156,6 +156,34 @@ describe('ApprovalTaskService.submitForApproval — rantai berjenjang', () => {
       svc.submitForApproval({ transactionType: 'PurchaseOrder', transactionId: 'po1', approverRoleCode: 'X' }, 'u1'),
     ).rejects.toMatchObject({ status: 409 });
   });
+
+  it('records WHICH definition created the task, so insights can be scoped to a version', async () => {
+    const prisma = chainPrisma();
+    // Definisi ACTIVE yang dipakai punya id — itulah yang harus tersimpan di task.
+    prisma.workflowDefinition.findFirst = jest.fn().mockResolvedValue({
+      id: 'def-po-1',
+      code: 'PO_APPROVAL',
+      version: 1,
+      steps: [
+        { stepOrder: 1, name: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER', conditionField: null, conditionOp: null, conditionValue: null },
+      ],
+    });
+    const svc = makeService(prisma);
+    await svc.submitForApproval({ transactionType: 'PurchaseOrder', transactionId: 'po1', approverRoleCode: 'X' }, 'u1');
+
+    expect(prisma.approvalTask.create.mock.calls[0]![0].data.definitionId).toBe('def-po-1');
+  });
+
+  it('records no definition when the document is submitted without a workflow', async () => {
+    const prisma = chainPrisma();
+    // Tanpa definisi ACTIVE: rantai dimulai dari role yang diminta pemanggil.
+    prisma.workflowDefinition.findFirst = jest.fn().mockResolvedValue(null);
+    const svc = makeService(prisma);
+    await svc.submitForApproval({ transactionType: 'PurchaseOrder', transactionId: 'po1', approverRoleCode: 'PROCUREMENT_MANAGER' }, 'u1');
+
+    // `null` — bukan menebak definisi yang tidak ada.
+    expect(prisma.approvalTask.create.mock.calls[0]![0].data.definitionId).toBeNull();
+  });
 });
 
 describe('ApprovalTaskService.decide — maju ke langkah berikutnya', () => {
@@ -201,6 +229,23 @@ describe('ApprovalTaskService.decide — maju ke langkah berikutnya', () => {
     expect(prisma.purchaseOrder.update).not.toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: 'APPROVED' }) }),
     );
+  });
+
+  it('records the definition on the NEXT step too, so every step names its version', async () => {
+    const prisma = decidePrisma(true);
+    prisma.workflowDefinition.findFirst = jest.fn().mockResolvedValue({
+      id: 'def-po-1',
+      code: 'PO_APPROVAL',
+      version: 1,
+      steps: [
+        { stepOrder: 1, name: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER', conditionField: null, conditionOp: null, conditionValue: null },
+        { stepOrder: 2, name: 'Approval Direksi', approverRoleCode: 'SUPER_ADMIN', conditionField: 'totalAmount', conditionOp: '>', conditionValue: 5_000_000 },
+      ],
+    });
+    const svc = makeService(prisma);
+    await svc.decide({ taskId: 'task-1', decision: 'APPROVE' }, 'u1');
+
+    expect(prisma.approvalTask.create.mock.calls[0]![0].data.definitionId).toBe('def-po-1');
   });
 
   it('opens the next step even when the same person holds the next role (maker-checker is about the requester, not the previous approver)', async () => {

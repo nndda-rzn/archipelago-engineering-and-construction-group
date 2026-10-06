@@ -21,7 +21,7 @@ export { WorkflowScenarios, type Scenario } from './workflow-scenarios';
 export { WorkflowPreflight, type WorkflowPreflightProps } from './workflow-preflight';
 export { WorkflowDrawer, DRAWER_ICONS, useDrawerState, type WorkflowDrawerTab } from './workflow-drawer';
 export { WorkflowTemplateDialog, type WorkflowTemplateDialogProps } from './workflow-template-dialog';
-export { WorkflowFunnel, funnelStages, type FunnelStage } from './workflow-funnel';
+export { WorkflowStepOutcomes, type WorkflowStepOutcomesProps } from './workflow-step-outcomes';
 export {
   MonthlyVolumeChart,
   CoverageRing,

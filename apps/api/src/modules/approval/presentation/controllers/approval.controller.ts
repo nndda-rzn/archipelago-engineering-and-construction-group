@@ -94,8 +94,10 @@ export class ApprovalController {
 
   @Get('workflows/:id/insights')
   @Permissions(Permission.WorkflowView)
-  workflowInsights(@Param('id') id: string) {
-    return this.insights.forDefinition(id);
+  workflowInsights(@Param('id') id: string, @Query('scope') scope?: string) {
+    // Default `type` = perilaku lama (semua versi). `version` menyempitkan ke
+    // definisi ini saja. Dipilih eksplisit oleh klien, bukan diam-diam.
+    return this.insights.forDefinition(id, scope === 'version' ? 'version' : 'type');
   }
 
   @Patch('workflows/:id')

@@ -1,21 +1,27 @@
-import { BulletBar, StackedBar, cn } from '@aec/ui';
+import { BulletBar } from '@aec/ui';
 import type { WorkflowInsights } from '@aec/api-contracts';
 import { formatNumber } from '@/shared/lib/format';
 import { opLabel } from './workflow-labels';
 import { AmountThresholdChart, CoverageRing, MonthlyVolumeChart } from './workflow-insights-charts';
-import { WorkflowFunnel } from './workflow-funnel';
+import { WorkflowStepOutcomes } from './workflow-step-outcomes';
 
 /**
- * Insight operasional, disusun bertingkat seperti dashboard yang benar:
- * ringkasan dulu, lalu satu visual utama, lalu visual sekunder, lalu rincian.
+ * Insight operasional, disusun menurut **cakupan datanya** — bukan menurut
+ * keinginan menampilkan grafik.
  *
- * Sebelumnya delapan blok berbobot sama ditumpuk rata — tidak ada yang memimpin,
- * dan beberapa blok mengulang data yang sama (ambang muncul tiga kali, cakupan
- * dua kali). Yang mengulang dihapus; informasinya tetap ada di bentuk yang lebih
- * tepat. Bentuk tiap blok dipilih dari **hubungan datanya**, bukan dari keinginan
- * menampilkan grafik:
+ * Masalah lama: sebagian angka dihitung per DEFINISI (coverage — berapa langkah
+ * punya pemegang), sebagian per JENIS TRANSAKSI (task, nominal, volume bulanan).
+ * Keduanya disandingkan tanpa label, jadi pengguna menyangka keduanya tentang hal
+ * yang sama. Sekarang dua cakupan itu dipisah dan **dinyatakan**:
+ *
+ * - **This version** — pertanyaan "apakah rantai yang saya lihat bisa jalan".
+ * - **Across all versions** — pertanyaan "bagaimana dokumen mengalir lewat jenis
+ *   transaksi ini"; task tidak menyimpan versi untuk data lama, dan
+ *   `versionBreakdown` memperlihatkan campurannya alih-alih menyembunyikannya.
+ *
+ * Bentuk tiap blok mengikuti hubungan datanya:
  * - satu nilai → ring/angka, bukan grafik;
- * - alur dokumen → funnel, bukan bar berperingkat;
+ * - hasil per langkah → bar bertumpuk (bukan funnel; lihat `workflow-step-outcomes`);
  * - bagian-dari-keseluruhan → bar bertumpuk;
  * - deret waktu → garis/area;
  * - sebaran vs ambang → histogram dengan garis;
@@ -24,152 +30,166 @@ import { WorkflowFunnel } from './workflow-funnel';
 export function WorkflowInsightsPanel({ data }: { data: WorkflowInsights }) {
   const hasTasks = data.byStep.length > 0;
   const hasMonths = data.monthly.length >= 2;
-  const maxDocument = data.amounts.max ?? 0;
 
   const coveredSteps = data.coverage.filter((c) => c.holders > 0).length;
   const uncoveredSteps = data.coverage.length - coveredSteps;
 
-  const lastStep = data.byStep.at(-1);
-  const entered = data.byStep[0]?.total ?? 0;
-  const approved = lastStep?.approved ?? 0;
-  const approvalRate = entered > 0 ? Math.round((approved / entered) * 100) : 0;
+  const { documents, scope } = data;
+  // Versi lain yang benar-benar punya task — disebut namanya, bukan disembunyikan.
+  const otherVersions = scope.versionBreakdown.filter((b) => b.definitionId !== scope.requested.definitionId);
+  const unknownVersionTasks = otherVersions
+    .filter((b) => b.definitionId === null)
+    .reduce((n, b) => n + b.tasks, 0);
+
+  const nothingAtAll = !hasTasks && data.coverage.length === 0;
 
   return (
     <div className="space-y-6">
-      {!hasTasks && data.coverage.length === 0 && (
-        <p className="text-body-sm text-neutral-500">
+      {nothingAtAll && (
+        <p className="text-pretty text-body-sm text-neutral-500">
           No approval tasks recorded for {data.transactionType} yet, so there is nothing to summarise.
         </p>
       )}
 
-      {/* TIER 1 — Ringkasan: tiga angka yang menjawab "apakah rantai ini sehat". */}
+      {/* ── THIS VERSION — pertanyaan: apakah rantai ini bisa jalan? ────────── */}
       {data.coverage.length > 0 && (
-        <section aria-labelledby="wf-tier-summary">
-          <h4 id="wf-tier-summary" className="mb-3 text-caption font-medium uppercase tracking-wide text-neutral-500">
-            Summary
-          </h4>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-md border border-neutral-200 bg-white p-3">
-              <p className="text-caption text-neutral-500">Approver coverage</p>
-              <CoverageRing total={data.coverage.length} covered={coveredSteps} uncovered={uncoveredSteps} compact />
-            </div>
-            <KpiTile
-              label="Documents in chain"
-              value={hasTasks ? String(entered) : '—'}
-              hint={hasTasks ? `across ${data.byStep.length} step${data.byStep.length === 1 ? '' : 's'}` : 'no tasks recorded'}
-            />
-            <KpiTile
-              label="Approval rate"
-              value={hasTasks ? `${approvalRate}%` : '—'}
-              hint={hasTasks ? `${approved} of ${entered} approved` : 'no tasks recorded'}
-            />
+        <section aria-labelledby="wf-scope-version">
+          <ScopeHeader
+            id="wf-scope-version"
+            title="This version"
+            detail={`${scope.requested.code} v${scope.requested.version}`}
+          />
+          <div className="rounded-md border border-neutral-200 bg-white p-3">
+            <p className="text-caption text-neutral-500">Approver coverage</p>
+            <CoverageRing total={data.coverage.length} covered={coveredSteps} uncovered={uncoveredSteps} compact />
           </div>
         </section>
       )}
 
-      {/* TIER 2 — Visual utama: di mana dokumen gugur. */}
-      {hasTasks && (
-        <section aria-labelledby="wf-tier-flow">
-          <h4 id="wf-tier-flow" className="mb-3 text-caption font-medium uppercase tracking-wide text-neutral-500">
-            Where documents go
-          </h4>
-          <WorkflowFunnel byStep={data.byStep} />
-        </section>
-      )}
-
-      {/* TIER 3 — Visual sekunder: hasil per langkah + sebaran nilai. */}
+      {/* ── ACROSS ALL VERSIONS — pertanyaan: bagaimana dokumen mengalir? ───── */}
       {(hasTasks || data.amounts.count > 0) && (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <section aria-labelledby="wf-scope-type" className="space-y-6">
+          <ScopeHeader
+            id="wf-scope-type"
+            title="Across all versions"
+            detail={`every task recorded for ${data.transactionType}`}
+          />
+
+          {/* Campuran versi diperlihatkan, bukan disembunyikan. */}
+          {otherVersions.length > 0 && (
+            <p className="text-pretty rounded-md bg-neutral-50 px-3 py-2 text-caption text-neutral-600">
+              Includes{' '}
+              {otherVersions.map((b, i) => (
+                <span key={b.definitionId ?? 'unknown'} className="whitespace-nowrap">
+                  {i > 0 ? ', ' : ''}
+                  <span className="font-mono tabular-nums">{b.tasks}</span>{' '}
+                  {b.definitionId === null
+                    ? `task${b.tasks === 1 ? '' : 's'} with no recorded version`
+                    : `task${b.tasks === 1 ? '' : 's'} from v${b.version ?? '?'}`}
+                </span>
+              ))}
+              {unknownVersionTasks > 0
+                ? '. Tasks recorded before versions were tracked cannot be attributed to a version.'
+                : '.'}
+            </p>
+          )}
+
+          {/* KPI: angka per DOKUMEN, bukan penjumlahan baris langkah. */}
           {hasTasks && (
-            <section aria-labelledby="wf-tier-outcome">
-              <h4 id="wf-tier-outcome" className="mb-3 text-caption font-medium uppercase tracking-wide text-neutral-500">
-                Outcome by step
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <KpiTile
+                label="Documents in chain"
+                value={String(documents.entered)}
+                hint={`across ${data.byStep.length} step${data.byStep.length === 1 ? '' : 's'}`}
+              />
+              <KpiTile
+                label="Approval rate"
+                value={`${documents.approvalRate}%`}
+                hint={`${documents.approved} of ${documents.entered} fully approved`}
+              />
+              <KpiTile
+                label="Still open"
+                value={String(documents.pending)}
+                hint={`${documents.rejected} rejected`}
+              />
+            </div>
+          )}
+
+          {/* Hasil per langkah — menggantikan funnel DAN blok outcome terpisah. */}
+          {hasTasks && (
+            <div>
+              <h4 className="mb-3 text-caption font-medium uppercase tracking-wide text-neutral-500">
+                Documents by step
+              </h4>
+              <WorkflowStepOutcomes byStep={data.byStep} />
+            </div>
+          )}
+
+          {/* Visual sekunder: sebaran nilai + volume bulanan. */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {data.amounts.count > 0 && (
+              <div>
+                <h4 className="mb-3 text-caption font-medium uppercase tracking-wide text-neutral-500">
+                  Document value distribution
+                </h4>
+                <AmountThresholdChart insights={data} />
+              </div>
+            )}
+
+            {hasMonths && (
+              <div>
+                <h4 className="mb-3 text-caption font-medium uppercase tracking-wide text-neutral-500">
+                  Monthly volume
+                </h4>
+                <MonthlyVolumeChart monthly={data.monthly} />
+              </div>
+            )}
+          </div>
+
+          {/* Rincian: proporsi sebagai bar, bukan kalimat. */}
+          {data.ruleHits.length > 0 && (
+            <div>
+              <h4 className="mb-3 text-caption font-medium uppercase tracking-wide text-neutral-500">
+                Rule impact
               </h4>
               <ul className="space-y-2">
-                {data.byStep.map((s) => (
-                  <li key={s.stepOrder} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
-                    <span className="min-w-[3.5rem] shrink-0 whitespace-nowrap font-mono text-caption tabular-nums text-neutral-600">
-                      Step {s.stepOrder}
-                    </span>
-                    <StackedBar
-                      segments={[
-                        { value: s.approved, tone: 'success', label: 'approved' },
-                        { value: s.rejected, tone: 'destructive', label: 'rejected' },
-                        { value: s.pending, tone: 'warning', label: 'pending' },
-                        { value: s.cancelled, tone: 'neutral-light', label: 'cancelled' },
-                      ]}
-                      format={String}
-                    />
-                  </li>
-                ))}
+                {data.ruleHits.map((r) => {
+                  const pct = data.amounts.count > 0 ? Math.round((r.matching / data.amounts.count) * 100) : 0;
+                  return (
+                    <li key={r.stepOrder} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
+                      <span className="min-w-[3.5rem] shrink-0 whitespace-nowrap font-mono text-caption tabular-nums text-neutral-600">
+                        Step {r.stepOrder}
+                      </span>
+                      <BulletBar
+                        value={r.matching}
+                        max={Math.max(data.amounts.count, 1)}
+                        tone="neutral"
+                        label={`Step ${r.stepOrder} ${r.condition ?? 'always applies'}: ${r.matching} of ${data.amounts.count} documents match`}
+                      />
+                      <span className="shrink-0 whitespace-nowrap font-mono text-caption tabular-nums text-neutral-700">
+                        {r.matching}/{data.amounts.count} · {pct}%
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
-              <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-caption text-neutral-500">
-                <Legend className="bg-success-500">Approved</Legend>
-                <Legend className="bg-destructive-600">Rejected</Legend>
-                <Legend className="bg-warning-500">Pending</Legend>
-                <Legend className="bg-neutral-200">Cancelled</Legend>
-              </p>
-            </section>
+            </div>
           )}
-
-          {data.amounts.count > 0 && (
-            <section aria-labelledby="wf-tier-amounts">
-              <h4 id="wf-tier-amounts" className="mb-3 text-caption font-medium uppercase tracking-wide text-neutral-500">
-                Document value distribution
-              </h4>
-              <AmountThresholdChart insights={data} />
-              <p className="mt-2 text-caption text-neutral-500">
-                {data.amounts.count} document{data.amounts.count === 1 ? '' : 's'}, smallest{' '}
-                <span className="whitespace-nowrap font-mono tabular-nums">{formatNumber(data.amounts.min ?? 0)}</span>, largest{' '}
-                <span className="whitespace-nowrap font-mono tabular-nums">{formatNumber(maxDocument)}</span>
-              </p>
-            </section>
-          )}
-        </div>
-      )}
-
-      {/* TIER 3b — Deret waktu, hanya bila lebih dari satu bulan. */}
-      {hasMonths && (
-        <section aria-labelledby="wf-tier-monthly">
-          <h4 id="wf-tier-monthly" className="mb-3 text-caption font-medium uppercase tracking-wide text-neutral-500">
-            Monthly volume
-          </h4>
-          <MonthlyVolumeChart monthly={data.monthly} />
         </section>
       )}
 
-      {/* TIER 4 — Rincian: proporsi sebagai bar, bukan kalimat. */}
-      {data.ruleHits.length > 0 && (
-        <section aria-labelledby="wf-tier-rules">
-          <h4 id="wf-tier-rules" className="mb-3 text-caption font-medium uppercase tracking-wide text-neutral-500">
-            Rule impact
-          </h4>
-          <ul className="space-y-2">
-            {data.ruleHits.map((r) => {
-              const pct = data.amounts.count > 0 ? Math.round((r.matching / data.amounts.count) * 100) : 0;
-              return (
-                <li key={r.stepOrder} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-                  <span className="min-w-[3.5rem] shrink-0 whitespace-nowrap font-mono text-caption tabular-nums text-neutral-600">
-                    Step {r.stepOrder}
-                  </span>
-                  <BulletBar
-                    value={r.matching}
-                    max={Math.max(data.amounts.count, 1)}
-                    tone="neutral"
-                    label={`Step ${r.stepOrder} ${r.condition ?? 'always applies'}: ${r.matching} of ${data.amounts.count} documents match`}
-                  />
-                  <span className="shrink-0 whitespace-nowrap font-mono text-caption tabular-nums text-neutral-700">
-                    {r.matching}/{data.amounts.count} · {pct}%
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
+      {/* Batas kejujuran: task tidak menyimpan versi definisi untuk data lama. */}
+      <p className="border-t border-neutral-200 pt-3 text-pretty text-caption text-neutral-500">{data.note}</p>
+    </div>
+  );
+}
 
-      {/* Batas kejujuran: task tidak menyimpan versi definisi yang dipakai. */}
-      <p className="border-t border-neutral-200 pt-3 text-caption text-neutral-500">{data.note}</p>
+/** Judul cakupan: menyatakan SKALA data, bukan sekadar nama blok. */
+function ScopeHeader({ id, title, detail }: { id: string; title: string; detail: string }) {
+  return (
+    <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-b border-neutral-200 pb-1.5">
+      <h3 id={id} className="text-body-sm font-semibold text-neutral-900">{title}</h3>
+      <span className="min-w-0 truncate font-mono text-caption text-neutral-500" title={detail}>{detail}</span>
     </div>
   );
 }
@@ -179,17 +199,8 @@ function KpiTile({ label, value, hint }: { label: string; value: string; hint: s
     <div className="rounded-md border border-neutral-200 bg-white p-3">
       <p className="text-caption text-neutral-500">{label}</p>
       <p className="mt-1 whitespace-nowrap font-mono text-h2 tabular-nums text-neutral-900">{value}</p>
-      <p className="mt-0.5 text-caption text-neutral-500">{hint}</p>
+      <p className="mt-0.5 text-pretty text-caption text-neutral-500">{hint}</p>
     </div>
-  );
-}
-
-function Legend({ className, children }: { className: string; children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={cn('h-2 w-2 rounded-sm', className)} aria-hidden="true" />
-      {children}
-    </span>
   );
 }
 
