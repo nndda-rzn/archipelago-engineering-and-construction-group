@@ -40,7 +40,22 @@ const mutateSpy = vi.hoisted(() => ({
   archive: vi.fn(),
   remove: vi.fn(),
   addStep: vi.fn(),
+  duplicate: vi.fn(),
+  fromTemplate: vi.fn(),
 }));
+
+const templatesData = vi.hoisted(() => [
+  {
+    id: 'two-tier',
+    name: 'Two-tier approval',
+    description: 'Manager approves everything; the board steps in above 5 million.',
+    transactionType: 'PurchaseRequisition',
+    steps: [
+      { name: 'Manager approval', approverRoleCode: 'PROCUREMENT_MANAGER', conditionField: null, conditionOp: null, conditionValue: null },
+      { name: 'Board approval', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 5_000_000 },
+    ],
+  },
+]);
 
 // Dua definisi: satu ACTIVE (terkunci) dan satu DRAFT (bisa diubah).
 const defs = vi.hoisted(() => [
@@ -116,6 +131,9 @@ vi.mock('@/features/approval', async () => {
     useNewWorkflowVersion: () => ({ mutate: mutateSpy.newVersion, isPending: false }),
     useArchiveWorkflow: () => ({ mutate: mutateSpy.archive, isPending: false }),
     useDeleteWorkflow: () => ({ mutate: mutateSpy.remove, isPending: false }),
+    useDuplicateWorkflow: () => ({ mutate: mutateSpy.duplicate, isPending: false }),
+    useCreateWorkflowFromTemplate: () => ({ mutate: mutateSpy.fromTemplate, isPending: false }),
+    useWorkflowTemplates: () => ({ data: templatesData, isLoading: false, isError: false }),
   };
 });
 
@@ -421,5 +439,46 @@ describe('WorkflowDefinitionPage: drawer menahan hal sekunder', () => {
     openDrawer('Settings');
     expect(screen.getByText('Manager then board')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Edit' })).toBeTruthy();
+  });
+});
+
+describe('WorkflowDefinitionPage: mulai dari template', () => {
+  it('shows what a template will create before confirming', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    fireEvent.click(screen.getByRole('button', { name: /From template/i }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Two-tier approval')).toBeTruthy();
+    // Ringkasan langkah nyata, termasuk syaratnya — bukan hanya nama template.
+    expect(within(dialog).getByText('Manager approval')).toBeTruthy();
+    expect(within(dialog).getByText(/only when/i)).toBeTruthy();
+  });
+
+  it('creates a workflow from the chosen template', async () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    fireEvent.click(screen.getByRole('button', { name: /From template/i }));
+
+    const dialog = screen.getByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText('Code'), { target: { value: 'PR_FAST' } });
+    fireEvent.change(within(dialog).getByLabelText('Name'), { target: { value: 'Fast approval' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Create workflow' }));
+
+    await waitFor(() => expect(mutateSpy.fromTemplate).toHaveBeenCalledTimes(1));
+    const arg = mutateSpy.fromTemplate.mock.calls[0]![0];
+    expect(arg.code).toBe('PR_FAST');
+    expect(arg.name).toBe('Fast approval');
+    expect(arg.template.id).toBe('two-tier');
+  });
+});
+
+describe('WorkflowDefinitionPage: duplikasi definisi', () => {
+  it('duplicates the selected definition under a new code', async () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Duplicate' }));
+
+    await waitFor(() => expect(mutateSpy.duplicate).toHaveBeenCalledTimes(1));
+    const arg = mutateSpy.duplicate.mock.calls[0]![0];
+    expect(arg.id).toBe('def-pr-v2');
+    expect(arg.input.code).toBe('PR_APPROVAL_COPY');
   });
 });

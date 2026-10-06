@@ -6,6 +6,7 @@ import { AuditService } from '@/modules/foundation';
 import type {
   AddWorkflowStepDto,
   CreateWorkflowDefinitionDto,
+  DuplicateWorkflowDto,
   PublishWorkflowDto,
   ReorderWorkflowStepsDto,
   UpdateWorkflowDefinitionDto,
@@ -322,6 +323,53 @@ export class WorkflowDefinitionService {
     });
 
     return { deleted: id };
+  }
+
+  /**
+   * Duplikasi definisi menjadi definisi **baru** (kode baru) berstatus DRAFT,
+   * menyalin seluruh langkahnya. Berguna untuk membuat varian (mis. alur berbeda
+   * per unit bisnis) tanpa menyusun ulang rantai dari nol.
+   *
+   * Versi selalu mulai dari 1 karena ini definisi baru, bukan lanjutan riwayat.
+   */
+  async duplicateDefinition(id: string, dto: DuplicateWorkflowDto, actorId: string) {
+    const source = await this.prisma.workflowDefinition.findUnique({
+      where: { id }, include: { steps: { orderBy: { stepOrder: 'asc' } } },
+    });
+    if (!source) throw new NotFoundException({ code: 'WORKFLOW_NOT_FOUND', message: 'Workflow not found' });
+
+    const existing = await this.prisma.workflowDefinition.findFirst({ where: { code: dto.code } });
+    if (existing) throw new ConflictException({ code: 'WORKFLOW_EXISTS', message: `Workflow ${dto.code} already exists` });
+
+    const created = await this.prisma.$transaction(async (tx) => tx.workflowDefinition.create({
+      data: {
+        code: dto.code,
+        name: dto.name ?? `${source.name} (copy)`,
+        description: source.description,
+        version: 1,
+        status: 'DRAFT',
+        transactionType: source.transactionType,
+        createdBy: actorId,
+        steps: {
+          create: source.steps.map((s) => ({
+            stepOrder: s.stepOrder,
+            name: s.name,
+            approverRoleCode: s.approverRoleCode,
+            conditionField: s.conditionField,
+            conditionOp: s.conditionOp,
+            conditionValue: s.conditionValue,
+          })),
+        },
+      },
+      include: { steps: { orderBy: { stepOrder: 'asc' } } },
+    }));
+
+    await this.audit.record({
+      userId: actorId, action: 'Workflow.DUPLICATE', resource: 'Workflow', resourceId: created.id,
+      newValue: { from: source.code, fromVersion: source.version, to: dto.code, version: 1 }, source: 'api',
+    });
+
+    return created;
   }
 
   async createNewVersion(code: string, actorId: string) {

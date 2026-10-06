@@ -5,9 +5,11 @@ import { WorkflowDefinitionService } from './workflow-definition.service';
  * Mock prisma minimal — hanya method yang dipakai service. Tipe sengaja longgar
  * karena tiap test mengganti sebagian model dengan objek yang lebih kecil.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock test
-function makePrisma(overrides: Record<string, unknown> = {}): any {
-  return {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock test: tiap model diganti sebagian
+type MockPrisma = Record<string, any>;
+
+function makePrisma(overrides: Record<string, unknown> = {}): MockPrisma {
+  const prisma: MockPrisma = {
     workflowDefinition: {
       findFirst: jest.fn().mockResolvedValue(null),
       findUnique: jest.fn().mockResolvedValue(null),
@@ -27,9 +29,15 @@ function makePrisma(overrides: Record<string, unknown> = {}): any {
     role: { findUnique: jest.fn().mockResolvedValue({ id: 'role-1', code: 'PROCUREMENT_MANAGER' }) },
     userRole: { findFirst: jest.fn().mockResolvedValue({ userId: 'u1' }), count: jest.fn().mockResolvedValue(1) },
     user: { findMany: jest.fn().mockResolvedValue([]) },
-    $transaction: jest.fn((cb: (t: unknown) => unknown) => cb(undefined)),
     ...overrides,
   };
+  // Transaksi meneruskan prisma yang sama sebagai `tx`, sehingga kode yang menulis
+  // di dalam transaksi (mis. duplikasi langkah) berjalan seperti di produksi.
+  // Override eksplisit dari test tetap dihormati.
+  if (!overrides.$transaction) {
+    prisma.$transaction = jest.fn((cb: (t: unknown) => unknown) => cb(prisma));
+  }
+  return prisma;
 }
 
 function makeService(prisma: unknown) {
@@ -262,5 +270,59 @@ describe('WorkflowDefinitionService — diff versi', () => {
     const prisma = makePrisma();
     const svc = makeService(prisma);
     await expect(svc.diffVersions('PR_APPROVAL', 1, 9)).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('WorkflowDefinitionService — duplikasi definisi', () => {
+  const source = {
+    id: 'def-1', code: 'PR_APPROVAL', name: 'PR Approval', description: 'desc', version: 2,
+    status: 'ACTIVE', transactionType: 'PurchaseRequisition', createdBy: 'u1',
+    steps: [
+      { stepOrder: 1, name: 'Manager', approverRoleCode: 'PROCUREMENT_MANAGER', conditionField: null, conditionOp: null, conditionValue: null },
+      { stepOrder: 2, name: 'Board', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 5_000_000 },
+    ],
+  };
+
+  it('copies every step into a new DRAFT at version 1', async () => {
+    const create = jest.fn(async ({ data }: { data: Record<string, unknown> }) => ({ id: 'def-copy', ...data }));
+    const prisma = makePrisma({
+      workflowDefinition: {
+        ...makePrisma().workflowDefinition,
+        findUnique: jest.fn().mockResolvedValue(source),
+        findFirst: jest.fn().mockResolvedValue(null),
+        create,
+      },
+    });
+    const svc = makeService(prisma);
+
+    const created = await svc.duplicateDefinition('def-1', { code: 'PR_APPROVAL_V2', name: 'Variant' } as never, 'u1');
+
+    expect(created.id).toBe('def-copy');
+    const data = create.mock.calls[0]![0].data as Record<string, unknown>;
+    expect(data.code).toBe('PR_APPROVAL_V2');
+    expect(data.status).toBe('DRAFT');
+    expect(data.version).toBe(1);
+    expect((data.steps as { create: unknown[] }).create).toHaveLength(2);
+  });
+
+  it('rejects a duplicate code', async () => {
+    const prisma = makePrisma({
+      workflowDefinition: {
+        ...makePrisma().workflowDefinition,
+        findUnique: jest.fn().mockResolvedValue(source),
+        findFirst: jest.fn().mockResolvedValue({ id: 'existing' }),
+      },
+    });
+    const svc = makeService(prisma);
+    await expect(
+      svc.duplicateDefinition('def-1', { code: 'PR_APPROVAL' } as never, 'u1'),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('throws when the source definition does not exist', async () => {
+    const svc = makeService(makePrisma());
+    await expect(
+      svc.duplicateDefinition('missing', { code: 'X_NEW' } as never, 'u1'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

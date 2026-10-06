@@ -3,10 +3,11 @@ import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
 import { Permission } from '@/shared/permissions/permissions';
-import { AddWorkflowStepDto, ApproveTaskDto, BulkDecideDto, CreateWorkflowDefinitionDto, ListApprovalQueryDto, PublishWorkflowDto, ReorderWorkflowStepsDto, SubmitForApprovalDto, UpdateWorkflowDefinitionDto, UpdateWorkflowStepDto } from '../dto/approval.dto';
+import { AddWorkflowStepDto, ApproveTaskDto, BulkDecideDto, CreateWorkflowDefinitionDto, DuplicateWorkflowDto, ListApprovalQueryDto, PublishWorkflowDto, ReorderWorkflowStepsDto, SubmitForApprovalDto, UpdateWorkflowDefinitionDto, UpdateWorkflowStepDto } from '../dto/approval.dto';
 import { ApprovalTaskService } from '../../application/services/approval-task.service';
 import { WorkflowDefinitionService } from '../../application/services/workflow-definition.service';
 import { WorkflowInsightsService } from '../../application/services/workflow-insights.service';
+import { templatesFor } from '../../application/services/workflow-templates';
 
 @Controller('approvals')
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -69,6 +70,12 @@ export class ApprovalController {
   }
 
   // Rute statis harus lebih dulu dari `:id`, kalau tidak `:id` akan menelannya.
+  @Get('workflows/templates')
+  @Permissions(Permission.WorkflowView)
+  listTemplates(@Query('transactionType') transactionType?: string) {
+    return templatesFor(transactionType);
+  }
+
   @Get('workflows/:code/versions')
   @Permissions(Permission.WorkflowView)
   listVersions(@Param('code') code: string) {
@@ -143,6 +150,12 @@ export class ApprovalController {
   @Permissions(Permission.WorkflowEdit)
   newVersion(@Param('code') code: string, @Req() request: { user?: { sub?: string } }) {
     return this.workflow.createNewVersion(code, request.user?.sub ?? 'system');
+  }
+
+  @Post('workflows/:id/duplicate')
+  @Permissions(Permission.WorkflowCreate)
+  duplicateDefinition(@Param('id') id: string, @Body() dto: DuplicateWorkflowDto, @Req() request: { user?: { sub?: string } }) {
+    return this.workflow.duplicateDefinition(id, dto, request.user?.sub ?? 'system');
   }
 
   // Ditaruh paling akhir: route `:id` akan menelan path statis (mis. `workflows`,

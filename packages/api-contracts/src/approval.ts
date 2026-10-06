@@ -374,6 +374,29 @@ export const workflowInsightsSchema = z.object({
 });
 export type WorkflowInsights = z.infer<typeof workflowInsightsSchema>;
 
+/**
+ * Template rantai siap pakai — cetakan, bukan baris database. `id` stabil agar
+ * klien dapat merujuknya; `steps` memakai bentuk yang sama dengan langkah nyata
+ * supaya bisa langsung dipakai membentuk definisi baru.
+ */
+export const workflowTemplateStepSchema = z.object({
+  name: z.string(),
+  approverRoleCode: z.string(),
+  conditionField: z.string().nullable(),
+  conditionOp: z.string().nullable(),
+  conditionValue: z.number().nullable(),
+});
+export type WorkflowTemplateStep = z.infer<typeof workflowTemplateStepSchema>;
+
+export const workflowTemplateSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  transactionType: z.string(),
+  steps: z.array(workflowTemplateStepSchema),
+});
+export type WorkflowTemplate = z.infer<typeof workflowTemplateSchema>;
+
 export const createWorkflowDefinitionSchema = z.object({
   code: z.string().min(2).max(50),
   name: z.string().min(2).max(100),
@@ -398,6 +421,13 @@ export const publishWorkflowSchema = z.object({
   description: z.string().max(500).optional(),
 });
 export type PublishWorkflow = z.infer<typeof publishWorkflowSchema>;
+
+/** Duplikasi definisi menjadi versi DRAFT baru dengan kode baru. */
+export const duplicateWorkflowSchema = z.object({
+  code: z.string().min(2).max(50),
+  name: z.string().min(2).max(100).optional(),
+});
+export type DuplicateWorkflow = z.infer<typeof duplicateWorkflowSchema>;
 
 export const pendingApprovalCountSchema = z.object({ count: z.number() });
 export type PendingApprovalCount = z.infer<typeof pendingApprovalCountSchema>;

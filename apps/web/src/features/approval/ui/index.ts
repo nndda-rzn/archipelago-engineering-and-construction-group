@@ -20,6 +20,7 @@ export { WorkflowCanvas, type WorkflowCanvasProps } from './workflow-canvas';
 export { WorkflowLifecycle, type WorkflowLifecycleProps } from './workflow-lifecycle';
 export { WorkflowScenarios, type Scenario } from './workflow-scenarios';
 export { WorkflowPreflight, type WorkflowPreflightProps } from './workflow-preflight';
+export { WorkflowTemplateDialog, type WorkflowTemplateDialogProps } from './workflow-template-dialog';
 export { WorkflowDrawer, DRAWER_ICONS, useDrawerState, type WorkflowDrawerTab } from './workflow-drawer';
 export {
   MonthlyVolumeChart,

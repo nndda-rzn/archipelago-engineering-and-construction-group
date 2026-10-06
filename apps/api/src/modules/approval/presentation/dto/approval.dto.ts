@@ -92,6 +92,18 @@ export class UpdateWorkflowDefinitionDto {
   description?: string | null;
 }
 
+/** Duplikasi definisi ke kode baru (selalu DRAFT, versi 1). */
+export class DuplicateWorkflowDto {
+  @IsString()
+  @Length(2, 50)
+  code!: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(2, 100)
+  name?: string;
+}
+
 export class UpdateWorkflowStepDto {
   @IsOptional()
   @IsString()

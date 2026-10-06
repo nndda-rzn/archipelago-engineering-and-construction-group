@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, Plus, Workflow as WorkflowIcon } from 'lucide-react';
+import { AlertTriangle, LayoutTemplate, Plus, Workflow as WorkflowIcon } from 'lucide-react';
 import {
   Badge, Button, ConfirmActionButton, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader,
   DialogTitle, EmptyState, ErrorState, Input, Label, SegmentedControl,
@@ -7,14 +7,15 @@ import {
 } from '@aec/ui';
 import type { WorkflowDefinition, WorkflowStep } from '@aec/api-contracts';
 import {
-  CreateWorkflowForm, useAddWorkflowStep, useArchiveWorkflow, useDeleteWorkflow,
-  useNewWorkflowVersion, usePublishWorkflow, useRemoveWorkflowStep, useReorderWorkflowSteps,
-  useUpdateWorkflowDefinition, useUpdateWorkflowStep, useWorkflowDefinitions, useWorkflowInsights,
-  useWorkflowVersions,
+  CreateWorkflowForm, useAddWorkflowStep, useArchiveWorkflow, useCreateWorkflowFromTemplate,
+  useDeleteWorkflow, useDuplicateWorkflow, useNewWorkflowVersion, usePublishWorkflow,
+  useRemoveWorkflowStep, useReorderWorkflowSteps, useUpdateWorkflowDefinition, useUpdateWorkflowStep,
+  useWorkflowDefinitions, useWorkflowInsights, useWorkflowTemplates, useWorkflowVersions,
 } from '@/features/approval';
 import {
   VERSION_STATUS_LABEL, WorkflowCanvas, WorkflowDrawer, WorkflowInsightsPanel, WorkflowLifecycle,
-  WorkflowPreflight, WorkflowScenarios, WorkflowStepForm, WorkflowVersionsRail, DRAWER_ICONS,
+  WorkflowPreflight, WorkflowScenarios, WorkflowStepForm, WorkflowTemplateDialog, WorkflowVersionsRail,
+  DRAWER_ICONS,
 } from '@/features/approval/ui';
 import { preflight, hasBlockers } from '@/features/approval/lib/preflight';
 import { useRoles } from '@/entities/role';
@@ -43,11 +44,13 @@ export function WorkflowDefinitionPage() {
   const [drawer, setDrawer] = useUrlFilter('panel');
   const [query, setQuery] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [templateOpen, setTemplateOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
   const toast = useToast();
 
   const definitions = useWorkflowDefinitions();
   const roles = useRoles();
+  const templates = useWorkflowTemplates();
 
   const roleOptions = useMemo(
     () => (roles.data ?? []).map((r) => ({ code: r.code, name: r.name, holders: r._count?.userRoles ?? 0 })),
@@ -98,6 +101,8 @@ export function WorkflowDefinitionPage() {
   const archive = useArchiveWorkflow();
   const remove = useDeleteWorkflow();
   const newVersion = useNewWorkflowVersion();
+  const duplicate = useDuplicateWorkflow();
+  const fromTemplate = useCreateWorkflowFromTemplate();
 
   const locked = selected != null && selected.status !== 'DRAFT';
   const steps = useMemo(() => selected?.steps ?? [], [selected]);
@@ -172,6 +177,31 @@ export function WorkflowDefinitionPage() {
     );
   };
 
+  const doDuplicate = () => {
+    if (!selected) return;
+    const suggested = `${selected.code}_COPY`;
+    duplicate.mutate(
+      { id: selected.id, input: { code: suggested } },
+      {
+        onSuccess: () => toast({ title: `Duplicated as ${suggested}`, variant: 'success' }),
+        onError: () => toast({ title: 'Could not duplicate', description: `${suggested} may already exist.`, variant: 'error' }),
+      },
+    );
+  };
+
+  const doCreateFromTemplate = (args: { template: Parameters<typeof fromTemplate.mutate>[0]['template']; code: string; name: string }) => {
+    fromTemplate.mutate(args, {
+      onSuccess: () => {
+        toast({ title: `Created ${args.code}`, variant: 'success' });
+        setTemplateOpen(false);
+        setCode(args.code);
+        setVersionRaw('1');
+        setStepId('');
+      },
+      onError: () => toast({ title: 'Could not create workflow', description: `${args.code} may already exist.`, variant: 'error' }),
+    });
+  };
+
   return (
     <div className="mx-auto flex h-full max-w-[1600px] flex-col">
       {/* ── Kepala halaman: satu baris fakta, tanpa kartu ─────────────────── */}
@@ -211,6 +241,10 @@ export function WorkflowDefinitionPage() {
             <Button size="sm" variant="secondary" className="w-full" onClick={() => setShowCreate((s) => !s)}>
               <Plus className="h-3.5 w-3.5" aria-hidden="true" />
               {showCreate ? 'Close form' : 'Create workflow'}
+            </Button>
+            <Button size="sm" variant="ghost" className="w-full" onClick={() => setTemplateOpen(true)}>
+              <LayoutTemplate className="h-3.5 w-3.5" aria-hidden="true" />
+              From template
             </Button>
           </div>
 
@@ -330,6 +364,14 @@ export function WorkflowDefinitionPage() {
                       New version
                     </Button>
                   )}
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    loading={duplicate.isPending}
+                    onClick={doDuplicate}
+                  >
+                    Duplicate
+                  </Button>
                   {selected.status === 'ACTIVE' && (
                     <ConfirmActionButton
                       size="sm"
@@ -532,6 +574,15 @@ export function WorkflowDefinitionPage() {
           )}
         </section>
       </div>
+
+      {/* Dialog template: mulai dari cetakan, bukan dari nol. */}
+      <WorkflowTemplateDialog
+        open={templateOpen}
+        onOpenChange={setTemplateOpen}
+        templates={templates.data ?? []}
+        loading={templates.isLoading}
+        onCreate={doCreateFromTemplate}
+      />
 
       {/* Dialog publish: masalah ditampilkan sebelum menekan Publish. */}
       <Dialog open={publishOpen} onOpenChange={setPublishOpen}>
