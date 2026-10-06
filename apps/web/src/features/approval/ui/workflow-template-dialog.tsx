@@ -71,9 +71,9 @@ export function WorkflowTemplateDialog({ open, onOpenChange, templates, loading,
                         active ? 'border-neutral-800 bg-neutral-50' : 'border-neutral-200 hover:bg-neutral-50',
                       )}
                     >
-                      <span className="block text-body-sm font-medium text-neutral-900">{template.name}</span>
-                      <span className="mt-0.5 block text-caption text-neutral-500">{template.description}</span>
-                      <span className="mt-1 block font-mono text-caption tabular-nums text-neutral-500">
+                      <span className="block break-words text-body-sm font-medium text-neutral-900">{template.name}</span>
+                      <span className="mt-0.5 block break-words text-caption text-neutral-500">{template.description}</span>
+                      <span className="mt-1 block whitespace-nowrap font-mono text-caption tabular-nums text-neutral-500">
                         {template.steps.length} step{template.steps.length === 1 ? '' : 's'}
                       </span>
                     </button>
@@ -107,11 +107,11 @@ export function WorkflowTemplateDialog({ open, onOpenChange, templates, loading,
                           {index + 1}
                         </span>
                         <span className="min-w-0">
-                          <span className="block text-neutral-800">{step.name}</span>
-                          <span className="block text-neutral-500">
+                          <span className="block break-words text-neutral-800">{step.name}</span>
+                          <span className="block break-words text-neutral-500">
                             {labelRole(step.approverRoleCode)}
                             {step.conditionField && step.conditionValue != null
-                              ? ` · only when ${conditionFieldLabel(step.conditionField)} ${opLabel(step.conditionOp)} ${formatIdr(step.conditionValue)}`
+                              ? <> · only when {conditionFieldLabel(step.conditionField)} {opLabel(step.conditionOp)} <span className="whitespace-nowrap font-mono tabular-nums">{formatIdr(step.conditionValue)}</span></>
                               : ' · always applies'}
                           </span>
                         </span>

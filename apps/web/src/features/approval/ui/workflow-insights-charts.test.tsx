@@ -42,13 +42,13 @@ describe('CoverageRing', () => {
     render(<CoverageRing total={4} covered={3} uncovered={1} />);
     expect(screen.getByText('75%')).toBeTruthy();
     expect(screen.getByRole('img', { name: /3 of 4 steps have at least one approver/i })).toBeTruthy();
-    expect(screen.getByText(/would stall the chain/i)).toBeTruthy();
+    expect(screen.getByText(/would stall/i)).toBeTruthy();
   });
 
-  it('states plainly when every step can be actioned', () => {
+  it('states plainly when every step is covered', () => {
     render(<CoverageRing total={2} covered={2} uncovered={0} />);
     expect(screen.getByText('100%')).toBeTruthy();
-    expect(screen.getByText(/Every step can be actioned/i)).toBeTruthy();
+    expect(screen.getByText(/All covered/i)).toBeTruthy();
   });
 
   it('handles zero steps without dividing by zero', () => {

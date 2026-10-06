@@ -140,18 +140,18 @@ export function WorkflowScenarios({ steps, transactionType, onPathChange }: Work
       </div>
 
       {steps.length === 0 ? (
-        <p className="text-body-sm text-neutral-500">This workflow has no steps yet.</p>
+        <p className="text-pretty text-body-sm text-neutral-500">This workflow has no steps yet.</p>
       ) : !selected ? (
-        <p className="text-body-sm text-neutral-500">
+        <p className="text-pretty text-body-sm text-neutral-500">
           Add an amount to see which steps run. The chain lights up the path for the selected scenario.
         </p>
       ) : (
         <>
-          <p className="text-body-sm text-neutral-700" role="status">
+          <p className="text-pretty text-body-sm text-neutral-700" role="status">
             A {transactionType === 'PurchaseOrder' ? 'purchase order' : 'purchase requisition'} worth{' '}
-            <span className="font-mono tabular-nums">{formatIdr(selected.amount)}</span> needs{' '}
-            <span className="font-mono tabular-nums">{applicable(selected.amount).length}</span> of{' '}
-            <span className="font-mono tabular-nums">{steps.length}</span> step
+            <span className="whitespace-nowrap font-mono tabular-nums">{formatIdr(selected.amount)}</span> needs{' '}
+            <span className="whitespace-nowrap font-mono tabular-nums">{applicable(selected.amount).length}</span> of{' '}
+            <span className="whitespace-nowrap font-mono tabular-nums">{steps.length}</span> step
             {steps.length === 1 ? '' : 's'}.
           </p>
           <ul className="space-y-1">
@@ -163,13 +163,13 @@ export function WorkflowScenarios({ steps, transactionType, onPathChange }: Work
                     aria-hidden="true"
                     className={cn('h-2 w-2 shrink-0 rounded-full', applies ? 'bg-neutral-800' : 'border border-neutral-300 bg-white')}
                   />
-                  <span className={cn('w-14 shrink-0 font-mono text-caption tabular-nums', applies ? 'text-neutral-800' : 'text-neutral-400')}>
+                  <span className={cn('min-w-[3.5rem] shrink-0 whitespace-nowrap font-mono text-caption tabular-nums', applies ? 'text-neutral-800' : 'text-neutral-400')}>
                     Step {step.stepOrder}
                   </span>
-                  <span className={cn('min-w-0 flex-1 truncate', applies ? 'text-neutral-800' : 'text-neutral-400')}>
+                  <span className={cn('min-w-0 flex-1 truncate', applies ? 'text-neutral-800' : 'text-neutral-400')} title={step.name}>
                     {step.name}
                   </span>
-                  <span className="shrink-0 text-caption text-neutral-500">
+                  <span className="shrink-0 whitespace-nowrap text-caption text-neutral-500">
                     {applies ? 'runs' : 'skipped'}
                     {step.conditionField
                       ? `, ${conditionFieldLabel(step.conditionField)} ${opLabel(step.conditionOp)} ${formatIdr(step.conditionValue ?? 0)}`

@@ -1,8 +1,8 @@
 import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { cn } from '@aec/ui';
 import type { WorkflowInsights } from '@aec/api-contracts';
 import { formatNumber } from '@/shared/lib/format';
 import { CHART } from '@/widgets/dashboard-charts/chart-colors';
-
 /**
  * Chart untuk insight rantai approval.
  *
@@ -56,7 +56,7 @@ export function MonthlyVolumeChart({ monthly }: { monthly: WorkflowInsights['mon
             fill="url(#wfCreatedFill)"
             dot={false}
           />
-          <Line type="monotone" dataKey="decided" name="Decided" stroke="#27272a" strokeWidth={2} dot={false} />
+          <Line type="monotone" dataKey="decided" name="Decided" stroke={CHART.strong} strokeWidth={2} dot={false} />
         </AreaChart>
       </ResponsiveContainer>
       <figcaption className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-caption text-neutral-500">
@@ -78,53 +78,64 @@ export function CoverageRing({
   total,
   covered,
   uncovered,
+  compact = false,
 }: {
   total: number;
   covered: number;
   uncovered: number;
+  /** Versi kecil untuk KPI tile: ring 48px + satu baris teks. */
+  compact?: boolean;
 }) {
   const pct = total > 0 ? Math.round((covered / total) * 100) : 0;
-  const stroke = uncovered > 0 ? '#dc2626' : '#27272a'; // destructive-600 | neutral-800
-  const radius = 34;
+  const stroke = uncovered > 0 ? CHART.negative : CHART.strong;
+  const radius = compact ? 20 : 34;
+  const box = compact ? 52 : 88;
+  const strokeWidth = compact ? 5 : 8;
   const circumference = 2 * Math.PI * radius;
   const dash = (pct / 100) * circumference;
 
   return (
-    <div className="flex items-center gap-4">
-      <div className="relative h-[88px] w-[88px] shrink-0">
+    <div className={cn('flex items-center gap-4', compact && 'mt-1 gap-2.5')}>
+      <div className="relative shrink-0" style={{ height: box, width: box }}>
         <svg
-          viewBox="0 0 88 88"
-          className="h-[88px] w-[88px] -rotate-90"
+          viewBox={`0 0 ${box} ${box}`}
+          className="-rotate-90"
+          style={{ height: box, width: box }}
           role="img"
           aria-label={`${covered} of ${total} steps have at least one approver (${pct} percent)`}
         >
-          <circle cx="44" cy="44" r={radius} fill="none" stroke="#e4e4e7" strokeWidth="8" />
+          <circle cx={box / 2} cy={box / 2} r={radius} fill="none" stroke={CHART.grid} strokeWidth={strokeWidth} />
           <circle
-            cx="44"
-            cy="44"
+            cx={box / 2}
+            cy={box / 2}
             r={radius}
             fill="none"
             stroke={stroke}
-            strokeWidth="8"
+            strokeWidth={strokeWidth}
             strokeLinecap="round"
             strokeDasharray={`${dash} ${circumference - dash}`}
           />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center font-mono text-h2 tabular-nums text-neutral-900">
+        <span
+          className={cn(
+            'absolute inset-0 flex items-center justify-center font-mono tabular-nums text-neutral-900',
+            compact ? 'text-caption' : 'text-h2',
+          )}
+        >
           {pct}%
         </span>
       </div>
       <div className="min-w-0">
-        <p className="text-body-sm text-neutral-700">
-          <span className="font-mono tabular-nums">{covered}</span> of{' '}
-          <span className="font-mono tabular-nums">{total}</span> step{total === 1 ? '' : 's'} have an approver
+        <p className={cn('text-neutral-700', compact ? 'text-caption' : 'text-body-sm')}>
+          <span className="whitespace-nowrap font-mono tabular-nums">{covered}</span> of{' '}
+          <span className="whitespace-nowrap font-mono tabular-nums">{total}</span> step{total === 1 ? '' : 's'}
         </p>
         {uncovered > 0 ? (
-          <p className="mt-0.5 text-body-sm text-destructive-700">
-            <span className="font-mono tabular-nums">{uncovered}</span> step{uncovered === 1 ? '' : 's'} would stall the chain
+          <p className={cn('mt-0.5', compact ? 'text-caption' : 'text-body-sm', 'text-destructive-700')}>
+            <span className="whitespace-nowrap font-mono tabular-nums">{uncovered}</span> would stall
           </p>
         ) : (
-          <p className="mt-0.5 text-body-sm text-neutral-500">Every step can be actioned.</p>
+          <p className={cn('mt-0.5 text-neutral-500', compact ? 'text-caption' : 'text-body-sm')}>All covered</p>
         )}
       </div>
     </div>
@@ -143,7 +154,6 @@ export function AmountThresholdChart({ insights }: { insights: WorkflowInsights 
   const { amounts, thresholds } = insights;
   if (amounts.count === 0) return null;
 
-  const positives = amounts.buckets.filter((b) => b.count > 0 && b.to !== null);
   const maxUpper = Math.max(amounts.max ?? 0, ...thresholds.map((t) => t.value), 10_000_000);
   const domainMax = 10 ** Math.ceil(Math.log10(maxUpper * 1.2));
   const logMin = 0; // 1 rupiah sebagai batas kiri praktis
@@ -204,16 +214,15 @@ export function AmountThresholdChart({ insights }: { insights: WorkflowInsights 
         ))}
 
         {/* Label sumbu: batas kiri/kanan skala log */}
-        <span aria-hidden="true" className="absolute bottom-0 left-0 font-mono text-caption text-neutral-500">
+        <span aria-hidden="true" className="absolute bottom-0 left-0 whitespace-nowrap font-mono text-caption text-neutral-500">
           1
         </span>
-        <span aria-hidden="true" className="absolute bottom-0 right-0 font-mono text-caption text-neutral-500">
+        <span aria-hidden="true" className="absolute bottom-0 right-0 whitespace-nowrap font-mono text-caption text-neutral-500">
           {formatNumber(domainMax)}
         </span>
       </div>
       <figcaption className="mt-2 text-caption text-neutral-500">
-        {amounts.count} document{amounts.count === 1 ? '' : 's'} on a logarithmic scale
-        {positives.length > 0 ? '' : ''}; dashed lines are the approval thresholds.
+        {amounts.count} document{amounts.count === 1 ? '' : 's'} on a logarithmic scale; dashed lines are the approval thresholds.
       </figcaption>
     </figure>
   );

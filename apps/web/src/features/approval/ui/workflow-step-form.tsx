@@ -13,9 +13,6 @@ export interface WorkflowStepFormProps {
   saving: boolean;
   onSave: (input: UpdateWorkflowStep) => void;
   onRemove: () => void;
-  onMove: (direction: -1 | 1) => void;
-  canMoveUp: boolean;
-  canMoveDown: boolean;
 }
 
 const NO_CONDITION = '__none__';
@@ -40,7 +37,7 @@ function currentGroup(step: WorkflowStep): ConditionGroup | null {
  * Tanpa kotak dan tanpa garis pemisah: pengelompokan dibawa oleh jarak.
  */
 export function WorkflowStepForm({
-  step, transactionType, roleOptions, locked, saving, onSave, onRemove, onMove, canMoveUp, canMoveDown,
+  step, transactionType, roleOptions, locked, saving, onSave, onRemove,
 }: WorkflowStepFormProps) {
   const [name, setName] = useState(step.name);
   const [role, setRole] = useState(step.approverRoleCode);
@@ -94,19 +91,11 @@ export function WorkflowStepForm({
 
   return (
     <div className="space-y-4">
-      {/* Judul + pindah urutan. Judul rapat ke isinya (bukan mengambang). */}
+      {/* Judul. Pemindahan urutan tinggal di daftar rantai (satu tempat saja):
+          dua kontrol bernama sama di dua panel akan membingungkan dan melanggar
+          "satu aksi, satu tempat". */}
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-body font-medium text-neutral-900">Step {step.stepOrder}</h3>
-        {!locked && (
-          <div className="flex items-center gap-1">
-            <Button size="sm" variant="ghost" disabled={!canMoveUp || saving} onClick={() => onMove(-1)} aria-label={`Move step ${step.stepOrder} earlier`}>
-              Move up
-            </Button>
-            <Button size="sm" variant="ghost" disabled={!canMoveDown || saving} onClick={() => onMove(1)} aria-label={`Move step ${step.stepOrder} later`}>
-              Move down
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* 32px setelah judul: kelompok field terpisah jelas dari judulnya. */}

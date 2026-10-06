@@ -14,12 +14,14 @@ export { WorkflowVersionsRail } from './workflow-versions-rail';
 export { WorkflowInsightsPanel, ruleSummary } from './workflow-insights';
 export { ConditionBuilder, type ConditionValue } from './condition-builder';
 export { opLabel, conditionFieldLabel, conditionFieldsFor, VERSION_STATUS_LABEL } from './workflow-labels';
-export { WorkflowCanvas, type WorkflowCanvasProps } from './workflow-canvas';
+export { WorkflowChainList, type WorkflowChainListProps } from './workflow-chain-list';
+export { WorkflowDefinitionsRail, groupByCode, type WorkflowDefinitionsRailProps } from './workflow-definitions-rail';
 export { WorkflowLifecycle, type WorkflowLifecycleProps } from './workflow-lifecycle';
 export { WorkflowScenarios, type Scenario } from './workflow-scenarios';
 export { WorkflowPreflight, type WorkflowPreflightProps } from './workflow-preflight';
-export { WorkflowTemplateDialog, type WorkflowTemplateDialogProps } from './workflow-template-dialog';
 export { WorkflowDrawer, DRAWER_ICONS, useDrawerState, type WorkflowDrawerTab } from './workflow-drawer';
+export { WorkflowTemplateDialog, type WorkflowTemplateDialogProps } from './workflow-template-dialog';
+export { WorkflowFunnel, funnelStages, type FunnelStage } from './workflow-funnel';
 export {
   MonthlyVolumeChart,
   CoverageRing,

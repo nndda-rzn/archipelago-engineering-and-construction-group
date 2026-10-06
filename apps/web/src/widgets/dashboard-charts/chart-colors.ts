@@ -18,6 +18,8 @@ export const CHART = {
   negative: '#dc2626',
   /** racing-red-600 */
   accent: '#dc2626',
+  /** neutral-800 — seri utama yang harus lebih tegas dari `axis`. */
+  strong: '#27272a',
 } as const;
 
 /** Warna health — project-on-track/at-risk/critical-500 + neutral-400. */

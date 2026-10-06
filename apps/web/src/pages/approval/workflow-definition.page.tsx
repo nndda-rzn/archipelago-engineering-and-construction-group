@@ -1,9 +1,8 @@
 import { useMemo, useState } from 'react';
 import { AlertTriangle, LayoutTemplate, Plus, Workflow as WorkflowIcon } from 'lucide-react';
 import {
-  Badge, Button, ConfirmActionButton, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader,
-  DialogTitle, EmptyState, ErrorState, Input, Label, SegmentedControl,
-  Skeleton, StatusBadge, cn, labelResource, labelRole, useToast,
+  Button, ConfirmActionButton, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader,
+  DialogTitle, EmptyState, ErrorState, Input, Label, Skeleton, StatusBadge, cn, labelResource, useToast,
 } from '@aec/ui';
 import type { WorkflowDefinition, WorkflowStep } from '@aec/api-contracts';
 import {
@@ -13,23 +12,27 @@ import {
   useWorkflowDefinitions, useWorkflowInsights, useWorkflowTemplates, useWorkflowVersions,
 } from '@/features/approval';
 import {
-  VERSION_STATUS_LABEL, WorkflowCanvas, WorkflowDrawer, WorkflowInsightsPanel, WorkflowLifecycle,
+  WorkflowChainList, WorkflowDefinitionsRail, WorkflowDrawer, WorkflowInsightsPanel, WorkflowLifecycle,
   WorkflowPreflight, WorkflowScenarios, WorkflowStepForm, WorkflowTemplateDialog, WorkflowVersionsRail,
-  DRAWER_ICONS,
+  DRAWER_ICONS, VERSION_STATUS_LABEL,
 } from '@/features/approval/ui';
 import { preflight, hasBlockers } from '@/features/approval/lib/preflight';
 import { useRoles } from '@/entities/role';
 import { useUrlFilter } from '@/shared/lib/use-url-state';
 
 /**
- * Builder definisi approval sebagai **workspace**: kanvas rantai adalah alat
- * utamanya, bukan form yang dikelilingi daftar.
+ * Builder definisi approval sebagai **workspace**.
  *
- * Bentuknya tetap master–detail (koleksi kiri, pekerjaan kanan) karena itu benar:
- * berpindah definisi tidak boleh menghilangkan tempat. Yang berubah adalah isi
- * pane kanan — rantai digambar di kanvas, langkah terpilih diedit di inspector
- * yang tetap terlihat, dan hal-hal sekunder (insight, versi, pengaturan) turun ke
- * drawer yang tertutup secara default. Hierarki: satu elemen dominan (kanvas).
+ * Bentuknya master–detail (koleksi kiri, pekerjaan kanan) karena itu benar:
+ * berpindah definisi tidak boleh menghilangkan tempat. Pekerjaan utamanya adalah
+ * **rantai** — daftar langkah berurutan yang bisa diedit. Rantai itu proses
+ * linear, jadi ia disajikan sebagai `<ol>` yang bisa diubah urutannya, bukan
+ * kanvas 2D: pan/zoom/minimap tak berguna untuk daftar tiga langkah, dan
+ * membiarkan node diletakkan bebas akan berbohong soal urutan.
+ *
+ * Hierarki: daftar rantai memimpin; inspector di kanan mengedit langkah terpilih
+ * tanpa memindahkan rantai dari layar; hal sekunder (insight, versi, pengaturan)
+ * turun ke drawer yang tertutup secara default.
  *
  * Aturan domain yang menentukan seluruh UI:
  * - **DRAFT** boleh mengubah struktur (langkah/syarat).
@@ -40,7 +43,6 @@ export function WorkflowDefinitionPage() {
   const [code, setCode] = useUrlFilter('code');
   const [versionRaw, setVersionRaw] = useUrlFilter('version');
   const [stepId, setStepId] = useUrlFilter('step');
-  const [view, setView] = useUrlFilter('view', 'canvas');
   const [drawer, setDrawer] = useUrlFilter('panel');
   const [query, setQuery] = useState('');
   const [showCreate, setShowCreate] = useState(false);
@@ -62,29 +64,26 @@ export function WorkflowDefinitionPage() {
   );
   const knownRoleCodes = useMemo(() => roleOptions.map((r) => r.code), [roleOptions]);
 
-  // Urutkan: ACTIVE dulu (yang benar-benar dipakai), lalu DRAFT (sedang disiapkan),
-  // lalu ARCHIVED. Dalam status yang sama, versi terbaru lebih dulu.
-  const sorted = useMemo(() => {
-    const rank: Record<string, number> = { ACTIVE: 0, DRAFT: 1, ARCHIVED: 2 };
+  // Definisi yang lolos pencarian. Pengelompokan & pengurutan ditangani rail,
+  // karena "grup mana dulu" adalah keputusan tampilan, bukan keputusan data.
+  const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return [...(definitions.data ?? [])]
-      .filter((d) => !q || d.code.toLowerCase().includes(q) || d.name.toLowerCase().includes(q))
-      .sort((a, b) => {
-        if (a.code !== b.code) return a.code.localeCompare(b.code);
-        const byStatus = (rank[a.status] ?? 9) - (rank[b.status] ?? 9);
-        return byStatus !== 0 ? byStatus : b.version - a.version;
-      });
+    if (!q) return definitions.data ?? [];
+    return (definitions.data ?? []).filter(
+      (d) => d.code.toLowerCase().includes(q) || d.name.toLowerCase().includes(q),
+    );
   }, [definitions.data, query]);
 
   const selected = useMemo(() => {
     if (code) {
-      const match = sorted.find((d) => d.code === code && String(d.version) === versionRaw);
+      const match = filtered.find((d) => d.code === code && String(d.version) === versionRaw);
       if (match) return match;
       // Versi yang diminta tidak ada → jatuh ke versi ACTIVE/terbaru dari code itu.
-      return sorted.find((d) => d.code === code) ?? null;
+      return filtered.find((d) => d.code === code) ?? null;
     }
-    return sorted[0] ?? null;
-  }, [sorted, code, versionRaw]);
+    // Tanpa pilihan eksplisit: versi ACTIVE pertama, kalau tidak ada versi teratas.
+    return filtered.find((d) => d.status === 'ACTIVE') ?? filtered[0] ?? null;
+  }, [filtered, code, versionRaw]);
 
   const selectedCode = selected?.code ?? null;
   const selectedId = selected?.id ?? null;
@@ -148,17 +147,6 @@ export function WorkflowDefinitionPage() {
     );
   };
 
-  const move = (direction: -1 | 1) => {
-    if (!selected || !selectedStep) return;
-    const index = steps.findIndex((s) => s.id === selectedStep.id);
-    const target = index + direction;
-    if (target < 0 || target >= steps.length) return;
-    const next = [...steps];
-    const [moved] = next.splice(index, 1);
-    next.splice(target, 0, moved!);
-    reorderSteps(next.map((s) => s.id));
-  };
-
   const doPublish = () => {
     if (!selected) return;
     publish.mutate(
@@ -207,13 +195,13 @@ export function WorkflowDefinitionPage() {
       {/* ── Kepala halaman: satu baris fakta, tanpa kartu ─────────────────── */}
       <header className="mb-4">
         <h1 className="text-h1 text-neutral-950">Workflow</h1>
-        <p className="mt-1 text-body-sm text-neutral-500">
+        <p className="mt-1 text-pretty text-body-sm text-neutral-500">
           Configure the approval chain for purchase requisitions and purchase orders.
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-body-sm text-neutral-700">
-          <span><span className="font-mono tabular-nums">{activeCount}</span> active</span>
-          <span><span className="font-mono tabular-nums">{draftCount}</span> draft</span>
-          <span className={warningCount > 0 ? 'inline-flex items-center gap-1.5 text-destructive-600' : 'inline-flex items-center gap-1.5'}>
+          <span className="whitespace-nowrap"><span className="font-mono tabular-nums">{activeCount}</span> active</span>
+          <span className="whitespace-nowrap"><span className="font-mono tabular-nums">{draftCount}</span> draft</span>
+          <span className={warningCount > 0 ? 'inline-flex items-center gap-1.5 whitespace-nowrap text-destructive-600' : 'inline-flex items-center gap-1.5 whitespace-nowrap'}>
             <AlertTriangle className={cn('h-4 w-4', warningCount > 0 ? 'text-destructive-500' : 'text-neutral-400')} aria-hidden="true" />
             <span className="font-mono tabular-nums">{warningCount}</span> steps without an approver
           </span>
@@ -238,14 +226,16 @@ export function WorkflowDefinitionPage() {
               aria-label="Search workflows"
               className="h-8"
             />
-            <Button size="sm" variant="secondary" className="w-full" onClick={() => setShowCreate((s) => !s)}>
-              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-              {showCreate ? 'Close form' : 'Create workflow'}
-            </Button>
-            <Button size="sm" variant="ghost" className="w-full" onClick={() => setTemplateOpen(true)}>
-              <LayoutTemplate className="h-3.5 w-3.5" aria-hidden="true" />
-              From template
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" className="flex-1" onClick={() => setShowCreate((s) => !s)}>
+                <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                {showCreate ? 'Close' : 'New'}
+              </Button>
+              <Button size="sm" variant="ghost" className="flex-1" onClick={() => setTemplateOpen(true)}>
+                <LayoutTemplate className="h-3.5 w-3.5" aria-hidden="true" />
+                Templates
+              </Button>
+            </div>
           </div>
 
           {showCreate && (
@@ -264,43 +254,20 @@ export function WorkflowDefinitionPage() {
             {definitions.isError && (
               <ErrorState message="Could not load workflows." onRetry={() => definitions.refetch()} />
             )}
-            {!definitions.isLoading && !definitions.isError && sorted.length === 0 && (
+            {!definitions.isLoading && !definitions.isError && filtered.length === 0 && (
               <EmptyState
                 title={query ? 'No workflow matches' : 'No workflows yet'}
                 description={query ? 'Try a different search term.' : 'Create one to define who approves a requisition or order.'}
               />
             )}
-            <ul className="space-y-1">
-              {sorted.map((d) => {
-                const isSelected = selected?.id === d.id;
-                const warn = d.steps.filter((s) => (holdersByRole[s.approverRoleCode] ?? 0) === 0).length;
-                return (
-                  <li key={d.id}>
-                    <button
-                      type="button"
-                      onClick={() => { setCode(d.code); setVersionRaw(String(d.version)); setStepId(''); }}
-                      aria-current={isSelected ? 'true' : undefined}
-                      className={cn(
-                        'w-full rounded-md px-3 py-2 text-left transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400',
-                        isSelected ? 'bg-neutral-100' : 'hover:bg-neutral-50',
-                      )}
-                    >
-                      <span className="flex items-center gap-2">
-                        <span className="truncate text-body-sm font-medium text-neutral-900" title={d.name}>{d.name}</span>
-                        <span className="ml-auto shrink-0 font-mono text-caption text-neutral-500">v{d.version}</span>
-                      </span>
-                      <span className="mt-1 flex flex-wrap items-center gap-1.5">
-                        <StatusBadge status={d.status} label={VERSION_STATUS_LABEL[d.status] ?? d.status} />
-                        {warn > 0 && <Badge variant="warning">{warn} warning{warn === 1 ? '' : 's'}</Badge>}
-                      </span>
-                      <span className="mt-1 block truncate text-caption text-neutral-500">
-                        <span className="font-mono">{d.code}</span> · {d.steps.length} step{d.steps.length === 1 ? '' : 's'}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+            {filtered.length > 0 && (
+              <WorkflowDefinitionsRail
+                definitions={filtered}
+                holdersByRole={holdersByRole}
+                selectedId={selected?.id ?? null}
+                onSelect={(d) => { setCode(d.code); setVersionRaw(String(d.version)); setStepId(''); }}
+              />
+            )}
           </div>
         </section>
 
@@ -405,19 +372,11 @@ export function WorkflowDefinitionPage() {
                 </div>
               </div>
 
-              {/* Toolbar + kanvas/inspector */}
+              {/* Rantai + inspector */}
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]">
-                <div className="flex min-w-0 flex-col gap-3">
+                <div className="flex min-w-0 flex-col gap-2">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <SegmentedControl
-                      aria-label="Chain view"
-                      value={view}
-                      onValueChange={setView}
-                      options={[
-                        { value: 'canvas', label: 'Canvas' },
-                        { value: 'table', label: 'Table' },
-                      ]}
-                    />
+                    <h2 className="text-h2 text-neutral-950">Approval chain</h2>
                     {!locked && (
                       <Button
                         size="sm"
@@ -441,26 +400,17 @@ export function WorkflowDefinitionPage() {
                     )}
                   </div>
 
-                  {view === 'canvas' ? (
-                    <WorkflowCanvas
-                      steps={steps}
-                      selectedStepId={selectedStep?.id}
-                      onSelectStep={setStepId}
-                      holdersByRole={holdersByRole}
-                      holderNamesByRole={holderNamesByRole}
-                      locked={locked}
-                      transactionType={selected.transactionType}
-                      activeStepOrders={simulatedPath}
-                      onReorder={reorderSteps}
-                    />
-                  ) : (
-                    <StepTable
-                      steps={steps}
-                      holdersByRole={holdersByRole}
-                      selectedStepId={selectedStep?.id}
-                      onSelectStep={setStepId}
-                    />
-                  )}
+                  <WorkflowChainList
+                    steps={steps}
+                    selectedStepId={selectedStep?.id}
+                    onSelectStep={setStepId}
+                    holdersByRole={holdersByRole}
+                    holderNamesByRole={holderNamesByRole}
+                    locked={locked}
+                    transactionType={selected.transactionType}
+                    activeStepOrders={simulatedPath}
+                    onReorder={reorderSteps}
+                  />
                 </div>
 
                 {/* Inspector: konteks langkah + simulasi, tetap terlihat. */}
@@ -480,9 +430,6 @@ export function WorkflowDefinitionPage() {
                             roleOptions={roleOptions.length > 0 ? roleOptions : [{ code: selectedStep.approverRoleCode, name: selectedStep.approverRoleCode, holders: holdersByRole[selectedStep.approverRoleCode] ?? 0 }]}
                             locked={locked}
                             saving={updateStep.isPending || removeStep.isPending}
-                            canMoveUp={steps.findIndex((s) => s.id === selectedStep.id) > 0}
-                            canMoveDown={steps.findIndex((s) => s.id === selectedStep.id) < steps.length - 1}
-                            onMove={move}
                             onRemove={() => removeStep.mutate(
                               { id: selected.id, stepId: selectedStep.id },
                               {
@@ -667,62 +614,3 @@ function MetadataEditor({
   );
 }
 
-/** Tampilan padat rantai: alur yang sama, sebagai padanan tabel bagi kanvas. */
-function StepTable({
-  steps, holdersByRole, selectedStepId, onSelectStep,
-}: {
-  steps: WorkflowStep[];
-  holdersByRole: Record<string, number>;
-  selectedStepId?: string;
-  onSelectStep: (id: string) => void;
-}) {
-  if (steps.length === 0) {
-    return <p className="text-body-sm text-neutral-500">No steps yet.</p>;
-  }
-  return (
-    <div className="overflow-x-auto rounded-md border border-neutral-200">
-      <table className="w-full border-collapse text-left text-body-sm">
-        <caption className="sr-only">Approval steps</caption>
-        <thead>
-          <tr className="border-b border-neutral-200 bg-neutral-50 text-caption uppercase text-neutral-500">
-            <th scope="col" className="px-3 py-2 font-medium">#</th>
-            <th scope="col" className="px-3 py-2 font-medium">Name</th>
-            <th scope="col" className="px-3 py-2 font-medium">Role</th>
-            <th scope="col" className="px-3 py-2 font-medium">Condition</th>
-          </tr>
-        </thead>
-        <tbody>
-          {steps.map((s) => {
-            const holders = holdersByRole[s.approverRoleCode] ?? 0;
-            return (
-              <tr
-                key={s.id}
-                className={cn('border-b border-neutral-100 last:border-0', selectedStepId === s.id && 'bg-neutral-50')}
-              >
-                <td className="px-3 py-2 font-mono tabular-nums text-neutral-600">{s.stepOrder}</td>
-                <td className="px-3 py-2">
-                  <button
-                    type="button"
-                    onClick={() => onSelectStep(s.id)}
-                    className="rounded text-left text-neutral-800 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400"
-                  >
-                    {s.name}
-                  </button>
-                </td>
-                <td className="px-3 py-2">
-                  <span className="text-caption text-neutral-600">{labelRole(s.approverRoleCode)}</span>
-                  <span className={cn('ml-2 text-caption', holders === 0 ? 'text-destructive-700' : 'text-neutral-500')}>
-                    {holders === 0 ? 'no holder' : `${holders} holder${holders === 1 ? '' : 's'}`}
-                  </span>
-                </td>
-                <td className="px-3 py-2 font-mono text-caption text-neutral-600">
-                  {s.conditionField ? `${s.conditionField} ${s.conditionOp} ${s.conditionValue}` : 'Always applies'}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}

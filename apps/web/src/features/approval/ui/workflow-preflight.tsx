@@ -55,7 +55,7 @@ export function WorkflowPreflight({ issues, onSelectStep, className }: WorkflowP
             aria-hidden="true"
           />
           <div className="min-w-0 flex-1">
-            <p className="text-body-sm text-neutral-800">{issue.message}</p>
+            <p className="text-pretty text-body-sm text-neutral-800">{issue.message}</p>
             {issue.stepId && onSelectStep && (
               <Button
                 size="sm"
