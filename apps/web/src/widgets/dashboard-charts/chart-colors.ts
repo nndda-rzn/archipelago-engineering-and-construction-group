@@ -31,6 +31,18 @@ export const HEALTH_COLORS: Record<Portfolio['items'][number]['health'], string>
 /** Warna bucket aging (CURRENT → 90+) — hijau → abu → kuning → oranye → merah. */
 export const AGING_COLORS = ['#22c55e', '#a1a1aa', '#f59e0b', '#f97316', '#ef4444'];
 
+/**
+ * Warna hasil approval (approved / rejected / pending / cancelled).
+ * Urutannya mengikuti `StackedBar` agar makna warna konsisten di seluruh app:
+ * sukses = hijau, ditolak = merah, menunggu = kuning, batal = netral.
+ */
+export const OUTCOME_COLORS = {
+  approved: '#16a34a', // success-600
+  rejected: '#dc2626', // destructive-600
+  pending: '#f59e0b', // warning-500
+  cancelled: '#a1a1aa', // neutral-400
+} as const;
+
 /** Warna komposisi biaya per `costType`, dari ramp token yang ada. */
 export const COST_COLORS: Record<string, string> = {
   MATERIAL: '#dc2626', // racing-red-600

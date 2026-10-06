@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHART, HEALTH_COLORS, AGING_COLORS, COST_COLORS } from './chart-colors';
+import { CHART, HEALTH_COLORS, AGING_COLORS, COST_COLORS, OUTCOME_COLORS } from './chart-colors';
 
 describe('chart-colors', () => {
   it('uses the neutral-200 token for grid lines', () => {
@@ -18,5 +18,11 @@ describe('chart-colors', () => {
     for (const k of ['DIRECT', 'LABOR', 'MATERIAL', 'SUBCONTRACTOR', 'EQUIPMENT', 'INDIRECT', 'OVERHEAD']) {
       expect(COST_COLORS[k]).toBeTruthy();
     }
+  });
+  it('maps approval outcomes to the semantic tokens', () => {
+    expect(OUTCOME_COLORS.approved).toBe('#16a34a'); // success-600
+    expect(OUTCOME_COLORS.rejected).toBe('#dc2626'); // destructive-600
+    expect(OUTCOME_COLORS.pending).toBe('#f59e0b'); // warning-500
+    expect(OUTCOME_COLORS.cancelled).toBe('#a1a1aa'); // neutral-400
   });
 });
