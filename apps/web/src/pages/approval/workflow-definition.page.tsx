@@ -12,16 +12,23 @@ import {
   useWorkflowVersions,
 } from '@/features/approval';
 import {
-  ConditionBuilder, VERSION_STATUS_LABEL, WorkflowInsightsPanel, WorkflowPipeline, WorkflowSimulate,
-  WorkflowStepForm, WorkflowVersionsRail, type ConditionValue,
+  VERSION_STATUS_LABEL, WorkflowInsightsPanel, WorkflowPipeline, WorkflowSimulate,
+  WorkflowStepForm, WorkflowVersionsRail,
 } from '@/features/approval/ui';
 import { useRoles } from '@/entities/role';
 import { useUrlFilter } from '@/shared/lib/use-url-state';
 
 /**
  * Builder definisi approval. Bentuknya master–detail: kiri koleksi definisi
- * (agar tidak kehilangan tempat saat berpindah), kanan pekerjaan sebenarnya —
- * pipeline langkah, panel edit, simulasi, riwayat versi, dan insight.
+ * (agar tidak kehilangan tempat saat berpindah), kanan pekerjaan sebenarnya.
+ *
+ * Di dalam pane kanan, rantai dan editor langkah berdampingan (`xl`): memilih
+ * langkah mengisi panel editor **tanpa memindahkan rantai keluar layar** —
+ * konteks dan aksi berada di bidang yang sama. Di bawah `xl` keduanya bertumpuk,
+ * bukan dipaksa sempit.
+ *
+ * Jarak dipakai berjenjang (2 / 8 / 16 / 32 / 48 px) supaya mata punya irama;
+ * jarak seragam di seluruh halaman membuat komposisi terasa mekanis.
  *
  * Aturan domain yang menentukan seluruh UI:
  * - **DRAFT** boleh mengubah struktur (langkah/syarat).
@@ -117,7 +124,8 @@ export function WorkflowDefinitionPage() {
 
   return (
     <div className="mx-auto flex h-full max-w-[1400px] flex-col">
-      <header className="mb-4">
+      {/* ── Kepala halaman: satu baris fakta, tanpa kartu ─────────────────── */}
+      <header className="mb-6">
         <h1 className="text-h1 text-neutral-950">Workflow</h1>
         <p className="mt-1 text-body-sm text-neutral-500">
           Configure the approval chain for purchase requisitions and purchase orders.
@@ -132,8 +140,8 @@ export function WorkflowDefinitionPage() {
         </div>
       </header>
 
-      <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-        {/* Kiri — koleksi definisi. */}
+      <div className="grid flex-1 grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+        {/* ── Kiri: koleksi definisi (area gulir, jadi butuh batas) ────────── */}
         <section
           aria-label="Workflow definitions"
           className={cn(
@@ -150,7 +158,7 @@ export function WorkflowDefinitionPage() {
               aria-label="Search workflows"
               className="h-8"
             />
-            <Button size="sm" className="w-full" onClick={() => setShowCreate((s) => !s)}>
+            <Button size="sm" variant="secondary" className="w-full" onClick={() => setShowCreate((s) => !s)}>
               <Plus className="h-3.5 w-3.5" aria-hidden="true" />
               {showCreate ? 'Close form' : 'Create workflow'}
             </Button>
@@ -212,16 +220,13 @@ export function WorkflowDefinitionPage() {
           </div>
         </section>
 
-        {/* Kanan — pekerjaan sebenarnya. */}
+        {/* ── Kanan: pekerjaan sebenarnya. Tanpa border — jarak yang mengelompokkan ── */}
         <section
           aria-label="Workflow detail"
-          className={cn(
-            'min-h-[280px] rounded-md border border-neutral-200 bg-white shadow-xs',
-            selected ? 'block' : 'hidden lg:block',
-          )}
+          className={cn('min-h-[280px]', selected ? 'block' : 'hidden lg:block')}
         >
           {!selected ? (
-            <div className="flex h-full flex-col items-center justify-center gap-1 p-8 text-center">
+            <div className="flex h-full flex-col items-center justify-center gap-1 rounded-md border border-dashed border-neutral-200 p-8 text-center">
               <p className="text-body font-medium text-neutral-700">Select a workflow</p>
               <p className="text-body-sm text-neutral-500">Its steps, rules and version history appear here.</p>
             </div>
@@ -229,15 +234,16 @@ export function WorkflowDefinitionPage() {
             <>
               <button
                 type="button"
-                className="w-full border-b border-neutral-200 px-4 py-2 text-left text-body-sm text-neutral-600 lg:hidden"
+                className="mb-4 w-full rounded-md border border-neutral-200 bg-white px-4 py-2 text-left text-body-sm text-neutral-600 lg:hidden"
                 onClick={() => setCode('')}
               >
                 ← Back to workflows
               </button>
 
-              <div className="space-y-6 p-4">
-                {/* Kepala: identitas + aksi. */}
-                <div className="flex flex-wrap items-start justify-between gap-3">
+              {/* Zona dipisah 48px; di dalam zona 32px; pasangan rapat 2–8px. */}
+              <div className="space-y-12">
+                {/* ① Identitas + aksi. Hanya Publish yang solid (aksi primer). */}
+                <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-mono text-body font-semibold text-neutral-900">{selected.code}</span>
@@ -253,6 +259,7 @@ export function WorkflowDefinitionPage() {
                     {selected.status === 'DRAFT' && (
                       <ConfirmActionButton
                         size="sm"
+                        variant="primary"
                         confirmTitle="Publish workflow"
                         confirmDescription={`Publish ${selected.code} v${selected.version}? Any other active version of ${labelResource(selected.transactionType)} will be archived.`}
                         confirmLabel="Publish"
@@ -302,7 +309,7 @@ export function WorkflowDefinitionPage() {
                     {selected.status !== 'ACTIVE' && (
                       <ConfirmActionButton
                         size="sm"
-                        variant="secondary"
+                        variant="destructive"
                         confirmTitle="Delete workflow version"
                         confirmDescription={`Delete ${selected.code} v${selected.version}? This cannot be undone.`}
                         confirmLabel="Delete"
@@ -317,7 +324,7 @@ export function WorkflowDefinitionPage() {
                   </div>
                 </div>
 
-                {/* Metadata — boleh diubah bahkan saat ACTIVE (properti dasar). */}
+                {/* ② Metadata — boleh diubah bahkan saat ACTIVE (properti dasar). */}
                 <MetadataEditor
                   definition={selected}
                   saving={updateDefinition.isPending}
@@ -327,107 +334,112 @@ export function WorkflowDefinitionPage() {
                   )}
                 />
 
-                {/* Pipeline. */}
+                {/* ③ Rantai + editor berdampingan: memilih langkah tidak memindahkan rantai. */}
                 <section aria-labelledby="wf-pipeline">
-                  <div className="mb-2 flex items-center justify-between gap-3">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <h2 id="wf-pipeline" className="text-h2 text-neutral-950">Approval chain</h2>
                     <SegmentedControl
                       aria-label="Chain view"
                       value={view}
                       onValueChange={setView}
-                      options={[{ value: 'diagram', label: 'Diagram' }, { value: 'table', label: 'Table' }]}
+                      options={[{ value: 'diagram', label: 'Flow' }, { value: 'table', label: 'Table' }]}
                     />
                   </div>
 
-                  {view === 'diagram' ? (
-                    <WorkflowPipeline
-                      steps={steps}
-                      selectedStepId={selectedStep?.id}
-                      onSelectStep={setStepId}
-                      holdersByRole={holdersByRole}
-                      locked={locked}
-                    />
-                  ) : (
-                    <StepTable
-                      steps={steps}
-                      holdersByRole={holdersByRole}
-                      selectedStepId={selectedStep?.id}
-                      onSelectStep={setStepId}
-                    />
-                  )}
-
-                  {!locked && (
-                    <div className="mt-3">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        loading={addStep.isPending}
-                        onClick={() => addStep.mutate(
-                          {
-                            id: selected.id,
-                            input: {
-                              stepOrder: steps.length + 1,
-                              name: `Step ${steps.length + 1}`,
-                              approverRoleCode: roleOptions[0]?.code ?? 'PROCUREMENT_MANAGER',
-                            },
-                          },
-                          { onSuccess: () => toast({ title: 'Step added', variant: 'success' }) },
-                        )}
-                      >
-                        <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-                        Add step
-                      </Button>
-                    </div>
-                  )}
-                </section>
-
-                {/* Panel langkah + simulasi berdampingan saat lebar. */}
-                {steps.length > 0 && (
-                  <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                    <section aria-labelledby="wf-step-detail" className="rounded-md border border-neutral-200 p-3">
-                      <h2 id="wf-step-detail" className="sr-only">Step details</h2>
-                      {selectedStep && (
-                        <WorkflowStepForm
-                          step={selectedStep}
-                          transactionType={selected.transactionType}
-                          roleOptions={roleOptions.length > 0 ? roleOptions : [{ code: selectedStep.approverRoleCode, name: selectedStep.approverRoleCode, holders: holdersByRole[selectedStep.approverRoleCode] ?? 0 }]}
+                  <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+                    <div className="min-w-0">
+                      {view === 'diagram' ? (
+                        <WorkflowPipeline
+                          steps={steps}
+                          selectedStepId={selectedStep?.id}
+                          onSelectStep={setStepId}
+                          holdersByRole={holdersByRole}
                           locked={locked}
-                          saving={updateStep.isPending || removeStep.isPending}
-                          canMoveUp={steps.findIndex((s) => s.id === selectedStep.id) > 0}
-                          canMoveDown={steps.findIndex((s) => s.id === selectedStep.id) < steps.length - 1}
-                          onMove={move}
-                          onRemove={() => removeStep.mutate(
-                            { id: selected.id, stepId: selectedStep.id },
-                            {
-                              onSuccess: () => { setStepId(''); toast({ title: 'Step removed', variant: 'info' }); },
-                              onError: () => toast({ title: 'Could not remove the step', variant: 'error' }),
-                            },
-                          )}
-                          onSave={(input) => updateStep.mutate(
-                            { id: selected.id, stepId: selectedStep.id, input },
-                            {
-                              onSuccess: () => toast({ title: 'Step updated', variant: 'success' }),
-                              onError: () => toast({
-                                title: 'Could not update the step',
-                                description: 'A condition needs a field, an operator and a value.',
-                                variant: 'error',
-                              }),
-                            },
-                          )}
+                          transactionType={selected.transactionType}
+                        />
+                      ) : (
+                        <StepTable
+                          steps={steps}
+                          holdersByRole={holdersByRole}
+                          selectedStepId={selectedStep?.id}
+                          onSelectStep={setStepId}
                         />
                       )}
-                    </section>
 
-                    <section aria-labelledby="wf-simulate" className="rounded-md border border-neutral-200 p-3">
-                      <h2 id="wf-simulate" className="mb-3 text-h2 text-neutral-950">Simulate</h2>
-                      <WorkflowSimulate steps={steps} transactionType={selected.transactionType} />
-                    </section>
+                      {!locked && (
+                        <div className="mt-4">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            loading={addStep.isPending}
+                            onClick={() => addStep.mutate(
+                              {
+                                id: selected.id,
+                                input: {
+                                  stepOrder: steps.length + 1,
+                                  name: `Step ${steps.length + 1}`,
+                                  approverRoleCode: roleOptions[0]?.code ?? 'PROCUREMENT_MANAGER',
+                                },
+                              },
+                              { onSuccess: () => toast({ title: 'Step added', variant: 'success' }) },
+                            )}
+                          >
+                            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                            Add step
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Editor langkah. Tanpa kotak — dipisah jarak dari rantai. */}
+                    {steps.length > 0 && (
+                      <div className="min-w-0 space-y-8 xl:border-l xl:border-neutral-200 xl:pl-8">
+                        <section aria-labelledby="wf-step-detail">
+                          <h2 id="wf-step-detail" className="sr-only">Step details</h2>
+                          {selectedStep && (
+                            <WorkflowStepForm
+                              step={selectedStep}
+                              transactionType={selected.transactionType}
+                              roleOptions={roleOptions.length > 0 ? roleOptions : [{ code: selectedStep.approverRoleCode, name: selectedStep.approverRoleCode, holders: holdersByRole[selectedStep.approverRoleCode] ?? 0 }]}
+                              locked={locked}
+                              saving={updateStep.isPending || removeStep.isPending}
+                              canMoveUp={steps.findIndex((s) => s.id === selectedStep.id) > 0}
+                              canMoveDown={steps.findIndex((s) => s.id === selectedStep.id) < steps.length - 1}
+                              onMove={move}
+                              onRemove={() => removeStep.mutate(
+                                { id: selected.id, stepId: selectedStep.id },
+                                {
+                                  onSuccess: () => { setStepId(''); toast({ title: 'Step removed', variant: 'info' }); },
+                                  onError: () => toast({ title: 'Could not remove the step', variant: 'error' }),
+                                },
+                              )}
+                              onSave={(input) => updateStep.mutate(
+                                { id: selected.id, stepId: selectedStep.id, input },
+                                {
+                                  onSuccess: () => toast({ title: 'Step updated', variant: 'success' }),
+                                  onError: () => toast({
+                                    title: 'Could not update the step',
+                                    description: 'A condition needs a field, an operator and a value.',
+                                    variant: 'error',
+                                  }),
+                                },
+                              )}
+                            />
+                          )}
+                        </section>
+
+                        <section aria-labelledby="wf-simulate">
+                          <h2 id="wf-simulate" className="mb-3 text-h2 text-neutral-950">Simulate</h2>
+                          <WorkflowSimulate steps={steps} transactionType={selected.transactionType} />
+                        </section>
+                      </div>
+                    )}
                   </div>
-                )}
+                </section>
 
-                {/* Riwayat versi. */}
+                {/* ④ Riwayat versi. */}
                 <section aria-labelledby="wf-versions">
-                  <h2 id="wf-versions" className="mb-2 text-h2 text-neutral-950">Versions</h2>
+                  <h2 id="wf-versions" className="mb-4 text-h2 text-neutral-950">Versions</h2>
                   {versions.isLoading && <Skeleton className="h-24 w-full" />}
                   {versions.isError && <ErrorState message="Could not load version history." onRetry={() => versions.refetch()} />}
                   {versions.data && (
@@ -439,9 +451,9 @@ export function WorkflowDefinitionPage() {
                   )}
                 </section>
 
-                {/* Insight. */}
+                {/* ⑤ Insight. */}
                 <section aria-labelledby="wf-insights">
-                  <h2 id="wf-insights" className="mb-2 text-h2 text-neutral-950">How this chain performs</h2>
+                  <h2 id="wf-insights" className="mb-4 text-h2 text-neutral-950">How this chain performs</h2>
                   {insights.isLoading && <Skeleton className="h-40 w-full" />}
                   {insights.isError && <ErrorState message="Could not load insights." onRetry={() => insights.refetch()} />}
                   {insights.data && <WorkflowInsightsPanel data={insights.data} />}
@@ -472,26 +484,25 @@ function MetadataEditor({
 
   if (!editing) {
     return (
-      <div className="rounded-md border border-neutral-200 p-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-body-sm font-medium text-neutral-900">{definition.name}</p>
-            <p className="mt-0.5 text-caption text-neutral-500">{definition.description ?? 'No description.'}</p>
-          </div>
-          <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>Edit</Button>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          {/* Nama adalah judul definisi — satu tingkat di bawah h1 halaman. */}
+          <p className="text-body font-medium text-neutral-900">{definition.name}</p>
+          <p className="mt-0.5 text-caption text-neutral-500">{definition.description ?? 'No description.'}</p>
         </div>
+        <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>Edit</Button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3 rounded-md border border-neutral-200 p-3">
-      <div>
+    <div className="space-y-4">
+      <div className="max-w-md">
         <Label htmlFor="wf-meta-name">Name</Label>
         <Input id="wf-meta-name" value={name} onChange={(e) => setName(e.target.value)} error={!valid} />
         {!valid && <p role="alert" className="mt-1 text-caption text-destructive-600">Name must be at least 2 characters.</p>}
       </div>
-      <div>
+      <div className="max-w-md">
         <Label htmlFor="wf-meta-desc">Description</Label>
         <Input id="wf-meta-desc" value={description} onChange={(e) => setDescription(e.target.value)} />
       </div>
@@ -499,6 +510,7 @@ function MetadataEditor({
         <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
         <Button
           size="sm"
+          variant="secondary"
           disabled={!dirty || !valid}
           loading={saving}
           onClick={() => onSave({ name: name.trim(), description: description.trim() === '' ? null : description.trim() })}
@@ -510,7 +522,7 @@ function MetadataEditor({
   );
 }
 
-/** Tampilan padat rantai — Jira menyediakan diagram ⇄ teks untuk alur yang sama. */
+/** Tampilan padat rantai — alur yang sama, untuk rantai panjang. */
 function StepTable({
   steps, holdersByRole, selectedStepId, onSelectStep,
 }: {
@@ -569,5 +581,3 @@ function StepTable({
     </div>
   );
 }
-
-export { ConditionBuilder, type ConditionValue };

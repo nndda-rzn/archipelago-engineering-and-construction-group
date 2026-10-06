@@ -185,6 +185,95 @@ describe('WorkflowDefinitionPage — pipeline sebagai alur', () => {
   });
 });
 
+describe('WorkflowDefinitionPage — rantai sebagai alur', () => {
+  it('renders each step as a row with its role and holder count', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    expect(screen.getByLabelText(/Step 1: Approval Manager Pengadaan/)).toBeTruthy();
+    expect(screen.getByLabelText(/Step 2: Approval Direksi/)).toBeTruthy();
+  });
+
+  it('brackets the chain with a trigger and a result so it reads as a process', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    expect(screen.getByText(/Purchase requisition submitted/i)).toBeTruthy();
+    expect(screen.getByText(/Purchase requisition approved/i)).toBeTruthy();
+  });
+
+  it('marks the spine dashed only where the next step is conditional', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    const pipeline = document.querySelector('[data-slot="workflow-pipeline"]')!;
+    // ACTIVE v2: step 1 tanpa syarat, step 2 bersyarat → tepat satu segmen putus.
+    const dashed = pipeline.querySelectorAll('[data-slot="spine-dashed"]');
+    const solid = pipeline.querySelectorAll('[data-slot="spine-solid"]');
+    expect(dashed.length).toBe(1);
+    expect(solid.length).toBeGreaterThan(0);
+    // Gerbangnya menyebut syaratnya, bukan sekadar garis tanpa keterangan.
+    expect(within(pipeline as HTMLElement).getByText(/only when/i)).toBeTruthy();
+  });
+
+  it('groups by space, not by borders (strip-the-borders check)', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    const stepRow = screen.getByLabelText(/Step 1: Approval Manager Pengadaan/);
+    // Baris langkah tidak memakai border sebagai pengelompok: hanya garis kiri
+    // penanda terpilih, tanpa kotak penuh.
+    expect(stepRow.className).toContain('border-l-2');
+    expect(stepRow.className).not.toContain('border ');
+    expect(stepRow.className).not.toMatch(/rounded-md border border-neutral/);
+  });
+
+  it('uses a graded spacing rhythm instead of one uniform gap', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    const detail = screen.getByLabelText('Workflow detail');
+    // Zona dipisah 48px (space-y-12), bukan 24px seragam seperti sebelumnya.
+    const zone = detail.querySelector(':scope > div.space-y-12');
+    expect(zone).toBeTruthy();
+    // Rantai dan editor berdampingan (grid), bukan bertumpuk dengan jarak sama.
+    expect(zone?.querySelector('div.grid.xl\\:grid-cols-\\[minmax\\(0\\,1fr\\)_minmax\\(0\\,22rem\\)\\]')).toBeTruthy();
+  });
+
+  it('flags a step whose approver role nobody holds', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    fireEvent.click(screen.getByLabelText(/Version 3, Draft/));
+    expect(screen.getByText(/No approver — the chain will stall/i)).toBeTruthy();
+  });
+
+  it('offers a table view of the same chain (flow ⇄ table)', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    fireEvent.click(screen.getByRole('radio', { name: 'Table' }));
+    expect(screen.getByRole('table', { name: /Approval steps/i })).toBeTruthy();
+  });
+});
+
+describe('WorkflowDefinitionPage — satu aksi primer', () => {
+  it('makes Publish the only primary button on a draft', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    fireEvent.click(screen.getByLabelText(/Version 3, Draft/));
+    const primary = Array.from(document.querySelectorAll('button')).filter((b) =>
+      b.className.includes('bg-racing-red-600'),
+    );
+    expect(primary.map((b) => b.textContent?.trim())).toEqual(['Publish']);
+  });
+
+  it('does not use the primary treatment for archive or delete', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    // ACTIVE: New version + Archive tersedia, keduanya bukan aksi primer.
+    for (const label of [/New version/i, /Archive/i]) {
+      const btn = screen.getByRole('button', { name: label });
+      expect(btn.className).not.toContain('bg-racing-red-600');
+    }
+  });
+});
+
+describe('WorkflowDefinitionPage — rantai & editor sebidang', () => {
+  it('keeps the chain visible while a step is selected for editing', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    fireEvent.click(screen.getByLabelText(/Version 3, Draft/));
+    fireEvent.click(screen.getByLabelText(/Step 2: Finance Review/));
+    // Keduanya ada di DOM yang sama: memilih langkah tidak menyembunyikan rantai.
+    expect(screen.getByLabelText(/Step 1: Approval Manager Pengadaan/)).toBeTruthy();
+    expect(screen.getByLabelText('Name')).toBeTruthy();
+  });
+});
+
 describe('WorkflowDefinitionPage — aturan DRAFT vs ACTIVE', () => {
   it('locks the steps of an ACTIVE version and explains why', () => {
     renderWithProviders(<WorkflowDefinitionPage />);
