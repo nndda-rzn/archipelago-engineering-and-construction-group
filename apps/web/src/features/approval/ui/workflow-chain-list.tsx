@@ -125,9 +125,14 @@ export function WorkflowChainList({
             }}
             onDrop={() => handleDrop(index)}
             className={cn(
-              'grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-x-2 rounded-md border-l-2 pr-1',
+              'relative grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-x-2 rounded-md pr-1',
               'transition-colors duration-fast',
-              selected ? 'border-neutral-800 bg-neutral-50' : missing ? 'border-destructive-300' : 'border-transparent',
+              // Seleksi lewat LATAR, sama seperti sidebar nav, SegmentedControl,
+              // DataGrid, dan financial band. Sebelumnya baris ini memakai
+              // `border-l-2` — satu-satunya tempat di aplikasi yang begitu — dan
+              // border transparan 2px di tiap baris menambah keramaian tanpa
+              // membawa makna.
+              selected ? 'bg-neutral-100' : 'hover:bg-neutral-50',
               isDragging && 'opacity-50',
               isDropTarget && 'ring-1 ring-neutral-400',
               simulating && skipped && 'opacity-40',
@@ -162,13 +167,26 @@ export function WorkflowChainList({
 
             <span
               aria-hidden="true"
+              data-slot="step-order"
               className={cn(
-                'flex h-5 w-5 shrink-0 items-center justify-center rounded-full font-mono text-caption tabular-nums',
+                'relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full font-mono text-caption tabular-nums',
                 missing ? 'bg-destructive-100 text-destructive-700' : selected ? 'bg-neutral-800 text-white' : 'bg-neutral-100 text-neutral-700',
               )}
             >
               {step.stepOrder}
             </span>
+
+            {/* Garis penghubung antar langkah: membuat urutan TERLIHAT, bukan
+                hanya terbaca dari nomor. Pusat badge ada di 42px
+                (ml-1 4px + w-5 20px + gap-x-2 8px + setengah badge 10px).
+                `-bottom-1` menjembatani celah `space-y-1` ke baris berikutnya. */}
+            {index < steps.length - 1 && (
+              <span
+                aria-hidden="true"
+                data-slot="step-connector"
+                className="pointer-events-none absolute -bottom-1 left-[2.625rem] top-1/2 w-px bg-neutral-200"
+              />
+            )}
 
             <button
               type="button"

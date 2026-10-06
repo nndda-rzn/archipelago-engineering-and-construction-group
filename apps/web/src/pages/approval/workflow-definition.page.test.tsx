@@ -192,8 +192,10 @@ describe('WorkflowDefinitionPage: struktur & identitas', () => {
   it('counts the steps that have no approver', () => {
     renderWithProviders(<WorkflowDefinitionPage />);
     selectVersion(3);
-    const header = screen.getByText(/steps without an approver/i).closest('span');
-    expect(header?.textContent).toMatch(/1\s*steps without an approver/i);
+    // Fakta koleksi kini sebuah `dl`: istilah + nilainya.
+    const term = screen.getByText(/Steps without an approver/i);
+    const fact = term.closest('div')!;
+    expect(fact.textContent).toMatch(/1/);
   });
 
   it('groups versions of a code together instead of listing them flat', () => {
@@ -232,6 +234,60 @@ describe('WorkflowDefinitionPage: identitas memakai nama, bukan kode', () => {
     expect(screen.getByRole('heading', { name: 'Purchase requisition approval', level: 2 })).toBeTruthy();
     const detail = screen.getByLabelText('Workflow detail');
     expect(within(detail).getAllByText('PR_APPROVAL').length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('WorkflowDefinitionPage: hierarki heading berjenjang', () => {
+  it('uses one h1 for the page and h2 only for the definition being edited', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    // Nama definisi adalah h2 tunggal di pane kerja — bukan satu dari beberapa
+    // h2 bersaudara yang membuat semuanya tampak setara.
+    const detail = screen.getByLabelText('Workflow detail');
+    expect(within(detail).getAllByRole('heading', { level: 2 })).toHaveLength(1);
+    expect(within(detail).getByRole('heading', { level: 2 }).textContent).toBe('Purchase requisition approval');
+  });
+
+  it('makes the chain and inspector h3 under the definition, not h2 siblings', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    const detail = screen.getByLabelText('Workflow detail');
+    expect(within(detail).getByRole('heading', { name: 'Approval chain', level: 3 })).toBeTruthy();
+    expect(within(detail).getByRole('heading', { name: 'Step details', level: 3 })).toBeTruthy();
+    expect(within(detail).getByRole('heading', { name: 'Simulate', level: 3 })).toBeTruthy();
+  });
+
+  it('never skips a heading level from h1 down (WCAG 1.3.1 / rule 39)', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    openDrawer('Insights');
+    const levels = screen
+      .getAllByRole('heading')
+      .map((h) => Number(h.tagName.slice(1)))
+      .filter((n) => Number.isFinite(n));
+    // Urutan menaik tidak boleh melompat lebih dari satu tingkat.
+    let previous = levels[0]!;
+    for (const level of levels) {
+      expect(level).toBeLessThanOrEqual(previous + 1);
+      previous = Math.max(previous, level);
+    }
+  });
+});
+
+describe('WorkflowDefinitionPage: band definisi memisahkan identitas dari aksi', () => {
+  it('groups the definition identity in its own band', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    // Band berisi nama + status + kode/versi + lifecycle, terpisah dari aksi.
+    const band = screen.getByLabelText('Definition summary');
+    expect(within(band).getByRole('heading', { level: 2 }).textContent).toBe('Purchase requisition approval');
+    expect(within(band).getByLabelText('Workflow lifecycle')).toBeTruthy();
+    // Aksi TIDAK berada di dalam band identitas.
+    expect(within(band).queryByRole('button', { name: /Duplicate/ })).toBeNull();
+  });
+
+  it('keeps the actions in their own group with an accessible name', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    const actions = screen.getByRole('group', { name: 'Workflow actions' });
+    expect(within(actions).getByRole('button', { name: /Duplicate/ })).toBeTruthy();
+    expect(within(actions).getByRole('button', { name: /Archive/ })).toBeTruthy();
   });
 });
 

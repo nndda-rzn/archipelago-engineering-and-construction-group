@@ -125,4 +125,22 @@ describe('WorkflowDefinitionsRail', () => {
     fireEvent.click(row);
     expect(onSelect).toHaveBeenCalledWith(target);
   });
+
+  it('marks the selected version with a background, not a left border', () => {
+    render(
+      <WorkflowDefinitionsRail definitions={[def()]} holdersByRole={HOLDERS} selectedId="d1" onSelect={vi.fn()} />,
+    );
+    const row = screen.getByLabelText(/PR_APPROVAL version 1/);
+    // Konsisten dengan sidebar nav / SegmentedControl / DataGrid: latar, bukan garis.
+    expect(row.className).toContain('bg-neutral-100');
+    expect(row.className).not.toContain('border-l');
+  });
+
+  it('does not reserve a transparent left border on unselected rows', () => {
+    render(
+      <WorkflowDefinitionsRail definitions={[def()]} holdersByRole={HOLDERS} selectedId={null} onSelect={vi.fn()} />,
+    );
+    const row = screen.getByLabelText(/PR_APPROVAL version 1/);
+    expect(row.className).not.toContain('border-l');
+  });
 });

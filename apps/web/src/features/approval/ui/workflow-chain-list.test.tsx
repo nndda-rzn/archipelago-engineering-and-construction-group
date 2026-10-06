@@ -91,6 +91,66 @@ describe('WorkflowChainList', () => {
     });
   });
 
+  describe('selection styling is consistent with the rest of the app', () => {
+    it('marks the selected step with a background, not a left border', () => {
+      const { container } = renderList({ selectedStepId: 's1' });
+      // `aria-pressed` ada di tombol di dalam baris; barisnya adalah `li` induknya.
+      const selectedButton = container.querySelector('button[aria-pressed="true"]')!;
+      const selectedRow = selectedButton.closest('li')!;
+      // Latar = bahasa seleksi yang dipakai sidebar nav, SegmentedControl,
+      // DataGrid, dan financial band. Garis kiri hanya dipakai di sini.
+      expect(selectedRow.className).toContain('bg-neutral-100');
+      expect(selectedRow.className).not.toContain('border-l');
+    });
+
+    it('does not reserve a transparent left border on unselected rows', () => {
+      const { container } = renderList();
+      // `border-transparent` tetap memakan 2px dan menambah keramaian visual.
+      const rows = [...container.querySelectorAll('li')].filter((li) => li.querySelector('button[aria-pressed]'));
+      expect(rows.length).toBeGreaterThan(0);
+      for (const li of rows) {
+        expect(li.className).not.toContain('border-l');
+      }
+    });
+
+    it('keeps the no-approver warning visible without a coloured left border', () => {
+      renderList({
+        steps: [step({ approverRoleCode: 'NOBODY' })],
+        holdersByRole: { NOBODY: 0 },
+        holderNamesByRole: { NOBODY: [] },
+      });
+      // Tiga isyarat independen: badge nomor, ikon, dan teks.
+      expect(screen.getByText(/No approver, so the chain will stall/i)).toBeTruthy();
+      expect(screen.getByLabelText(/no approver assigned/i)).toBeTruthy();
+    });
+  });
+
+  describe('the step number reads as a position in a sequence', () => {
+    it('renders the order as a numbered rail marker, not a decorative badge', () => {
+      const { container } = renderList();
+      const markers = container.querySelectorAll('[data-slot="step-order"]');
+      expect(markers).toHaveLength(2);
+      expect(markers[0]!.textContent).toBe('1');
+      expect(markers[1]!.textContent).toBe('2');
+    });
+
+    it('draws a connecting line between consecutive steps so order is visible', () => {
+      const { container } = renderList();
+      // Garis penghubung hanya ANTAR langkah — tidak di langkah terakhir.
+      const connectors = container.querySelectorAll('[data-slot="step-connector"]');
+      expect(connectors).toHaveLength(1);
+    });
+
+    it('does not draw a connector after the last step', () => {
+      const { container } = renderList({
+        steps: [step()],
+        holdersByRole: HOLDERS,
+        holderNamesByRole: NAMES,
+      });
+      expect(container.querySelectorAll('[data-slot="step-connector"]')).toHaveLength(0);
+    });
+  });
+
   describe('locked (active) versions', () => {
     it('hides the drag handle and the reorder buttons', () => {
       renderList({ locked: true, onReorder: undefined });
