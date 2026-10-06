@@ -3,7 +3,7 @@ import { Plus, X } from 'lucide-react';
 import { Button, Input, cn } from '@aec/ui';
 import type { WorkflowStep } from '@aec/api-contracts';
 import { formatIdr, formatNumber } from '@/shared/lib/format';
-import { evaluateStep } from './workflow-simulate';
+import { applicableStepOrders, evaluateStep } from '../lib/evaluate-step';
 import { conditionFieldLabel, opLabel } from './workflow-labels';
 
 export interface Scenario {
@@ -41,8 +41,7 @@ export function WorkflowScenarios({ steps, transactionType, onPathChange }: Work
 
   const selected = scenarios.find((s) => s.id === selectedId) ?? null;
 
-  const applicable = (amount: number) =>
-    steps.filter((s) => evaluateStep(s, amount)).map((s) => s.stepOrder);
+  const applicable = (amount: number) => applicableStepOrders(steps, amount);
 
   const add = () => {
     const value = Number(draft);
