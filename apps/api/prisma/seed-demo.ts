@@ -1,6 +1,9 @@
 // Demo seed — data kaya untuk demo (PRD §46). Jalankan: pnpm --filter @aec/api exec tsx prisma/seed-demo.ts
-import 'dotenv/config';
+import { loadEnvFile } from '../src/shared/config/load-env';
 import { PrismaClient } from '@prisma/client';
+
+// Muat .env dengan presedensi development-aware SEBELUM Prisma diinisialisasi.
+loadEnvFile();
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
 

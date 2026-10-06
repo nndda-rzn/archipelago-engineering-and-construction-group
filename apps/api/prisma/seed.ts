@@ -1,4 +1,7 @@
-import 'dotenv/config';
+import { loadEnvFile } from '../src/shared/config/load-env';
+
+// Muat .env dengan presedensi development-aware SEBELUM Prisma diinisialisasi.
+loadEnvFile();
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
