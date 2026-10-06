@@ -47,8 +47,20 @@ export class AnalyticsController {
 
   @Get('project-cost-summary')
   @Permissions(Permission.AnalyticsView)
-  projectCostSummary() {
-    return this.analytics.projectCostSummary();
+  projectCostSummary(@Query() query: AnalyticsFilterParams) {
+    return this.analytics.projectCostSummary(query);
+  }
+
+  @Get('ar-concentration')
+  @Permissions(Permission.AnalyticsView)
+  arConcentration(@Query() query: AnalyticsFilterParams) {
+    return this.analytics.arConcentration(query);
+  }
+
+  @Get('forecast-vs-actual')
+  @Permissions(Permission.AnalyticsView)
+  forecastVsActual(@Query() query: AnalyticsFilterParams) {
+    return this.analytics.forecastVsActual(query);
   }
 
   @Get('cost-composition')
@@ -59,25 +71,25 @@ export class AnalyticsController {
 
   @Get('aging/export.csv')
   @Permissions(Permission.AnalyticsView)
-  async exportAging(@Res({ passthrough: true }) res: Response) {
+  async exportAging(@Query() query: AnalyticsFilterParams, @Res({ passthrough: true }) res: Response) {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', contentDisposition('aging-ar-ap'));
-    return new StreamableFile(await this.analytics.exportAgingCsv());
+    return new StreamableFile(await this.analytics.exportAgingCsv(query));
   }
 
   @Get('cash-flow/export.csv')
   @Permissions(Permission.AnalyticsView)
-  async exportCashFlow(@Res({ passthrough: true }) res: Response) {
+  async exportCashFlow(@Query() query: AnalyticsFilterParams, @Res({ passthrough: true }) res: Response) {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', contentDisposition('cash-flow'));
-    return new StreamableFile(await this.analytics.exportCashFlowCsv());
+    return new StreamableFile(await this.analytics.exportCashFlowCsv(query));
   }
 
   @Get('project-cost-summary/export.csv')
   @Permissions(Permission.AnalyticsView)
-  async exportProjectCostSummary(@Res({ passthrough: true }) res: Response) {
+  async exportProjectCostSummary(@Query() query: AnalyticsFilterParams, @Res({ passthrough: true }) res: Response) {
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', contentDisposition('project-cost-summary'));
-    return new StreamableFile(await this.analytics.exportProjectCostSummaryCsv());
+    return new StreamableFile(await this.analytics.exportProjectCostSummaryCsv(query));
   }
 }

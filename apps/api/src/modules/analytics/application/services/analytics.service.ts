@@ -7,6 +7,44 @@ import { ANALYTICS_CACHE_KEYS, analyticsCacheKey } from '@/shared/cache/analytic
 import { resolveDateRange } from '@/shared/utils/date-range';
 import { toCsvLines } from '@/shared/export/csv';
 
+/** Baris invoice di balik angka sebuah bucket aging. */
+export interface AgingDetail {
+  invoiceNumber: string;
+  party: string;
+  projectCode: string | null;
+  date: string;
+  ageDays: number;
+  outstanding: number;
+}
+
+/** Kunci bulan UTC — konsisten dengan sisa modul (jangan pakai waktu lokal). */
+function monthKeyUtc(d: Date): string {
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+/** N bulan terakhir (termasuk bulan berjalan), urut lama → baru. */
+function lastNMonthsUtc(n: number, now = new Date()): string[] {
+  const out: string[] = [];
+  for (let i = n - 1; i >= 0; i--) {
+    out.push(monthKeyUtc(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1))));
+  }
+  return out;
+}
+
+/** Semua bulan yang menyentuh rentang `a`..`b`, urut lama → baru. */
+function monthSpanUtc(a: Date, b: Date): string[] {
+  const start = a.getTime() <= b.getTime() ? a : b;
+  const end = a.getTime() <= b.getTime() ? b : a;
+  const out: string[] = [];
+  const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
+  const last = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
+  while (cursor.getTime() <= last.getTime()) {
+    out.push(monthKeyUtc(cursor));
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+  return out;
+}
+
 @Injectable()
 export class AnalyticsService {
   constructor(
@@ -281,24 +319,27 @@ export class AnalyticsService {
       this.prisma.payment.findMany({ where: { status: 'PAID', ...projectWhere, ...(dateWhere ? { paymentDate: dateWhere } : {}) }, select: { totalAmount: true, paymentDate: true } }),
     ]);
 
-    const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     const byMonth = new Map<string, { cashIn: number; cashOut: number }>();
     for (const c of collections) {
-      const k = monthKey(new Date(c.collectedAt));
+      const k = monthKeyUtc(new Date(c.collectedAt));
       const cur = byMonth.get(k) ?? { cashIn: 0, cashOut: 0 };
       cur.cashIn += Number(c.totalAmount);
       byMonth.set(k, cur);
     }
     for (const p of payments) {
-      const k = monthKey(new Date(p.paymentDate));
+      const k = monthKeyUtc(new Date(p.paymentDate));
       const cur = byMonth.get(k) ?? { cashIn: 0, cashOut: 0 };
       cur.cashOut += Number(p.totalAmount);
       byMonth.set(k, cur);
     }
 
-    const series = [...byMonth.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, v]) => ({ month, ...v, net: Math.round((v.cashIn - v.cashOut) * 100) / 100 }));
+    // Rentang bulan: hormati filter bila ada, selain itu 6 bulan terakhir.
+    // Bulan tanpa transaksi diisi 0 supaya celah tidak "menghilang" dari grafik.
+    const months = from || to ? monthSpanUtc(from ?? to!, to ?? from!) : lastNMonthsUtc(6);
+    const series = months.map((month) => {
+      const v = byMonth.get(month) ?? { cashIn: 0, cashOut: 0 };
+      return { month, cashIn: v.cashIn, cashOut: v.cashOut, net: Math.round((v.cashIn - v.cashOut) * 100) / 100 };
+    });
     const totalIn = series.reduce((s, r) => s + r.cashIn, 0);
     const totalOut = series.reduce((s, r) => s + r.cashOut, 0);
 
@@ -308,57 +349,126 @@ export class AnalyticsService {
 
   async aging(filter: AnalyticsFilterParams = {}) {
     return this.cache.wrap(analyticsCacheKey(ANALYTICS_CACHE_KEYS.aging, filter), 60, async () => {
-    const today = new Date();
-    const bucket = (d: Date): string => {
-      const days = Math.floor((today.getTime() - d.getTime()) / 86400000);
+    const asOf = new Date();
+    const { from, to } = resolveDateRange(filter.from, filter.to);
+    // Basis umur SAMA untuk AR & AP (`invoiceDate`) — sebelumnya AP memakai
+    // createdAt sehingga dua sisi "umur" punya arti berbeda.
+    const dateWhere = from || to ? { gte: from, lte: to } : undefined;
+    const bucketOf = (d: Date): string => {
+      const days = Math.floor((asOf.getTime() - d.getTime()) / 86400000);
       if (days <= 0) return 'CURRENT';
       if (days <= 30) return '1-30';
       if (days <= 60) return '31-60';
       if (days <= 90) return '61-90';
       return '90+';
     };
+    const ageOf = (d: Date) => Math.max(0, Math.floor((asOf.getTime() - d.getTime()) / 86400000));
     const projectWhere = filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {};
 
     const clientInvoices = await this.prisma.clientInvoice.findMany({
-      where: { status: 'POSTED', ...projectWhere },
-      include: { collections: { select: { amount: true } } },
+      where: { status: 'POSTED', ...projectWhere, ...(dateWhere ? { invoiceDate: dateWhere } : {}) },
+      include: { collections: { select: { amount: true } }, project: { select: { code: true } } },
     });
-    const arBuckets = new Map<string, number>();
+    const arBuckets = new Map<string, { amount: number; detail: AgingDetail[] }>();
     for (const inv of clientInvoices) {
       const paid = inv.collections.reduce((s, c) => s + Number(c.amount), 0);
       const remaining = Math.round((Number(inv.totalAmount) - paid) * 100) / 100;
-      if (remaining > 0) {
-        const b = bucket(new Date(inv.invoiceDate));
-        arBuckets.set(b, (arBuckets.get(b) ?? 0) + remaining);
-      }
+      if (remaining <= 0) continue;
+      const date = new Date(inv.invoiceDate);
+      const b = bucketOf(date);
+      const cur = arBuckets.get(b) ?? { amount: 0, detail: [] };
+      cur.amount += remaining;
+      cur.detail.push({ invoiceNumber: inv.invoiceNumber, party: inv.client, projectCode: inv.project?.code ?? null, date: date.toISOString(), ageDays: ageOf(date), outstanding: remaining });
+      arBuckets.set(b, cur);
     }
 
     const vendorInvoices = await this.prisma.vendorInvoice.findMany({
-      where: { status: 'POSTED', ...projectWhere },
-      include: { payments: { select: { amount: true } } },
+      where: { status: 'POSTED', ...projectWhere, ...(dateWhere ? { invoiceDate: dateWhere } : {}) },
+      include: { payments: { select: { amount: true } }, project: { select: { code: true } } },
     });
-    const apBuckets = new Map<string, number>();
+    const apBuckets = new Map<string, { amount: number; detail: AgingDetail[] }>();
     for (const inv of vendorInvoices) {
       const paid = (inv.payments ?? []).reduce((s, p) => s + Number(p.amount), 0);
       const remaining = Math.round((Number(inv.totalAmount) - paid) * 100) / 100;
-      if (remaining > 0) {
-        const b = bucket(new Date(inv.createdAt));
-        apBuckets.set(b, (apBuckets.get(b) ?? 0) + remaining);
-      }
+      if (remaining <= 0) continue;
+      const date = new Date(inv.invoiceDate);
+      const b = bucketOf(date);
+      const cur = apBuckets.get(b) ?? { amount: 0, detail: [] };
+      cur.amount += remaining;
+      cur.detail.push({ invoiceNumber: inv.invoiceNumber, party: inv.vendor, projectCode: inv.project?.code ?? null, date: date.toISOString(), ageDays: ageOf(date), outstanding: remaining });
+      apBuckets.set(b, cur);
     }
 
     const order = ['CURRENT', '1-30', '31-60', '61-90', '90+'];
+    const toBucket = (map: Map<string, { amount: number; detail: AgingDetail[] }>) => (b: string) => {
+      const v = map.get(b) ?? { amount: 0, detail: [] };
+      return { bucket: b, amount: Math.round(v.amount * 100) / 100, detail: v.detail.sort((x, y) => y.outstanding - x.outstanding) };
+    };
     return {
-      ar: order.map((b) => ({ bucket: b, amount: Math.round((arBuckets.get(b) ?? 0) * 100) / 100 })),
-      ap: order.map((b) => ({ bucket: b, amount: Math.round((apBuckets.get(b) ?? 0) * 100) / 100 })),
+      ar: order.map(toBucket(arBuckets)),
+      ap: order.map(toBucket(apBuckets)),
+      asOf: asOf.toISOString(),
+      basisDate: 'invoiceDate',
       generatedAt: new Date().toISOString(),
     };
     });
   }
 
-  async projectCostSummary() {
-    return this.cache.wrap(ANALYTICS_CACHE_KEYS.projectCostSummary, 60, async () => {
-    const projects = await this.prisma.project.findMany({ select: { id: true, code: true, name: true, contractValue: true } });
+  /** Konsentrasi piutang per klien — siapa yang menahan kas. */
+  async arConcentration(filter: AnalyticsFilterParams = {}) {
+    return this.cache.wrap('analytics:ar-concentration', 60, async () => {
+      const projectWhere = filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {};
+      const invoices = await this.prisma.clientInvoice.findMany({
+        where: { status: 'POSTED', ...projectWhere },
+        include: { collections: { select: { amount: true } } },
+      });
+      const byClient = new Map<string, number>();
+      for (const inv of invoices) {
+        const paid = inv.collections.reduce((s, c) => s + Number(c.amount), 0);
+        const remaining = Math.round((Number(inv.totalAmount) - paid) * 100) / 100;
+        if (remaining <= 0) continue;
+        byClient.set(inv.client, (byClient.get(inv.client) ?? 0) + remaining);
+      }
+      const total = [...byClient.values()].reduce((s, v) => s + v, 0);
+      const items = [...byClient.entries()]
+        .map(([client, amount]) => ({ client, amount: Math.round(amount * 100) / 100, pct: total > 0 ? Math.round((amount / total) * 1000) / 10 : 0 }))
+        .sort((a, b) => b.amount - a.amount);
+      return { items, total: Math.round(total * 100) / 100, generatedAt: new Date().toISOString() };
+    });
+  }
+
+  /** Rencana kas (`CashForecast`) vs realisasi per periode. */
+  async forecastVsActual(filter: AnalyticsFilterParams = {}) {
+    return this.cache.wrap('analytics:forecast-vs-actual', 60, async () => {
+      const entityWhere = filter.legalEntityId ? { legalEntityId: filter.legalEntityId } : {};
+      const projectWhere = filter.legalEntityId ? { project: { legalEntityId: filter.legalEntityId } } : {};
+      const [forecasts, collections, payments] = await this.prisma.$transaction([
+        this.prisma.cashForecast.findMany({ where: entityWhere, orderBy: { period: 'asc' }, select: { period: true, netForecast: true } }),
+        this.prisma.collection.findMany({ where: { status: 'POSTED', ...projectWhere }, select: { totalAmount: true, collectedAt: true } }),
+        this.prisma.payment.findMany({ where: { status: 'PAID', ...projectWhere }, select: { totalAmount: true, paymentDate: true } }),
+      ]);
+      const actualByMonth = new Map<string, number>();
+      for (const c of collections) {
+        const k = monthKeyUtc(new Date(c.collectedAt));
+        actualByMonth.set(k, (actualByMonth.get(k) ?? 0) + Number(c.totalAmount));
+      }
+      for (const p of payments) {
+        const k = monthKeyUtc(new Date(p.paymentDate));
+        actualByMonth.set(k, (actualByMonth.get(k) ?? 0) - Number(p.totalAmount));
+      }
+      const periods = forecasts.map((f) => ({
+        period: f.period,
+        forecastNet: Number(f.netForecast),
+        actualNet: Math.round((actualByMonth.get(f.period) ?? 0) * 100) / 100,
+      }));
+      return { periods, generatedAt: new Date().toISOString() };
+    });
+  }
+
+  async projectCostSummary(filter: AnalyticsFilterParams = {}) {
+    return this.cache.wrap('analytics:project-cost-summary', 60, async () => {
+    const projectWhere = filter.legalEntityId ? { legalEntityId: filter.legalEntityId } : {};
+    const projects = await this.prisma.project.findMany({ where: projectWhere, select: { id: true, code: true, name: true, contractValue: true } });
     const [budgetAgg, vendorInvoiceAgg, clientInvoiceAgg] = await Promise.all([
       this.prisma.budgetItem.groupBy({ by: ['projectId'], _sum: { amount: true } }),
       this.prisma.vendorInvoice.groupBy({ by: ['projectId'], where: { status: 'POSTED' }, _sum: { totalAmount: true } }),
@@ -389,20 +499,26 @@ export class AnalyticsService {
     });
   }
 
-  /** Export Aging AP/AR sebagai CSV streaming. Menggunakan hasil cached (TTL pendek) agar konsisten & hemat. */
-  async exportAgingCsv(): Promise<Readable> {
-    const data = await this.aging();
+  /** Export Aging AP/AR sebagai CSV streaming. Mengikuti filter yang aktif (entity + rentang tanggal). */
+  async exportAgingCsv(filter: AnalyticsFilterParams = {}): Promise<Readable> {
+    const data = await this.aging(filter);
     async function* rows(): AsyncGenerator<string[]> {
-      yield ['section', 'bucket', 'amount'];
-      for (const r of data.ar) yield ['AR', r.bucket, String(r.amount)];
-      for (const r of data.ap) yield ['AP', r.bucket, String(r.amount)];
+      yield ['section', 'bucket', 'amount', 'invoice', 'party', 'project', 'date', 'ageDays', 'outstanding'];
+      for (const r of data.ar) {
+        if (r.detail.length === 0) yield ['AR', r.bucket, String(r.amount), '', '', '', '', '', ''];
+        for (const d of r.detail) yield ['AR', r.bucket, String(r.amount), d.invoiceNumber, d.party, d.projectCode ?? '', d.date, String(d.ageDays), String(d.outstanding)];
+      }
+      for (const r of data.ap) {
+        if (r.detail.length === 0) yield ['AP', r.bucket, String(r.amount), '', '', '', '', '', ''];
+        for (const d of r.detail) yield ['AP', r.bucket, String(r.amount), d.invoiceNumber, d.party, d.projectCode ?? '', d.date, String(d.ageDays), String(d.outstanding)];
+      }
     }
     return Readable.from(toCsvLines(rows()));
   }
 
-  /** Export Cash Flow (series bulanan) sebagai CSV streaming. */
-  async exportCashFlowCsv(): Promise<Readable> {
-    const data = await this.cashFlow();
+  /** Export Cash Flow (series bulanan) sebagai CSV streaming. Mengikuti filter. */
+  async exportCashFlowCsv(filter: AnalyticsFilterParams = {}): Promise<Readable> {
+    const data = await this.cashFlow(filter);
     async function* rows(): AsyncGenerator<string[]> {
       yield ['month', 'cashIn', 'cashOut', 'net'];
       for (const r of data.series) yield [r.month, String(r.cashIn), String(r.cashOut), String(r.net)];
@@ -410,9 +526,9 @@ export class AnalyticsService {
     return Readable.from(toCsvLines(rows()));
   }
 
-  /** Export Project Cost Summary sebagai CSV streaming. */
-  async exportProjectCostSummaryCsv(): Promise<Readable> {
-    const data = await this.projectCostSummary();
+  /** Export Project Cost Summary sebagai CSV streaming. Mengikuti filter. */
+  async exportProjectCostSummaryCsv(filter: AnalyticsFilterParams = {}): Promise<Readable> {
+    const data = await this.projectCostSummary(filter);
     async function* rows(): AsyncGenerator<string[]> {
       yield ['projectCode', 'projectName', 'contractValue', 'budget', 'cost', 'revenue', 'margin', 'budgetUsagePct'];
       for (const r of data.items) {

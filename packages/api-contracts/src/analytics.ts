@@ -85,12 +85,29 @@ export type CashFlow = z.infer<typeof cashFlowSchema>;
 export const agingBucketSchema = z.object({
   bucket: z.string(),
   amount: z.number(),
+  /** Baris invoice di balik angka bucket — agar laporan bisa ditindaklanjuti. */
+  detail: z.array(
+    z.object({
+      invoiceNumber: z.string(),
+      /** Client (AR) atau vendor (AP). */
+      party: z.string(),
+      projectCode: z.string().nullable(),
+      /** Tanggal yang dipakai untuk menghitung umur. */
+      date: z.string(),
+      ageDays: z.number(),
+      outstanding: z.number(),
+    }),
+  ),
 });
 export type AgingBucket = z.infer<typeof agingBucketSchema>;
 
 export const agingSchema = z.object({
   ar: z.array(agingBucketSchema),
   ap: z.array(agingBucketSchema),
+  /** Tanggal acuan perhitungan umur. */
+  asOf: z.string(),
+  /** Field yang dipakai sebagai basis umur (sama untuk AR & AP). */
+  basisDate: z.string(),
   generatedAt: z.string(),
 });
 export type Aging = z.infer<typeof agingSchema>;
@@ -142,3 +159,18 @@ export const costCompositionSchema = z.object({
   generatedAt: z.string(),
 });
 export type CostComposition = z.infer<typeof costCompositionSchema>;
+
+/** Konsentrasi piutang per klien — menjawab "siapa yang menahan uang kita?". */
+export const arConcentrationSchema = z.object({
+  items: z.array(z.object({ client: z.string(), amount: z.number(), pct: z.number() })),
+  total: z.number(),
+  generatedAt: z.string(),
+});
+export type ArConcentration = z.infer<typeof arConcentrationSchema>;
+
+/** Rencana vs realisasi kas bersih per periode. */
+export const forecastVsActualSchema = z.object({
+  periods: z.array(z.object({ period: z.string(), forecastNet: z.number(), actualNet: z.number() })),
+  generatedAt: z.string(),
+});
+export type ForecastVsActual = z.infer<typeof forecastVsActualSchema>;

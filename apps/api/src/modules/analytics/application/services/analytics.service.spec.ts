@@ -31,6 +31,148 @@ describe('AnalyticsService.aging filter', () => {
       }),
     );
   });
+
+  it('honours from/to on the invoice date (previously ignored)', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const prisma = {
+      clientInvoice: { findMany },
+      vendorInvoice: { findMany: jest.fn().mockResolvedValue([]) },
+    } as never;
+    const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
+
+    const svc = new AnalyticsService(prisma, cache);
+    await svc.aging({ from: '2026-01-01', to: '2026-03-31' });
+
+    const where = findMany.mock.calls[0]![0].where;
+    expect(where.invoiceDate.gte).toEqual(new Date('2026-01-01'));
+    expect(where.invoiceDate.lte).toEqual(new Date('2026-03-31'));
+  });
+
+  it('uses invoiceDate for AP too (not createdAt), so both sides age the same way', async () => {
+    const vendorFindMany = jest.fn().mockResolvedValue([]);
+    const prisma = {
+      clientInvoice: { findMany: jest.fn().mockResolvedValue([]) },
+      vendorInvoice: { findMany: vendorFindMany },
+    } as never;
+    const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
+
+    const svc = new AnalyticsService(prisma, cache);
+    await svc.aging({ from: '2026-02-01' });
+
+    const where = vendorFindMany.mock.calls[0]![0].where;
+    expect(where.invoiceDate).toEqual({ gte: new Date('2026-02-01') });
+    expect(where.createdAt).toBeUndefined();
+    // Dan basis tanggal yang dilaporkan harus menyatakan itu.
+    const res = await svc.aging();
+    expect(res.basisDate).toBe('invoiceDate');
+  });
+
+  it('reports the outstanding invoice behind each bucket as detail rows', async () => {
+    const invoiceDate = new Date();
+    invoiceDate.setDate(invoiceDate.getDate() - 45); // bucket 31-60
+    const prisma = {
+      clientInvoice: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            invoiceNumber: 'CINV-1', client: 'PT Klien', totalAmount: 100_000, invoiceDate,
+            collections: [{ amount: 40_000 }], project: { code: 'PRJ-1' },
+          },
+        ]),
+      },
+      vendorInvoice: { findMany: jest.fn().mockResolvedValue([]) },
+    } as never;
+    const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
+
+    const svc = new AnalyticsService(prisma, cache);
+    const res = await svc.aging();
+
+    const bucket = res.ar.find((b) => b.bucket === '31-60');
+    expect(bucket?.amount).toBe(60_000);
+    expect(bucket?.detail).toHaveLength(1);
+    expect(bucket?.detail[0]).toMatchObject({ invoiceNumber: 'CINV-1', party: 'PT Klien', projectCode: 'PRJ-1', outstanding: 60_000 });
+    expect(bucket?.detail[0]?.ageDays).toBeGreaterThanOrEqual(44);
+    expect(res.basisDate).toBe('invoiceDate');
+    expect(typeof res.asOf).toBe('string');
+  });
+
+  it('excludes fully-paid invoices from both the bucket and its detail', async () => {
+    const prisma = {
+      clientInvoice: {
+        findMany: jest.fn().mockResolvedValue([
+          { invoiceNumber: 'CINV-PAID', client: 'X', totalAmount: 100, invoiceDate: new Date(), collections: [{ amount: 100 }], project: null },
+        ]),
+      },
+      vendorInvoice: { findMany: jest.fn().mockResolvedValue([]) },
+    } as never;
+    const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
+
+    const svc = new AnalyticsService(prisma, cache);
+    const res = await svc.aging();
+    expect(res.ar.find((b) => b.bucket === 'CURRENT')?.amount).toBe(0);
+    expect(res.ar.flatMap((b) => b.detail)).toHaveLength(0);
+  });
+});
+
+describe('AnalyticsService.cashFlow', () => {
+  it('zero-fills a continuous month range so gaps do not silently disappear', async () => {
+    const now = new Date();
+    const thisMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 5));
+    const prisma = {
+      collection: { findMany: jest.fn().mockResolvedValue([{ totalAmount: 500, collectedAt: thisMonth }]) },
+      payment: { findMany: jest.fn().mockResolvedValue([]) },
+      $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+    } as never;
+    const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
+
+    const svc = new AnalyticsService(prisma, cache);
+    const res = await svc.cashFlow();
+
+    expect(res.series).toHaveLength(6);
+    // Bulan berjalan punya nilai; bulan kosong tetap ada dengan 0.
+    const currentKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+    expect(res.series.find((s) => s.month === currentKey)?.cashIn).toBe(500);
+    expect(res.series.filter((s) => s.month !== currentKey).every((s) => s.cashIn === 0)).toBe(true);
+  });
+});
+
+describe('AnalyticsService.arConcentration', () => {
+  it('groups outstanding AR by client, sorted desc, with percentage of total', async () => {
+    const prisma = {
+      clientInvoice: {
+        findMany: jest.fn().mockResolvedValue([
+          { client: 'PT A', totalAmount: 300, collections: [] },
+          { client: 'PT B', totalAmount: 100, collections: [] },
+          { client: 'PT A', totalAmount: 100, collections: [] },
+        ]),
+      },
+    } as never;
+    const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
+
+    const svc = new AnalyticsService(prisma, cache);
+    const res = await svc.arConcentration();
+
+    expect(res.total).toBe(500);
+    expect(res.items[0]).toMatchObject({ client: 'PT A', amount: 400, pct: 80 });
+    expect(res.items[1]).toMatchObject({ client: 'PT B', amount: 100, pct: 20 });
+  });
+});
+
+describe('AnalyticsService.forecastVsActual', () => {
+  it('pairs each forecast period with the actual net cash for that month', async () => {
+    const prisma = {
+      cashForecast: { findMany: jest.fn().mockResolvedValue([{ period: '2026-08', netForecast: 1000 }]) },
+      collection: { findMany: jest.fn().mockResolvedValue([{ totalAmount: 800, collectedAt: new Date('2026-08-10') }]) },
+      payment: { findMany: jest.fn().mockResolvedValue([{ totalAmount: 300, paymentDate: new Date('2026-08-20') }]) },
+      $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
+    } as never;
+    const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
+
+    const svc = new AnalyticsService(prisma, cache);
+    const res = await svc.forecastVsActual();
+
+    expect(res.periods).toHaveLength(1);
+    expect(res.periods[0]).toMatchObject({ period: '2026-08', forecastNet: 1000, actualNet: 500 });
+  });
 });
 
 describe('AnalyticsService.signals', () => {
