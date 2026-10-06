@@ -17,13 +17,15 @@ vi.mock('@/widgets/financial-band', () => ({ FinancialBand: () => <div data-test
 vi.mock('@/widgets/portfolio-canvas', () => ({ PortfolioCanvas: () => <div data-testid="canvas" /> }));
 vi.mock('@/widgets/portfolio-spine', () => ({ PortfolioSpine: () => <div data-testid="spine" /> }));
 vi.mock('@/widgets/anomaly-triage', () => ({ AnomalyTriage: () => <div data-testid="triage" /> }));
+vi.mock('@/features/project', () => ({ usePortfolio: () => ({ data: { items: [] } }) }));
+vi.mock('@/widgets/dashboard-charts', () => ({ ProjectRankingBar: () => <div data-testid="ranking" /> }));
 
 describe('DashboardPage', () => {
   it('renders the zones', async () => {
     const { DashboardPage } = await import('./dashboard.page');
     render(<DashboardPage />);
     expect(screen.getByRole('heading', { level: 1 })).toBeTruthy();
-    for (const id of ['filter-bar', 'signal-rail', 'hero-band', 'liquidity', 'financial-band', 'triage']) {
+    for (const id of ['filter-bar', 'signal-rail', 'hero-band', 'liquidity', 'financial-band', 'triage', 'ranking']) {
       expect(screen.getByTestId(id)).toBeTruthy();
     }
   });
