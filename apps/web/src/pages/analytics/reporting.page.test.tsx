@@ -135,6 +135,28 @@ describe('ReportingPage — blok lain', () => {
     expect(screen.getByText('Forecast vs actual')).toBeTruthy();
     expect(screen.getByText('Cost composition')).toBeTruthy();
   });
+
+  it('anchors the scrollable cost table so its sr-only caption cannot escape', () => {
+    const { container } = renderWithProviders(<ReportingPage />);
+    const caption = container.querySelector('caption.sr-only')!;
+    expect(caption).toBeTruthy();
+    const wrapper = caption.closest('div')!;
+    // `<caption className="sr-only">` memakai `position: absolute`. Tanpa leluhur
+    // ber-position, containing block-nya jatuh ke <body>, sehingga caption lolos
+    // dari `overflow-y: auto` milik <main> dan menambah ~1260px ruang kosong di
+    // bawah halaman. `relative` mengurungnya kembali.
+    expect(wrapper.className).toContain('relative');
+    expect(wrapper.className).toContain('overflow-x-auto');
+  });
+
+  it('keeps the caption inside the scroll container rather than directly under the page', () => {
+    const { container } = renderWithProviders(<ReportingPage />);
+    const caption = container.querySelector('caption.sr-only')!;
+    expect(caption.tagName).toBe('CAPTION');
+    const wrapper = container.querySelector('div.relative.overflow-x-auto');
+    expect(wrapper).toBeTruthy();
+    expect(wrapper!.contains(caption)).toBe(true);
+  });
 });
 
 describe('ReportingPage — filter', () => {
