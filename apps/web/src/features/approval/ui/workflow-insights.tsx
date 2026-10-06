@@ -1,241 +1,207 @@
-import { BulletBar, StackedBar, cn } from '@aec/ui';
+import { BulletBar } from '@aec/ui';
 import type { WorkflowInsights } from '@aec/api-contracts';
 import { formatNumber } from '@/shared/lib/format';
 import { opLabel } from './workflow-labels';
+import { AmountThresholdChart, CoverageRing, MonthlyVolumeChart } from './workflow-insights-charts';
+import { WorkflowStepOutcomes } from './workflow-step-outcomes';
 
 /**
- * Insight operasional. Setiap blok **hanya tampil bila datanya bermakna**: satu
- * titik data ditampilkan sebagai angka, bukan dipaksa jadi grafik. Bentuk dipilih
- * menurut pertanyaannya: peringkat → bar horizontal, bagian-dari-keseluruhan →
- * bar bertumpuk, deret waktu → bar+garis, sebaran vs ambang → histogram + garis.
+ * Insight operasional, disusun menurut **cakupan datanya** — bukan menurut
+ * keinginan menampilkan grafik.
+ *
+ * Masalah lama: sebagian angka dihitung per DEFINISI (coverage — berapa langkah
+ * punya pemegang), sebagian per JENIS TRANSAKSI (task, nominal, volume bulanan).
+ * Keduanya disandingkan tanpa label, jadi pengguna menyangka keduanya tentang hal
+ * yang sama. Sekarang dua cakupan itu dipisah dan **dinyatakan**:
+ *
+ * - **This version** — pertanyaan "apakah rantai yang saya lihat bisa jalan".
+ * - **Across all versions** — pertanyaan "bagaimana dokumen mengalir lewat jenis
+ *   transaksi ini"; task tidak menyimpan versi untuk data lama, dan
+ *   `versionBreakdown` memperlihatkan campurannya alih-alih menyembunyikannya.
+ *
+ * Bentuk tiap blok mengikuti hubungan datanya:
+ * - satu nilai → ring/angka, bukan grafik;
+ * - hasil per langkah → bar bertumpuk (bukan funnel; lihat `workflow-step-outcomes`);
+ * - bagian-dari-keseluruhan → bar bertumpuk;
+ * - deret waktu → garis/area;
+ * - sebaran vs ambang → histogram dengan garis;
+ * - proporsi → bar, bukan kalimat.
  */
 export function WorkflowInsightsPanel({ data }: { data: WorkflowInsights }) {
   const hasTasks = data.byStep.length > 0;
-  const maxStepTotal = Math.max(...data.byStep.map((s) => s.total), 0);
   const hasMonths = data.monthly.length >= 2;
-  const maxMonth = Math.max(...data.monthly.map((m) => Math.max(m.created, m.decided)), 0);
-  const maxBucket = Math.max(...data.amounts.buckets.map((b) => b.count), 0);
-  const maxDocument = data.amounts.max ?? 0;
+
+  const coveredSteps = data.coverage.filter((c) => c.holders > 0).length;
+  const uncoveredSteps = data.coverage.length - coveredSteps;
+
+  const { documents, scope } = data;
+  // Versi lain yang benar-benar punya task — disebut namanya, bukan disembunyikan.
+  const otherVersions = scope.versionBreakdown.filter((b) => b.definitionId !== scope.requested.definitionId);
+  const unknownVersionTasks = otherVersions
+    .filter((b) => b.definitionId === null)
+    .reduce((n, b) => n + b.tasks, 0);
+
+  const nothingAtAll = !hasTasks && data.coverage.length === 0;
 
   return (
     <div className="space-y-6">
-      {!hasTasks && (
-        <p className="text-body-sm text-neutral-500">
+      {nothingAtAll && (
+        <p className="text-pretty text-body-sm text-neutral-500">
           No approval tasks recorded for {data.transactionType} yet, so there is nothing to summarise.
         </p>
       )}
 
-      {hasTasks && (
-        <>
-          {/* Peringkat: di langkah mana dokumen menumpuk. */}
-          <section aria-labelledby="wf-insight-steps">
-            <h4 id="wf-insight-steps" className="mb-2 text-body-sm font-medium text-neutral-800">Documents by step</h4>
-            <ul className="space-y-2">
-              {data.byStep.map((s) => (
-                <li key={s.stepOrder} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-                  <span className="w-14 shrink-0 font-mono text-caption tabular-nums text-neutral-600">Step {s.stepOrder}</span>
-                  <BulletBar
-                    value={s.total}
-                    max={maxStepTotal}
-                    tone="neutral"
-                    label={`Step ${s.stepOrder} ${s.stepName}: ${s.total} documents`}
-                  />
-                  <span className="w-28 shrink-0 text-right font-mono text-caption tabular-nums text-neutral-700">
-                    {s.total} doc{s.total === 1 ? '' : 's'}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          {/* Bagian-dari-keseluruhan per langkah: approved / rejected / pending. */}
-          <section aria-labelledby="wf-insight-outcome">
-            <h4 id="wf-insight-outcome" className="mb-2 text-body-sm font-medium text-neutral-800">Outcome by step</h4>
-            <ul className="space-y-2">
-              {data.byStep.map((s) => (
-                <li key={s.stepOrder} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
-                  <span className="w-14 shrink-0 font-mono text-caption tabular-nums text-neutral-600">Step {s.stepOrder}</span>
-                  <StackedBar
-                    segments={[
-                      { value: s.approved, tone: 'success', label: 'approved' },
-                      { value: s.rejected, tone: 'destructive', label: 'rejected' },
-                      { value: s.pending, tone: 'warning', label: 'pending' },
-                      { value: s.cancelled, tone: 'neutral-light', label: 'cancelled' },
-                    ]}
-                    format={String}
-                  />
-                </li>
-              ))}
-            </ul>
-            <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-caption text-neutral-500">
-              <Legend className="bg-success-500">Approved</Legend>
-              <Legend className="bg-destructive-600">Rejected</Legend>
-              <Legend className="bg-warning-500">Pending</Legend>
-              <Legend className="bg-neutral-200">Cancelled</Legend>
-            </p>
-          </section>
-        </>
-      )}
-
-      {/* Deret waktu, hanya bila ada lebih dari satu bulan. */}
-      {hasMonths && (
-        <section aria-labelledby="wf-insight-monthly">
-          <h4 id="wf-insight-monthly" className="mb-2 text-body-sm font-medium text-neutral-800">Monthly volume</h4>
-          <ul className="space-y-2">
-            {data.monthly.map((m) => (
-              <li key={m.month} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-                <span className="w-16 shrink-0 font-mono text-caption tabular-nums text-neutral-600">{m.month}</span>
-                <span
-                  className="flex h-4 w-full items-end gap-1"
-                  role="img"
-                  aria-label={`${m.month}: ${m.created} submitted, ${m.decided} decided`}
-                >
-                  <span
-                    data-slot="month-created"
-                    className="h-full rounded-sm bg-neutral-400"
-                    style={{ width: `${maxMonth > 0 ? (m.created / maxMonth) * 50 : 0}%` }}
-                  />
-                  <span
-                    data-slot="month-decided"
-                    className="h-full rounded-sm bg-neutral-800"
-                    style={{ width: `${maxMonth > 0 ? (m.decided / maxMonth) * 50 : 0}%` }}
-                  />
-                </span>
-                <span className="w-32 shrink-0 text-right font-mono text-caption tabular-nums text-neutral-700">
-                  {m.created} in · {m.decided} out
-                </span>
-              </li>
-            ))}
-          </ul>
+      {/* ── THIS VERSION — pertanyaan: apakah rantai ini bisa jalan? ────────── */}
+      {data.coverage.length > 0 && (
+        <section aria-labelledby="wf-scope-version">
+          <ScopeHeader
+            id="wf-scope-version"
+            title="This version"
+            detail={`${scope.requested.code} v${scope.requested.version}`}
+          />
+          <div className="rounded-md border border-neutral-200 bg-white p-3">
+            <p className="text-caption text-neutral-500">Approver coverage</p>
+            <CoverageRing total={data.coverage.length} covered={coveredSteps} uncovered={uncoveredSteps} compact />
+          </div>
         </section>
       )}
 
-      {/* Sebaran nominal, dengan ambang nyata tiap langkah sebagai garis. */}
-      {data.amounts.count > 0 && (
-        <section aria-labelledby="wf-insight-amounts">
-          <h4 id="wf-insight-amounts" className="mb-2 text-body-sm font-medium text-neutral-800">Document value distribution</h4>
-          <ul className="flex flex-wrap items-end gap-3">
-            {data.amounts.buckets.map((b) => (
-              <li key={b.label} className="flex w-20 flex-col items-center gap-1">
-                <span className="font-mono text-caption tabular-nums text-neutral-700">{b.count}</span>
-                <span
-                  role="img"
-                  aria-label={`${b.label}: ${b.count} document${b.count === 1 ? '' : 's'}`}
-                  className={cn('w-full rounded-sm', b.count > 0 ? 'bg-neutral-800' : 'bg-neutral-100')}
-                  style={{ height: `${maxBucket > 0 ? Math.max(4, (b.count / maxBucket) * 64) : 4}px` }}
-                />
-                <span className="text-center text-caption text-neutral-500">{b.label}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-2 text-caption text-neutral-500">
-            {data.amounts.count} document{data.amounts.count === 1 ? '' : 's'}, smallest{' '}
-            <span className="font-mono tabular-nums">{formatNumber(data.amounts.min ?? 0)}</span>, largest{' '}
-            <span className="font-mono tabular-nums">{formatNumber(maxDocument)}</span>
-          </p>
+      {/* ── ACROSS ALL VERSIONS — pertanyaan: bagaimana dokumen mengalir? ───── */}
+      {(hasTasks || data.amounts.count > 0) && (
+        <section aria-labelledby="wf-scope-type" className="space-y-6">
+          <ScopeHeader
+            id="wf-scope-type"
+            title="Across all versions"
+            detail={`every task recorded for ${data.transactionType}`}
+          />
 
-          {/* Ambang dari syarat nyata tiap langkah, bukan angka yang dikarang. */}
-          {data.thresholds.length > 0 && (
-            <div className="mt-4">
-              <p className="mb-1.5 text-caption font-medium text-neutral-700">Approval thresholds</p>
-              <ul className="space-y-1.5">
-                {data.thresholds.map((t) => {
-                  const crossing = data.amounts.count > 0 ? countAbove(data.amounts.buckets, t.value) : 0;
-                  const pct = data.amounts.count > 0 ? Math.round((crossing / data.amounts.count) * 100) : 0;
+          {/* Campuran versi diperlihatkan, bukan disembunyikan. */}
+          {otherVersions.length > 0 && (
+            <p className="text-pretty rounded-md bg-neutral-50 px-3 py-2 text-caption text-neutral-600">
+              Includes{' '}
+              {otherVersions.map((b, i) => (
+                <span key={b.definitionId ?? 'unknown'} className="whitespace-nowrap">
+                  {i > 0 ? ', ' : ''}
+                  <span className="font-mono tabular-nums">{b.tasks}</span>{' '}
+                  {b.definitionId === null
+                    ? `task${b.tasks === 1 ? '' : 's'} with no recorded version`
+                    : `task${b.tasks === 1 ? '' : 's'} from v${b.version ?? '?'}`}
+                </span>
+              ))}
+              {unknownVersionTasks > 0
+                ? '. Tasks recorded before versions were tracked cannot be attributed to a version.'
+                : '.'}
+            </p>
+          )}
+
+          {/* KPI: angka per DOKUMEN, bukan penjumlahan baris langkah. */}
+          {hasTasks && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <KpiTile
+                label="Documents in chain"
+                value={String(documents.entered)}
+                hint={`across ${data.byStep.length} step${data.byStep.length === 1 ? '' : 's'}`}
+              />
+              <KpiTile
+                label="Approval rate"
+                value={`${documents.approvalRate}%`}
+                hint={`${documents.approved} of ${documents.entered} fully approved`}
+              />
+              <KpiTile
+                label="Still open"
+                value={String(documents.pending)}
+                hint={`${documents.rejected} rejected`}
+              />
+            </div>
+          )}
+
+          {/* Hasil per langkah — menggantikan funnel DAN blok outcome terpisah. */}
+          {hasTasks && (
+            <div>
+              <h4 className="mb-3 text-caption font-medium uppercase tracking-wide text-neutral-500">
+                Documents by step
+              </h4>
+              <WorkflowStepOutcomes byStep={data.byStep} />
+            </div>
+          )}
+
+          {/* Visual sekunder: sebaran nilai + volume bulanan. */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {data.amounts.count > 0 && (
+              <div>
+                <h4 className="mb-3 text-caption font-medium uppercase tracking-wide text-neutral-500">
+                  Document value distribution
+                </h4>
+                <AmountThresholdChart insights={data} />
+              </div>
+            )}
+
+            {hasMonths && (
+              <div>
+                <h4 className="mb-3 text-caption font-medium uppercase tracking-wide text-neutral-500">
+                  Monthly volume
+                </h4>
+                <MonthlyVolumeChart monthly={data.monthly} />
+              </div>
+            )}
+          </div>
+
+          {/* Rincian: proporsi sebagai bar, bukan kalimat. */}
+          {data.ruleHits.length > 0 && (
+            <div>
+              <h4 className="mb-3 text-caption font-medium uppercase tracking-wide text-neutral-500">
+                Rule impact
+              </h4>
+              <ul className="space-y-2">
+                {data.ruleHits.map((r) => {
+                  const pct = data.amounts.count > 0 ? Math.round((r.matching / data.amounts.count) * 100) : 0;
                   return (
-                    <li key={`${t.stepOrder}-${t.field}`} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-                      <span className="w-14 shrink-0 font-mono text-caption tabular-nums text-neutral-600">Step {t.stepOrder}</span>
-                      <span className="flex items-center gap-2">
-                        <span
-                          role="img"
-                          aria-label={`${crossing} of ${data.amounts.count} documents are above ${formatNumber(t.value)}`}
-                          className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-100"
-                        >
-                          <span data-slot="threshold-fill" className="block h-full rounded-full bg-neutral-800" style={{ width: `${pct}%` }} />
-                        </span>
+                    <li key={r.stepOrder} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
+                      <span className="min-w-[3.5rem] shrink-0 whitespace-nowrap font-mono text-caption tabular-nums text-neutral-600">
+                        Step {r.stepOrder}
                       </span>
-                      <span className="shrink-0 font-mono text-caption tabular-nums text-neutral-700">
-                        above {formatNumber(t.value)}
+                      <BulletBar
+                        value={r.matching}
+                        max={Math.max(data.amounts.count, 1)}
+                        tone="neutral"
+                        label={`Step ${r.stepOrder} ${r.condition ?? 'always applies'}: ${r.matching} of ${data.amounts.count} documents match`}
+                      />
+                      <span className="shrink-0 whitespace-nowrap font-mono text-caption tabular-nums text-neutral-700">
+                        {r.matching}/{data.amounts.count} · {pct}%
                       </span>
                     </li>
                   );
                 })}
               </ul>
-              <p className="mt-1.5 text-caption text-neutral-500">
-                {data.thresholds.map((t) => `Step ${t.stepOrder} ${t.stepName}: ${t.op} ${formatNumber(t.value)}`).join(' · ')}
-              </p>
             </div>
           )}
         </section>
       )}
 
-      {/* Berapa dokumen yang benar-benar kena syarat tiap langkah. */}
-      {data.ruleHits.length > 0 && (
-        <section aria-labelledby="wf-insight-rules">
-          <h4 id="wf-insight-rules" className="mb-2 text-body-sm font-medium text-neutral-800">Rule impact</h4>
-          <ul className="space-y-2">
-            {data.ruleHits.map((r) => (
-              <li key={r.stepOrder} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-                <span className="w-14 shrink-0 font-mono text-caption tabular-nums text-neutral-600">Step {r.stepOrder}</span>
-                <span className="min-w-0 truncate text-caption text-neutral-600">
-                  {r.condition ? r.condition : 'Always applies'}
-                </span>
-                <span className="w-40 shrink-0 text-right font-mono text-caption tabular-nums text-neutral-700">
-                  {r.matching} of {data.amounts.count} match
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* Cakupan role: 0 pemegang berarti rantai macet. */}
-      {data.coverage.length > 0 && (
-        <section aria-labelledby="wf-insight-coverage">
-          <h4 id="wf-insight-coverage" className="mb-2 text-body-sm font-medium text-neutral-800">Approver coverage</h4>
-          <ul className="space-y-1.5">
-            {data.coverage.map((c) => (
-              <li key={`${c.stepOrder}-${c.roleCode}`} className="flex items-center gap-3 text-body-sm">
-                <span className="w-14 shrink-0 font-mono text-caption tabular-nums text-neutral-600">Step {c.stepOrder}</span>
-                <span className="min-w-0 flex-1 truncate font-mono text-caption text-neutral-700">{c.roleCode}</span>
-                <span className={cn('shrink-0 font-mono text-caption tabular-nums', c.holders === 0 ? 'text-destructive-700' : 'text-neutral-700')}>
-                  {c.holders === 0 ? 'no holder, so the chain will stall' : `${c.holders} holder${c.holders === 1 ? '' : 's'}`}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* Batas kejujuran: task tidak menyimpan versi definisi yang dipakai. */}
-      <p className="border-t border-neutral-200 pt-3 text-caption text-neutral-500">{data.note}</p>
+      {/* Batas kejujuran: task tidak menyimpan versi definisi untuk data lama. */}
+      <p className="border-t border-neutral-200 pt-3 text-pretty text-caption text-neutral-500">{data.note}</p>
     </div>
   );
 }
 
-function Legend({ className, children }: { className: string; children: React.ReactNode }) {
+/** Judul cakupan: menyatakan SKALA data, bukan sekadar nama blok. */
+function ScopeHeader({ id, title, detail }: { id: string; title: string; detail: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={cn('h-2 w-2 rounded-sm', className)} aria-hidden="true" />
-      {children}
-    </span>
+    <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-b border-neutral-200 pb-1.5">
+      <h3 id={id} className="text-body-sm font-semibold text-neutral-900">{title}</h3>
+      <span className="min-w-0 truncate font-mono text-caption text-neutral-500" title={detail}>{detail}</span>
+    </div>
   );
 }
 
-/**
- * Berapa dokumen yang melewati sebuah ambang, dihitung dari batas bucket yang
- * dikirim server. Bucket yang seluruhnya di atas ambang dihitung penuh; bucket
- * yang memuat ambang di dalamnya dihitung setengah sebagai perkiraan. Batasnya
- * dipakai langsung, bukan ditebak dari label.
- */
-function countAbove(buckets: WorkflowInsights['amounts']['buckets'], threshold: number): number {
-  let total = 0;
-  for (const b of buckets) {
-    const upper = b.to ?? Number.POSITIVE_INFINITY;
-    if (b.from >= threshold) total += b.count;
-    else if (upper > threshold) total += Math.round(b.count / 2);
-  }
-  return total;
+function KpiTile({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <div className="rounded-md border border-neutral-200 bg-white p-3">
+      <p className="text-caption text-neutral-500">{label}</p>
+      <p className="mt-1 whitespace-nowrap font-mono text-h2 tabular-nums text-neutral-900">{value}</p>
+      <p className="mt-0.5 text-pretty text-caption text-neutral-500">{hint}</p>
+    </div>
+  );
 }
 
 /** Ringkas ambang syarat untuk judul blok simulasi. */

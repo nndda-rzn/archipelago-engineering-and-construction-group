@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, cn, labelRole } from '@aec/ui';
-import type { UpdateWorkflowStep, WorkflowStep } from '@aec/api-contracts';
+import type { ConditionGroup, UpdateWorkflowStep, WorkflowStep } from '@aec/api-contracts';
 import { ConditionBuilder, type ConditionValue } from './condition-builder';
-import { conditionFieldLabel, opLabel } from './workflow-labels';
+import { conditionFieldLabel, conditionFieldsFor, opLabel } from './workflow-labels';
 
 export interface WorkflowStepFormProps {
   step: WorkflowStep;
@@ -13,12 +13,21 @@ export interface WorkflowStepFormProps {
   saving: boolean;
   onSave: (input: UpdateWorkflowStep) => void;
   onRemove: () => void;
-  onMove: (direction: -1 | 1) => void;
-  canMoveUp: boolean;
-  canMoveDown: boolean;
 }
 
 const NO_CONDITION = '__none__';
+
+/** Grup efektif dari sebuah langkah: grup tersimpan, atau turunan kolom tunggal. */
+function currentGroup(step: WorkflowStep): ConditionGroup | null {
+  if (step.conditionGroup) return step.conditionGroup;
+  if (step.conditionField) {
+    return {
+      combinator: 'AND',
+      conditions: [{ field: step.conditionField, op: (step.conditionOp as ConditionGroup['conditions'][number]['op']) ?? '>', value: step.conditionValue ?? 0 }],
+    };
+  }
+  return null;
+}
 
 /**
  * Panel detail untuk satu langkah. Bentuk mengikuti pola editor workflow Jira:
@@ -28,16 +37,17 @@ const NO_CONDITION = '__none__';
  * Tanpa kotak dan tanpa garis pemisah: pengelompokan dibawa oleh jarak.
  */
 export function WorkflowStepForm({
-  step, transactionType, roleOptions, locked, saving, onSave, onRemove, onMove, canMoveUp, canMoveDown,
+  step, transactionType, roleOptions, locked, saving, onSave, onRemove,
 }: WorkflowStepFormProps) {
   const [name, setName] = useState(step.name);
   const [role, setRole] = useState(step.approverRoleCode);
-  const [hasCondition, setHasCondition] = useState(Boolean(step.conditionField));
-  const [condition, setCondition] = useState<ConditionValue>({
-    field: step.conditionField ?? '',
-    op: step.conditionOp ?? '>',
-    value: step.conditionValue,
-  });
+  const [hasCondition, setHasCondition] = useState(Boolean(step.conditionField) || Boolean(step.conditionGroup));
+  const [condition, setCondition] = useState<ConditionValue>(
+    step.conditionGroup
+      ?? (step.conditionField
+        ? { combinator: 'AND', conditions: [{ field: step.conditionField, op: (step.conditionOp as ConditionGroup['conditions'][number]['op']) ?? '>', value: step.conditionValue ?? 0 }] }
+        : null),
+  );
 
   // Ganti langkah terpilih → form mengikuti langkah baru. Memakai pola "derived
   // state from props" React (bukan efek) agar tidak memicu render berantai.
@@ -46,45 +56,46 @@ export function WorkflowStepForm({
     setLastStepId(step.id);
     setName(step.name);
     setRole(step.approverRoleCode);
-    setHasCondition(Boolean(step.conditionField));
-    setCondition({ field: step.conditionField ?? '', op: step.conditionOp ?? '>', value: step.conditionValue });
+    setHasCondition(Boolean(step.conditionField) || Boolean(step.conditionGroup));
+    setCondition(
+      step.conditionGroup
+        ?? (step.conditionField
+          ? { combinator: 'AND', conditions: [{ field: step.conditionField, op: (step.conditionOp as ConditionGroup['conditions'][number]['op']) ?? '>', value: step.conditionValue ?? 0 }] }
+          : null),
+    );
   }
 
   const holders = roleOptions.find((r) => r.code === role)?.holders ?? 0;
+
   const dirty =
     name !== step.name ||
     role !== step.approverRoleCode ||
-    hasCondition !== Boolean(step.conditionField) ||
-    (hasCondition && (condition.field !== (step.conditionField ?? '') || condition.op !== (step.conditionOp ?? '>') || condition.value !== step.conditionValue));
+    hasCondition !== (Boolean(step.conditionField) || Boolean(step.conditionGroup)) ||
+    (hasCondition && JSON.stringify(condition) !== JSON.stringify(currentGroup(step)));
 
-  const canSave = !locked && dirty && name.trim().length > 0 && role.length > 0 && (!hasCondition || (condition.field && condition.value != null));
+  const canSave = !locked && dirty && name.trim().length > 0 && role.length > 0
+    && (!hasCondition || (condition != null && condition.conditions.length > 0 && condition.conditions.every((c) => c.field && Number.isFinite(c.value))));
 
   const submit = () => {
     if (!canSave) return;
     onSave({
       name: name.trim(),
       approverRoleCode: role,
-      conditionField: hasCondition ? condition.field : null,
-      conditionOp: hasCondition ? (condition.op as '>' | '<' | '>=' | '<=' | '==') : null,
-      conditionValue: hasCondition ? condition.value : null,
+      // Grup adalah sumber kebenaran; server menurunkan kolom tunggal darinya.
+      conditionGroup: hasCondition ? condition : null,
+      conditionField: hasCondition && condition ? condition.conditions[0]!.field : null,
+      conditionOp: hasCondition && condition ? condition.conditions[0]!.op : null,
+      conditionValue: hasCondition && condition ? condition.conditions[0]!.value : null,
     });
   };
 
   return (
     <div className="space-y-4">
-      {/* Judul + pindah urutan. Judul rapat ke isinya (bukan mengambang). */}
+      {/* Judul. Pemindahan urutan tinggal di daftar rantai (satu tempat saja):
+          dua kontrol bernama sama di dua panel akan membingungkan dan melanggar
+          "satu aksi, satu tempat". */}
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-body font-medium text-neutral-900">Step {step.stepOrder}</h3>
-        {!locked && (
-          <div className="flex items-center gap-1">
-            <Button size="sm" variant="ghost" disabled={!canMoveUp || saving} onClick={() => onMove(-1)} aria-label={`Move step ${step.stepOrder} earlier`}>
-              Move up
-            </Button>
-            <Button size="sm" variant="ghost" disabled={!canMoveDown || saving} onClick={() => onMove(1)} aria-label={`Move step ${step.stepOrder} later`}>
-              Move down
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* 32px setelah judul: kelompok field terpisah jelas dari judulnya. */}
@@ -124,7 +135,15 @@ export function WorkflowStepForm({
           <Label htmlFor={`step-cond-toggle-${step.id}`}>Condition</Label>
           <Select
             value={hasCondition ? 'yes' : NO_CONDITION}
-            onValueChange={(v) => setHasCondition(v === 'yes')}
+            onValueChange={(v) => {
+              const yes = v === 'yes';
+              setHasCondition(yes);
+              // Menyalakan syarat tanpa aturan akan menghasilkan langkah yang
+              // tampak bersyarat tetapi selalu berlaku — mulai dari satu aturan.
+              if (yes && !condition) {
+                setCondition({ combinator: 'AND', conditions: [{ field: conditionFieldsFor(transactionType)[0] ?? '', op: '>', value: 0 }] });
+              }
+            }}
             disabled={locked}
           >
             <SelectTrigger id={`step-cond-toggle-${step.id}`} aria-label="Whether this step is conditional">
@@ -137,7 +156,7 @@ export function WorkflowStepForm({
           </Select>
         </div>
 
-        {hasCondition && (
+        {hasCondition && condition && (
           <ConditionBuilder
             transactionType={transactionType}
             value={condition}
@@ -161,7 +180,14 @@ export function WorkflowStepForm({
       ) : (
         <p className={cn('pt-4 text-caption text-neutral-500')}>
           This version is not a draft, so its steps are read-only. Create a new version to change them.
-          {step.conditionField && ` Current rule: ${conditionFieldLabel(step.conditionField)} ${opLabel(step.conditionOp)} ${step.conditionValue ?? 0}.`}
+          {(() => {
+            const group = currentGroup(step);
+            if (!group) return null;
+            const text = group.conditions
+              .map((c) => `${conditionFieldLabel(c.field)} ${opLabel(c.op)} ${c.value}`)
+              .join(group.combinator === 'OR' ? ' or ' : ' and ');
+            return ` Current rule: ${text}.`;
+          })()}
         </p>
       )}
     </div>

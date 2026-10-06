@@ -586,6 +586,10 @@ model WorkflowDefinition {
   updatedAt       DateTime @updatedAt
 
   steps WorkflowStep[]
+  // Task yang dibuat dari definisi ini. Menjawab "versi mana yang dipakai
+  // dokumen ini" — pertanyaan yang sebelumnya mustahil dijawab karena task
+  // hanya menyimpan jenis transaksi.
+  tasks ApprovalTask[]
 
   @@unique([code, version])
   @@index([transactionType])
@@ -602,6 +606,10 @@ model WorkflowStep {
   conditionField   String? // mis. "totalAmount" — conditional routing
   conditionOp      String? // ">" | "<" | ">=" | "<=" | "=="
   conditionValue   Decimal?           @db.Decimal(18, 2)
+  // Syarat majemuk (AND/OR): { combinator, conditions: [{ field, op, value }] }.
+  // Kolom tunggal di atas tetap dipakai untuk data lama dan sebagai cerminan
+  // aturan pertama, sehingga pembaca yang belum tahu grup tetap memahami langkah.
+  conditionGroup   Json?
   createdAt        DateTime           @default(now())
 
   @@unique([definitionId, stepOrder])
@@ -625,12 +633,20 @@ model ApprovalTask {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
+  // Definisi yang MEMBUAT task ini. Nullable karena: (a) task lama dibuat sebelum
+  // kolom ini ada dan tidak dapat dipastikan versinya, (b) submit manual tanpa
+  // workflow memang tidak punya definisi. `SetNull` — menghapus definisi tidak
+  // boleh menghapus jejak approval.
+  definitionId String?
+  definition   WorkflowDefinition? @relation(fields: [definitionId], references: [id], onDelete: SetNull)
+
   // Satu task PER LANGKAH: rantai berjenjang butuh beberapa baris untuk dokumen
   // yang sama (step 1 manager, step 2 direksi, …).
   @@unique([transactionType, transactionId, stepOrder])
   @@index([status])
   @@index([approverRoleCode])
   @@index([transactionType, transactionId])
+  @@index([definitionId])
 }
 
 // FR-INV-006: Stock Adjustment — wajib approval + reason code

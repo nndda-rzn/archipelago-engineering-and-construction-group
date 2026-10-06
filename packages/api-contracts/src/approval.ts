@@ -14,6 +14,11 @@ export const approvalTaskSchema = z.object({
   comment: z.string().nullable(),
   decidedAt: z.string().nullable(),
   createdAt: z.string(),
+  /**
+   * Definisi yang membuat task ini. `null` = versi tidak diketahui (task lama
+   * sebelum kolom ini ada, atau submit manual tanpa workflow).
+   */
+  definitionId: z.string().nullable().optional(),
   canApprove: z.boolean().optional(),
 });
 export type ApprovalTask = z.infer<typeof approvalTaskSchema>;
@@ -207,11 +212,79 @@ export const workflowStepSchema = z.object({
   stepOrder: z.number(),
   name: z.string(),
   approverRoleCode: z.string(),
+  /** Kolom tunggal lama — tetap dikirim untuk kompatibilitas; cerminan aturan pertama. */
   conditionField: z.string().nullable(),
   conditionOp: z.string().nullable(),
   conditionValue: z.number().nullable(),
+  /** Aturan majemuk (AND/OR). `null` berarti langkah selalu berlaku. */
+  conditionGroup: z.lazy(() => conditionGroupSchema.nullable()),
 });
 export type WorkflowStep = z.infer<typeof workflowStepSchema>;
+
+/**
+ * Satu aturan syarat: field, operator, nilai. Field harus berasal dari
+ * `CONDITION_FIELDS` jenis transaksinya (satu sumber kebenaran), sehingga aturan
+ * yang tidak pernah cocok tidak bisa dibuat.
+ */
+export const workflowConditionSchema = z.object({
+  field: z.string(),
+  op: z.enum(['>', '<', '>=', '<=', '==']),
+  value: z.number(),
+});
+export type WorkflowCondition = z.infer<typeof workflowConditionSchema>;
+
+/**
+ * Sekumpulan aturan dengan penghubung. `AND` = semua harus benar, `OR` = salah
+ * satu cukup. Inilah yang membuat rentang bisa diekspresikan
+ * (`> 5jt AND <= 50jt`) — hal yang mustahil dengan satu aturan tunggal.
+ */
+export const conditionGroupSchema = z.object({
+  combinator: z.enum(['AND', 'OR']),
+  conditions: z.array(workflowConditionSchema).min(1),
+});
+export type ConditionGroup = z.infer<typeof conditionGroupSchema>;
+
+/**
+ * Bentuk minimal yang dibutuhkan evaluator — dipakai bersama API dan web agar
+ * aturan yang sama dievaluasi di kedua sisi (bukan dua implementasi yang bisa
+ * berbeda diam-diam).
+ */
+export interface ConditionLike {
+  conditionField: string | null;
+  conditionOp: string | null;
+  conditionValue: number | null;
+}
+export interface ConditionGroupLike {
+  combinator: 'AND' | 'OR';
+  conditions: Array<{ field: string; op: string; value: number }>;
+}
+
+/** Satu aturan terhadap sebuah nilai dokumen. `null` pada nilai → tidak cocok. */
+export function evaluateCondition(condition: { op: string; value: number }, docValue: number | null): boolean {
+  if (docValue == null) return false;
+  switch (condition.op) {
+    case '>': return docValue > condition.value;
+    case '<': return docValue < condition.value;
+    case '>=': return docValue >= condition.value;
+    case '<=': return docValue <= condition.value;
+    case '==': return docValue === condition.value;
+    default: return false;
+  }
+}
+
+/**
+ * Sekumpulan aturan dengan penghubung AND/OR.
+ *
+ * Daftar kosong sengaja mengembalikan `true`: grup tanpa aturan berarti langkah
+ * tidak dibatasi, bukan langkah yang tidak pernah berlaku. Ini menjaga perilaku
+ * "kosong = selalu berlaku" yang sudah dipakai kolom tunggal.
+ */
+export function evaluateConditionGroup(group: ConditionGroupLike, docValue: number | null): boolean {
+  if (group.conditions.length === 0) return true;
+  return group.combinator === 'OR'
+    ? group.conditions.some((c) => evaluateCondition(c, docValue))
+    : group.conditions.every((c) => evaluateCondition(c, docValue));
+}
 
 export const workflowDefinitionSchema = z.object({
   id: z.string(),
@@ -262,10 +335,20 @@ export const updateWorkflowStepSchema = z
     conditionField: z.string().max(50).nullable().optional(),
     conditionOp: z.enum(['>', '<', '>=', '<=', '==']).nullable().optional(),
     conditionValue: z.number().nullable().optional(),
+    /**
+     * Syarat majemuk. Bila diisi, ia menggantikan kolom tunggal di atas; kolom
+     * tunggal tetap ditulis sebagai cerminan aturan pertama agar pembaca lama
+     * (dan data lama) tetap memahami langkah ini.
+     */
+    conditionGroup: conditionGroupSchema.nullable().optional(),
   })
   .superRefine((value, ctx) => {
-    // Syarat harus lengkap atau kosong — sebagian terisi menghasilkan langkah
-    // yang tampak bersyarat tetapi selalu berlaku.
+    // Bila grup majemuk dipakai, kolom tunggal tidak perlu lengkap — server yang
+    // akan menurunkannya dari aturan pertama.
+    if (value.conditionGroup !== undefined && value.conditionGroup !== null) return;
+
+    // Syarat tunggal harus lengkap atau kosong — sebagian terisi menghasilkan
+    // langkah yang tampak bersyarat tetapi selalu berlaku.
     const parts = [value.conditionField, value.conditionOp, value.conditionValue];
     const filled = parts.filter((p) => p !== undefined && p !== null).length;
     if (filled !== 0 && filled !== 3) {
@@ -319,6 +402,36 @@ export type WorkflowVersionDiff = z.infer<typeof workflowVersionDiffSchema>;
 export const workflowInsightsSchema = z.object({
   transactionType: z.string(),
   generatedAt: z.string(),
+  /**
+   * **Cakupan data.** Ini menjawab masalah "konteks tercampur": sebagian angka
+   * dihitung per DEFINISI (mis. coverage), sebagian per JENIS TRANSAKSI (mis.
+   * `byStep`, `amounts`). Tanpa label, pengguna menyandingkan dua skala berbeda
+   * dan menyangka keduanya tentang hal yang sama.
+   *
+   * - `requested` = definisi yang diminta insight-nya.
+   * - `scope` = apakah angka task (`byStep`/`amounts`/`monthly`/`documents`)
+   *   difilter ke versi ini (`'version'`) atau mencakup semua versi (`'type'`).
+   * - `versionBreakdown` = sebaran task antar versi; memperlihatkan campurannya
+   *   alih-alih menyembunyikannya. `version: null` = task tanpa versi diketahui.
+   */
+  scope: z.object({
+    requested: z.object({
+      definitionId: z.string(),
+      code: z.string(),
+      version: z.number(),
+    }),
+    /** `type` = semua versi (perilaku lama). */
+    applied: z.enum(['version', 'type']),
+    taskCount: z.number(),
+    versionBreakdown: z.array(
+      z.object({
+        definitionId: z.string().nullable(),
+        version: z.number().nullable(),
+        code: z.string().nullable(),
+        tasks: z.number(),
+      }),
+    ),
+  }),
   /** Sebaran task menurut langkah + hasilnya. */
   byStep: z.array(
     z.object({
@@ -331,6 +444,22 @@ export const workflowInsightsSchema = z.object({
       cancelled: z.number(),
     }),
   ),
+  /**
+   * Hasil akhir **per dokumen**, dihitung dari seluruh langkahnya.
+   *
+   * Ini bentuk yang benar untuk "berapa yang disetujui": satu dokumen
+   * menghasilkan beberapa baris task, jadi menjumlahkan `approved` lintas langkah
+   * menghitung dokumen yang sama dua kali. `approvalRate` di sini = dokumen
+   * selesai / dokumen masuk.
+   */
+  documents: z.object({
+    entered: z.number(),
+    approved: z.number(),
+    rejected: z.number(),
+    pending: z.number(),
+    cancelled: z.number(),
+    approvalRate: z.number(),
+  }),
   /** Volume per bulan (UTC). Kosong bila tidak ada task. */
   monthly: z.array(z.object({ month: z.string(), created: z.number(), decided: z.number() })),
   /** Sebaran nominal dokumen + bucket tetap agar bisa dibandingkan antar waktu. */
@@ -374,6 +503,29 @@ export const workflowInsightsSchema = z.object({
 });
 export type WorkflowInsights = z.infer<typeof workflowInsightsSchema>;
 
+/**
+ * Template rantai siap pakai — cetakan, bukan baris database. `id` stabil agar
+ * klien dapat merujuknya; `steps` memakai bentuk yang sama dengan langkah nyata
+ * supaya bisa langsung dipakai membentuk definisi baru.
+ */
+export const workflowTemplateStepSchema = z.object({
+  name: z.string(),
+  approverRoleCode: z.string(),
+  conditionField: z.string().nullable(),
+  conditionOp: z.string().nullable(),
+  conditionValue: z.number().nullable(),
+});
+export type WorkflowTemplateStep = z.infer<typeof workflowTemplateStepSchema>;
+
+export const workflowTemplateSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  transactionType: z.string(),
+  steps: z.array(workflowTemplateStepSchema),
+});
+export type WorkflowTemplate = z.infer<typeof workflowTemplateSchema>;
+
 export const createWorkflowDefinitionSchema = z.object({
   code: z.string().min(2).max(50),
   name: z.string().min(2).max(100),
@@ -390,6 +542,7 @@ export const addWorkflowStepSchema = z.object({
   conditionField: z.string().optional(),
   conditionOp: z.enum(['>', '<', '>=', '<=', '==']).optional(),
   conditionValue: z.number().optional(),
+  conditionGroup: conditionGroupSchema.nullable().optional(),
 });
 export type AddWorkflowStep = z.infer<typeof addWorkflowStepSchema>;
 
@@ -398,6 +551,13 @@ export const publishWorkflowSchema = z.object({
   description: z.string().max(500).optional(),
 });
 export type PublishWorkflow = z.infer<typeof publishWorkflowSchema>;
+
+/** Duplikasi definisi menjadi versi DRAFT baru dengan kode baru. */
+export const duplicateWorkflowSchema = z.object({
+  code: z.string().min(2).max(50),
+  name: z.string().min(2).max(100).optional(),
+});
+export type DuplicateWorkflow = z.infer<typeof duplicateWorkflowSchema>;
 
 export const pendingApprovalCountSchema = z.object({ count: z.number() });
 export type PendingApprovalCount = z.infer<typeof pendingApprovalCountSchema>;

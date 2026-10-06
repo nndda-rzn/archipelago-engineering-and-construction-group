@@ -64,15 +64,15 @@ export function WorkflowVersionsRail({ versions, selectedVersion, onSelectVersio
                   aria-label={`Version ${v.version}, ${VERSION_STATUS_LABEL[v.status] ?? v.status}, ${v.stepCount} step${v.stepCount === 1 ? '' : 's'}`}
                   className="flex min-w-0 flex-1 items-center gap-2 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400"
                 >
-                  <span className="font-mono text-body-sm font-semibold text-neutral-900">v{v.version}</span>
-                  <StatusBadge status={v.status} label={VERSION_STATUS_LABEL[v.status] ?? v.status} />
-                  {inUse && <Badge variant="success">In use</Badge>}
-                  <span className="truncate text-caption text-neutral-500">{v.name}</span>
-                  <span className="ml-auto shrink-0 font-mono text-caption tabular-nums text-neutral-500">
+                  <span className="shrink-0 whitespace-nowrap font-mono text-body-sm font-semibold tabular-nums text-neutral-900">v{v.version}</span>
+                  <span className="shrink-0"><StatusBadge status={v.status} label={VERSION_STATUS_LABEL[v.status] ?? v.status} /></span>
+                  {inUse && <Badge variant="success" className="shrink-0">In use</Badge>}
+                  <span className="min-w-0 flex-1 truncate text-caption text-neutral-500" title={v.name}>{v.name}</span>
+                  <span className="ml-auto shrink-0 whitespace-nowrap font-mono text-caption tabular-nums text-neutral-500">
                     {v.stepCount} step{v.stepCount === 1 ? '' : 's'}
                   </span>
                 </button>
-                <span className="shrink-0 text-caption text-neutral-500">
+                <span className="shrink-0 whitespace-nowrap text-caption text-neutral-500">
                   {formatDate(v.createdAt)}
                   {v.createdByName ? `, ${v.createdByName}` : ''}
                 </span>
@@ -117,30 +117,37 @@ function VersionDiffView({ diff }: { diff: WorkflowVersionDiff }) {
   return (
     <div className="space-y-2 text-body-sm">
       {diff.added.map((s) => (
-        <p key={`a-${s.stepOrder}`} className="text-success-700">
-          <span aria-hidden="true">+ </span>
-          <span className="sr-only">Added: </span>
-          Step {s.stepOrder}: {s.name}
-        </p>
+        <div key={`a-${s.stepOrder}`} className="flex items-start gap-2 rounded-md bg-success-50 px-2 py-1.5">
+          <span className="mt-0.5 shrink-0 rounded-sm bg-success-500 px-1 font-mono text-caption font-semibold text-white" aria-hidden="true">+</span>
+          <span className="min-w-0 text-success-700">
+            <span className="sr-only">Added: </span>
+            <span className="whitespace-nowrap font-mono text-caption">Step {s.stepOrder}</span>
+            <span className="ml-1.5 break-words">{s.name}</span>
+          </span>
+        </div>
       ))}
       {diff.removed.map((s) => (
-        <p key={`r-${s.stepOrder}`} className="text-destructive-700">
-          <span aria-hidden="true">− </span>
-          <span className="sr-only">Removed: </span>
-          Step {s.stepOrder}: {s.name}
-        </p>
+        <div key={`r-${s.stepOrder}`} className="flex items-start gap-2 rounded-md bg-destructive-50 px-2 py-1.5">
+          <span className="mt-0.5 shrink-0 rounded-sm bg-destructive-600 px-1 font-mono text-caption font-semibold text-white" aria-hidden="true">−</span>
+          <span className="min-w-0 text-destructive-700">
+            <span className="sr-only">Removed: </span>
+            <span className="whitespace-nowrap font-mono text-caption">Step {s.stepOrder}</span>
+            <span className="ml-1.5 break-words">{s.name}</span>
+          </span>
+        </div>
       ))}
       {diff.changed.map((c) => (
-        <div key={`c-${c.stepOrder}`}>
-          <p className="text-neutral-800">
-            <span aria-hidden="true">~ </span>
+        <div key={`c-${c.stepOrder}`} className="rounded-md bg-warning-50 px-2 py-1.5">
+          <p className="flex items-center gap-2 text-neutral-800">
+            <span className="shrink-0 rounded-sm bg-warning-500 px-1 font-mono text-caption font-semibold text-white" aria-hidden="true">~</span>
             <span className="sr-only">Changed: </span>
-            Step {c.stepOrder}
+            <span className="whitespace-nowrap font-mono text-caption">Step {c.stepOrder}</span>
           </p>
-          <ul className="ml-4 list-disc text-caption text-neutral-600">
+          <ul className="mt-1 space-y-0.5 pl-6 text-caption text-neutral-600">
             {c.fields.map((f) => (
-              <li key={f.field}>
-                {f.field}: <span className="font-mono">{f.from ?? 'Not set'}</span> to <span className="font-mono">{f.to ?? 'Not set'}</span>
+              <li key={f.field} className="break-words">
+                {f.field}: <span className="whitespace-nowrap font-mono">{f.from ?? 'Not set'}</span> to{' '}
+                <span className="whitespace-nowrap font-mono">{f.to ?? 'Not set'}</span>
               </li>
             ))}
           </ul>

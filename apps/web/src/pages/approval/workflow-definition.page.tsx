@@ -1,34 +1,38 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, Plus } from 'lucide-react';
+import { AlertTriangle, LayoutTemplate, Plus, Workflow as WorkflowIcon } from 'lucide-react';
 import {
-  Badge, Button, ConfirmActionButton, EmptyState, ErrorState, Input, Label, SegmentedControl, Skeleton,
-  StatusBadge, cn, labelResource, labelRole, useToast,
+  Button, ConfirmActionButton, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader,
+  DialogTitle, EmptyState, ErrorState, Input, Label, Skeleton, StatusBadge, cn, labelResource, useToast,
 } from '@aec/ui';
 import type { WorkflowDefinition, WorkflowStep } from '@aec/api-contracts';
 import {
-  CreateWorkflowForm, useAddWorkflowStep, useArchiveWorkflow, useDeleteWorkflow,
-  useNewWorkflowVersion, usePublishWorkflow, useRemoveWorkflowStep, useReorderWorkflowSteps,
-  useUpdateWorkflowDefinition, useUpdateWorkflowStep, useWorkflowDefinitions, useWorkflowInsights,
-  useWorkflowVersions,
+  CreateWorkflowForm, useAddWorkflowStep, useArchiveWorkflow, useCreateWorkflowFromTemplate,
+  useDeleteWorkflow, useDuplicateWorkflow, useNewWorkflowVersion, usePublishWorkflow,
+  useRemoveWorkflowStep, useReorderWorkflowSteps, useUpdateWorkflowDefinition, useUpdateWorkflowStep,
+  useWorkflowDefinitions, useWorkflowInsights, useWorkflowTemplates, useWorkflowVersions,
 } from '@/features/approval';
 import {
-  VERSION_STATUS_LABEL, WorkflowInsightsPanel, WorkflowPipeline, WorkflowSimulate,
-  WorkflowStepForm, WorkflowVersionsRail,
+  WorkflowChainList, WorkflowDefinitionsRail, WorkflowDrawer, WorkflowInsightsPanel, WorkflowLifecycle,
+  WorkflowPreflight, WorkflowScenarios, WorkflowStepForm, WorkflowTemplateDialog, WorkflowVersionsRail,
+  DRAWER_ICONS, VERSION_STATUS_LABEL,
 } from '@/features/approval/ui';
+import { preflight, hasBlockers } from '@/features/approval/lib/preflight';
 import { useRoles } from '@/entities/role';
 import { useUrlFilter } from '@/shared/lib/use-url-state';
 
 /**
- * Builder definisi approval. Bentuknya master–detail: kiri koleksi definisi
- * (agar tidak kehilangan tempat saat berpindah), kanan pekerjaan sebenarnya.
+ * Builder definisi approval sebagai **workspace**.
  *
- * Di dalam pane kanan, rantai dan editor langkah berdampingan (`xl`): memilih
- * langkah mengisi panel editor **tanpa memindahkan rantai keluar layar**:
- * konteks dan aksi berada di bidang yang sama. Di bawah `xl` keduanya bertumpuk,
- * bukan dipaksa sempit.
+ * Bentuknya master–detail (koleksi kiri, pekerjaan kanan) karena itu benar:
+ * berpindah definisi tidak boleh menghilangkan tempat. Pekerjaan utamanya adalah
+ * **rantai** — daftar langkah berurutan yang bisa diedit. Rantai itu proses
+ * linear, jadi ia disajikan sebagai `<ol>` yang bisa diubah urutannya, bukan
+ * kanvas 2D: pan/zoom/minimap tak berguna untuk daftar tiga langkah, dan
+ * membiarkan node diletakkan bebas akan berbohong soal urutan.
  *
- * Jarak dipakai berjenjang (2 / 8 / 16 / 32 / 48 px) supaya mata punya irama;
- * jarak seragam di seluruh halaman membuat komposisi terasa mekanis.
+ * Hierarki: daftar rantai memimpin; inspector di kanan mengedit langkah terpilih
+ * tanpa memindahkan rantai dari layar; hal sekunder (insight, versi, pengaturan)
+ * turun ke drawer yang tertutup secara default.
  *
  * Aturan domain yang menentukan seluruh UI:
  * - **DRAFT** boleh mengubah struktur (langkah/syarat).
@@ -39,13 +43,16 @@ export function WorkflowDefinitionPage() {
   const [code, setCode] = useUrlFilter('code');
   const [versionRaw, setVersionRaw] = useUrlFilter('version');
   const [stepId, setStepId] = useUrlFilter('step');
-  const [view, setView] = useUrlFilter('view', 'diagram');
+  const [drawer, setDrawer] = useUrlFilter('panel');
   const [query, setQuery] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [templateOpen, setTemplateOpen] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
   const toast = useToast();
 
   const definitions = useWorkflowDefinitions();
   const roles = useRoles();
+  const templates = useWorkflowTemplates();
 
   const roleOptions = useMemo(
     () => (roles.data ?? []).map((r) => ({ code: r.code, name: r.name, holders: r._count?.userRoles ?? 0 })),
@@ -55,30 +62,28 @@ export function WorkflowDefinitionPage() {
     () => Object.fromEntries(roleOptions.map((r) => [r.code, r.holders])),
     [roleOptions],
   );
+  const knownRoleCodes = useMemo(() => roleOptions.map((r) => r.code), [roleOptions]);
 
-  // Urutkan: ACTIVE dulu (yang benar-benar dipakai), lalu DRAFT (sedang disiapkan),
-  // lalu ARCHIVED. Dalam status yang sama, versi terbaru lebih dulu.
-  const sorted = useMemo(() => {
-    const rank: Record<string, number> = { ACTIVE: 0, DRAFT: 1, ARCHIVED: 2 };
+  // Definisi yang lolos pencarian. Pengelompokan & pengurutan ditangani rail,
+  // karena "grup mana dulu" adalah keputusan tampilan, bukan keputusan data.
+  const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return [...(definitions.data ?? [])]
-      .filter((d) => !q || d.code.toLowerCase().includes(q) || d.name.toLowerCase().includes(q))
-      .sort((a, b) => {
-        if (a.code !== b.code) return a.code.localeCompare(b.code);
-        const byStatus = (rank[a.status] ?? 9) - (rank[b.status] ?? 9);
-        return byStatus !== 0 ? byStatus : b.version - a.version;
-      });
+    if (!q) return definitions.data ?? [];
+    return (definitions.data ?? []).filter(
+      (d) => d.code.toLowerCase().includes(q) || d.name.toLowerCase().includes(q),
+    );
   }, [definitions.data, query]);
 
   const selected = useMemo(() => {
     if (code) {
-      const match = sorted.find((d) => d.code === code && String(d.version) === versionRaw);
+      const match = filtered.find((d) => d.code === code && String(d.version) === versionRaw);
       if (match) return match;
       // Versi yang diminta tidak ada → jatuh ke versi ACTIVE/terbaru dari code itu.
-      return sorted.find((d) => d.code === code) ?? null;
+      return filtered.find((d) => d.code === code) ?? null;
     }
-    return sorted[0] ?? null;
-  }, [sorted, code, versionRaw]);
+    // Tanpa pilihan eksplisit: versi ACTIVE pertama, kalau tidak ada versi teratas.
+    return filtered.find((d) => d.status === 'ACTIVE') ?? filtered[0] ?? null;
+  }, [filtered, code, versionRaw]);
 
   const selectedCode = selected?.code ?? null;
   const selectedId = selected?.id ?? null;
@@ -95,6 +100,8 @@ export function WorkflowDefinitionPage() {
   const archive = useArchiveWorkflow();
   const remove = useDeleteWorkflow();
   const newVersion = useNewWorkflowVersion();
+  const duplicate = useDuplicateWorkflow();
+  const fromTemplate = useCreateWorkflowFromTemplate();
 
   const locked = selected != null && selected.status !== 'DRAFT';
   const steps = useMemo(() => selected?.steps ?? [], [selected]);
@@ -125,40 +132,84 @@ export function WorkflowDefinitionPage() {
   const activeCount = (definitions.data ?? []).filter((d) => d.status === 'ACTIVE').length;
   const draftCount = (definitions.data ?? []).filter((d) => d.status === 'DRAFT').length;
 
-  const move = (direction: -1 | 1) => {
-    if (!selected || !selectedStep) return;
-    const index = steps.findIndex((s) => s.id === selectedStep.id);
-    const target = index + direction;
-    if (target < 0 || target >= steps.length) return;
-    const next = [...steps];
-    const [moved] = next.splice(index, 1);
-    next.splice(target, 0, moved!);
+  // Pemeriksaan sebelum publish, dihitung dari data yang sudah ada di klien.
+  const issues = useMemo(
+    () => preflight({ steps, holdersByRole, knownRoleCodes }),
+    [steps, holdersByRole, knownRoleCodes],
+  );
+  const blocked = hasBlockers(issues);
+
+  const reorderSteps = (stepIds: string[]) => {
+    if (!selected) return;
     reorder.mutate(
-      { id: selected.id, input: { stepIds: next.map((s) => s.id) } },
+      { id: selected.id, input: { stepIds } },
       { onError: () => toast({ title: 'Could not reorder steps', variant: 'error' }) },
     );
   };
 
+  const doPublish = () => {
+    if (!selected) return;
+    publish.mutate(
+      { id: selected.id, input: { newVersionName: selected.name } },
+      {
+        onSuccess: () => {
+          toast({ title: 'Workflow published', variant: 'success' });
+          setPublishOpen(false);
+        },
+        onError: () => toast({
+          title: 'Workflow not ready',
+          description: 'Every step needs an approver role that at least one user holds.',
+          variant: 'error',
+        }),
+      },
+    );
+  };
+
+  const doDuplicate = () => {
+    if (!selected) return;
+    const suggested = `${selected.code}_COPY`;
+    duplicate.mutate(
+      { id: selected.id, input: { code: suggested } },
+      {
+        onSuccess: () => toast({ title: `Duplicated as ${suggested}`, variant: 'success' }),
+        onError: () => toast({ title: 'Could not duplicate', description: `${suggested} may already exist.`, variant: 'error' }),
+      },
+    );
+  };
+
+  const doCreateFromTemplate = (args: { template: Parameters<typeof fromTemplate.mutate>[0]['template']; code: string; name: string }) => {
+    fromTemplate.mutate(args, {
+      onSuccess: () => {
+        toast({ title: `Created ${args.code}`, variant: 'success' });
+        setTemplateOpen(false);
+        setCode(args.code);
+        setVersionRaw('1');
+        setStepId('');
+      },
+      onError: () => toast({ title: 'Could not create workflow', description: `${args.code} may already exist.`, variant: 'error' }),
+    });
+  };
+
   return (
-    <div className="mx-auto flex h-full max-w-[1400px] flex-col">
+    <div className="mx-auto flex h-full max-w-[1600px] flex-col">
       {/* ── Kepala halaman: satu baris fakta, tanpa kartu ─────────────────── */}
-      <header className="mb-6">
+      <header className="mb-4">
         <h1 className="text-h1 text-neutral-950">Workflow</h1>
-        <p className="mt-1 text-body-sm text-neutral-500">
+        <p className="mt-1 text-pretty text-body-sm text-neutral-500">
           Configure the approval chain for purchase requisitions and purchase orders.
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-body-sm text-neutral-700">
-          <span><span className="font-mono tabular-nums">{activeCount}</span> active</span>
-          <span><span className="font-mono tabular-nums">{draftCount}</span> draft</span>
-          <span className={warningCount > 0 ? 'inline-flex items-center gap-1.5 text-destructive-600' : 'inline-flex items-center gap-1.5'}>
+          <span className="whitespace-nowrap"><span className="font-mono tabular-nums">{activeCount}</span> active</span>
+          <span className="whitespace-nowrap"><span className="font-mono tabular-nums">{draftCount}</span> draft</span>
+          <span className={warningCount > 0 ? 'inline-flex items-center gap-1.5 whitespace-nowrap text-destructive-600' : 'inline-flex items-center gap-1.5 whitespace-nowrap'}>
             <AlertTriangle className={cn('h-4 w-4', warningCount > 0 ? 'text-destructive-500' : 'text-neutral-400')} aria-hidden="true" />
             <span className="font-mono tabular-nums">{warningCount}</span> steps without an approver
           </span>
         </div>
       </header>
 
-      <div className="grid flex-1 grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-        {/* ── Kiri: koleksi definisi (area gulir, jadi butuh batas) ────────── */}
+      <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+        {/* ── Kiri: koleksi definisi (rail) ───────────────────────────────── */}
         <section
           aria-label="Workflow definitions"
           className={cn(
@@ -175,10 +226,16 @@ export function WorkflowDefinitionPage() {
               aria-label="Search workflows"
               className="h-8"
             />
-            <Button size="sm" variant="secondary" className="w-full" onClick={() => setShowCreate((s) => !s)}>
-              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-              {showCreate ? 'Close form' : 'Create workflow'}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" className="flex-1" onClick={() => setShowCreate((s) => !s)}>
+                <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                {showCreate ? 'Close' : 'New'}
+              </Button>
+              <Button size="sm" variant="ghost" className="flex-1" onClick={() => setTemplateOpen(true)}>
+                <LayoutTemplate className="h-3.5 w-3.5" aria-hidden="true" />
+                Templates
+              </Button>
+            </div>
           </div>
 
           {showCreate && (
@@ -197,293 +254,308 @@ export function WorkflowDefinitionPage() {
             {definitions.isError && (
               <ErrorState message="Could not load workflows." onRetry={() => definitions.refetch()} />
             )}
-            {!definitions.isLoading && !definitions.isError && sorted.length === 0 && (
+            {!definitions.isLoading && !definitions.isError && filtered.length === 0 && (
               <EmptyState
                 title={query ? 'No workflow matches' : 'No workflows yet'}
                 description={query ? 'Try a different search term.' : 'Create one to define who approves a requisition or order.'}
               />
             )}
-            <ul className="space-y-1">
-              {sorted.map((d) => {
-                const isSelected = selected?.id === d.id;
-                const warn = d.steps.filter((s) => (holdersByRole[s.approverRoleCode] ?? 0) === 0).length;
-                return (
-                  <li key={d.id}>
-                    <button
-                      type="button"
-                      onClick={() => { setCode(d.code); setVersionRaw(String(d.version)); setStepId(''); }}
-                      aria-current={isSelected ? 'true' : undefined}
-                      className={cn(
-                        'w-full rounded-md px-3 py-2 text-left transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400',
-                        isSelected ? 'bg-neutral-100' : 'hover:bg-neutral-50',
-                      )}
-                    >
-                      <span className="flex items-center gap-2">
-                        <span className="truncate text-body-sm font-medium text-neutral-900" title={d.name}>{d.name}</span>
-                        <span className="ml-auto shrink-0 font-mono text-caption text-neutral-500">v{d.version}</span>
-                      </span>
-                      <span className="mt-1 flex flex-wrap items-center gap-1.5">
-                        <StatusBadge status={d.status} label={VERSION_STATUS_LABEL[d.status] ?? d.status} />
-                        {warn > 0 && <Badge variant="warning">{warn} warning{warn === 1 ? '' : 's'}</Badge>}
-                      </span>
-                      <span className="mt-1 block truncate text-caption text-neutral-500">
-                        <span className="font-mono">{d.code}</span> · {d.steps.length} step{d.steps.length === 1 ? '' : 's'}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+            {filtered.length > 0 && (
+              <WorkflowDefinitionsRail
+                definitions={filtered}
+                holdersByRole={holdersByRole}
+                selectedId={selected?.id ?? null}
+                onSelect={(d) => { setCode(d.code); setVersionRaw(String(d.version)); setStepId(''); }}
+              />
+            )}
           </div>
         </section>
 
-        {/* Kanan: pekerjaan sebenarnya. Tanpa border, jarak yang mengelompokkan. */}
+        {/* Kanan: workspace. */}
         <section
           aria-label="Workflow detail"
-          className={cn('min-h-[280px]', selected ? 'block' : 'hidden lg:block')}
+          className={cn('min-h-[280px] min-w-0', selected ? 'block' : 'hidden lg:block')}
         >
           {!selected ? (
             <div className="flex h-full flex-col items-center justify-center gap-1 rounded-md border border-dashed border-neutral-200 p-8 text-center">
+              <WorkflowIcon className="h-6 w-6 text-neutral-300" aria-hidden="true" />
               <p className="text-body font-medium text-neutral-700">Select a workflow</p>
-              <p className="text-body-sm text-neutral-500">Its steps, rules and version history appear here.</p>
+              <p className="text-body-sm text-neutral-500">Its chain, rules and version history appear here.</p>
             </div>
           ) : (
-            <>
+            <div className="flex h-full flex-col gap-4">
               <button
                 type="button"
-                className="mb-4 w-full rounded-md border border-neutral-200 bg-white px-4 py-2 text-left text-body-sm text-neutral-600 lg:hidden"
+                className="w-full rounded-md border border-neutral-200 bg-white px-4 py-2 text-left text-body-sm text-neutral-600 lg:hidden"
                 onClick={() => setCode('')}
               >
                 ← Back to workflows
               </button>
 
-              {/* Zona dipisah 48px; di dalam zona 32px; pasangan rapat 2–8px. */}
-              <div className="space-y-12">
-                {/* ① Identitas + aksi. Hanya Publish yang solid (aksi primer). */}
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    {/* Nama memimpin; `code` turun jadi metadata mono untuk rujukan. */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-h2 text-neutral-950">{selected.name}</h2>
-                      <StatusBadge status={selected.status} label={VERSION_STATUS_LABEL[selected.status] ?? selected.status} />
-                      <span className="font-mono text-caption text-neutral-500">v{selected.version}</span>
-                    </div>
-                    <p className="mt-1 text-caption text-neutral-500">
-                      <span className="font-mono text-neutral-600">{selected.code}</span>
-                      {' · '}{labelResource(selected.transactionType)} · {selected.steps.length} step{selected.steps.length === 1 ? '' : 's'}
-                      {selected.createdByName ? `, created by ${selected.createdByName}` : ''}
-                    </p>
-                  </div>
+              {/* Identitas + lifecycle + aksi */}
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    {selected.status === 'DRAFT' && (
-                      <ConfirmActionButton
-                        size="sm"
-                        variant="primary"
-                        confirmTitle="Publish workflow"
-                        confirmDescription={`Publish ${selected.code} v${selected.version}? Any other active version of ${labelResource(selected.transactionType)} will be archived.`}
-                        confirmLabel="Publish"
-                        loading={publish.isPending}
-                        onConfirm={() => publish.mutate(
-                          { id: selected.id, input: { newVersionName: selected.name } },
-                          {
-                            onSuccess: () => toast({ title: 'Workflow published', variant: 'success' }),
-                            onError: () => toast({
-                              title: 'Workflow not ready',
-                              description: 'Every step needs an approver role that at least one user holds.',
-                              variant: 'error',
-                            }),
-                          },
-                        )}
-                      >
-                        Publish
-                      </ConfirmActionButton>
-                    )}
-                    {selected.status === 'ACTIVE' && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          loading={newVersion.isPending}
-                          onClick={() => newVersion.mutate(selected.code, {
-                            onSuccess: () => toast({ title: 'Draft version created', variant: 'success' }),
-                          })}
-                        >
-                          New version
-                        </Button>
-                        <ConfirmActionButton
-                          size="sm"
-                          variant="secondary"
-                          confirmTitle="Archive workflow"
-                          confirmDescription={`Archive ${selected.code} v${selected.version}? It stops being used for new approvals.`}
-                          confirmLabel="Archive"
-                          loading={archive.isPending}
-                          onConfirm={() => archive.mutate(selected.id, {
-                            onSuccess: () => toast({ title: 'Workflow archived', variant: 'info' }),
-                          })}
-                        >
-                          Archive
-                        </ConfirmActionButton>
-                      </>
-                    )}
-                    {selected.status !== 'ACTIVE' && (
-                      <ConfirmActionButton
-                        size="sm"
-                        variant="destructive"
-                        confirmTitle="Delete workflow version"
-                        confirmDescription={`Delete ${selected.code} v${selected.version}? This cannot be undone.`}
-                        confirmLabel="Delete"
-                        loading={remove.isPending}
-                        onConfirm={() => remove.mutate(selected.id, {
-                          onSuccess: () => { setCode(''); toast({ title: 'Version deleted', variant: 'info' }); },
-                        })}
-                      >
-                        Delete
-                      </ConfirmActionButton>
-                    )}
+                    <h2 className="text-h2 text-neutral-950">{selected.name}</h2>
+                    <StatusBadge status={selected.status} label={VERSION_STATUS_LABEL[selected.status] ?? selected.status} />
+                    <span className="font-mono text-caption text-neutral-500">v{selected.version}</span>
                   </div>
+                  <p className="mt-1 text-caption text-neutral-500">
+                    <span className="font-mono text-neutral-600">{selected.code}</span>
+                    {' · '}{labelResource(selected.transactionType)} · {selected.steps.length} step{selected.steps.length === 1 ? '' : 's'}
+                    {selected.createdByName ? `, created by ${selected.createdByName}` : ''}
+                  </p>
+                  <WorkflowLifecycle
+                    status={selected.status}
+                    className="mt-3"
+                    publishAction={
+                      selected.status === 'DRAFT' ? (
+                        <Button size="sm" variant="primary" className="ml-1" onClick={() => setPublishOpen(true)}>
+                          Publish
+                        </Button>
+                      ) : undefined
+                    }
+                  />
                 </div>
 
-                {/* Metadata: boleh diubah bahkan saat ACTIVE (properti dasar). */}
-                <MetadataEditor
-                  definition={selected}
-                  saving={updateDefinition.isPending}
-                  onSave={(input) => updateDefinition.mutate(
-                    { id: selected.id, input },
-                    { onSuccess: () => toast({ title: 'Workflow updated', variant: 'success' }) },
+                <div className="flex flex-wrap items-center gap-2">
+                  {selected.status === 'ACTIVE' && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      loading={newVersion.isPending}
+                      onClick={() => newVersion.mutate(selected.code, {
+                        onSuccess: () => toast({ title: 'Draft version created', variant: 'success' }),
+                      })}
+                    >
+                      New version
+                    </Button>
                   )}
-                />
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    loading={duplicate.isPending}
+                    onClick={doDuplicate}
+                  >
+                    Duplicate
+                  </Button>
+                  {selected.status === 'ACTIVE' && (
+                    <ConfirmActionButton
+                      size="sm"
+                      variant="secondary"
+                      confirmTitle="Archive workflow"
+                      confirmDescription={`Archive ${selected.code} v${selected.version}? It stops being used for new approvals.`}
+                      confirmLabel="Archive"
+                      loading={archive.isPending}
+                      onConfirm={() => archive.mutate(selected.id, {
+                        onSuccess: () => toast({ title: 'Workflow archived', variant: 'info' }),
+                      })}
+                    >
+                      Archive
+                    </ConfirmActionButton>
+                  )}
+                  {selected.status !== 'ACTIVE' && (
+                    <ConfirmActionButton
+                      size="sm"
+                      variant="destructive"
+                      confirmTitle="Delete workflow version"
+                      confirmDescription={`Delete ${selected.code} v${selected.version}? This cannot be undone.`}
+                      confirmLabel="Delete"
+                      loading={remove.isPending}
+                      onConfirm={() => remove.mutate(selected.id, {
+                        onSuccess: () => { setCode(''); toast({ title: 'Version deleted', variant: 'info' }); },
+                      })}
+                    >
+                      Delete
+                    </ConfirmActionButton>
+                  )}
+                </div>
+              </div>
 
-                {/* ③ Rantai + editor berdampingan: memilih langkah tidak memindahkan rantai. */}
-                <section aria-labelledby="wf-pipeline">
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                    <h2 id="wf-pipeline" className="text-h2 text-neutral-950">Approval chain</h2>
-                    <SegmentedControl
-                      aria-label="Chain view"
-                      value={view}
-                      onValueChange={setView}
-                      options={[{ value: 'diagram', label: 'Flow' }, { value: 'table', label: 'Table' }]}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
-                    <div className="min-w-0">
-                      {view === 'diagram' ? (
-                        <WorkflowPipeline
-                          steps={steps}
-                          selectedStepId={selectedStep?.id}
-                          onSelectStep={setStepId}
-                          holdersByRole={holdersByRole}
-                          holderNamesByRole={holderNamesByRole}
-                          locked={locked}
-                          transactionType={selected.transactionType}
-                          activeStepOrders={simulatedPath}
-                        />
-                      ) : (
-                        <StepTable
-                          steps={steps}
-                          holdersByRole={holdersByRole}
-                          selectedStepId={selectedStep?.id}
-                          onSelectStep={setStepId}
-                        />
-                      )}
-
-                      {!locked && (
-                        <div className="mt-4">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            loading={addStep.isPending}
-                            onClick={() => addStep.mutate(
-                              {
-                                id: selected.id,
-                                input: {
-                                  stepOrder: steps.length + 1,
-                                  name: `Step ${steps.length + 1}`,
-                                  approverRoleCode: roleOptions[0]?.code ?? 'PROCUREMENT_MANAGER',
-                                },
-                              },
-                              { onSuccess: () => toast({ title: 'Step added', variant: 'success' }) },
-                            )}
-                          >
-                            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-                            Add step
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Editor langkah. Tanpa kotak, dipisah jarak dari rantai. */}
-                    {steps.length > 0 && (
-                      <div className="min-w-0 space-y-8 xl:border-l xl:border-neutral-200 xl:pl-8">
-                        <section aria-labelledby="wf-step-detail">
-                          <h2 id="wf-step-detail" className="sr-only">Step details</h2>
-                          {selectedStep && (
-                            <WorkflowStepForm
-                              step={selectedStep}
-                              transactionType={selected.transactionType}
-                              roleOptions={roleOptions.length > 0 ? roleOptions : [{ code: selectedStep.approverRoleCode, name: selectedStep.approverRoleCode, holders: holdersByRole[selectedStep.approverRoleCode] ?? 0 }]}
-                              locked={locked}
-                              saving={updateStep.isPending || removeStep.isPending}
-                              canMoveUp={steps.findIndex((s) => s.id === selectedStep.id) > 0}
-                              canMoveDown={steps.findIndex((s) => s.id === selectedStep.id) < steps.length - 1}
-                              onMove={move}
-                              onRemove={() => removeStep.mutate(
-                                { id: selected.id, stepId: selectedStep.id },
-                                {
-                                  onSuccess: () => { setStepId(''); toast({ title: 'Step removed', variant: 'info' }); },
-                                  onError: () => toast({ title: 'Could not remove the step', variant: 'error' }),
-                                },
-                              )}
-                              onSave={(input) => updateStep.mutate(
-                                { id: selected.id, stepId: selectedStep.id, input },
-                                {
-                                  onSuccess: () => toast({ title: 'Step updated', variant: 'success' }),
-                                  onError: () => toast({
-                                    title: 'Could not update the step',
-                                    description: 'A condition needs a field, an operator and a value.',
-                                    variant: 'error',
-                                  }),
-                                },
-                              )}
-                            />
-                          )}
-                        </section>
-
-                        <section aria-labelledby="wf-simulate">
-                          <h2 id="wf-simulate" className="mb-3 text-h2 text-neutral-950">Simulate</h2>
-                          <WorkflowSimulate steps={steps} transactionType={selected.transactionType} onPathChange={setSimulatedPath} />
-                        </section>
-                      </div>
+              {/* Rantai + inspector */}
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]">
+                <div className="flex min-w-0 flex-col gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-h2 text-neutral-950">Approval chain</h2>
+                    {!locked && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        loading={addStep.isPending}
+                        onClick={() => addStep.mutate(
+                          {
+                            id: selected.id,
+                            input: {
+                              stepOrder: steps.length + 1,
+                              name: `Step ${steps.length + 1}`,
+                              approverRoleCode: roleOptions[0]?.code ?? 'PROCUREMENT_MANAGER',
+                            },
+                          },
+                          { onSuccess: () => toast({ title: 'Step added', variant: 'success' }) },
+                        )}
+                      >
+                        <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                        Add step
+                      </Button>
                     )}
                   </div>
-                </section>
 
-                {/* ④ Riwayat versi. */}
-                <section aria-labelledby="wf-versions">
-                  <h2 id="wf-versions" className="mb-4 text-h2 text-neutral-950">Versions</h2>
-                  {versions.isLoading && <Skeleton className="h-24 w-full" />}
-                  {versions.isError && <ErrorState message="Could not load version history." onRetry={() => versions.refetch()} />}
-                  {versions.data && (
-                    <WorkflowVersionsRail
-                      versions={versions.data}
-                      selectedVersion={selected.version}
-                      onSelectVersion={(v) => { setCode(selected.code); setVersionRaw(String(v)); setStepId(''); }}
-                    />
+                  <WorkflowChainList
+                    steps={steps}
+                    selectedStepId={selectedStep?.id}
+                    onSelectStep={setStepId}
+                    holdersByRole={holdersByRole}
+                    holderNamesByRole={holderNamesByRole}
+                    locked={locked}
+                    transactionType={selected.transactionType}
+                    activeStepOrders={simulatedPath}
+                    onReorder={reorderSteps}
+                  />
+                </div>
+
+                {/* Inspector: konteks langkah + simulasi, tetap terlihat. */}
+                <div className="min-w-0 space-y-6 xl:border-l xl:border-neutral-200 xl:pl-4">
+                  {steps.length === 0 ? (
+                    <p className="text-body-sm text-neutral-500">
+                      {locked ? 'This version has no steps.' : 'Add the first step to define who approves.'}
+                    </p>
+                  ) : (
+                    <>
+                      <section aria-labelledby="wf-step-detail">
+                        <h2 id="wf-step-detail" className="sr-only">Step details</h2>
+                        {selectedStep && (
+                          <WorkflowStepForm
+                            step={selectedStep}
+                            transactionType={selected.transactionType}
+                            roleOptions={roleOptions.length > 0 ? roleOptions : [{ code: selectedStep.approverRoleCode, name: selectedStep.approverRoleCode, holders: holdersByRole[selectedStep.approverRoleCode] ?? 0 }]}
+                            locked={locked}
+                            saving={updateStep.isPending || removeStep.isPending}
+                            onRemove={() => removeStep.mutate(
+                              { id: selected.id, stepId: selectedStep.id },
+                              {
+                                onSuccess: () => { setStepId(''); toast({ title: 'Step removed', variant: 'info' }); },
+                                onError: () => toast({ title: 'Could not remove the step', variant: 'error' }),
+                              },
+                            )}
+                            onSave={(input) => updateStep.mutate(
+                              { id: selected.id, stepId: selectedStep.id, input },
+                              {
+                                onSuccess: () => toast({ title: 'Step updated', variant: 'success' }),
+                                onError: () => toast({
+                                  title: 'Could not update the step',
+                                  description: 'A condition needs a field, an operator and a value.',
+                                  variant: 'error',
+                                }),
+                              },
+                            )}
+                          />
+                        )}
+                      </section>
+
+                      <section aria-labelledby="wf-simulate">
+                        <h2 id="wf-simulate" className="mb-3 text-h2 text-neutral-950">Simulate</h2>
+                        <WorkflowScenarios
+                          steps={steps}
+                          transactionType={selected.transactionType}
+                          onPathChange={setSimulatedPath}
+                        />
+                      </section>
+                    </>
                   )}
-                </section>
-
-                {/* ⑤ Insight. */}
-                <section aria-labelledby="wf-insights">
-                  <h2 id="wf-insights" className="mb-4 text-h2 text-neutral-950">How this chain performs</h2>
-                  {insights.isLoading && <Skeleton className="h-40 w-full" />}
-                  {insights.isError && <ErrorState message="Could not load insights." onRetry={() => insights.refetch()} />}
-                  {insights.data && <WorkflowInsightsPanel data={insights.data} />}
-                </section>
+                </div>
               </div>
-            </>
+
+              {/* Drawer: insight, versi, pengaturan. */}
+              <WorkflowDrawer
+                value={drawer || null}
+                onValueChange={(v) => setDrawer(v ?? '')}
+                tabs={[
+                  {
+                    value: 'insights',
+                    label: 'Insights',
+                    icon: DRAWER_ICONS.insights,
+                    content: (
+                      <>
+                        {insights.isLoading && <Skeleton className="h-40 w-full" />}
+                        {insights.isError && <ErrorState message="Could not load insights." onRetry={() => insights.refetch()} />}
+                        {insights.data && <WorkflowInsightsPanel data={insights.data} />}
+                      </>
+                    ),
+                  },
+                  {
+                    value: 'versions',
+                    label: 'Versions',
+                    icon: DRAWER_ICONS.versions,
+                    content: (
+                      <>
+                        {versions.isLoading && <Skeleton className="h-24 w-full" />}
+                        {versions.isError && <ErrorState message="Could not load version history." onRetry={() => versions.refetch()} />}
+                        {versions.data && (
+                          <WorkflowVersionsRail
+                            versions={versions.data}
+                            selectedVersion={selected.version}
+                            onSelectVersion={(v) => { setCode(selected.code); setVersionRaw(String(v)); setStepId(''); }}
+                          />
+                        )}
+                      </>
+                    ),
+                  },
+                  {
+                    value: 'settings',
+                    label: 'Settings',
+                    icon: DRAWER_ICONS.settings,
+                    content: (
+                      <MetadataEditor
+                        definition={selected}
+                        saving={updateDefinition.isPending}
+                        onSave={(input) => updateDefinition.mutate(
+                          { id: selected.id, input },
+                          { onSuccess: () => toast({ title: 'Workflow updated', variant: 'success' }) },
+                        )}
+                      />
+                    ),
+                  },
+                ]}
+              />
+            </div>
           )}
         </section>
       </div>
+
+      {/* Dialog template: mulai dari cetakan, bukan dari nol. */}
+      <WorkflowTemplateDialog
+        open={templateOpen}
+        onOpenChange={setTemplateOpen}
+        templates={templates.data ?? []}
+        loading={templates.isLoading}
+        onCreate={doCreateFromTemplate}
+      />
+
+      {/* Dialog publish: masalah ditampilkan sebelum menekan Publish. */}
+      <Dialog open={publishOpen} onOpenChange={setPublishOpen}>
+        <DialogContent className="max-w-md" showClose={false}>
+          <DialogHeader>
+            <DialogTitle>Publish {selected?.code ?? ''} v{selected?.version ?? ''}?</DialogTitle>
+            <DialogDescription>
+              Any other active version of {selected ? labelResource(selected.transactionType) : 'this document'} will be archived.
+            </DialogDescription>
+          </DialogHeader>
+          <WorkflowPreflight issues={issues} onSelectStep={(id) => { setStepId(id); setPublishOpen(false); }} />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPublishOpen(false)} disabled={publish.isPending}>
+              Cancel
+            </Button>
+            <Button
+              variant={blocked ? 'secondary' : 'primary'}
+              disabled={blocked}
+              loading={publish.isPending}
+              onClick={doPublish}
+            >
+              Publish
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -507,7 +579,6 @@ function MetadataEditor({
     return (
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          {/* Nama adalah judul definisi, satu tingkat di bawah h1 halaman. */}
           <p className="text-body font-medium text-neutral-900">{definition.name}</p>
           <p className="mt-0.5 text-caption text-neutral-500">{definition.description ?? 'No description.'}</p>
         </div>
@@ -543,62 +614,3 @@ function MetadataEditor({
   );
 }
 
-/** Tampilan padat rantai: alur yang sama, untuk rantai panjang. */
-function StepTable({
-  steps, holdersByRole, selectedStepId, onSelectStep,
-}: {
-  steps: WorkflowStep[];
-  holdersByRole: Record<string, number>;
-  selectedStepId?: string;
-  onSelectStep: (id: string) => void;
-}) {
-  if (steps.length === 0) {
-    return <p className="text-body-sm text-neutral-500">No steps yet.</p>;
-  }
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-left text-body-sm">
-        <caption className="sr-only">Approval steps</caption>
-        <thead>
-          <tr className="border-b border-neutral-200 text-caption uppercase text-neutral-500">
-            <th scope="col" className="py-2 font-medium">#</th>
-            <th scope="col" className="py-2 font-medium">Name</th>
-            <th scope="col" className="py-2 font-medium">Role</th>
-            <th scope="col" className="py-2 font-medium">Condition</th>
-          </tr>
-        </thead>
-        <tbody>
-          {steps.map((s) => {
-            const holders = holdersByRole[s.approverRoleCode] ?? 0;
-            return (
-              <tr
-                key={s.id}
-                className={cn('border-b border-neutral-100 last:border-0', selectedStepId === s.id && 'bg-neutral-50')}
-              >
-                <td className="py-2 font-mono text-neutral-600">{s.stepOrder}</td>
-                <td className="py-2">
-                  <button
-                    type="button"
-                    onClick={() => onSelectStep(s.id)}
-                    className="rounded text-left text-neutral-800 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400"
-                  >
-                    {s.name}
-                  </button>
-                </td>
-                <td className="py-2">
-                  <span className="text-caption text-neutral-600">{labelRole(s.approverRoleCode)}</span>
-                  <span className={cn('ml-2 text-caption', holders === 0 ? 'text-destructive-700' : 'text-neutral-500')}>
-                    {holders === 0 ? 'no holder' : `${holders} holder${holders === 1 ? '' : 's'}`}
-                  </span>
-                </td>
-                <td className="py-2 font-mono text-caption text-neutral-600">
-                  {s.conditionField ? `${s.conditionField} ${s.conditionOp} ${s.conditionValue}` : 'Always applies'}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}

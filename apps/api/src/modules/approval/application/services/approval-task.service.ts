@@ -72,14 +72,15 @@ export class ApprovalTaskService {
    * benar-benar menyaring langkah yang tidak relevan.
    */
   private applicableSteps(
-    workflow: { steps: Array<{ stepOrder: number; name: string; approverRoleCode: string; conditionField: string | null; conditionOp: string | null; conditionValue: unknown }> } | null,
+    workflow: { steps: Array<{ stepOrder: number; name: string; approverRoleCode: string; conditionField: string | null; conditionOp: string | null; conditionValue: unknown; conditionGroup?: unknown }> } | null,
     doc: Record<string, unknown>,
   ) {
     if (!workflow || workflow.steps.length === 0) return [];
     return workflow.steps
       .filter((step) => this.evaluator.evaluateCondition(
-        step as unknown as { conditionField: string | null; conditionOp: string | null; conditionValue: never },
+        step as unknown as { conditionField: string | null; conditionOp: string | null; conditionValue: never; conditionGroup?: never },
         this.evaluator.getDocValue(doc, step.conditionField),
+        (field) => this.evaluator.getDocValue(doc, field),
       ))
       .sort((a, b) => a.stepOrder - b.stepOrder);
   }
@@ -123,6 +124,9 @@ export class ApprovalTaskService {
           approverRoleCode: firstStep.approverRoleCode,
           requesterId: actorId,
           status: 'PENDING',
+          // Versi yang benar-benar dipakai dokumen ini. `null` bila submit manual
+          // tanpa workflow — bukan menebak.
+          definitionId: workflow?.id ?? null,
         },
       });
 
@@ -241,6 +245,10 @@ export class ApprovalTaskService {
         approverRoleCode: next.approverRoleCode,
         requesterId: task.requesterId,
         status: 'PENDING',
+        // Langkah lanjutan memakai definisi yang sedang aktif saat dibuka. Bila
+        // versi berganti di tengah rantai, tiap task tetap jujur menyebut versi
+        // yang benar-benar membuatnya.
+        definitionId: workflow.id,
       },
     });
   }
