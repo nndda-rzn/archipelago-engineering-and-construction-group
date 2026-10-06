@@ -22,6 +22,7 @@ export { SignalChip, type SignalChipProps, type SignalSeverity } from './primiti
 export { BulletBar, MiniStackedBar, type BulletBarProps, type MiniStackedBarProps, type BarTone } from './primitives/data-bar';
 export { Sparkline, type SparklineProps } from './primitives/sparkline';
 export { DivergingBar, type DivergingBarProps } from './primitives/diverging-bar';
+export { StackedBar, type StackedBarProps, type StackedSegment, type StackedBarTone } from './primitives/stacked-bar';
 export { Waterfall, waterfallSegments, type WaterfallProps, type WaterfallSegment, type WaterfallInput } from './primitives/waterfall';
 export { EvmBars, evmRatios, type EvmMetrics, type EvmRatios } from './primitives/evm-bars';
 export { EntityAvatar, initialsFrom, type EntityAvatarProps } from './primitives/entity-avatar';

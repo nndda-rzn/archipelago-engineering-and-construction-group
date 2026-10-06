@@ -84,6 +84,8 @@ export const approvalDocumentItemSchema = z.object({
   unit: z.string(),
   unitPrice: z.number().nullable(),
   totalPrice: z.number().nullable(),
+  /** Kode WBS item (bila ada) — atribusi nyata dari dokumen, bukan tebakan. */
+  wbsCode: z.string().nullable(),
 });
 export type ApprovalDocumentItem = z.infer<typeof approvalDocumentItemSchema>;
 
@@ -116,6 +118,54 @@ export const approvalDetailSchema = z.object({
   task: approvalTaskSchema,
   document: approvalDocumentSchema,
   history: z.array(approvalHistoryEntrySchema),
+  /** Konteks budget proyek (FR-PRO-002). `null` bila proyek tak punya budget terbit. */
+  budget: z
+    .object({
+      budget: z.number(),
+      commitment: z.number(),
+      existingPr: z.number(),
+      remaining: z.number(),
+      within: z.boolean(),
+    })
+    .nullable(),
+  /** Rantai approval dari definisi aktif + posisi task ini. `null` bila tanpa workflow. */
+  chain: z
+    .array(
+      z.object({
+        stepOrder: z.number(),
+        name: z.string(),
+        approverRoleCode: z.string(),
+        /** Aturan routing dalam teks, mis. "totalAmount > 5.000.000". */
+        condition: z.string().nullable(),
+        status: z.enum(['done', 'current', 'upcoming']),
+      }),
+    )
+    .nullable(),
+  project: z
+    .object({
+      code: z.string(),
+      name: z.string(),
+      client: z.string(),
+      status: z.string(),
+      contractValue: z.number().nullable(),
+      startDate: z.string().nullable(),
+      completionDate: z.string().nullable(),
+      location: z.string().nullable(),
+      manager: z.string().nullable(),
+      baselineByCostType: z.array(z.object({ costType: z.string(), amount: z.number() })),
+    })
+    .nullable(),
+  vendor: z
+    .object({
+      name: z.string(),
+      category: z.string().nullable(),
+      taxId: z.string().nullable(),
+      contactPerson: z.string().nullable(),
+      avgRating: z.number().nullable(),
+      ratingCount: z.number(),
+    })
+    .nullable(),
+  related: z.array(z.object({ type: z.string(), code: z.string(), status: z.string() })),
 });
 export type ApprovalDetail = z.infer<typeof approvalDetailSchema>;
 

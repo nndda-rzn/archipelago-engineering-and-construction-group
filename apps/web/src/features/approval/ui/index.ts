@@ -4,3 +4,8 @@ export { ApprovalFilters } from './approval-filters';
 export { ApprovalBulkBar } from './approval-bulk-bar';
 export { RejectDialog } from './reject-dialog';
 export { DecisionHistory } from './decision-history';
+export { BudgetImpact } from './budget-impact';
+export { ApprovalChain } from './approval-chain';
+export { ProjectContext } from './project-context';
+export { VendorCard } from './vendor-card';
+export { RelatedDocuments } from './related-documents';

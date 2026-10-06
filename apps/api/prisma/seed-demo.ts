@@ -56,13 +56,18 @@ async function main() {
     project = await prisma.project.create({
       data: { code: 'PRJ-EPC-2027-014', name: 'EPC Industrial Processing Facility', client: 'PT Klien Utama', legalEntityId: entity.id, location: 'Karawang', currency: 'IDR', contractValue: 4800000000000, advanceAmount: 480000000000, advanceRecoveryRate: 10, status: 'ACTIVE', director: 'Ir. Budi Santoso', manager: 'Ahmad Fauzi' },
     });
+  } else if (project.contractValue == null) {
+    // Rekonsiliasi: proyek demo bisa sudah dibuat oleh seed dasar tanpa nilai kontrak.
+    // Isi hanya bila kosong — jangan menimpa data yang sudah diubah manual.
+    project = await prisma.project.update({ where: { id: project.id }, data: { contractValue: 4800000000000 } });
+    console.log(`Project ${project.code}: contract value diisi 4.8T`);
   }
 
   const wbsSeed = [
-    { code: '1', name: 'Engineering', amount: 480000000000 },
-    { code: '2', name: 'Procurement', amount: 1920000000000 },
-    { code: '3', name: 'Construction', amount: 1920000000000 },
-    { code: '4', name: 'Commissioning', amount: 480000000000 },
+    { code: '1', name: 'Engineering', amount: 480000000000, costType: 'LABOR' },
+    { code: '2', name: 'Procurement', amount: 1920000000000, costType: 'MATERIAL' },
+    { code: '3', name: 'Construction', amount: 1920000000000, costType: 'SUBCONTRACTOR' },
+    { code: '4', name: 'Commissioning', amount: 480000000000, costType: 'EQUIPMENT' },
   ];
   const wbsMap = new Map<string, string>();
   for (const w of wbsSeed) {
@@ -72,27 +77,69 @@ async function main() {
       create: { projectId: project.id, code: w.code, name: w.name, sortOrder: Number(w.code) },
     });
     wbsMap.set(w.code, wbs.id);
-    // budget item (PUBLISHED) per WBS
-    const existing = await prisma.budgetItem.findUnique({ where: { projectId_wbsItemId_costType: { projectId: project.id, wbsItemId: wbs.id, costType: 'DIRECT' } } });
+    // Rekonsiliasi: satu budget item PUBLISHED per WBS dengan cost type yang BERBEDA
+    // agar rincian per cost type bermakna di demo. Baris DIRECT lama dihapus.
+    await prisma.budgetItem.deleteMany({ where: { projectId: project.id, wbsItemId: wbs.id, costType: 'DIRECT' } });
+    const existing = await prisma.budgetItem.findUnique({ where: { projectId_wbsItemId_costType: { projectId: project.id, wbsItemId: wbs.id, costType: w.costType } } });
     if (!existing) {
-      await prisma.budgetItem.create({ data: { projectId: project.id, wbsItemId: wbs.id, costType: 'DIRECT', amount: w.amount, status: 'PUBLISHED', version: 1 } });
+      await prisma.budgetItem.create({ data: { projectId: project.id, wbsItemId: wbs.id, costType: w.costType, amount: w.amount, status: 'PUBLISHED', version: 1 } });
     }
   }
-  console.log(`Project: ${project.code} + WBS ${wbsMap.size} + budget 4.8T PUBLISHED`);
+  console.log(`Project: ${project.code} + WBS ${wbsMap.size} + budget 4.8T PUBLISHED (4 cost types)`);
 
-  // ── 4. PO released (commitment) ──
+  // ── 3b. PR APPROVED → tertaut ke PO demo (agar "related documents" terisi) ──
+  const demoPr = await prisma.purchaseRequisition.findFirst({ where: { projectId: project.id, description: 'Structural Steel Procurement' } });
+  let prId = demoPr?.id;
+  if (!demoPr) {
+    const seq = await prisma.numberSequence.upsert({ where: { code: 'PR' }, update: { nextNumber: { increment: 1 } }, create: { code: 'PR', prefix: `PR-${year}-EPC-`, nextNumber: 2 } });
+    const created = await prisma.purchaseRequisition.create({
+      data: {
+        prNumber: `${seq.prefix}${String(seq.nextNumber - 1).padStart(6, '0')}`,
+        projectId: project.id, wbsItemId: wbsMap.get('2'), requestedBy: 'buyer@aec.local',
+        description: 'Structural Steel Procurement', status: 'APPROVED', estimatedTotal: 150000000000,
+        items: { create: [{ description: 'Structural Steel', quantity: 5000, unit: 'ton', estimatedUnitPrice: 30000000, estimatedTotal: 150000000000 }] },
+      },
+    });
+    prId = created.id;
+    console.log(`PR approved: ${created.prNumber} → linked to PO`);
+  }
+
+  // ── 4. PO released (commitment) — tertaut ke PR demo ──
   const demoPo = await prisma.purchaseOrder.findUnique({ where: { poNumber: `PO-${year}-EPC-900001` } });
   if (!demoPo) {
     const po = await prisma.purchaseOrder.create({
       data: {
-        poNumber: `PO-${year}-EPC-900001`, projectId: project.id, vendor: 'PT Baja Utama', totalAmount: 150000000000,
+        poNumber: `PO-${year}-EPC-900001`, projectId: project.id, requisitionId: prId ?? null, vendor: 'PT Baja Utama', totalAmount: 150000000000,
         status: 'RELEASED', issuedAt: now, releasedBy: 'system',
         items: { create: [{ description: 'Structural Steel', quantity: 5000, unit: 'ton', unitPrice: 30000000, totalPrice: 150000000000, wbsItemId: wbsMap.get('2') }] },
       },
     });
-    console.log(`PO released: ${po.poNumber} (${po.totalAmount.toLocaleString('id-ID')})`);
+    console.log(`PO released: ${po.poNumber} (${po.totalAmount.toLocaleString('id-ID')}) linked to PR ${prId ? 'yes' : 'no'}`);
   } else {
-    console.log(`PO released: ${demoPo.poNumber} sudah ada`);
+    // Rekonsiliasi: tautkan PO demo ke PR demo agar "related documents" terisi,
+    // tanpa menyentuh PO lain yang mungkin sudah punya relasi sendiri.
+    if (!demoPo.requisitionId && prId) {
+      await prisma.purchaseOrder.update({ where: { id: demoPo.id }, data: { requisitionId: prId } });
+      console.log(`PO released: ${demoPo.poNumber} → linked to PR`);
+    } else {
+      console.log(`PO released: ${demoPo.poNumber} sudah ada`);
+    }
+  }
+
+  // ── 4b. Vendor performance ratings (agar kartu vendor punya isi) ──
+  const ratedVendor = await prisma.vendor.findUnique({ where: { vendorCode: `VND-${year}-000001` } });
+  if (ratedVendor) {
+    const ratingCount = await prisma.vendorPerformanceRating.count({ where: { vendorId: ratedVendor.id } });
+    if (ratingCount === 0) {
+      await prisma.vendorPerformanceRating.createMany({
+        data: [
+          { vendorId: ratedVendor.id, projectId: project.id, category: 'DELIVERY', score: 4, remark: 'Tepat waktu', ratedBy: 'system' },
+          { vendorId: ratedVendor.id, projectId: project.id, category: 'QUALITY', score: 5, remark: 'Material sesuai spek', ratedBy: 'system' },
+          { vendorId: ratedVendor.id, projectId: project.id, category: 'COMMERCIAL', score: 3, remark: 'Harga kompetitif', ratedBy: 'system' },
+        ],
+      });
+      console.log('VendorPerformanceRating: 3 untuk PT Baja Utama');
+    }
   }
 
   // ── 5. Warehouse + stock (GR) ──

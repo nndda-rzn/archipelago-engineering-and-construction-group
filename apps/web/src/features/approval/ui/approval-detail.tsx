@@ -2,6 +2,11 @@ import { Badge, BulletBar, Button, EmptyCell, Skeleton, StatusBadge, labelRole }
 import { FileText } from 'lucide-react';
 import type { ApprovalDetail as ApprovalDetailData } from '@aec/api-contracts';
 import { DecisionHistory } from './decision-history';
+import { BudgetImpact } from './budget-impact';
+import { ApprovalChain } from './approval-chain';
+import { ProjectContext } from './project-context';
+import { VendorCard } from './vendor-card';
+import { RelatedDocuments } from './related-documents';
 import { formatDateTime, formatIdrCustom, formatNumber } from '@/shared/lib/format';
 
 const TYPE_LABEL: Record<string, string> = { PurchaseRequisition: 'Purchase Requisition', PurchaseOrder: 'Purchase Order' };
@@ -27,6 +32,7 @@ function ItemTable({ items, currency }: { items: ApprovalDetailData['document'][
       <thead>
         <tr className="border-b border-neutral-200 text-caption uppercase text-neutral-500">
           <th scope="col" className="py-2 font-medium">Description</th>
+          <th scope="col" className="py-2 font-medium">WBS</th>
           <th scope="col" className="py-2 text-right font-medium">Qty</th>
           <th scope="col" className="py-2 font-medium">Unit</th>
           <th scope="col" className="py-2 text-right font-medium">Unit price</th>
@@ -38,6 +44,7 @@ function ItemTable({ items, currency }: { items: ApprovalDetailData['document'][
         {items.map((item, i) => (
           <tr key={i} className="border-b border-neutral-100 last:border-0">
             <td className="py-2 text-neutral-800">{item.description}</td>
+            <td className="py-2 font-mono text-caption text-neutral-500">{item.wbsCode ?? <EmptyCell label="No WBS" />}</td>
             <td className="py-2 text-right font-mono tabular-nums text-neutral-700">{formatNumber(item.quantity)}</td>
             <td className="py-2 text-neutral-600">{item.unit}</td>
             <td className="py-2 text-right font-mono tabular-nums text-neutral-700">
@@ -97,7 +104,7 @@ export function ApprovalDetail({ data, isLoading, isError, canApprove, onApprove
     );
   }
 
-  const { task, document: doc, history } = data;
+  const { task, document: doc, history, budget, chain, project, vendor, related } = data;
   const decided = task.status !== 'PENDING';
 
   return (
@@ -109,12 +116,15 @@ export function ApprovalDetail({ data, isLoading, isError, canApprove, onApprove
           <StatusBadge status={task.status} />
         </div>
         <p className="mt-1 text-body-sm text-neutral-500">
+          {chain ? `Step ${task.stepOrder ?? 1} of ${chain.length} · ${task.stepName} · ` : ''}
           Approver role: {labelRole(task.approverRoleCode)}
           {doc.requesterName ? ` · Requested by ${doc.requesterName}` : ''} · {formatDateTime(task.createdAt)}
         </p>
       </header>
 
       <div className="flex-1 overflow-y-auto">
+        {budget && <BudgetImpact budget={budget} amount={doc.amount} />}
+
         <dl className="grid grid-cols-2 gap-x-8 border-b border-neutral-200 px-6 py-2">
           <Fact label="Amount">{doc.amount != null ? formatIdrCustom(doc.amount, doc.currency ?? 'IDR') : <EmptyCell label="No amount" />}</Fact>
           <Fact label="Project">
@@ -132,6 +142,11 @@ export function ApprovalDetail({ data, isLoading, isError, canApprove, onApprove
             <ItemTable items={doc.items} currency={doc.currency} />
           </div>
         </section>
+
+        {project && <ProjectContext project={project} />}
+        {chain && <ApprovalChain chain={chain} currentStep={task.stepOrder} />}
+        {vendor && <VendorCard vendor={vendor} />}
+        <RelatedDocuments related={related} />
 
         <section className="px-6 py-4">
           <h3 className="mb-2 text-h3 text-neutral-800">History</h3>

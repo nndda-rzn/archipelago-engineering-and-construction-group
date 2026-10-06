@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { withSerializableRetry } from '@/shared/database/serializable-tx';
+import { computeBudgetCheck } from '@/shared/project/budget-check';
 import type { CreatePrDto, ListPrQueryDto } from '../../presentation/dto/procurement.dto';
 
 @Injectable()
@@ -14,37 +15,15 @@ export class PurchaseRequisitionService {
 
   /**
    * Hitung sisa budget. Bisa dijalankan pada `this.prisma` (read-only) atau pada `tx`
-   * (di dalam transaksi Serializable saat validasi sebelum tulis).
-   *
-   * PR yang sudah memiliki PO RELEASED TIDAK dihitung lagi di `existingPr`: nilainya sudah
-   * masuk `commitment` lewat PO. Tanpa pengecualian ini, PR-terkonversi + PO-nya dihitung
-   * dua kali sehingga `remaining` terlalu kecil (false BUDGET_EXCEEDED).
+   * (di dalam transaksi Serializable saat validasi sebelum tulis). Rumusnya tinggal
+   * di `computeBudgetCheck` agar modul approval memakai perhitungan yang sama.
    */
-  private async budgetCheck(
+  private budgetCheck(
     projectId: string,
     estimatedTotal: number,
     client: Pick<Prisma.TransactionClient, 'budgetItem' | 'purchaseOrder' | 'subcontract' | 'purchaseRequisition'> = this.prisma,
   ) {
-    const [budgetAgg, poAgg, subconAgg, prAgg] = await Promise.all([
-      client.budgetItem.aggregate({ where: { projectId, status: 'PUBLISHED' }, _sum: { amount: true } }),
-      client.purchaseOrder.aggregate({ where: { projectId, status: 'RELEASED' }, _sum: { totalAmount: true } }),
-      client.subcontract.aggregate({ where: { projectId, status: 'ACTIVE' }, _sum: { contractValue: true } }),
-      client.purchaseRequisition.aggregate({
-        where: {
-          projectId,
-          status: { not: 'CANCELLED' },
-          purchaseOrders: { none: { status: 'RELEASED' } },
-        },
-        _sum: { estimatedTotal: true },
-      }),
-    ]);
-
-    const budget = Number(budgetAgg._sum?.amount ?? 0);
-    const commitment = Number(poAgg._sum?.totalAmount ?? 0) + Number(subconAgg._sum?.contractValue ?? 0);
-    const existingPr = Number(prAgg._sum?.estimatedTotal ?? 0);
-    const remaining = budget - commitment - existingPr;
-
-    return { budget, commitment, existingPr, remaining, within: remaining >= estimatedTotal - 0.001 };
+    return computeBudgetCheck(client, projectId, estimatedTotal);
   }
 
   async createPr(dto: CreatePrDto, actorId: string) {
