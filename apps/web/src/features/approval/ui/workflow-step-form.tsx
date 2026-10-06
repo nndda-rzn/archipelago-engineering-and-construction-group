@@ -7,7 +7,7 @@ import { conditionFieldLabel, opLabel } from './workflow-labels';
 export interface WorkflowStepFormProps {
   step: WorkflowStep;
   transactionType: string;
-  /** Semua role yang dikenal — daftar tertutup, bukan teks bebas. */
+  /** Semua role yang dikenal, daftar tertutup, bukan teks bebas. */
   roleOptions: { code: string; name: string; holders: number }[];
   locked: boolean;
   saving: boolean;
@@ -22,10 +22,10 @@ const NO_CONDITION = '__none__';
 
 /**
  * Panel detail untuk satu langkah. Bentuk mengikuti pola editor workflow Jira:
- * memilih langkah mengisi panel ini — bukan pindah halaman.
+ * memilih langkah mengisi panel ini, bukan pindah halaman.
  *
  * Jarak berjenjang: judul↔field 16px, antar-field 16px, label↔kontrol 4px.
- * Tanpa kotak dan tanpa garis pemisah — pengelompokan dibawa oleh jarak.
+ * Tanpa kotak dan tanpa garis pemisah: pengelompokan dibawa oleh jarak.
  */
 export function WorkflowStepForm({
   step, transactionType, roleOptions, locked, saving, onSave, onRemove, onMove, canMoveUp, canMoveDown,
@@ -108,14 +108,14 @@ export function WorkflowStepForm({
             <SelectContent>
               {roleOptions.map((r) => (
                 <SelectItem key={r.code} value={r.code}>
-                  {labelRole(r.code)} — {r.holders} holder{r.holders === 1 ? '' : 's'}
+                  {labelRole(r.code)}, {r.holders} holder{r.holders === 1 ? '' : 's'}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           {holders === 0 && (
             <p role="alert" className="mt-1 text-caption text-destructive-700">
-              No user holds this role — the workflow cannot be published until someone does.
+              No user holds this role, so the workflow cannot be published until someone does.
             </p>
           )}
         </div>

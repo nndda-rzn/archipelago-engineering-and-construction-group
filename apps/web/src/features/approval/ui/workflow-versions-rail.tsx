@@ -14,7 +14,7 @@ export interface WorkflowVersionsRailProps {
 /**
  * Riwayat versi sebagai rail berurut (bukan tabel): nomor versi adalah identitas,
  * statusnya menentukan apa yang boleh diubah, dan perbandingan antar dua versi
- * menjelaskan apa yang sebenarnya berubah — bukan sekadar "ada versi baru".
+ * menjelaskan apa yang sebenarnya berubah, bukan sekadar "ada versi baru".
  */
 export function WorkflowVersionsRail({ versions, selectedVersion, onSelectVersion }: WorkflowVersionsRailProps) {
   const [compareWith, setCompareWith] = useState<number | null>(null);
@@ -28,16 +28,33 @@ export function WorkflowVersionsRail({ versions, selectedVersion, onSelectVersio
   }
 
   return (
-    <div className="space-y-3">
-      <ol className="space-y-1.5" aria-label="Workflow versions">
-        {versions.map((v) => {
+    <div className="space-y-4">
+      <ol className="relative" aria-label="Workflow versions">
+        {versions.map((v, index) => {
           const selected = v.version === selectedVersion;
+          const inUse = v.isActive;
+          const last = index === versions.length - 1;
           return (
-            <li key={v.id}>
+            <li key={v.id} className="relative grid grid-cols-[1.5rem_minmax(0,1fr)] gap-x-3">
+              {/* Sumbu tangga: menyambung antar versi, berhenti di versi terakhir. */}
+              <span className="relative flex justify-center">
+                {!last && <span aria-hidden="true" className="absolute inset-y-0 w-px bg-neutral-200" />}
+                <span
+                  aria-hidden="true"
+                  data-slot="version-dot"
+                  data-in-use={inUse ? 'true' : undefined}
+                  className={cn(
+                    'relative z-10 mt-2.5 h-3 w-3 rounded-full',
+                    inUse ? 'bg-neutral-800' : 'border border-neutral-300 bg-white',
+                    selected && !inUse && 'ring-2 ring-neutral-800 ring-offset-1',
+                  )}
+                />
+              </span>
+
               <div
                 className={cn(
-                  'flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border px-3 py-2',
-                  selected ? 'border-neutral-800 bg-neutral-50' : 'border-neutral-200 bg-white',
+                  'flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md px-3 py-2',
+                  selected ? 'bg-neutral-50' : 'hover:bg-neutral-50',
                 )}
               >
                 <button
@@ -49,7 +66,7 @@ export function WorkflowVersionsRail({ versions, selectedVersion, onSelectVersio
                 >
                   <span className="font-mono text-body-sm font-semibold text-neutral-900">v{v.version}</span>
                   <StatusBadge status={v.status} label={VERSION_STATUS_LABEL[v.status] ?? v.status} />
-                  {v.isActive && <Badge variant="success">In use</Badge>}
+                  {inUse && <Badge variant="success">In use</Badge>}
                   <span className="truncate text-caption text-neutral-500">{v.name}</span>
                   <span className="ml-auto shrink-0 font-mono text-caption tabular-nums text-neutral-500">
                     {v.stepCount} step{v.stepCount === 1 ? '' : 's'}
@@ -57,7 +74,7 @@ export function WorkflowVersionsRail({ versions, selectedVersion, onSelectVersio
                 </button>
                 <span className="shrink-0 text-caption text-neutral-500">
                   {formatDate(v.createdAt)}
-                  {v.createdByName ? ` · ${v.createdByName}` : ''}
+                  {v.createdByName ? `, ${v.createdByName}` : ''}
                 </span>
                 {!selected && (
                   <Button
@@ -103,14 +120,14 @@ function VersionDiffView({ diff }: { diff: WorkflowVersionDiff }) {
         <p key={`a-${s.stepOrder}`} className="text-success-700">
           <span aria-hidden="true">+ </span>
           <span className="sr-only">Added: </span>
-          Step {s.stepOrder} — {s.name}
+          Step {s.stepOrder}: {s.name}
         </p>
       ))}
       {diff.removed.map((s) => (
         <p key={`r-${s.stepOrder}`} className="text-destructive-700">
           <span aria-hidden="true">− </span>
           <span className="sr-only">Removed: </span>
-          Step {s.stepOrder} — {s.name}
+          Step {s.stepOrder}: {s.name}
         </p>
       ))}
       {diff.changed.map((c) => (
@@ -123,7 +140,7 @@ function VersionDiffView({ diff }: { diff: WorkflowVersionDiff }) {
           <ul className="ml-4 list-disc text-caption text-neutral-600">
             {c.fields.map((f) => (
               <li key={f.field}>
-                {f.field}: <span className="font-mono">{f.from ?? '—'}</span> → <span className="font-mono">{f.to ?? '—'}</span>
+                {f.field}: <span className="font-mono">{f.from ?? 'Not set'}</span> to <span className="font-mono">{f.to ?? 'Not set'}</span>
               </li>
             ))}
           </ul>

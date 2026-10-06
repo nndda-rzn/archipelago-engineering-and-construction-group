@@ -338,7 +338,8 @@ export const workflowInsightsSchema = z.object({
     count: z.number(),
     min: z.number().nullable(),
     max: z.number().nullable(),
-    buckets: z.array(z.object({ label: z.string(), count: z.number() })),
+    /** `from`/`to` dikirim eksplisit agar klien tidak menebak rentang dari label. */
+    buckets: z.array(z.object({ label: z.string(), count: z.number(), from: z.number(), to: z.number().nullable() })),
   }),
   /** Berapa dokumen yang benar-benar memenuhi syarat tiap langkah. */
   ruleHits: z.array(
@@ -349,8 +350,26 @@ export const workflowInsightsSchema = z.object({
       matching: z.number(),
     }),
   ),
-  /** Jumlah pemegang role per langkah definisi AKTIF — 0 berarti rantai macet. */
-  coverage: z.array(z.object({ stepOrder: z.number(), roleCode: z.string(), holders: z.number() })),
+  /** Jumlah pemegang role per langkah definisi AKTIF. 0 berarti rantai macet. */
+  coverage: z.array(
+    z.object({
+      stepOrder: z.number(),
+      roleCode: z.string(),
+      holders: z.number(),
+      /** Nama pemegang. Menjawab "siapa", bukan hanya "berapa". */
+      holderNames: z.array(z.string()),
+    }),
+  ),
+  /** Ambang nyata tiap langkah, untuk digambar sebagai garis pada sebaran nilai. */
+  thresholds: z.array(
+    z.object({
+      stepOrder: z.number(),
+      stepName: z.string(),
+      field: z.string(),
+      op: z.string(),
+      value: z.number(),
+    }),
+  ),
   note: z.string(),
 });
 export type WorkflowInsights = z.infer<typeof workflowInsightsSchema>;

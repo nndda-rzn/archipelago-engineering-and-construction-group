@@ -333,7 +333,9 @@ export class WorkflowDefinitionService {
     const newVersion = await this.prisma.$transaction(async (tx) => {
       const created = await tx.workflowDefinition.create({
         data: {
-          code, name: `${latest.name} v${latest.version + 1}`, description: latest.description, version: latest.version + 1,
+          // Nama tidak menyisipkan nomor versi: versi sudah punya kolom dan badge
+          // sendiri, jadi menaruhnya di nama hanya menduplikasi sinyal.
+          code, name: latest.name, description: latest.description, version: latest.version + 1,
           status: 'DRAFT', transactionType: latest.transactionType, createdBy: actorId,
           steps: { create: latest.steps.sort((a, b) => a.stepOrder - b.stepOrder).map((s) => ({ stepOrder: s.stepOrder, name: s.name, approverRoleCode: s.approverRoleCode, conditionField: s.conditionField, conditionOp: s.conditionOp, conditionValue: s.conditionValue })) },
         },

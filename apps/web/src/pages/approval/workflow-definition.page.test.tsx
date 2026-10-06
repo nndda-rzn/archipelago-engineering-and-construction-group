@@ -45,23 +45,23 @@ const mutateSpy = vi.hoisted(() => ({
 // Dua definisi: satu ACTIVE (terkunci) dan satu DRAFT (bisa diubah).
 const defs = vi.hoisted(() => [
   {
-    id: 'def-pr-v2', code: 'PR_APPROVAL', name: 'PR Approval', description: 'Manager then board',
+    id: 'def-pr-v2', code: 'PR_APPROVAL', name: 'Purchase requisition approval', description: 'Manager then board',
     version: 2, status: 'ACTIVE', transactionType: 'PurchaseRequisition',
     createdBy: 'u1', createdByName: 'AEC Administrator',
     createdAt: '2026-02-01T00:00:00.000Z', updatedAt: '2026-02-01T00:00:00.000Z',
     steps: [
-      { id: 's1', definitionId: 'def-pr-v2', stepOrder: 1, name: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER', conditionField: null, conditionOp: null, conditionValue: null },
-      { id: 's2', definitionId: 'def-pr-v2', stepOrder: 2, name: 'Approval Direksi', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 5_000_000 },
+      { id: 's1', definitionId: 'def-pr-v2', stepOrder: 1, name: 'Procurement manager approval', approverRoleCode: 'PROCUREMENT_MANAGER', conditionField: null, conditionOp: null, conditionValue: null },
+      { id: 's2', definitionId: 'def-pr-v2', stepOrder: 2, name: 'Board approval', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 5_000_000 },
     ],
   },
   {
-    id: 'def-pr-v3', code: 'PR_APPROVAL', name: 'PR Approval v3', description: 'Adds finance review',
+    id: 'def-pr-v3', code: 'PR_APPROVAL', name: 'Purchase requisition approval', description: 'Adds finance review',
     version: 3, status: 'DRAFT', transactionType: 'PurchaseRequisition',
     createdBy: 'u1', createdByName: 'AEC Administrator',
     createdAt: '2026-03-01T00:00:00.000Z', updatedAt: '2026-03-01T00:00:00.000Z',
     steps: [
-      { id: 'd1', definitionId: 'def-pr-v3', stepOrder: 1, name: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER', conditionField: null, conditionOp: null, conditionValue: null },
-      { id: 'd2', definitionId: 'def-pr-v3', stepOrder: 2, name: 'Finance Review', approverRoleCode: 'NOBODY_HOLDS_THIS', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 10_000_000 },
+      { id: 'd1', definitionId: 'def-pr-v3', stepOrder: 1, name: 'Procurement manager approval', approverRoleCode: 'PROCUREMENT_MANAGER', conditionField: null, conditionOp: null, conditionValue: null },
+      { id: 'd2', definitionId: 'def-pr-v3', stepOrder: 2, name: 'Finance review', approverRoleCode: 'NOBODY_HOLDS_THIS', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 10_000_000 },
     ],
   },
 ]);
@@ -73,17 +73,17 @@ vi.mock('@/features/approval', async () => {
     useWorkflowDefinitions: () => ({ data: defs, isLoading: false, isError: false, refetch: vi.fn() }),
     useWorkflowVersions: () => ({
       data: [
-        { id: 'def-pr-v3', code: 'PR_APPROVAL', version: 3, status: 'DRAFT', name: 'PR Approval v3', stepCount: 2, createdByName: 'AEC Administrator', createdAt: '2026-03-01T00:00:00.000Z', updatedAt: '2026-03-01T00:00:00.000Z', isActive: false },
-        { id: 'def-pr-v2', code: 'PR_APPROVAL', version: 2, status: 'ACTIVE', name: 'PR Approval', stepCount: 2, createdByName: 'AEC Administrator', createdAt: '2026-02-01T00:00:00.000Z', updatedAt: '2026-02-01T00:00:00.000Z', isActive: true },
+        { id: 'def-pr-v3', code: 'PR_APPROVAL', version: 3, status: 'DRAFT', name: 'Purchase requisition approval', stepCount: 2, createdByName: 'AEC Administrator', createdAt: '2026-03-01T00:00:00.000Z', updatedAt: '2026-03-01T00:00:00.000Z', isActive: false },
+        { id: 'def-pr-v2', code: 'PR_APPROVAL', version: 2, status: 'ACTIVE', name: 'Purchase requisition approval', stepCount: 2, createdByName: 'AEC Administrator', createdAt: '2026-02-01T00:00:00.000Z', updatedAt: '2026-02-01T00:00:00.000Z', isActive: true },
       ],
       isLoading: false, isError: false, refetch: vi.fn(),
     }),
     useWorkflowVersionDiff: () => ({
       data: {
-        from: { id: 'def-pr-v2', code: 'PR_APPROVAL', version: 2, status: 'ACTIVE', name: 'PR Approval', stepCount: 2, createdByName: 'AEC Administrator', createdAt: '2026-02-01T00:00:00.000Z', updatedAt: '2026-02-01T00:00:00.000Z', isActive: true },
-        to: { id: 'def-pr-v3', code: 'PR_APPROVAL', version: 3, status: 'DRAFT', name: 'PR Approval v3', stepCount: 2, createdByName: 'AEC Administrator', createdAt: '2026-03-01T00:00:00.000Z', updatedAt: '2026-03-01T00:00:00.000Z', isActive: false },
+        from: { id: 'def-pr-v2', code: 'PR_APPROVAL', version: 2, status: 'ACTIVE', name: 'Purchase requisition approval', stepCount: 2, createdByName: 'AEC Administrator', createdAt: '2026-02-01T00:00:00.000Z', updatedAt: '2026-02-01T00:00:00.000Z', isActive: true },
+        to: { id: 'def-pr-v3', code: 'PR_APPROVAL', version: 3, status: 'DRAFT', name: 'Purchase requisition approval', stepCount: 2, createdByName: 'AEC Administrator', createdAt: '2026-03-01T00:00:00.000Z', updatedAt: '2026-03-01T00:00:00.000Z', isActive: false },
         added: [], removed: [],
-        changed: [{ stepOrder: 2, fields: [{ field: 'name', from: 'Approval Direksi', to: 'Finance Review' }] }],
+        changed: [{ stepOrder: 2, fields: [{ field: 'name', from: 'Board approval', to: 'Finance review' }] }],
       },
       isLoading: false, isError: false,
     }),
@@ -92,16 +92,20 @@ vi.mock('@/features/approval', async () => {
         transactionType: 'PurchaseRequisition',
         generatedAt: '2026-10-06T00:00:00.000Z',
         byStep: [
-          { stepOrder: 1, stepName: 'Approval Manager Pengadaan', total: 11, approved: 7, rejected: 1, pending: 3, cancelled: 0 },
-          { stepOrder: 2, stepName: 'Approval Direksi', total: 6, approved: 4, rejected: 0, pending: 2, cancelled: 0 },
+          { stepOrder: 1, stepName: 'Procurement manager approval', total: 11, approved: 7, rejected: 1, pending: 3, cancelled: 0 },
+          { stepOrder: 2, stepName: 'Board approval', total: 6, approved: 4, rejected: 0, pending: 2, cancelled: 0 },
         ],
         monthly: [
           { month: '2026-08', created: 4, decided: 3 },
           { month: '2026-09', created: 5, decided: 4 },
         ],
-        amounts: { count: 11, min: 2_000_000, max: 150_000_000_000, buckets: [{ label: '< 10jt', count: 1 }, { label: '100jt–1M', count: 6 }] },
-        ruleHits: [{ stepOrder: 2, name: 'Approval Direksi', condition: 'estimatedTotal > 5.000.000', matching: 10 }],
-        coverage: [{ stepOrder: 1, roleCode: 'PROCUREMENT_MANAGER', holders: 1 }, { stepOrder: 2, roleCode: 'SUPER_ADMIN', holders: 1 }],
+        amounts: { count: 11, min: 2_000_000, max: 150_000_000_000, buckets: [{ label: '< 10jt', count: 1, from: 0, to: 10_000_000 }, { label: '100jt-1M', count: 6, from: 100_000_000, to: 1_000_000_000 }] },
+        ruleHits: [{ stepOrder: 2, name: 'Board approval', condition: 'estimatedTotal > 5.000.000', matching: 10 }],
+        coverage: [
+          { stepOrder: 1, roleCode: 'PROCUREMENT_MANAGER', holders: 1, holderNames: ['AEC Administrator'] },
+          { stepOrder: 2, roleCode: 'SUPER_ADMIN', holders: 2, holderNames: ['AEC Administrator', 'CFO Demo'] },
+        ],
+        thresholds: [{ stepOrder: 2, stepName: 'Board approval', field: 'estimatedTotal', op: '>', value: 5_000_000 }],
         note: 'Based on recorded approval tasks for this transaction type.',
       },
       isLoading: false, isError: false, refetch: vi.fn(),
@@ -125,7 +129,7 @@ vi.mock('@/entities/role', async () => {
     useRoles: () => ({
       data: [
         { id: 'r1', code: 'PROCUREMENT_MANAGER', name: 'Procurement Manager', description: null, status: 'ACTIVE', _count: { userRoles: 1 }, permissions: [] },
-        { id: 'r2', code: 'SUPER_ADMIN', name: 'Super Administrator', description: null, status: 'ACTIVE', _count: { userRoles: 1 }, permissions: [] },
+        { id: 'r2', code: 'SUPER_ADMIN', name: 'Super Administrator', description: null, status: 'ACTIVE', _count: { userRoles: 2 }, permissions: [] },
       ],
       isLoading: false,
     }),
@@ -139,7 +143,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe('WorkflowDefinitionPage — struktur & identitas', () => {
+describe('WorkflowDefinitionPage: struktur & identitas', () => {
   it('states what the page is for and summarises the collection', () => {
     renderWithProviders(<WorkflowDefinitionPage />);
     expect(screen.getByRole('heading', { name: 'Workflow', level: 1 })).toBeTruthy();
@@ -164,18 +168,73 @@ describe('WorkflowDefinitionPage — struktur & identitas', () => {
   });
 });
 
-describe('WorkflowDefinitionPage — pipeline sebagai alur', () => {
+describe('WorkflowDefinitionPage: pemegang role tampil sebagai orang', () => {
+  it('names the people who can approve, not just how many', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    // Versi ACTIVE: step 1 dipegang satu orang, step 2 dipegang dua orang.
+    const step1 = screen.getByLabelText(/Step 1: Procurement manager approval/);
+    expect(step1.textContent).toContain('AEC Administrator');
+
+    const step2 = screen.getByLabelText(/Step 2: Board approval/);
+    expect(step2.textContent).toMatch(/AEC Administrator, CFO Demo/);
+  });
+
+  it('stacks avatars for several holders and labels the stack with every name', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    const step2 = screen.getByLabelText(/Step 2: Board approval/);
+    const stack = step2.querySelector('[data-slot="avatar-stack"]');
+    expect(stack).toBeTruthy();
+    expect(stack!.getAttribute('aria-label')).toMatch(/2 approvers: AEC Administrator, CFO Demo/);
+  });
+});
+
+describe('WorkflowDefinitionPage: identitas memakai nama, bukan kode', () => {
+  it('leads with the readable name and keeps the code as reference metadata', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    expect(screen.getByRole('heading', { name: 'Purchase requisition approval', level: 2 })).toBeTruthy();
+    // Kode tetap ada supaya dokumen bisa dirujuk, tapi bukan judul.
+    const detail = screen.getByLabelText('Workflow detail');
+    expect(within(detail).getAllByText('PR_APPROVAL').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('uses the readable name in the list too', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    const list = screen.getByLabelText('Workflow definitions');
+    expect(within(list).getAllByText('Purchase requisition approval').length).toBe(2);
+  });
+});
+
+describe('WorkflowDefinitionPage: versi sebagai tangga', () => {
+  it('marks only the in-use version with a filled dot', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    const rail = screen.getByLabelText('Workflow versions');
+    const dots = rail.querySelectorAll('[data-slot="version-dot"]');
+    expect(dots.length).toBe(2);
+    const filled = rail.querySelectorAll('[data-slot="version-dot"][data-in-use="true"]');
+    expect(filled.length).toBe(1);
+  });
+});
+
+describe('WorkflowDefinitionPage: ambang terlihat', () => {
+  it('shows the real threshold of each conditional step', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    expect(screen.getByText('Approval thresholds')).toBeTruthy();
+    expect(screen.getByText(/above\s*5\.000\.000/i)).toBeTruthy();
+  });
+});
+
+describe('WorkflowDefinitionPage: pipeline sebagai alur', () => {
   it('renders each step as a node with its role and holder count', () => {
     renderWithProviders(<WorkflowDefinitionPage />);
-    expect(screen.getByLabelText(/Step 1: Approval Manager Pengadaan/)).toBeTruthy();
-    expect(screen.getByLabelText(/Step 2: Approval Direksi/)).toBeTruthy();
+    expect(screen.getByLabelText(/Step 1: Procurement manager approval/)).toBeTruthy();
+    expect(screen.getByLabelText(/Step 2: Board approval/)).toBeTruthy();
   });
 
   it('flags a step whose approver role nobody holds', () => {
     renderWithProviders(<WorkflowDefinitionPage />);
     // Default membuka versi ACTIVE; versi DRAFT punya role tanpa pemegang.
     fireEvent.click(screen.getByLabelText(/Version 3, Draft/));
-    expect(screen.getByText(/No approver — the chain will stall/i)).toBeTruthy();
+    expect(screen.getByText(/No approver, so the chain will stall/i)).toBeTruthy();
   });
 
   it('offers a table view of the same chain (diagram ⇄ table)', () => {
@@ -185,11 +244,11 @@ describe('WorkflowDefinitionPage — pipeline sebagai alur', () => {
   });
 });
 
-describe('WorkflowDefinitionPage — rantai sebagai alur', () => {
+describe('WorkflowDefinitionPage: rantai sebagai alur', () => {
   it('renders each step as a row with its role and holder count', () => {
     renderWithProviders(<WorkflowDefinitionPage />);
-    expect(screen.getByLabelText(/Step 1: Approval Manager Pengadaan/)).toBeTruthy();
-    expect(screen.getByLabelText(/Step 2: Approval Direksi/)).toBeTruthy();
+    expect(screen.getByLabelText(/Step 1: Procurement manager approval/)).toBeTruthy();
+    expect(screen.getByLabelText(/Step 2: Board approval/)).toBeTruthy();
   });
 
   it('brackets the chain with a trigger and a result so it reads as a process', () => {
@@ -212,7 +271,7 @@ describe('WorkflowDefinitionPage — rantai sebagai alur', () => {
 
   it('groups by space, not by borders (strip-the-borders check)', () => {
     renderWithProviders(<WorkflowDefinitionPage />);
-    const stepRow = screen.getByLabelText(/Step 1: Approval Manager Pengadaan/);
+    const stepRow = screen.getByLabelText(/Step 1: Procurement manager approval/);
     // Baris langkah tidak memakai border sebagai pengelompok: hanya garis kiri
     // penanda terpilih, tanpa kotak penuh.
     expect(stepRow.className).toContain('border-l-2');
@@ -233,17 +292,17 @@ describe('WorkflowDefinitionPage — rantai sebagai alur', () => {
   it('flags a step whose approver role nobody holds', () => {
     renderWithProviders(<WorkflowDefinitionPage />);
     fireEvent.click(screen.getByLabelText(/Version 3, Draft/));
-    expect(screen.getByText(/No approver — the chain will stall/i)).toBeTruthy();
+    expect(screen.getByText(/No approver, so the chain will stall/i)).toBeTruthy();
   });
 
-  it('offers a table view of the same chain (flow ⇄ table)', () => {
+  it('offers a table view of the same chain (flow and table)', () => {
     renderWithProviders(<WorkflowDefinitionPage />);
     fireEvent.click(screen.getByRole('radio', { name: 'Table' }));
     expect(screen.getByRole('table', { name: /Approval steps/i })).toBeTruthy();
   });
 });
 
-describe('WorkflowDefinitionPage — satu aksi primer', () => {
+describe('WorkflowDefinitionPage: satu aksi primer', () => {
   it('makes Publish the only primary button on a draft', () => {
     renderWithProviders(<WorkflowDefinitionPage />);
     fireEvent.click(screen.getByLabelText(/Version 3, Draft/));
@@ -263,18 +322,18 @@ describe('WorkflowDefinitionPage — satu aksi primer', () => {
   });
 });
 
-describe('WorkflowDefinitionPage — rantai & editor sebidang', () => {
+describe('WorkflowDefinitionPage: rantai & editor sebidang', () => {
   it('keeps the chain visible while a step is selected for editing', () => {
     renderWithProviders(<WorkflowDefinitionPage />);
     fireEvent.click(screen.getByLabelText(/Version 3, Draft/));
-    fireEvent.click(screen.getByLabelText(/Step 2: Finance Review/));
+    fireEvent.click(screen.getByLabelText(/Step 2: Finance review/));
     // Keduanya ada di DOM yang sama: memilih langkah tidak menyembunyikan rantai.
-    expect(screen.getByLabelText(/Step 1: Approval Manager Pengadaan/)).toBeTruthy();
+    expect(screen.getByLabelText(/Step 1: Procurement manager approval/)).toBeTruthy();
     expect(screen.getByLabelText('Name')).toBeTruthy();
   });
 });
 
-describe('WorkflowDefinitionPage — aturan DRAFT vs ACTIVE', () => {
+describe('WorkflowDefinitionPage: aturan DRAFT vs ACTIVE', () => {
   it('locks the steps of an ACTIVE version and explains why', () => {
     renderWithProviders(<WorkflowDefinitionPage />);
     expect(screen.getByText(/read-only\. Create a new version to change them/i)).toBeTruthy();
@@ -297,7 +356,7 @@ describe('WorkflowDefinitionPage — aturan DRAFT vs ACTIVE', () => {
   });
 });
 
-describe('WorkflowDefinitionPage — menyimpan perubahan', () => {
+describe('WorkflowDefinitionPage: menyimpan perubahan', () => {
   it('sends the edited step to the server only after Save is pressed', async () => {
     renderWithProviders(<WorkflowDefinitionPage />);
     fireEvent.click(screen.getByLabelText(/Version 3, Draft/));
@@ -325,28 +384,47 @@ describe('WorkflowDefinitionPage — menyimpan perubahan', () => {
   });
 });
 
-describe('WorkflowDefinitionPage — condition builder terpandu', () => {
+describe('WorkflowDefinitionPage: condition builder terpandu', () => {
   it('offers only known document fields, never free text', () => {
     renderWithProviders(<WorkflowDefinitionPage />);
     fireEvent.click(screen.getByLabelText(/Version 3, Draft/));
     // Pilih langkah yang memang bersyarat (langkah 2 versi draft).
-    fireEvent.click(screen.getByLabelText(/Step 2: Finance Review/));
+    fireEvent.click(screen.getByLabelText(/Step 2: Finance review/));
     // Kontrol berupa pilihan, bukan input teks bebas.
     expect(screen.getByLabelText('Condition field')).toBeTruthy();
     expect(screen.getByLabelText('Condition operator')).toBeTruthy();
   });
 });
 
-describe('WorkflowDefinitionPage — simulasi', () => {
-  it('explains which steps apply for a given amount', () => {
+describe('WorkflowDefinitionPage: simulasi menyalakan rantai', () => {
+  it('lights up the path on the chain itself, not only in a separate list', () => {
     renderWithProviders(<WorkflowDefinitionPage />);
     fireEvent.change(screen.getByLabelText(/Document amount/i), { target: { value: '3000000' } });
-    // 3jt tidak melewati ambang 5jt → hanya langkah 1.
-    expect(screen.getByRole('status').textContent).toMatch(/needs\s*1\s*approval/i);
+
+    // 3jt tidak melewati ambang 5jt, jadi hanya langkah 1 yang berjalan.
+    expect(screen.getByRole('status').textContent).toMatch(/needs\s*1\s*of\s*2\s*steps/i);
+
+    const pipeline = document.querySelector('[data-slot="workflow-pipeline"]')!;
+    const skipped = pipeline.querySelectorAll('[data-slot="step-marker"][data-skipped="true"]');
+    expect(skipped.length).toBe(1);
+
+    // Diredupkan, bukan hanya ditandai: jalur terlihat tetapi aksinya resesif.
+    const skippedRow = screen.getByLabelText(/skipped for this amount/i);
+    expect(skippedRow.className).toContain('opacity-45');
+
+    // Langkah yang berjalan tetap penuh.
+    const runningRow = screen.getByLabelText(/Step 1: Procurement manager approval/);
+    expect(runningRow.className).not.toContain('opacity-45');
+  });
+
+  it('marks the skipped step in its accessible name, not by dimming alone', () => {
+    renderWithProviders(<WorkflowDefinitionPage />);
+    fireEvent.change(screen.getByLabelText(/Document amount/i), { target: { value: '3000000' } });
+    expect(screen.getByLabelText(/skipped for this amount/i)).toBeTruthy();
   });
 });
 
-describe('WorkflowDefinitionPage — versi & insight', () => {
+describe('WorkflowDefinitionPage: versi & insight', () => {
   it('shows the version history with status and author', () => {
     renderWithProviders(<WorkflowDefinitionPage />);
     const rail = screen.getByLabelText('Workflow versions');

@@ -4,7 +4,7 @@ import { formatNumber } from '@/shared/lib/format';
 import { opLabel } from './workflow-labels';
 
 /**
- * Insight operasional. Setiap blok **hanya tampil bila datanya bermakna** — satu
+ * Insight operasional. Setiap blok **hanya tampil bila datanya bermakna**: satu
  * titik data ditampilkan sebagai angka, bukan dipaksa jadi grafik. Bentuk dipilih
  * menurut pertanyaannya: peringkat → bar horizontal, bagian-dari-keseluruhan →
  * bar bertumpuk, deret waktu → bar+garis, sebaran vs ambang → histogram + garis.
@@ -77,7 +77,7 @@ export function WorkflowInsightsPanel({ data }: { data: WorkflowInsights }) {
         </>
       )}
 
-      {/* Deret waktu — hanya bila ada lebih dari satu bulan. */}
+      {/* Deret waktu, hanya bila ada lebih dari satu bulan. */}
       {hasMonths && (
         <section aria-labelledby="wf-insight-monthly">
           <h4 id="wf-insight-monthly" className="mb-2 text-body-sm font-medium text-neutral-800">Monthly volume</h4>
@@ -110,7 +110,7 @@ export function WorkflowInsightsPanel({ data }: { data: WorkflowInsights }) {
         </section>
       )}
 
-      {/* Sebaran nominal + ambang tiap langkah. */}
+      {/* Sebaran nominal, dengan ambang nyata tiap langkah sebagai garis. */}
       {data.amounts.count > 0 && (
         <section aria-labelledby="wf-insight-amounts">
           <h4 id="wf-insight-amounts" className="mb-2 text-body-sm font-medium text-neutral-800">Document value distribution</h4>
@@ -129,10 +129,43 @@ export function WorkflowInsightsPanel({ data }: { data: WorkflowInsights }) {
             ))}
           </ul>
           <p className="mt-2 text-caption text-neutral-500">
-            {data.amounts.count} document{data.amounts.count === 1 ? '' : 's'} · smallest{' '}
-            <span className="font-mono tabular-nums">{formatNumber(data.amounts.min ?? 0)}</span> · largest{' '}
+            {data.amounts.count} document{data.amounts.count === 1 ? '' : 's'}, smallest{' '}
+            <span className="font-mono tabular-nums">{formatNumber(data.amounts.min ?? 0)}</span>, largest{' '}
             <span className="font-mono tabular-nums">{formatNumber(maxDocument)}</span>
           </p>
+
+          {/* Ambang dari syarat nyata tiap langkah, bukan angka yang dikarang. */}
+          {data.thresholds.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-1.5 text-caption font-medium text-neutral-700">Approval thresholds</p>
+              <ul className="space-y-1.5">
+                {data.thresholds.map((t) => {
+                  const crossing = data.amounts.count > 0 ? countAbove(data.amounts.buckets, t.value) : 0;
+                  const pct = data.amounts.count > 0 ? Math.round((crossing / data.amounts.count) * 100) : 0;
+                  return (
+                    <li key={`${t.stepOrder}-${t.field}`} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
+                      <span className="w-14 shrink-0 font-mono text-caption tabular-nums text-neutral-600">Step {t.stepOrder}</span>
+                      <span className="flex items-center gap-2">
+                        <span
+                          role="img"
+                          aria-label={`${crossing} of ${data.amounts.count} documents are above ${formatNumber(t.value)}`}
+                          className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-100"
+                        >
+                          <span data-slot="threshold-fill" className="block h-full rounded-full bg-neutral-800" style={{ width: `${pct}%` }} />
+                        </span>
+                      </span>
+                      <span className="shrink-0 font-mono text-caption tabular-nums text-neutral-700">
+                        above {formatNumber(t.value)}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="mt-1.5 text-caption text-neutral-500">
+                {data.thresholds.map((t) => `Step ${t.stepOrder} ${t.stepName}: ${t.op} ${formatNumber(t.value)}`).join(' · ')}
+              </p>
+            </div>
+          )}
         </section>
       )}
 
@@ -156,7 +189,7 @@ export function WorkflowInsightsPanel({ data }: { data: WorkflowInsights }) {
         </section>
       )}
 
-      {/* Cakupan role — 0 pemegang berarti rantai macet. */}
+      {/* Cakupan role: 0 pemegang berarti rantai macet. */}
       {data.coverage.length > 0 && (
         <section aria-labelledby="wf-insight-coverage">
           <h4 id="wf-insight-coverage" className="mb-2 text-body-sm font-medium text-neutral-800">Approver coverage</h4>
@@ -166,7 +199,7 @@ export function WorkflowInsightsPanel({ data }: { data: WorkflowInsights }) {
                 <span className="w-14 shrink-0 font-mono text-caption tabular-nums text-neutral-600">Step {c.stepOrder}</span>
                 <span className="min-w-0 flex-1 truncate font-mono text-caption text-neutral-700">{c.roleCode}</span>
                 <span className={cn('shrink-0 font-mono text-caption tabular-nums', c.holders === 0 ? 'text-destructive-700' : 'text-neutral-700')}>
-                  {c.holders === 0 ? 'no holder — chain will stall' : `${c.holders} holder${c.holders === 1 ? '' : 's'}`}
+                  {c.holders === 0 ? 'no holder, so the chain will stall' : `${c.holders} holder${c.holders === 1 ? '' : 's'}`}
                 </span>
               </li>
             ))}
@@ -187,6 +220,22 @@ function Legend({ className, children }: { className: string; children: React.Re
       {children}
     </span>
   );
+}
+
+/**
+ * Berapa dokumen yang melewati sebuah ambang, dihitung dari batas bucket yang
+ * dikirim server. Bucket yang seluruhnya di atas ambang dihitung penuh; bucket
+ * yang memuat ambang di dalamnya dihitung setengah sebagai perkiraan. Batasnya
+ * dipakai langsung, bukan ditebak dari label.
+ */
+function countAbove(buckets: WorkflowInsights['amounts']['buckets'], threshold: number): number {
+  let total = 0;
+  for (const b of buckets) {
+    const upper = b.to ?? Number.POSITIVE_INFINITY;
+    if (b.from >= threshold) total += b.count;
+    else if (upper > threshold) total += Math.round(b.count / 2);
+  }
+  return total;
 }
 
 /** Ringkas ambang syarat untuk judul blok simulasi. */

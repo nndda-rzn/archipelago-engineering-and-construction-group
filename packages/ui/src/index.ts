@@ -26,6 +26,7 @@ export { StackedBar, type StackedBarProps, type StackedSegment, type StackedBarT
 export { Waterfall, waterfallSegments, type WaterfallProps, type WaterfallSegment, type WaterfallInput } from './primitives/waterfall';
 export { EvmBars, evmRatios, type EvmMetrics, type EvmRatios } from './primitives/evm-bars';
 export { EntityAvatar, initialsFrom, type EntityAvatarProps } from './primitives/entity-avatar';
+export { PersonAvatar, AvatarStack, type PersonAvatarProps, type AvatarStackProps } from './primitives/person-avatar';
 export { Root as Collapsible, Trigger as CollapsibleTrigger, Content as CollapsibleContent, type CollapsibleRootProps } from './primitives/collapsible';
 export { DeltaBadge, type DeltaBadgeProps, type DeltaDirection } from './primitives/delta-badge';
 export { FilterChip, type FilterChipProps } from './primitives/filter-chip';
