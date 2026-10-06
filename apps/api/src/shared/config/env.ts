@@ -18,6 +18,34 @@ export const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>;
 
+/** Kunci yang, bila sudah ada di environment, akan MENGALAHKAN isi file `.env`. */
+const OVERRIDABLE_KEYS = ['DATABASE_URL', 'REDIS_URL', 'JWT_SECRET', 'CORS_ORIGIN', 'PORT'] as const;
+
+/**
+ * Sebutkan host/port/nama database dari `DATABASE_URL` untuk baris log — tanpa
+ * pernah membocorkan password. `null` bila URL tidak bisa di-parse (tidak melempar).
+ */
+export function describeDatabaseTarget(url: string): { host: string; port: string; database: string } | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    const database = parsed.pathname.replace(/^\//, '');
+    return { host: parsed.hostname, port: parsed.port || '(default)', database };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Kunci mana saja yang sudah ada di `process.env` sehingga akan MENANG atas
+ * `.env`. `dotenv` tidak menimpa variabel yang sudah ada, jadi env var global
+ * (mis. milik proyek lain) bisa diam-diam mengarahkan API ke database yang salah.
+ * Dipakai untuk memperingatkan saat boot.
+ */
+export function describeEnvOverrides(raw: NodeJS.ProcessEnv): string[] {
+  return OVERRIDABLE_KEYS.filter((key) => raw[key] != null && raw[key] !== '');
+}
+
 export function validateEnv(raw: NodeJS.ProcessEnv): Env {
   const parsed = envSchema.safeParse(raw);
   if (!parsed.success) {
