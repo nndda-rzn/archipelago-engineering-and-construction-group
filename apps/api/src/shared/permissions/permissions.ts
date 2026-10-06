@@ -156,6 +156,7 @@ export const Permission = {
   WorkflowCreate: 'Workflow.CREATE',
   WorkflowEdit: 'Workflow.EDIT',
   WorkflowView: 'Workflow.VIEW',
+  WorkflowDelete: 'Workflow.DELETE',
   WorkPackageCreate: 'WorkPackage.CREATE',
   WorkPackageEdit: 'WorkPackage.EDIT',
   WorkPackageView: 'WorkPackage.VIEW',

@@ -59,6 +59,7 @@ const permissions = [
   ['Workflow.VIEW', 'Workflow', 'VIEW'],
   ['Workflow.CREATE', 'Workflow', 'CREATE'],
   ['Workflow.EDIT', 'Workflow', 'EDIT'],
+  ['Workflow.DELETE', 'Workflow', 'DELETE'],
   ['StockAdjustment.VIEW', 'StockAdjustment', 'VIEW'],
   ['StockAdjustment.CREATE', 'StockAdjustment', 'CREATE'],
   ['StockAdjustment.APPROVE', 'StockAdjustment', 'APPROVE'],

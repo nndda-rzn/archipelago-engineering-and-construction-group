@@ -104,6 +104,25 @@ export async function patchJson<T>(path: string, body: unknown): Promise<T> {
   return res.text().then((text) => JSON.parse(text, jsonReviver)) as Promise<T>;
 }
 
+/** Sama seperti `postJson`, tetapi memakai method DELETE. */
+export async function deleteJson<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, { method: 'DELETE', headers: AUTH_HEADERS() });
+
+  if (!res.ok) {
+    if (res.status === 401) handleUnauthorized();
+    const errBody = (await res.json().catch(() => null)) as {
+      error?: { code?: string; message?: string; correlationId?: string };
+    } | null;
+    throw new ApiError(
+      errBody?.error?.message ?? `Request failed: ${res.status}`,
+      errBody?.error?.code ?? 'HTTP_ERROR',
+      errBody?.error?.correlationId,
+    );
+  }
+
+  return res.text().then((text) => (text ? (JSON.parse(text, jsonReviver) as T) : (undefined as T)));
+}
+
 /**
  * Unduh berkas biner (mis. CSV export server-side) dengan header Authorization.
  * Menyimpan respons sebagai Blob dan memicu download; nama file diambil dari

@@ -80,6 +80,50 @@ export class PublishWorkflowDto {
   description?: string;
 }
 
+export class UpdateWorkflowDefinitionDto {
+  @IsOptional()
+  @IsString()
+  @Length(2, 100)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string | null;
+}
+
+export class UpdateWorkflowStepDto {
+  @IsOptional()
+  @IsString()
+  @Length(1, 100)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(2, 50)
+  approverRoleCode?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  conditionField?: string | null;
+
+  @IsOptional()
+  @IsIn(['>', '<', '>=', '<=', '=='])
+  conditionOp?: string | null;
+
+  @IsOptional()
+  @IsNumber()
+  conditionValue?: number | null;
+}
+
+export class ReorderWorkflowStepsDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
+  stepIds!: string[];
+}
+
 export class SubmitForApprovalDto {
   @IsIn(['PurchaseRequisition', 'PurchaseOrder'])
   transactionType!: string;

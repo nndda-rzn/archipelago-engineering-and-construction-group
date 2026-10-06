@@ -14,6 +14,212 @@ const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) })
 const now = new Date();
 const year = now.getFullYear();
 
+/**
+ * Data demo halaman Workflow: satu definisi dengan riwayat versi nyata
+ * (ARCHIVED → ACTIVE → DRAFT) dan task approval yang tersebar beberapa bulan,
+ * supaya rail versi, diff, dan grafik bulanan punya isi.
+ *
+ * Rekonsiliasi: baris yang sudah ada tidak digandakan.
+ */
+async function seedWorkflowDemo() {
+  const monthAgo = (n: number) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - n, 15, 3, 0, 0));
+
+  const admin = await prisma.user.findUnique({ where: { email: 'admin@aec.local' }, select: { id: true } });
+  const buyer = await prisma.user.findUnique({ where: { email: 'buyer@aec.local' }, select: { id: true } });
+  const requesterId = buyer?.id ?? admin?.id ?? 'system';
+  const approverId = admin?.id ?? 'system';
+
+  // ── Definisi: PR_APPROVAL dengan 3 versi ──
+  const prCode = 'PR_APPROVAL';
+  const existingVersions = await prisma.workflowDefinition.findMany({ where: { code: prCode } });
+  const authorId = admin?.id ?? 'system';
+
+  // v1 — ARCHIVED (versi lama yang sudah digantikan). Seed dasar membuat v1
+  // dengan 2 langkah; versi pertama seharusnya SATU langkah, jadi direkonsiliasi
+  // agar riwayat versi benar-benar berbeda antar versi (diff jadi bermakna).
+  const v1 = existingVersions.find((d) => d.version === 1);
+  if (!v1) {
+    await prisma.workflowDefinition.create({
+      data: {
+        code: prCode, name: 'PR Approval', description: 'Single-step approval for purchase requisitions',
+        version: 1, status: 'ARCHIVED', transactionType: 'PurchaseRequisition', createdBy: authorId,
+        steps: { create: [{ stepOrder: 1, name: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER' }] },
+      },
+    });
+    console.log('Workflow: PR_APPROVAL v1 ARCHIVED');
+  } else {
+    await prisma.$transaction([
+      prisma.workflowStep.deleteMany({ where: { definitionId: v1.id } }),
+      prisma.workflowStep.createMany({
+        data: [{ stepOrder: 1, name: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER', definitionId: v1.id }],
+      }),
+      prisma.workflowDefinition.update({
+        where: { id: v1.id },
+        data: { status: 'ARCHIVED', createdBy: authorId, description: 'Single-step approval for purchase requisitions' },
+      }),
+    ]);
+  }
+
+  // v2 — ACTIVE (dipakai runtime).
+  const v2 = existingVersions.find((d) => d.version === 2);
+  if (!v2) {
+    await prisma.workflowDefinition.create({
+      data: {
+        code: prCode, name: 'PR Approval', description: 'Manager approval, then board approval above 5jt',
+        version: 2, status: 'ACTIVE', transactionType: 'PurchaseRequisition', createdBy: authorId,
+        steps: {
+          create: [
+            { stepOrder: 1, name: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER' },
+            { stepOrder: 2, name: 'Approval Direksi', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 5_000_000 },
+          ],
+        },
+      },
+    });
+    console.log('Workflow: PR_APPROVAL v2 ACTIVE');
+  } else {
+    await prisma.workflowDefinition.update({
+      where: { id: v2.id },
+      data: { createdBy: authorId, description: 'Manager approval, then board approval above 5jt' },
+    });
+  }
+
+  // v3 — DRAFT (sedang disiapkan; bisa diedit & dibandingkan dengan v2).
+  const v3 = existingVersions.find((d) => d.version === 3);
+  if (!v3) {
+    await prisma.workflowDefinition.create({
+      data: {
+        code: prCode, name: 'PR Approval v3', description: 'Adds a finance review before the board step',
+        version: 3, status: 'DRAFT', transactionType: 'PurchaseRequisition', createdBy: authorId,
+        steps: {
+          create: [
+            { stepOrder: 1, name: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER' },
+            { stepOrder: 2, name: 'Finance Review', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 10_000_000 },
+            { stepOrder: 3, name: 'Approval Direksi', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 100_000_000 },
+          ],
+        },
+      },
+    });
+    console.log('Workflow: PR_APPROVAL v3 DRAFT');
+  } else {
+    await prisma.workflowDefinition.update({
+      where: { id: v3.id },
+      data: { status: 'DRAFT', createdBy: authorId, description: 'Adds a finance review before the board step' },
+    });
+  }
+
+  // PO_APPROVAL v1 sudah dibuat seed dasar; pastikan tetap ACTIVE + 2 langkah.
+  const poDef = await prisma.workflowDefinition.findFirst({ where: { code: 'PO_APPROVAL', version: 1 } });
+  if (poDef) {
+    await prisma.workflowDefinition.update({ where: { id: poDef.id }, data: { status: 'ACTIVE', createdBy: authorId } });
+  }
+
+  // Rekonsiliasi: hanya SATU versi boleh ACTIVE per code (kalau tidak,
+  // `getActiveDefinition` ambigu), dan versi ACTIVE harus ADA — tanpa itu submit
+  // PR/PO gagal. Urutan yang diinginkan untuk demo: v1 ARCHIVED, v2 ACTIVE, v3 DRAFT.
+  const allVersions = await prisma.workflowDefinition.findMany({ where: { code: prCode } });
+  const wanted: Record<number, string> = { 1: 'ARCHIVED', 2: 'ACTIVE', 3: 'DRAFT' };
+  for (const d of allVersions) {
+    const target = wanted[d.version];
+    if (target && d.status !== target) {
+      await prisma.workflowDefinition.update({ where: { id: d.id }, data: { status: target } });
+      console.log(`Workflow: ${prCode} v${d.version} ${d.status} → ${target}`);
+    }
+  }
+
+  // Jenis transaksi lain pun: pastikan ada tepat satu ACTIVE.
+  for (const txType of ['PurchaseOrder', 'PurchaseRequisition']) {
+    const actives = await prisma.workflowDefinition.findMany({ where: { transactionType: txType, status: 'ACTIVE' }, orderBy: { version: 'desc' } });
+    if (actives.length > 1) {
+      const [winner, ...losers] = actives;
+      await prisma.workflowDefinition.updateMany({ where: { id: { in: losers.map((l) => l.id) } }, data: { status: 'ARCHIVED' } });
+      console.log(`Workflow: ${txType} v${winner!.version} ACTIVE, ${losers.length} lain diarsipkan`);
+    } else if (actives.length === 0) {
+      // Tidak ada ACTIVE sama sekali → promosikan versi tertinggi yang punya langkah.
+      const candidate = await prisma.workflowDefinition.findFirst({
+        where: { transactionType: txType, status: { not: 'ACTIVE' }, steps: { some: {} } },
+        orderBy: [{ status: 'asc' }, { version: 'desc' }],
+      });
+      if (candidate) {
+        await prisma.workflowDefinition.update({ where: { id: candidate.id }, data: { status: 'ACTIVE' } });
+        console.log(`Workflow: ${txType} tanpa ACTIVE → v${candidate.version} dipromosikan`);
+      }
+    }
+  }
+
+  // ── Task approval tersebar 4 bulan, agar grafik bulanan & funnel bermakna ──
+  const prs = await prisma.purchaseRequisition.findMany({ select: { id: true, prNumber: true }, orderBy: { createdAt: 'asc' } });
+  if (prs.length === 0) return;
+
+  const existingTasks = await prisma.approvalTask.count({ where: { transactionType: 'PurchaseRequisition' } });
+  console.log(`ApprovalTask: ${existingTasks} sudah ada — tanggal direkonsiliasi agar tersebar`);
+
+  // Pola status per dokumen — deterministik supaya demo dapat diulang.
+  const outcomeFor = (index: number): { stepOrder: number; status: string } => {
+    const cycle = index % 5;
+    if (cycle === 0) return { stepOrder: 1, status: 'APPROVED' };
+    if (cycle === 1) return { stepOrder: 2, status: 'APPROVED' };
+    if (cycle === 2) return { stepOrder: 1, status: 'REJECTED' };
+    if (cycle === 3) return { stepOrder: 1, status: 'PENDING' };
+    return { stepOrder: 2, status: 'PENDING' };
+  };
+
+  let created = 0;
+  let reconciled = 0;
+  for (const [index, pr] of prs.entries()) {
+    const outcome = outcomeFor(index);
+    const createdAt = monthAgo(index % 4);
+    const step1DecidedAt = outcome.status === 'PENDING' ? null : new Date(createdAt.getTime() + 3 * 86_400_000);
+    const step2CreatedAt = new Date(createdAt.getTime() + 2 * 86_400_000);
+
+    const step1 = await prisma.approvalTask.findFirst({
+      where: { transactionType: 'PurchaseRequisition', transactionId: pr.id, stepOrder: 1 },
+    });
+    const step2 = await prisma.approvalTask.findFirst({
+      where: { transactionType: 'PurchaseRequisition', transactionId: pr.id, stepOrder: 2 },
+    });
+
+    if (!step1) {
+      // Langkah 1 selalu ada; dokumen yang sampai langkah 2 punya baris tambahan.
+      await prisma.approvalTask.create({
+        data: {
+          transactionType: 'PurchaseRequisition', transactionId: pr.id, transactionCode: pr.prNumber,
+          stepOrder: 1, stepName: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER',
+          status: outcome.stepOrder === 1 ? outcome.status : 'APPROVED',
+          requesterId, approverId: outcome.stepOrder === 1 && outcome.status !== 'PENDING' ? approverId : null,
+          comment: outcome.status === 'REJECTED' ? 'Budget line not available this quarter' : null,
+          decidedAt: outcome.stepOrder === 1 ? step1DecidedAt : new Date(createdAt.getTime() + 2 * 86_400_000),
+          createdAt,
+        },
+      });
+      created += 1;
+    } else if (step1.createdAt.getTime() !== createdAt.getTime()) {
+      // Rekonsiliasi: task lama semuanya bertanggal hari ini → grafik bulanan
+      // hanya punya satu titik. Sebar ulang agar bermakna.
+      await prisma.approvalTask.update({ where: { id: step1.id }, data: { createdAt, decidedAt: step1.decidedAt ? step1DecidedAt : null } });
+      reconciled += 1;
+    }
+
+    if (outcome.stepOrder === 2) {
+      if (!step2) {
+        await prisma.approvalTask.create({
+          data: {
+            transactionType: 'PurchaseRequisition', transactionId: pr.id, transactionCode: pr.prNumber,
+            stepOrder: 2, stepName: 'Approval Direksi', approverRoleCode: 'SUPER_ADMIN',
+            status: outcome.status,
+            requesterId, approverId: outcome.status === 'PENDING' ? null : approverId,
+            decidedAt: step1DecidedAt, createdAt: step2CreatedAt,
+          },
+        });
+        created += 1;
+      } else if (step2.createdAt.getTime() !== step2CreatedAt.getTime()) {
+        await prisma.approvalTask.update({ where: { id: step2.id }, data: { createdAt: step2CreatedAt, decidedAt: outcome.status === 'PENDING' ? null : step1DecidedAt } });
+        reconciled += 1;
+      }
+    }
+  }
+  console.log(`ApprovalTask: +${created} dibuat, ${reconciled} tanggal direkonsiliasi (tersebar 4 bulan)`);
+}
+
 async function main() {
   const entity = await prisma.legalEntity.findUnique({ where: { code: 'AEC-CON' } });
   if (!entity) throw new Error('Seed base dulu: pnpm --filter @aec/api db:seed');
@@ -433,6 +639,11 @@ async function main() {
     }
   }
   console.log('Demo users: ceo/cfo/pm @aec.local / Demo123!');
+
+  // ── 13. Workflow demo: versi (DRAFT/ACTIVE/ARCHIVED) + task tersebar ──
+  // Tanpa ini, halaman Workflow hanya punya 1 versi ACTIVE dan seluruh task
+  // bertanggal hari ini — rail versi dan grafik bulanan jadi tak bermakna.
+  await seedWorkflowDemo();
 
   console.log('\n=== DEMO SEED SELESAI ===');
   console.log('Login demo: admin@aec.local / Admin123! (super user)');
