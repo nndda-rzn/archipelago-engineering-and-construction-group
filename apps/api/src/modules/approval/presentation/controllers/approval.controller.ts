@@ -3,7 +3,7 @@ import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
 import { Permission } from '@/shared/permissions/permissions';
-import { AddWorkflowStepDto, ApproveTaskDto, CreateWorkflowDefinitionDto, PublishWorkflowDto, SubmitForApprovalDto } from '../dto/approval.dto';
+import { AddWorkflowStepDto, ApproveTaskDto, BulkDecideDto, CreateWorkflowDefinitionDto, ListApprovalQueryDto, PublishWorkflowDto, SubmitForApprovalDto } from '../dto/approval.dto';
 import { ApprovalTaskService } from '../../application/services/approval-task.service';
 import { WorkflowDefinitionService } from '../../application/services/workflow-definition.service';
 
@@ -17,14 +17,17 @@ export class ApprovalController {
 
   @Get()
   @Permissions(Permission.ApprovalView)
-  listTasks(
-    @Req() request: { user?: { sub?: string } },
-    @Query('page') page?: string,
-    @Query('pageSize') pageSize?: string,
-  ) {
-    const p = Math.max(1, Number(page) || 1);
-    const ps = Math.min(200, Math.max(1, Number(pageSize) || 20));
-    return this.task.listTasks(request.user?.sub ?? 'system', p, ps);
+  listTasks(@Req() request: { user?: { sub?: string } }, @Query() query: ListApprovalQueryDto) {
+    const page = Math.max(1, Number(query.page) || 1);
+    const pageSize = Math.min(200, Math.max(1, Number(query.pageSize) || 20));
+    return this.task.listTasks(request.user?.sub ?? 'system', {
+      status: query.status,
+      type: query.type,
+      q: query.q,
+      mine: query.mine === 'true' || query.mine === '1',
+      page,
+      pageSize,
+    });
   }
 
   @Post('submit')
@@ -37,6 +40,12 @@ export class ApprovalController {
   @Permissions(Permission.ApprovalApprove)
   decide(@Body() dto: ApproveTaskDto, @Req() request: { user?: { sub?: string } }) {
     return this.task.decide(dto, request.user?.sub ?? 'system');
+  }
+
+  @Post('bulk-decide')
+  @Permissions(Permission.ApprovalApprove)
+  bulkDecide(@Body() dto: BulkDecideDto, @Req() request: { user?: { sub?: string } }) {
+    return this.task.bulkDecide(dto, request.user?.sub ?? 'system');
   }
 
   @Get('pending-count')
@@ -73,5 +82,13 @@ export class ApprovalController {
   @Permissions(Permission.WorkflowEdit)
   newVersion(@Param('code') code: string, @Req() request: { user?: { sub?: string } }) {
     return this.workflow.createNewVersion(code, request.user?.sub ?? 'system');
+  }
+
+  // Ditaruh paling akhir: route `:id` akan menelan path statis (mis. `workflows`,
+  // `pending-count`) bila didaftarkan lebih dulu.
+  @Get(':id')
+  @Permissions(Permission.ApprovalView)
+  getDetail(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
+    return this.task.getDetail(id, request.user?.sub ?? 'system');
   }
 }

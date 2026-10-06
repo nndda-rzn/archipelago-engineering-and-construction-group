@@ -19,7 +19,7 @@ export { Card, CardHeader, CardTitle } from './primitives/card';
 export { StatCard, type StatCardProps } from './primitives/stat-card';
 export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } from './primitives/segmented-control';
 export { SignalChip, type SignalChipProps, type SignalSeverity } from './primitives/signal-chip';
-export { BulletBar, MiniStackedBar, type BulletBarProps, type MiniStackedBarProps } from './primitives/data-bar';
+export { BulletBar, MiniStackedBar, type BulletBarProps, type MiniStackedBarProps, type BarTone } from './primitives/data-bar';
 export { Sparkline, type SparklineProps } from './primitives/sparkline';
 export { DivergingBar, type DivergingBarProps } from './primitives/diverging-bar';
 export { Waterfall, waterfallSegments, type WaterfallProps, type WaterfallSegment, type WaterfallInput } from './primitives/waterfall';

@@ -1,4 +1,4 @@
-import { IsIn, IsInt, IsNumber, IsOptional, IsString, Length, MaxLength, Min } from 'class-validator';
+import { IsArray, IsIn, IsInt, IsNumber, IsOptional, IsString, ArrayMaxSize, ArrayMinSize, Length, MaxLength, Min } from 'class-validator';
 
 export class WorkflowStepDto {
   @IsString()
@@ -107,4 +107,49 @@ export class ApproveTaskDto {
   @IsString()
   @MaxLength(500)
   comment?: string;
+}
+
+export class BulkDecideDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(100)
+  @IsString({ each: true })
+  taskIds!: string[];
+
+  @IsIn(['APPROVE', 'REJECT'])
+  decision!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  comment?: string;
+}
+
+export class ListApprovalQueryDto {
+  @IsOptional()
+  @IsIn(['PENDING', 'APPROVED', 'REJECTED', 'ALL'])
+  status?: string;
+
+  @IsOptional()
+  @IsIn(['PurchaseRequisition', 'PurchaseOrder'])
+  type?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  q?: string;
+
+  @IsOptional()
+  @IsIn(['true', 'false', '1', '0'])
+  mine?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  pageSize?: number;
 }
