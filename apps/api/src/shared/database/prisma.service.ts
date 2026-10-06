@@ -5,6 +5,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
+  private readonly poolInfo: { connectionLimit: number; poolTimeout: number; slowQueryMs: number };
 
   constructor() {
     const connectionString = process.env.DATABASE_URL;
@@ -40,11 +41,17 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       this.logger.error(`Prisma error: ${e.message}${e.target ? ` (${e.target})` : ''}`);
     });
 
-    this.logger.log(`Prisma connected (pool max=${connectionLimit}, connect_timeout=${poolTimeout}s, slow_threshold=${slowQueryMs}ms)`);
+    // Sengaja TIDAK mencatat "connected" di sini: konstruktor berjalan sebelum
+    // koneksi benar-benar dibuka, sehingga klaim itu menyesatkan. Log sebenarnya
+    // ada di `onModuleInit` setelah `$connect()` berhasil.
+    this.poolInfo = { connectionLimit, poolTimeout, slowQueryMs };
   }
 
   async onModuleInit() {
     await this.$connect();
+    this.logger.log(
+      `Prisma connected (pool max=${this.poolInfo.connectionLimit}, connect_timeout=${this.poolInfo.poolTimeout}s, slow_threshold=${this.poolInfo.slowQueryMs}ms)`,
+    );
   }
 
   async onModuleDestroy() {

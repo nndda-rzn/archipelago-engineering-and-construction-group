@@ -79,6 +79,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
         return { status: HttpStatus.CONFLICT, code: 'RELATION_VIOLATION', message: 'Invalid data relation' };
       case 'P2034':
         return { status: HttpStatus.CONFLICT, code: 'RETRY_CONFLICT', message: 'Concurrent transaction conflict, please retry' };
+      // Database tidak terjangkau — hampir selalu konfigurasi (host/port salah,
+      // env var menimpa .env, atau DB memang mati). 503, bukan 500, agar jelas
+      // ini masalah ketersediaan dan bukan bug permintaan. Detail koneksi
+      // sengaja TIDAK diteruskan ke klien (bisa memuat kredensial).
+      case 'ECONNREFUSED':
+      case 'P1001':
+      case 'P1002':
+        return { status: HttpStatus.SERVICE_UNAVAILABLE, code: 'DB_UNAVAILABLE', message: 'Database is unavailable' };
       default:
         this.logger.error(`Unhandled Prisma error code=${e.code}`, e.stack);
         return { status: HttpStatus.INTERNAL_SERVER_ERROR, code: 'INTERNAL_ERROR', message: 'Internal server error' };
