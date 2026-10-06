@@ -1,6 +1,6 @@
 import { CONDITION_FIELDS, CONDITION_FIELD_LABELS } from '@aec/api-contracts';
 
-/** Label operator — `==` ditampilkan sebagai `=` (lebih mudah dibaca). */
+/** Label operator: `==` ditampilkan sebagai `=` (lebih mudah dibaca). */
 const OP_LABELS: Record<string, string> = {
   '>': '>',
   '<': '<',
@@ -14,7 +14,7 @@ export function opLabel(op: string | null | undefined): string {
   return OP_LABELS[op] ?? op;
 }
 
-/** Field yang boleh dipakai untuk jenis transaksi — dari satu sumber kebenaran di kontrak. */
+/** Field yang boleh dipakai untuk jenis transaksi, dari satu sumber kebenaran di kontrak. */
 export function conditionFieldsFor(transactionType: string): readonly string[] {
   return CONDITION_FIELDS[transactionType] ?? [];
 }

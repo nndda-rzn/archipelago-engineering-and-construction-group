@@ -366,23 +366,25 @@ async function seedWorkflows() {
     conditionValue?: number | null;
   };
 
-  const workflowSeeds: Array<{ code: string; transactionType: string; steps: WorkflowStep[] }> = [
+  const workflowSeeds: Array<{ code: string; name: string; transactionType: string; steps: WorkflowStep[] }> = [
     {
       code: 'PR_APPROVAL',
+      name: 'Purchase requisition approval',
       transactionType: 'PurchaseRequisition',
       steps: [
-        { stepOrder: 1, name: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER' },
-        { stepOrder: 2, name: 'Approval Direksi', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 5000000 },
+        { stepOrder: 1, name: 'Procurement manager approval', approverRoleCode: 'PROCUREMENT_MANAGER' },
+        { stepOrder: 2, name: 'Board approval', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 5000000 },
       ],
     },
     {
       code: 'PO_APPROVAL',
+      name: 'Purchase order approval',
       transactionType: 'PurchaseOrder',
       steps: [
         // Step 1 tanpa kondisi: SELALU berlaku. Step 2 hanya untuk nilai besar.
-        // Rantai dieksekusi berurutan — dokumen baru APPROVED setelah step terakhir.
-        { stepOrder: 1, name: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER' },
-        { stepOrder: 2, name: 'Approval Direksi', approverRoleCode: 'SUPER_ADMIN', conditionField: 'totalAmount', conditionOp: '>', conditionValue: 5000000 },
+        // Rantai dieksekusi berurutan, dokumen baru APPROVED setelah step terakhir.
+        { stepOrder: 1, name: 'Procurement manager approval', approverRoleCode: 'PROCUREMENT_MANAGER' },
+        { stepOrder: 2, name: 'Board approval', approverRoleCode: 'SUPER_ADMIN', conditionField: 'totalAmount', conditionOp: '>', conditionValue: 5000000 },
       ],
     },
   ];
@@ -402,7 +404,7 @@ async function seedWorkflows() {
       const def = await prisma.workflowDefinition.create({
         data: {
           code: wf.code,
-          name: wf.code.replace('_', ' '),
+          name: wf.name,
           version: 1,
           status: 'ACTIVE',
           transactionType: wf.transactionType,
@@ -414,11 +416,14 @@ async function seedWorkflows() {
     } else {
       // Rekonsiliasi: seed adalah sumber kebenaran untuk definisi v1 (dev/demo).
       // Tanpa ini, perubahan definisi di seed tidak pernah berlaku pada DB yang
-      // sudah pernah di-seed — rantai berjenjang tampak "tidak jalan" padahal
-      // kodenya benar. Versi lain (hasil publish di aplikasi) tidak disentuh.
+      // sudah pernah di-seed, sehingga rantai berjenjang tampak "tidak jalan"
+      // padahal kodenya benar. Versi lain (hasil publish di aplikasi) tidak disentuh.
       await prisma.$transaction([
         prisma.workflowStep.deleteMany({ where: { definitionId: existing.id } }),
         prisma.workflowStep.createMany({ data: stepsData.map((s) => ({ ...s, definitionId: existing.id })) }),
+        // Nama ikut direkonsiliasi: seed lama menyimpan nama dari
+        // `code.replace('_',' ')` yang kapital semua dan terasa seperti slug.
+        prisma.workflowDefinition.update({ where: { id: existing.id }, data: { name: wf.name } }),
       ]);
       console.log(`[workflows] Reconciled steps for workflow ${existing.code} v${existing.version}`);
     }

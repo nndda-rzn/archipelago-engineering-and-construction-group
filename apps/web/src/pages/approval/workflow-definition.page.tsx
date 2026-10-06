@@ -23,7 +23,7 @@ import { useUrlFilter } from '@/shared/lib/use-url-state';
  * (agar tidak kehilangan tempat saat berpindah), kanan pekerjaan sebenarnya.
  *
  * Di dalam pane kanan, rantai dan editor langkah berdampingan (`xl`): memilih
- * langkah mengisi panel editor **tanpa memindahkan rantai keluar layar** —
+ * langkah mengisi panel editor **tanpa memindahkan rantai keluar layar**:
  * konteks dan aksi berada di bidang yang sama. Di bawah `xl` keduanya bertumpuk,
  * bukan dipaksa sempit.
  *
@@ -99,6 +99,23 @@ export function WorkflowDefinitionPage() {
   const locked = selected != null && selected.status !== 'DRAFT';
   const steps = useMemo(() => selected?.steps ?? [], [selected]);
   const selectedStep: WorkflowStep | null = steps.find((s) => s.id === stepId) ?? steps[0] ?? null;
+
+  // Jalur hasil simulasi. `null` berarti belum disimulasikan.
+  const [simulatedPath, setSimulatedPath] = useState<number[] | null>(null);
+  // Ganti definisi atau versi membatalkan simulasi, karena syaratnya berbeda.
+  const selectedKey = selected ? `${selected.id}` : '';
+  const [simKey, setSimKey] = useState(selectedKey);
+  if (simKey !== selectedKey) {
+    setSimKey(selectedKey);
+    setSimulatedPath(null);
+  }
+
+  const holderNamesByRole = useMemo(
+    () => Object.fromEntries(
+      (insights.data?.coverage ?? []).map((c) => [c.roleCode, c.holderNames]),
+    ),
+    [insights.data],
+  );
 
   const warningCount = useMemo(
     () => steps.filter((s) => (holdersByRole[s.approverRoleCode] ?? 0) === 0).length,
@@ -202,7 +219,7 @@ export function WorkflowDefinitionPage() {
                       )}
                     >
                       <span className="flex items-center gap-2">
-                        <span className="truncate font-mono text-body-sm font-semibold text-neutral-900">{d.code}</span>
+                        <span className="truncate text-body-sm font-medium text-neutral-900" title={d.name}>{d.name}</span>
                         <span className="ml-auto shrink-0 font-mono text-caption text-neutral-500">v{d.version}</span>
                       </span>
                       <span className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -210,7 +227,7 @@ export function WorkflowDefinitionPage() {
                         {warn > 0 && <Badge variant="warning">{warn} warning{warn === 1 ? '' : 's'}</Badge>}
                       </span>
                       <span className="mt-1 block truncate text-caption text-neutral-500">
-                        {labelResource(d.transactionType)} · {d.steps.length} step{d.steps.length === 1 ? '' : 's'}
+                        <span className="font-mono">{d.code}</span> · {d.steps.length} step{d.steps.length === 1 ? '' : 's'}
                       </span>
                     </button>
                   </li>
@@ -220,7 +237,7 @@ export function WorkflowDefinitionPage() {
           </div>
         </section>
 
-        {/* ── Kanan: pekerjaan sebenarnya. Tanpa border — jarak yang mengelompokkan ── */}
+        {/* Kanan: pekerjaan sebenarnya. Tanpa border, jarak yang mengelompokkan. */}
         <section
           aria-label="Workflow detail"
           className={cn('min-h-[280px]', selected ? 'block' : 'hidden lg:block')}
@@ -245,14 +262,16 @@ export function WorkflowDefinitionPage() {
                 {/* ① Identitas + aksi. Hanya Publish yang solid (aksi primer). */}
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
+                    {/* Nama memimpin; `code` turun jadi metadata mono untuk rujukan. */}
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-body font-semibold text-neutral-900">{selected.code}</span>
-                      <span className="font-mono text-caption text-neutral-500">v{selected.version}</span>
+                      <h2 className="text-h2 text-neutral-950">{selected.name}</h2>
                       <StatusBadge status={selected.status} label={VERSION_STATUS_LABEL[selected.status] ?? selected.status} />
+                      <span className="font-mono text-caption text-neutral-500">v{selected.version}</span>
                     </div>
                     <p className="mt-1 text-caption text-neutral-500">
-                      {labelResource(selected.transactionType)} · {selected.steps.length} step{selected.steps.length === 1 ? '' : 's'}
-                      {selected.createdByName ? ` · created by ${selected.createdByName}` : ''}
+                      <span className="font-mono text-neutral-600">{selected.code}</span>
+                      {' · '}{labelResource(selected.transactionType)} · {selected.steps.length} step{selected.steps.length === 1 ? '' : 's'}
+                      {selected.createdByName ? `, created by ${selected.createdByName}` : ''}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -324,7 +343,7 @@ export function WorkflowDefinitionPage() {
                   </div>
                 </div>
 
-                {/* ② Metadata — boleh diubah bahkan saat ACTIVE (properti dasar). */}
+                {/* Metadata: boleh diubah bahkan saat ACTIVE (properti dasar). */}
                 <MetadataEditor
                   definition={selected}
                   saving={updateDefinition.isPending}
@@ -354,8 +373,10 @@ export function WorkflowDefinitionPage() {
                           selectedStepId={selectedStep?.id}
                           onSelectStep={setStepId}
                           holdersByRole={holdersByRole}
+                          holderNamesByRole={holderNamesByRole}
                           locked={locked}
                           transactionType={selected.transactionType}
+                          activeStepOrders={simulatedPath}
                         />
                       ) : (
                         <StepTable
@@ -391,7 +412,7 @@ export function WorkflowDefinitionPage() {
                       )}
                     </div>
 
-                    {/* Editor langkah. Tanpa kotak — dipisah jarak dari rantai. */}
+                    {/* Editor langkah. Tanpa kotak, dipisah jarak dari rantai. */}
                     {steps.length > 0 && (
                       <div className="min-w-0 space-y-8 xl:border-l xl:border-neutral-200 xl:pl-8">
                         <section aria-labelledby="wf-step-detail">
@@ -430,7 +451,7 @@ export function WorkflowDefinitionPage() {
 
                         <section aria-labelledby="wf-simulate">
                           <h2 id="wf-simulate" className="mb-3 text-h2 text-neutral-950">Simulate</h2>
-                          <WorkflowSimulate steps={steps} transactionType={selected.transactionType} />
+                          <WorkflowSimulate steps={steps} transactionType={selected.transactionType} onPathChange={setSimulatedPath} />
                         </section>
                       </div>
                     )}
@@ -486,7 +507,7 @@ function MetadataEditor({
     return (
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          {/* Nama adalah judul definisi — satu tingkat di bawah h1 halaman. */}
+          {/* Nama adalah judul definisi, satu tingkat di bawah h1 halaman. */}
           <p className="text-body font-medium text-neutral-900">{definition.name}</p>
           <p className="mt-0.5 text-caption text-neutral-500">{definition.description ?? 'No description.'}</p>
         </div>
@@ -522,7 +543,7 @@ function MetadataEditor({
   );
 }
 
-/** Tampilan padat rantai — alur yang sama, untuk rantai panjang. */
+/** Tampilan padat rantai: alur yang sama, untuk rantai panjang. */
 function StepTable({
   steps, holdersByRole, selectedStepId, onSelectStep,
 }: {

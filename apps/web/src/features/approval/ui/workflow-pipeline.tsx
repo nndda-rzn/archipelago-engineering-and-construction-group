@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import { cn, labelRole } from '@aec/ui';
+import { AvatarStack, PersonAvatar, cn, labelRole } from '@aec/ui';
 import { AlertTriangle, Lock } from 'lucide-react';
 import type { WorkflowStep } from '@aec/api-contracts';
 import { formatIdr } from '@/shared/lib/format';
@@ -10,43 +10,52 @@ export interface WorkflowPipelineProps {
   /** Id langkah yang sedang dipilih (panel editor). */
   selectedStepId?: string;
   onSelectStep?: (stepId: string) => void;
-  /** Jumlah pemegang role per kode role — 0 berarti rantai akan macet. */
+  /** Jumlah pemegang role per kode role. 0 berarti rantai akan macet. */
   holdersByRole: Record<string, number>;
-  /** Struktur terkunci (bukan DRAFT) — hanya melihat, tanpa mengubah. */
+  /** Nama pemegang per kode role, untuk menampilkan orangnya, bukan angkanya. */
+  holderNamesByRole: Record<string, string[]>;
+  /** Struktur terkunci (bukan DRAFT), hanya melihat tanpa mengubah. */
   locked?: boolean;
-  /** Jenis transaksi dokumen — dipakai untuk label pemicu & hasil. */
+  /** Jenis transaksi dokumen, dipakai untuk label pemicu dan hasil. */
   transactionType: string;
+  /**
+   * Hasil simulasi: `null` berarti belum disimulasikan (semua langkah tampil
+   * normal). Array stepOrder yang berlaku membuat langkah lain diredupkan,
+   * sehingga rantai itu sendiri yang menunjukkan jalur yang dilewati.
+   */
+  activeStepOrders?: number[] | null;
 }
 
-/** Nama dokumen manusiawi untuk anchor awal/akhir rantai. */
+/** Nama dokumen manusiawi untuk anchor awal dan akhir rantai. */
 function subjectOf(transactionType: string): string {
   return transactionType === 'PurchaseOrder' ? 'Purchase order' : 'Purchase requisition';
 }
 
 /**
- * Rantai approval sebagai **alur vertikal**, bukan deretan kartu.
+ * Rantai approval sebagai alur vertikal, bukan deretan kartu.
  *
- * Kenapa vertikal (bukan horizontal seperti sebelumnya): tiga node selebar 224px
- * plus dua konektor 40px membutuhkan ~752px, sedangkan panel kanan pada lebar
- * `lg` hanya ~656px — alur horizontal selalu pecah dan sambungan panahnya hilang.
- * Vertikal memakai satu sumbu sehingga rantai sepanjang apa pun tetap utuh.
+ * Vertikal karena tiga node selebar 224px plus dua konektor 40px membutuhkan
+ * sekitar 752px, sedangkan panel kanan pada lebar `lg` hanya sekitar 656px.
+ * Alur horizontal selalu pecah dan sambungan panahnya hilang.
  *
- * **Tanpa border, tanpa shadow** (prinsip proximity): pengelompokan dibawa oleh
- * jarak dan garis sumbu, bukan kotak. Uji "strip the borders" — hapus seluruh
- * border, struktur tetap terbaca.
+ * Tanpa border dan tanpa shadow (prinsip proximity): pengelompokan dibawa oleh
+ * jarak dan garis sumbu, bukan kotak.
  *
  * Setiap elemen visual membawa arti:
- * - garis **solid** = langkah ini selalu dijalankan
- * - garis **putus** = jalur menuju langkah bersyarat; bisa dilewati
- * - lingkaran **berisi** = langkah; **cincin kosong** = batas proses (awal/akhir)
+ * - garis solid berarti langkah ini selalu dijalankan
+ * - garis putus berarti jalur menuju langkah bersyarat, bisa dilewati
+ * - lingkaran berisi berarti langkah, cincin kosong berarti batas proses
+ * - avatar berarti orang yang memegang role, bukan sekadar jumlahnya
  *
- * Warna bukan satu-satunya sinyal: langkah tanpa pemegang role membawa ikon dan
- * teks, dan tiap langkah punya `aria-label` berisi seluruh isinya.
+ * Warna bukan satu-satunya sinyal: langkah tanpa pemegang membawa ikon dan teks,
+ * langkah yang dilewati diredupkan, dan tiap langkah punya `aria-label` lengkap.
  */
 export function WorkflowPipeline({
-  steps, selectedStepId, onSelectStep, holdersByRole, locked = false, transactionType,
+  steps, selectedStepId, onSelectStep, holdersByRole, holderNamesByRole, locked = false,
+  transactionType, activeStepOrders = null,
 }: WorkflowPipelineProps) {
   const subject = subjectOf(transactionType);
+  const simulating = activeStepOrders != null;
 
   if (steps.length === 0) {
     return (
@@ -62,9 +71,11 @@ export function WorkflowPipeline({
 
       {steps.map((step) => {
         const holders = holdersByRole[step.approverRoleCode] ?? 0;
+        const names = holderNamesByRole[step.approverRoleCode] ?? [];
         const missing = holders === 0;
         const selected = selectedStepId === step.id;
         const gated = Boolean(step.conditionField);
+        const applies = !simulating || activeStepOrders!.includes(step.stepOrder);
 
         return (
           <Fragment key={step.id}>
@@ -82,10 +93,13 @@ export function WorkflowPipeline({
               <SpineCell>
                 <span
                   aria-hidden="true"
+                  data-slot="step-marker"
+                  data-skipped={simulating && !applies ? 'true' : undefined}
                   className={cn(
                     'relative z-10 flex h-6 w-6 items-center justify-center rounded-full font-mono text-caption',
                     missing ? 'bg-destructive-100 text-destructive-700' : 'bg-neutral-100 text-neutral-700',
                     selected && !missing && 'bg-neutral-800 text-white',
+                    simulating && !applies && 'bg-white text-neutral-400 ring-1 ring-neutral-300',
                   )}
                 >
                   {step.stepOrder}
@@ -96,10 +110,10 @@ export function WorkflowPipeline({
                 type="button"
                 onClick={() => onSelectStep?.(step.id)}
                 aria-pressed={selected}
-                aria-label={`Step ${step.stepOrder}: ${step.name}, approver ${labelRole(step.approverRoleCode)}, ${holders} holder${holders === 1 ? '' : 's'}${missing ? ', no approver assigned' : ''}`}
+                aria-label={`Step ${step.stepOrder}: ${step.name}, approver ${labelRole(step.approverRoleCode)}, ${holders} holder${holders === 1 ? '' : 's'}${missing ? ', no approver assigned' : ''}${simulating && !applies ? ', skipped for this amount' : ''}`}
                 className={cn(
-                  // Baris, bukan kartu: tanpa border, tanpa shadow. Penanda terpilih
-                  // adalah garis kiri + latar tipis (relative size & position).
+                  // Baris, bukan kartu: tanpa border dan tanpa shadow. Penanda
+                  // terpilih adalah garis kiri plus latar tipis.
                   'min-h-[44px] w-full border-l-2 py-2 pl-3 pr-2 text-left transition-colors duration-fast',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400',
                   selected
@@ -107,6 +121,8 @@ export function WorkflowPipeline({
                     : missing
                       ? 'border-destructive-300 hover:bg-neutral-50'
                       : 'border-transparent hover:bg-neutral-50',
+                  // Langkah yang dilewati diredupkan: jalur terlihat, aksi tidak.
+                  simulating && !applies && 'opacity-45',
                 )}
               >
                 <span className="flex items-center gap-2">
@@ -116,18 +132,21 @@ export function WorkflowPipeline({
                   {locked && <Lock className="h-3 w-3 shrink-0 text-neutral-400" aria-hidden="true" />}
                 </span>
 
-                {/* Pasangan rapat: role ↔ jumlah pemegang (jarak 2px, bukan 8px). */}
+                {/* Pasangan rapat: role lalu orangnya (jarak 2px, bukan 8px). */}
                 <span className="mt-0.5 block truncate text-caption text-neutral-600" title={labelRole(step.approverRoleCode)}>
                   {labelRole(step.approverRoleCode)}
                 </span>
-                <span className={cn('flex items-center gap-1 text-caption', missing ? 'text-destructive-700' : 'text-neutral-500')}>
+                <span className={cn('flex items-center gap-1.5 text-caption', missing ? 'text-destructive-700' : 'text-neutral-600')}>
                   {missing ? (
                     <>
                       <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden="true" />
-                      No approver — the chain will stall
+                      No approver, so the chain will stall
                     </>
                   ) : (
-                    `${holders} holder${holders === 1 ? '' : 's'}`
+                    <>
+                      <AvatarStack names={names} size="sm" />
+                      <span className="truncate">{summarise(names)}</span>
+                    </>
                   )}
                 </span>
               </button>
@@ -142,7 +161,18 @@ export function WorkflowPipeline({
   );
 }
 
-/** Kolom penanda: menampung garis sumbu + node, selalu di lebar yang sama. */
+/**
+ * Satu nama ditulis utuh; beberapa nama diringkas menjadi jumlah, karena
+ * menyebut satu nama akan menyesatkan (siapa pun di antaranya bisa memutus).
+ */
+function summarise(names: string[]): string {
+  if (names.length === 0) return '';
+  if (names.length === 1) return names[0]!;
+  if (names.length <= 3) return names.join(', ');
+  return `${names.length} people`;
+}
+
+/** Kolom penanda: menampung garis sumbu dan node pada lebar yang sama. */
 function SpineCell({ children, dashed = false }: { children?: React.ReactNode; dashed?: boolean }) {
   return (
     <span className="relative flex justify-center">
@@ -159,7 +189,7 @@ function SpineCell({ children, dashed = false }: { children?: React.ReactNode; d
   );
 }
 
-/** Segmen antar langkah. Putus = bersyarat; solid = selalu. */
+/** Segmen antar langkah. Putus berarti bersyarat, solid berarti selalu. */
 function ConnectorRow({ gated, condition }: { gated: boolean; condition: string | null }) {
   return (
     <li className="grid grid-cols-[1.5rem_minmax(0,1fr)] gap-x-3">
@@ -171,7 +201,7 @@ function ConnectorRow({ gated, condition }: { gated: boolean; condition: string 
   );
 }
 
-/** Batas proses: pemicu di atas, hasil di bawah. Netral — hasil belum terjadi. */
+/** Batas proses: pemicu di atas, hasil di bawah. Netral, hasil belum terjadi. */
 function AnchorRow({ label, position }: { label: string; position: 'start' | 'end' }) {
   return (
     <li className="grid grid-cols-[1.5rem_minmax(0,1fr)] gap-x-3">
@@ -186,3 +216,5 @@ function AnchorRow({ label, position }: { label: string; position: 'start' | 'en
     </li>
   );
 }
+
+export { PersonAvatar };

@@ -94,14 +94,34 @@ export class WorkflowInsightsService {
     const coverage = await Promise.all(
       definition.steps.map(async (step) => {
         const role = await this.prisma.role.findUnique({ where: { code: step.approverRoleCode } });
-        const holders = role
-          ? await this.prisma.userRole.count({
-              where: { roleId: role.id, OR: [{ effectiveTo: null }, { effectiveTo: { gt: new Date() } }] },
-            })
-          : 0;
-        return { stepOrder: step.stepOrder, roleCode: step.approverRoleCode, holders };
+        if (!role) return { stepOrder: step.stepOrder, roleCode: step.approverRoleCode, holders: 0, holderNames: [] };
+
+        // Nama pemegang, bukan hanya jumlahnya. "1 holder" tidak menjawab
+        // "siapa yang harus menyetujui"; nama orangnya yang menjawab.
+        const assignments = await this.prisma.userRole.findMany({
+          where: { roleId: role.id, OR: [{ effectiveTo: null }, { effectiveTo: { gt: new Date() } }] },
+          include: { user: { select: { displayName: true } } },
+          orderBy: { effectiveFrom: 'asc' },
+        });
+        return {
+          stepOrder: step.stepOrder,
+          roleCode: step.approverRoleCode,
+          holders: assignments.length,
+          holderNames: assignments.map((a) => a.user.displayName),
+        };
       }),
     );
+
+    // Ambang nyata tiap langkah, untuk digambar sebagai garis pada sebaran nilai.
+    const thresholds = definition.steps
+      .filter((s) => s.conditionField != null && s.conditionValue != null)
+      .map((s) => ({
+        stepOrder: s.stepOrder,
+        stepName: s.name,
+        field: s.conditionField as string,
+        op: s.conditionOp ?? '>',
+        value: Number(s.conditionValue),
+      }));
 
     return {
       transactionType,
@@ -111,6 +131,7 @@ export class WorkflowInsightsService {
       amounts: { count: amounts.values.length, min: amounts.min, max: amounts.max, buckets: amounts.buckets },
       ruleHits,
       coverage,
+      thresholds,
       note: INSIGHTS_NOTE,
     };
   }
@@ -135,6 +156,9 @@ export class WorkflowInsightsService {
     const buckets = AMOUNT_BUCKETS.map((b) => ({
       label: b.label,
       count: raw.filter((v) => v >= b.from && v < b.to).length,
+      // Batas dikirim ke klien supaya ia tidak perlu menebak rentang dari label.
+      from: b.from,
+      to: b.to === Number.POSITIVE_INFINITY ? null : b.to,
     }));
 
     return {

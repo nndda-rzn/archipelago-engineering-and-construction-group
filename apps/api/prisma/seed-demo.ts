@@ -29,6 +29,24 @@ async function seedWorkflowDemo() {
   const requesterId = buyer?.id ?? admin?.id ?? 'system';
   const approverId = admin?.id ?? 'system';
 
+  // Nama definisi yang bisa dibaca manusia. `code` tetap identifier, tapi judul
+  // yang tampil memakai `name`. Nomor versi TIDAK disisipkan ke nama: versi punya
+  // kolom dan badge sendiri.
+  const PR_NAME = 'Purchase requisition approval';
+  const PO_NAME = 'Purchase order approval';
+
+  // Approver kedua: tanpa ini semua role dipegang satu orang dan halaman tidak
+  // bisa membuktikan "siapa yang menyetujui". CFO memegang SUPER_ADMIN.
+  const cfo = await prisma.user.findUnique({ where: { email: 'cfo@aec.local' }, select: { id: true } });
+  const superAdminRole = await prisma.role.findUnique({ where: { code: 'SUPER_ADMIN' }, select: { id: true } });
+  if (cfo && superAdminRole) {
+    const existing = await prisma.userRole.findFirst({ where: { userId: cfo.id, roleId: superAdminRole.id } });
+    if (!existing) {
+      await prisma.userRole.create({ data: { userId: cfo.id, roleId: superAdminRole.id, effectiveFrom: new Date(Date.UTC(now.getUTCFullYear(), 0, 1)) } });
+      console.log('Role: CFO Demo memegang SUPER_ADMIN (approver kedua)');
+    }
+  }
+
   // ── Definisi: PR_APPROVAL dengan 3 versi ──
   const prCode = 'PR_APPROVAL';
   const existingVersions = await prisma.workflowDefinition.findMany({ where: { code: prCode } });
@@ -41,9 +59,9 @@ async function seedWorkflowDemo() {
   if (!v1) {
     await prisma.workflowDefinition.create({
       data: {
-        code: prCode, name: 'PR Approval', description: 'Single-step approval for purchase requisitions',
+        code: prCode, name: PR_NAME, description: 'Single step: procurement manager approves',
         version: 1, status: 'ARCHIVED', transactionType: 'PurchaseRequisition', createdBy: authorId,
-        steps: { create: [{ stepOrder: 1, name: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER' }] },
+        steps: { create: [{ stepOrder: 1, name: 'Procurement manager approval', approverRoleCode: 'PROCUREMENT_MANAGER' }] },
       },
     });
     console.log('Workflow: PR_APPROVAL v1 ARCHIVED');
@@ -51,11 +69,11 @@ async function seedWorkflowDemo() {
     await prisma.$transaction([
       prisma.workflowStep.deleteMany({ where: { definitionId: v1.id } }),
       prisma.workflowStep.createMany({
-        data: [{ stepOrder: 1, name: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER', definitionId: v1.id }],
+        data: [{ stepOrder: 1, name: 'Procurement manager approval', approverRoleCode: 'PROCUREMENT_MANAGER', definitionId: v1.id }],
       }),
       prisma.workflowDefinition.update({
         where: { id: v1.id },
-        data: { status: 'ARCHIVED', createdBy: authorId, description: 'Single-step approval for purchase requisitions' },
+        data: { name: PR_NAME, status: 'ARCHIVED', createdBy: authorId, description: 'Single step: procurement manager approves' },
       }),
     ]);
   }
@@ -65,22 +83,31 @@ async function seedWorkflowDemo() {
   if (!v2) {
     await prisma.workflowDefinition.create({
       data: {
-        code: prCode, name: 'PR Approval', description: 'Manager approval, then board approval above 5jt',
+        code: prCode, name: PR_NAME, description: 'Manager approval, then board approval above 5 million',
         version: 2, status: 'ACTIVE', transactionType: 'PurchaseRequisition', createdBy: authorId,
         steps: {
           create: [
-            { stepOrder: 1, name: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER' },
-            { stepOrder: 2, name: 'Approval Direksi', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 5_000_000 },
+            { stepOrder: 1, name: 'Procurement manager approval', approverRoleCode: 'PROCUREMENT_MANAGER' },
+            { stepOrder: 2, name: 'Board approval', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 5_000_000 },
           ],
         },
       },
     });
     console.log('Workflow: PR_APPROVAL v2 ACTIVE');
   } else {
-    await prisma.workflowDefinition.update({
-      where: { id: v2.id },
-      data: { createdBy: authorId, description: 'Manager approval, then board approval above 5jt' },
-    });
+    await prisma.$transaction([
+      prisma.workflowStep.deleteMany({ where: { definitionId: v2.id } }),
+      prisma.workflowStep.createMany({
+        data: [
+          { stepOrder: 1, name: 'Procurement manager approval', approverRoleCode: 'PROCUREMENT_MANAGER', definitionId: v2.id },
+          { stepOrder: 2, name: 'Board approval', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 5_000_000, definitionId: v2.id },
+        ],
+      }),
+      prisma.workflowDefinition.update({
+        where: { id: v2.id },
+        data: { name: PR_NAME, createdBy: authorId, description: 'Manager approval, then board approval above 5 million' },
+      }),
+    ]);
   }
 
   // v3 — DRAFT (sedang disiapkan; bisa diedit & dibandingkan dengan v2).
@@ -88,29 +115,48 @@ async function seedWorkflowDemo() {
   if (!v3) {
     await prisma.workflowDefinition.create({
       data: {
-        code: prCode, name: 'PR Approval v3', description: 'Adds a finance review before the board step',
+        code: prCode, name: PR_NAME, description: 'Adds a finance review before the board step',
         version: 3, status: 'DRAFT', transactionType: 'PurchaseRequisition', createdBy: authorId,
         steps: {
           create: [
-            { stepOrder: 1, name: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER' },
-            { stepOrder: 2, name: 'Finance Review', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 10_000_000 },
-            { stepOrder: 3, name: 'Approval Direksi', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 100_000_000 },
+            { stepOrder: 1, name: 'Procurement manager approval', approverRoleCode: 'PROCUREMENT_MANAGER' },
+            { stepOrder: 2, name: 'Finance review', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 10_000_000 },
+            { stepOrder: 3, name: 'Board approval', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 100_000_000 },
           ],
         },
       },
     });
     console.log('Workflow: PR_APPROVAL v3 DRAFT');
   } else {
-    await prisma.workflowDefinition.update({
-      where: { id: v3.id },
-      data: { status: 'DRAFT', createdBy: authorId, description: 'Adds a finance review before the board step' },
-    });
+    await prisma.$transaction([
+      prisma.workflowStep.deleteMany({ where: { definitionId: v3.id } }),
+      prisma.workflowStep.createMany({
+        data: [
+          { stepOrder: 1, name: 'Procurement manager approval', approverRoleCode: 'PROCUREMENT_MANAGER', definitionId: v3.id },
+          { stepOrder: 2, name: 'Finance review', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 10_000_000, definitionId: v3.id },
+          { stepOrder: 3, name: 'Board approval', approverRoleCode: 'SUPER_ADMIN', conditionField: 'estimatedTotal', conditionOp: '>', conditionValue: 100_000_000, definitionId: v3.id },
+        ],
+      }),
+      prisma.workflowDefinition.update({
+        where: { id: v3.id },
+        data: { name: PR_NAME, status: 'DRAFT', createdBy: authorId, description: 'Adds a finance review before the board step' },
+      }),
+    ]);
   }
 
-  // PO_APPROVAL v1 sudah dibuat seed dasar; pastikan tetap ACTIVE + 2 langkah.
+  // PO_APPROVAL: nama yang bisa dibaca, dan langkahnya ikut direkonsiliasi.
   const poDef = await prisma.workflowDefinition.findFirst({ where: { code: 'PO_APPROVAL', version: 1 } });
   if (poDef) {
-    await prisma.workflowDefinition.update({ where: { id: poDef.id }, data: { status: 'ACTIVE', createdBy: authorId } });
+    await prisma.$transaction([
+      prisma.workflowStep.deleteMany({ where: { definitionId: poDef.id } }),
+      prisma.workflowStep.createMany({
+        data: [
+          { stepOrder: 1, name: 'Procurement manager approval', approverRoleCode: 'PROCUREMENT_MANAGER', definitionId: poDef.id },
+          { stepOrder: 2, name: 'Board approval', approverRoleCode: 'SUPER_ADMIN', conditionField: 'totalAmount', conditionOp: '>', conditionValue: 5_000_000, definitionId: poDef.id },
+        ],
+      }),
+      prisma.workflowDefinition.update({ where: { id: poDef.id }, data: { name: PO_NAME, status: 'ACTIVE', createdBy: authorId } }),
+    ]);
   }
 
   // Rekonsiliasi: hanya SATU versi boleh ACTIVE per code (kalau tidak,
@@ -124,6 +170,31 @@ async function seedWorkflowDemo() {
       await prisma.workflowDefinition.update({ where: { id: d.id }, data: { status: target } });
       console.log(`Workflow: ${prCode} v${d.version} ${d.status} → ${target}`);
     }
+  }
+
+  // Rekonsiliasi artefak lama: `createNewVersion` dulu menyisipkan nomor versi ke
+  // `name` ("PO APPROVAL v2") dan nama langkah lama masih berbahasa Indonesia.
+  // Keduanya dibersihkan sekali agar judul halaman layak dibaca.
+  const LEGACY_STEP_NAMES: Record<string, string> = {
+    'Approval Manager Pengadaan': 'Procurement manager approval',
+    'Approval Direksi': 'Board approval',
+    'Finance Review': 'Finance review',
+  };
+  const allDefs = await prisma.workflowDefinition.findMany({ select: { id: true, code: true, version: true, name: true } });
+  let renamed = 0;
+  for (const d of allDefs) {
+    const stripped = d.name.replace(/\s+v\d+$/, '');
+    const target = d.code === 'PO_APPROVAL' ? PO_NAME : stripped;
+    if (target !== d.name) {
+      await prisma.workflowDefinition.update({ where: { id: d.id }, data: { name: target } });
+      renamed += 1;
+    }
+  }
+  if (renamed > 0) console.log(`Workflow: ${renamed} nama dibersihkan dari nomor versi`);
+
+  for (const [from, to] of Object.entries(LEGACY_STEP_NAMES)) {
+    const res = await prisma.workflowStep.updateMany({ where: { name: from }, data: { name: to } });
+    if (res.count > 0) console.log(`WorkflowStep: "${from}" -> "${to}" (${res.count})`);
   }
 
   // Jenis transaksi lain pun: pastikan ada tepat satu ACTIVE.
@@ -183,7 +254,7 @@ async function seedWorkflowDemo() {
       await prisma.approvalTask.create({
         data: {
           transactionType: 'PurchaseRequisition', transactionId: pr.id, transactionCode: pr.prNumber,
-          stepOrder: 1, stepName: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER',
+          stepOrder: 1, stepName: 'Procurement manager approval', approverRoleCode: 'PROCUREMENT_MANAGER',
           status: outcome.stepOrder === 1 ? outcome.status : 'APPROVED',
           requesterId, approverId: outcome.stepOrder === 1 && outcome.status !== 'PENDING' ? approverId : null,
           comment: outcome.status === 'REJECTED' ? 'Budget line not available this quarter' : null,
@@ -204,7 +275,7 @@ async function seedWorkflowDemo() {
         await prisma.approvalTask.create({
           data: {
             transactionType: 'PurchaseRequisition', transactionId: pr.id, transactionCode: pr.prNumber,
-            stepOrder: 2, stepName: 'Approval Direksi', approverRoleCode: 'SUPER_ADMIN',
+            stepOrder: 2, stepName: 'Board approval', approverRoleCode: 'SUPER_ADMIN',
             status: outcome.status,
             requesterId, approverId: outcome.status === 'PENDING' ? null : approverId,
             decidedAt: step1DecidedAt, createdAt: step2CreatedAt,
@@ -293,7 +364,10 @@ async function main() {
   }
   console.log(`Project: ${project.code} + WBS ${wbsMap.size} + budget 4.8T PUBLISHED (4 cost types)`);
 
-  // ── 3b. PR APPROVED → tertaut ke PO demo (agar "related documents" terisi) ──
+  // ── 3b. PR APPROVED, tertaut ke PO demo (agar "related documents" terisi) ──
+  // `requestedBy` harus ID user, bukan email. Sebelumnya seed menulis
+  // 'buyer@aec.local' sehingga resolusi nama selalu gagal.
+  const buyerUser = await prisma.user.findUnique({ where: { email: 'buyer@aec.local' }, select: { id: true } });
   const demoPr = await prisma.purchaseRequisition.findFirst({ where: { projectId: project.id, description: 'Structural Steel Procurement' } });
   let prId = demoPr?.id;
   if (!demoPr) {
@@ -301,13 +375,16 @@ async function main() {
     const created = await prisma.purchaseRequisition.create({
       data: {
         prNumber: `${seq.prefix}${String(seq.nextNumber - 1).padStart(6, '0')}`,
-        projectId: project.id, wbsItemId: wbsMap.get('2'), requestedBy: 'buyer@aec.local',
+        projectId: project.id, wbsItemId: wbsMap.get('2'), requestedBy: buyerUser?.id ?? 'system',
         description: 'Structural Steel Procurement', status: 'APPROVED', estimatedTotal: 150000000000,
         items: { create: [{ description: 'Structural Steel', quantity: 5000, unit: 'ton', estimatedUnitPrice: 30000000, estimatedTotal: 150000000000 }] },
       },
     });
     prId = created.id;
     console.log(`PR approved: ${created.prNumber} → linked to PO`);
+  } else if (buyerUser && demoPr.requestedBy !== buyerUser.id) {
+    await prisma.purchaseRequisition.update({ where: { id: demoPr.id }, data: { requestedBy: buyerUser.id } });
+    console.log(`PR ${demoPr.prNumber}: requestedBy diperbaiki ke ID user buyer`);
   }
 
   // ── 4. PO released (commitment) — tertaut ke PR demo ──
