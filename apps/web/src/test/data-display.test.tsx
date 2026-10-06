@@ -22,6 +22,19 @@ describe('BulletBar', () => {
     render(<BulletBar value={150} max={100} label="Usage" />);
     expect(screen.getByRole('img', { name: /Usage: 100%/ })).toBeTruthy();
   });
+
+  it('defaults to the brand tone (existing callers unchanged)', () => {
+    const { container } = render(<BulletBar value={50} max={100} label="Default" />);
+    const fill = container.querySelector('[data-slot="bullet-fill"]');
+    expect(fill?.className).toContain('bg-racing-red-600');
+  });
+
+  it('honours an explicit tone so red is reserved for attention/action', () => {
+    const { container } = render(<BulletBar value={50} max={100} label="Neutral" tone="neutral" />);
+    const fill = container.querySelector('[data-slot="bullet-fill"]');
+    expect(fill?.className).toContain('bg-neutral-400');
+    expect(fill?.className).not.toContain('racing-red');
+  });
 });
 
 describe('MiniStackedBar', () => {
