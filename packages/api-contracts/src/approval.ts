@@ -5,6 +5,7 @@ export const approvalTaskSchema = z.object({
   transactionType: z.string(),
   transactionId: z.string(),
   transactionCode: z.string().nullable(),
+  stepOrder: z.number(),
   stepName: z.string(),
   status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']),
   requesterId: z.string(),

@@ -614,6 +614,7 @@ model ApprovalTask {
   transactionType  String // "PurchaseRequisition" | "PurchaseOrder" | "Budget" | ...
   transactionId    String
   transactionCode  String? // no. dokumen (PR-..., PO-...) untuk display
+  stepOrder        Int       @default(1) // langkah ke-berapa dalam rantai approval
   stepName         String    @default("approval")
   status           String    @default("PENDING") // PENDING | APPROVED | REJECTED | CANCELLED
   requesterId      String // pembuat transaksi (BR-003: bukan approver)
@@ -624,9 +625,12 @@ model ApprovalTask {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  @@unique([transactionType, transactionId])
+  // Satu task PER LANGKAH: rantai berjenjang butuh beberapa baris untuk dokumen
+  // yang sama (step 1 manager, step 2 direksi, …).
+  @@unique([transactionType, transactionId, stepOrder])
   @@index([status])
   @@index([approverRoleCode])
+  @@index([transactionType, transactionId])
 }
 
 // FR-INV-006: Stock Adjustment — wajib approval + reason code
