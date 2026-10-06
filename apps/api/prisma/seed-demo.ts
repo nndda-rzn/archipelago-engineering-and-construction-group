@@ -212,6 +212,42 @@ async function main() {
     console.log(`VendorInvoice: ${inv.invoiceNumber} POSTED + GL 82.5M`);
   }
 
+  // ── 7b. Aging spread: beberapa vendor invoice dengan tanggal berbeda ──
+  // Aging report hanya bermakna bila bucket 1-30/31-60/61-90/90+ benar-benar terisi.
+  const poForAging = demoPo ?? await prisma.purchaseOrder.findFirst({ where: { projectId: project.id } });
+  const apSeed: Array<{ n: string; vendor: string; amount: number; daysAgo: number }> = [
+    { n: `INV-${year}-EPC-900101`, vendor: 'PT Semen Nasional', amount: 12_000_000_000, daysAgo: 20 },
+    { n: `INV-${year}-EPC-900102`, vendor: 'PT Mekanik Jaya', amount: 25_000_000_000, daysAgo: 50 },
+    { n: `INV-${year}-EPC-900103`, vendor: 'PT Elektrik Sejahtera', amount: 18_000_000_000, daysAgo: 75 },
+    { n: `INV-${year}-EPC-900104`, vendor: 'PT Logistik Prima', amount: 9_000_000_000, daysAgo: 120 },
+  ];
+  for (const a of apSeed) {
+    const exists = await prisma.vendorInvoice.findUnique({ where: { invoiceNumber: a.n } });
+    if (!exists && poForAging) {
+      const d = new Date(now.getTime() - a.daysAgo * 86400000);
+      await prisma.vendorInvoice.create({
+        data: {
+          invoiceNumber: a.n, poId: poForAging.id, projectId: project.id, vendor: a.vendor, vendorInvoiceNo: `${a.vendor}-${a.daysAgo}`,
+          amount: a.amount, taxAmount: Math.round(a.amount * 0.1), totalAmount: Math.round(a.amount * 1.1), status: 'POSTED', invoiceDate: d, postedAt: d, postedBy: 'system',
+        },
+      });
+    }
+  }
+  // Sebagian AP dibayar (agar `outstanding` < total — bukan hanya angka kotor).
+  const paidAp = await prisma.vendorInvoice.findUnique({ where: { invoiceNumber: `INV-${year}-EPC-900102` } });
+  if (paidAp && (await prisma.payment.count({ where: { vendor: 'PT Mekanik Jaya' } })) === 0) {
+    const payDate = new Date(now.getTime() - 10 * 86400000);
+    const seq = await prisma.numberSequence.upsert({ where: { code: 'PAY' }, update: { nextNumber: { increment: 1 } }, create: { code: 'PAY', prefix: `PAY-${year}-EPC-`, nextNumber: 2 } });
+    await prisma.payment.create({
+      data: {
+        paymentNumber: `${seq.prefix}${String(seq.nextNumber - 1).padStart(6, '0')}`, projectId: project.id, vendor: 'PT Mekanik Jaya',
+        totalAmount: 10_000_000_000, status: 'PAID', paymentDate: payDate, paidBy: 'system',
+        items: { create: [{ invoiceId: paidAp.id, amount: 10_000_000_000 }] },
+      },
+    });
+  }
+  console.log(`AP aging: ${apSeed.length} vendor invoice (bucket 1-30…90+)`);
+
   // ── 8. Client claim certified → invoice → collection (AR) ──
   const demoClaim = await prisma.progressClaim.findUnique({ where: { claimNumber: `CLM-${year}-EPC-900001` } });
   if (!demoClaim) {
@@ -261,6 +297,76 @@ async function main() {
     console.log(`Claim→Invoice→Collection: 100M kas masuk`);
   }
 
+  // ── 8b. Aging spread AR: beberapa claim + client invoice dengan tanggal berbeda ──
+  // Agar bucket 1-30/31-60/61-90/90+ terisi dan konsentrasi klien bermakna.
+  const arSeed: Array<{ client: string; amount: number; daysAgo: number; paidPct: number }> = [
+    { client: 'PT Klien Utama', amount: 40_000_000_000, daysAgo: 25, paidPct: 0 },
+    { client: 'PT Klien Utama', amount: 30_000_000_000, daysAgo: 55, paidPct: 50 },
+    { client: 'PT Nusantara Energi', amount: 60_000_000_000, daysAgo: 70, paidPct: 0 },
+    { client: 'PT Nusantara Energi', amount: 20_000_000_000, daysAgo: 100, paidPct: 0 },
+  ];
+  const wpForAr = await prisma.constructionWorkPackage.findFirst({ where: { projectId: project.id } });
+  for (let i = 0; i < arSeed.length; i++) {
+    const a = arSeed[i]!;
+    const claimNumber = `CLM-${year}-EPC-9001${String(i + 10).padStart(2, '0')}`;
+    const invoiceNumber = `CINV-${year}-EPC-9001${String(i + 10).padStart(2, '0')}`;
+    const exists = await prisma.clientInvoice.findUnique({ where: { invoiceNumber } });
+    if (exists) continue;
+    const d = new Date(now.getTime() - a.daysAgo * 86400000);
+    const claim = await prisma.progressClaim.create({
+      data: {
+        claimNumber, projectId: project.id, period: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`,
+        amount: a.amount, claimType: 'PROGRESS', status: 'CERTIFIED', workPackageId: wpForAr?.id,
+        physicalProgressAtClaim: 40, billableProgress: 35, certifiedAmount: a.amount,
+        retentionRate: 5, retentionAmount: Math.round(a.amount * 0.05), netCertifiedAmount: Math.round(a.amount * 0.95),
+        recoveryAmount: 0, cumulativeRecovered: 0,
+      },
+    });
+    const cinv = await prisma.clientInvoice.create({
+      data: {
+        invoiceNumber, projectId: project.id, claimId: claim.id, client: a.client,
+        amount: a.amount, taxAmount: Math.round(a.amount * 0.1), totalAmount: Math.round(a.amount * 1.1),
+        status: 'POSTED', invoiceDate: d, postedAt: d, postedBy: 'system',
+      },
+    });
+    if (a.paidPct > 0) {
+      const paid = Math.round(cinv.totalAmount.toNumber() * (a.paidPct / 100));
+      const colDate = new Date(d.getTime() + 20 * 86400000);
+      const seq = await prisma.numberSequence.upsert({ where: { code: 'COL' }, update: { nextNumber: { increment: 1 } }, create: { code: 'COL', prefix: `COL-${year}-EPC-`, nextNumber: 2 } });
+      await prisma.collection.create({
+        data: {
+          collectionNumber: `${seq.prefix}${String(seq.nextNumber - 1).padStart(6, '0')}`, projectId: project.id, client: a.client,
+          totalAmount: paid, status: 'POSTED', collectedAt: colDate,
+          items: { create: [{ clientInvoiceId: cinv.id, amount: paid }] },
+        },
+      });
+    }
+  }
+  console.log(`AR aging: ${arSeed.length} client invoice (bucket 1-30…90+) + koleksi parsial`);
+
+  // ── 8c. Cash movement multi-bulan (agar tren cash flow punya beberapa titik) ──
+  const cashMovSeed: Array<{ daysAgo: number; kind: 'IN' | 'OUT'; amount: number }> = [
+    { daysAgo: 95, kind: 'IN', amount: 45_000_000_000 },
+    { daysAgo: 65, kind: 'OUT', amount: 30_000_000_000 },
+    { daysAgo: 35, kind: 'IN', amount: 60_000_000_000 },
+    { daysAgo: 12, kind: 'OUT', amount: 22_000_000_000 },
+  ];
+  for (const m of cashMovSeed) {
+    const d = new Date(now.getTime() - m.daysAgo * 86400000);
+    if (m.kind === 'IN') {
+      const n = `COL-${year}-EPC-91${String(m.daysAgo).padStart(4, '0')}`;
+      if (!(await prisma.collection.findUnique({ where: { collectionNumber: n } }))) {
+        await prisma.collection.create({ data: { collectionNumber: n, projectId: project.id, client: 'PT Klien Utama', totalAmount: m.amount, status: 'POSTED', collectedAt: d } });
+      }
+    } else {
+      const n = `PAY-${year}-EPC-91${String(m.daysAgo).padStart(4, '0')}`;
+      if (!(await prisma.payment.findUnique({ where: { paymentNumber: n } }))) {
+        await prisma.payment.create({ data: { paymentNumber: n, projectId: project.id, vendor: 'PT Baja Utama', totalAmount: m.amount, status: 'PAID', paymentDate: d, paidBy: 'system' } });
+      }
+    }
+  }
+  console.log(`Cash movement: ${cashMovSeed.length} transaksi multi-bulan`);
+
   // ── 9. Treasury: bank account + cash forecast ──
   const bankCount = await prisma.bankAccount.count();
   if (bankCount === 0) {
@@ -269,12 +375,26 @@ async function main() {
     });
     console.log('BankAccount: BCA 500M');
   }
-  const cfCount = await prisma.cashForecast.count();
-  if (cfCount === 0) {
-    await prisma.cashForecast.create({
-      data: { forecastCode: `CF-${year}-000001`, legalEntityId: entity.id, period: `${year}-09`, expectedReceipt: 200000000000, expectedAp: 100000000000, expectedPayroll: 25000000000, netForecast: 75000000000 },
-    });
-    console.log('CashForecast: 2026-09 net 75M');
+  // Periode diturunkan dari `now` (bukan hardcoded) agar tidak bertabrakan
+  // dengan bulan sebelumnya — forecast vs actual butuh periode yang berbeda.
+  const curPeriod = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+  const prevMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  const prevPeriod = `${prevMonth.getUTCFullYear()}-${String(prevMonth.getUTCMonth() + 1).padStart(2, '0')}`;
+  const forecastSeed = [
+    { forecastCode: `CF-${year}-000001`, period: curPeriod, expectedReceipt: 200_000_000_000, expectedAp: 100_000_000_000, expectedPayroll: 25_000_000_000, netForecast: 75_000_000_000 },
+    { forecastCode: `CF-${year}-000002`, period: prevPeriod, expectedReceipt: 180_000_000_000, expectedAp: 120_000_000_000, expectedPayroll: 25_000_000_000, netForecast: 35_000_000_000 },
+  ];
+  for (const f of forecastSeed) {
+    const exists = await prisma.cashForecast.findUnique({ where: { forecastCode: f.forecastCode } });
+    if (!exists) {
+      await prisma.cashForecast.create({ data: { ...f, legalEntityId: entity.id } });
+      console.log(`CashForecast: ${f.period} net ${f.netForecast / 1e9}B`);
+    } else if (exists.period !== f.period) {
+      // Rekonsiliasi: periode diturunkan dari tanggal, jadi seed lama bisa
+      // menyimpan periode yang sudah basi. Perbarui agar tidak bertabrakan.
+      await prisma.cashForecast.update({ where: { forecastCode: f.forecastCode }, data: { ...f, legalEntityId: entity.id } });
+      console.log(`CashForecast: ${f.forecastCode} periode ${exists.period} → ${f.period}`);
+    }
   }
 
   // ── 10. Employees + equipment (HCM) ──

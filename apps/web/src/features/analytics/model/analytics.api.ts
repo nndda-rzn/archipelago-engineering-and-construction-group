@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { executiveDashboardSchema, anomalyListSchema, cashFlowSchema, agingSchema, projectCostSummarySchema, pendingApprovalCountSchema, signalListSchema, costCompositionSchema } from '@aec/api-contracts';
+import { executiveDashboardSchema, anomalyListSchema, cashFlowSchema, agingSchema, projectCostSummarySchema, pendingApprovalCountSchema, signalListSchema, costCompositionSchema, arConcentrationSchema, forecastVsActualSchema } from '@aec/api-contracts';
 import { getJson, downloadFile } from '@/shared/lib/http';
 import type { DashboardFilter } from '@/shared/lib/dashboard-period';
 
@@ -68,10 +68,8 @@ export function useAging(filter: DashboardFilter = {}) {
   return useQuery({
     queryKey: analyticsKeys.aging(filter),
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (filter.legalEntityId) params.set('legalEntityId', filter.legalEntityId);
-      const qs = params.toString();
-      const data = await getJson<unknown>(`/analytics/aging${qs ? `?${qs}` : ''}`);
+      // Aging menghormati entity DAN rentang tanggal (basis `invoiceDate`).
+      const data = await getJson<unknown>(`/analytics/aging${filterQuery(filter)}`);
       return agingSchema.parse(data);
     },
   });
@@ -85,11 +83,11 @@ export function usePendingApprovals() {
   });
 }
 
-export function useProjectCostSummary() {
+export function useProjectCostSummary(filter: DashboardFilter = {}) {
   return useQuery({
-    queryKey: analyticsKeys.costSummary,
+    queryKey: [...analyticsKeys.costSummary, filter] as const,
     queryFn: async () => {
-      const data = await getJson<unknown>('/analytics/project-cost-summary');
+      const data = await getJson<unknown>(`/analytics/project-cost-summary${filterQuery(filter)}`);
       return projectCostSummarySchema.parse(data);
     },
   });
@@ -102,9 +100,26 @@ export function useCostComposition(filter: DashboardFilter = {}) {
   });
 }
 
-/** Unduh CSV server-side (seluruh data, bukan hanya halaman aktif di layar). */
+export function useArConcentration(filter: DashboardFilter = {}) {
+  return useQuery({
+    queryKey: ['analytics-ar-concentration', filter] as const,
+    queryFn: async () => arConcentrationSchema.parse(await getJson<unknown>(`/analytics/ar-concentration${filterQuery(filter)}`)),
+  });
+}
+
+export function useForecastVsActual(filter: DashboardFilter = {}) {
+  return useQuery({
+    queryKey: ['analytics-forecast-vs-actual', filter] as const,
+    queryFn: async () => forecastVsActualSchema.parse(await getJson<unknown>(`/analytics/forecast-vs-actual${filterQuery(filter)}`)),
+  });
+}
+
+/**
+ * Unduh CSV server-side yang MENGIKUTI filter aktif — sebelumnya CSV selalu
+ * berisi seluruh data sehingga tidak cocok dengan yang tampil di layar.
+ */
 export const exportAnalytics = {
-  aging: () => downloadFile('/analytics/aging/export.csv', 'aging-ar-ap.csv'),
-  cashFlow: () => downloadFile('/analytics/cash-flow/export.csv', 'cash-flow.csv'),
-  projectCostSummary: () => downloadFile('/analytics/project-cost-summary/export.csv', 'project-cost-summary.csv'),
+  aging: (filter: DashboardFilter = {}) => downloadFile(`/analytics/aging/export.csv${filterQuery(filter)}`, 'aging-ar-ap.csv'),
+  cashFlow: (filter: DashboardFilter = {}) => downloadFile(`/analytics/cash-flow/export.csv${filterQuery(filter)}`, 'cash-flow.csv'),
+  projectCostSummary: (filter: DashboardFilter = {}) => downloadFile(`/analytics/project-cost-summary/export.csv${filterQuery(filter)}`, 'project-cost-summary.csv'),
 };

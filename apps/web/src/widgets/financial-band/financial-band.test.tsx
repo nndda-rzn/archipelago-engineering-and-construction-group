@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { hasOutstanding, agingSegments, FinancialBandView } from './financial-band';
+import type { AgingBucket } from '@aec/api-contracts';
+
+/** Fixture bucket aging: `detail` selalu ada (kontrak) — kosong bila tidak diuji. */
+const bucket = (b: string, amount: number): AgingBucket => ({ bucket: b, amount, detail: [] });
 
 describe('hasOutstanding', () => {
   it('is false when every bucket is zero', () => {
-    expect(hasOutstanding([{ bucket: 'CURRENT', amount: 0 }, { bucket: '90+', amount: 0 }])).toBe(false);
+    expect(hasOutstanding([bucket('CURRENT', 0), bucket('90+', 0)])).toBe(false);
   });
   it('is true when any bucket has value', () => {
-    expect(hasOutstanding([{ bucket: 'CURRENT', amount: 0 }, { bucket: '1-30', amount: 5 }])).toBe(true);
+    expect(hasOutstanding([bucket('CURRENT', 0), bucket('1-30', 5)])).toBe(true);
   });
   it('is false for an empty list', () => {
     expect(hasOutstanding([])).toBe(false);
@@ -16,7 +20,7 @@ describe('hasOutstanding', () => {
 
 describe('agingSegments', () => {
   it('maps buckets to labelled segments preserving order', () => {
-    expect(agingSegments([{ bucket: 'CURRENT', amount: 100 }, { bucket: '1-30', amount: 50 }])).toEqual([
+    expect(agingSegments([bucket('CURRENT', 100), bucket('1-30', 50)])).toEqual([
       { label: 'CURRENT', value: 100 },
       { label: '1-30', value: 50 },
     ]);
@@ -34,8 +38,8 @@ const viewProps = {
     netCash: 60,
     generatedAt: '2026-01-31T00:00:00.000Z',
   },
-  ar: [{ bucket: 'CURRENT', amount: 100 }, { bucket: '90+', amount: 50 }],
-  ap: [{ bucket: 'CURRENT', amount: 30 }],
+  ar: [bucket('CURRENT', 100), bucket('90+', 50)],
+  ap: [bucket('CURRENT', 30)],
   budget: 1000,
   actual: 820,
 };
