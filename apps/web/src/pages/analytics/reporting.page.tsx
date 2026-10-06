@@ -226,7 +226,12 @@ export function ReportingPage() {
           {costSummary.data && (
             <>
               <BudgetUsageBars items={costSummary.data.items} />
-              <div className="mt-4 overflow-x-auto">
+              {/* `relative` wajib: <caption className="sr-only"> memakai
+                  position:absolute, dan tanpa leluhur ber-position ia mengambil
+                  containing block dari <body> — lolos dari `overflow-y:auto`
+                  milik <main> dan menambah ~1260px ruang kosong di bawah
+                  halaman. Terbukti lewat pengukuran DOM, bukan dugaan. */}
+              <div className="relative mt-4 overflow-x-auto">
                 <table className="w-full border-collapse text-left text-body-sm">
                   <caption className="sr-only">Project cost summary</caption>
                   <thead>
