@@ -63,6 +63,26 @@ export class ApprovalTaskService {
     });
   }
 
+  /**
+   * Langkah-langkah yang berlaku untuk sebuah dokumen, urut `stepOrder`.
+   *
+   * Kondisi dievaluasi terhadap NILAI DOKUMEN (mis. `totalAmount`), bukan terhadap
+   * kondisi langkah sebelumnya — sehingga rantai "Manager lalu Direksi > 5jt"
+   * benar-benar menyaring langkah yang tidak relevan.
+   */
+  private applicableSteps(
+    workflow: { steps: Array<{ stepOrder: number; name: string; approverRoleCode: string; conditionField: string | null; conditionOp: string | null; conditionValue: unknown }> } | null,
+    doc: Record<string, unknown>,
+  ) {
+    if (!workflow || workflow.steps.length === 0) return [];
+    return workflow.steps
+      .filter((step) => this.evaluator.evaluateCondition(
+        step as unknown as { conditionField: string | null; conditionOp: string | null; conditionValue: never },
+        this.evaluator.getDocValue(doc, step.conditionField),
+      ))
+      .sort((a, b) => a.stepOrder - b.stepOrder);
+  }
+
   async submitForApproval(dto: SubmitForApprovalDto, actorId: string) {
     const { transactionType, transactionId, transactionCode } = dto;
 
@@ -73,29 +93,39 @@ export class ApprovalTaskService {
     }
 
     const workflow = await this.getActiveDefinition(transactionType);
-    let approverRoleCode = dto.approverRoleCode;
+    const applicable = this.applicableSteps(workflow, doc as unknown as Record<string, unknown>);
 
+    // Tanpa workflow: hormati role yang diminta pemanggil (perilaku lama).
+    let firstStep: { stepOrder: number; name: string; approverRoleCode: string };
     if (workflow) {
-      const steps = workflow.steps;
-      const firstStep = steps[0];
-      const docValue = this.evaluator.getDocValue(doc as unknown as Record<string, unknown>, firstStep?.conditionField ?? null);
-      const applicable = steps.filter((step) => this.evaluator.evaluateCondition(step, docValue));
       if (applicable.length === 0) {
         throw new ConflictException({ code: 'NO_APPLICABLE_STEP', message: 'No workflow step applies to this transaction' });
       }
-      approverRoleCode = applicable[0]!.approverRoleCode;
+      firstStep = applicable[0]!;
+    } else {
+      firstStep = { stepOrder: 1, name: 'approval', approverRoleCode: dto.approverRoleCode };
     }
 
-    await this.resolveApproverId(approverRoleCode, actorId);
+    await this.resolveApproverId(firstStep.approverRoleCode, actorId);
 
     const task = await this.prisma.$transaction(async (tx) => {
-      const existing = await tx.approvalTask.findUnique({ where: { transactionType_transactionId: { transactionType, transactionId } } });
+      const existing = await tx.approvalTask.findFirst({ where: { transactionType, transactionId, status: { in: ['PENDING', 'APPROVED'] } } });
       if (existing) throw new ConflictException({ code: 'ALREADY_SUBMITTED', message: 'Transaction has already been submitted for approval' });
 
       const created = await tx.approvalTask.create({
-        data: { transactionType, transactionId, transactionCode: transactionCode ?? null, approverRoleCode, requesterId: actorId, status: 'PENDING' },
+        data: {
+          transactionType,
+          transactionId,
+          transactionCode: transactionCode ?? null,
+          stepOrder: firstStep.stepOrder,
+          stepName: firstStep.name,
+          approverRoleCode: firstStep.approverRoleCode,
+          requesterId: actorId,
+          status: 'PENDING',
+        },
       });
 
+      // Selalu SUBMITTED saat rantai dimulai — APPROVED hanya di langkah terakhir.
       await this.evaluator.updateTransactionStatus(tx, transactionType, transactionId, 'SUBMITTED');
       return created;
     });
@@ -105,7 +135,7 @@ export class ApprovalTaskService {
       action: 'APPROVAL.SUBMIT',
       resource: transactionType,
       resourceId: transactionId,
-      newValue: { taskId: task.id, approverRoleCode, transactionCode, workflowCode: workflow?.code ?? null },
+      newValue: { taskId: task.id, approverRoleCode: firstStep.approverRoleCode, stepOrder: firstStep.stepOrder, transactionCode, workflowCode: workflow?.code ?? null },
       source: 'api',
     });
 
@@ -137,7 +167,23 @@ export class ApprovalTaskService {
       });
       if (cas.count === 0) throw new ConflictException({ code: 'TASK_NOT_PENDING', message: 'Task has already been decided' });
 
-      await this.evaluator.updateTransactionStatus(tx, task.transactionType, task.transactionId, nextStatus);
+      if (decision === 'REJECT') {
+        // Ditolak di tengah rantai: hentikan dokumen dan batalkan sisa langkah yang
+        // menunggu, supaya tidak ada task "hantu" yang bisa diputus setelahnya.
+        await tx.approvalTask.updateMany({
+          where: { transactionType: task.transactionType, transactionId: task.transactionId, status: 'PENDING' },
+          data: { status: 'CANCELLED' },
+        });
+        await this.evaluator.updateTransactionStatus(tx, task.transactionType, task.transactionId, 'REJECTED');
+        return tx.approvalTask.findUniqueOrThrow({ where: { id: taskId } });
+      }
+
+      // APPROVE: buka langkah berikutnya bila masih ada; kalau ini langkah terakhir,
+      // dokumen baru menjadi APPROVED.
+      const nextStep = await this.openNextStep(tx, task);
+      if (!nextStep) {
+        await this.evaluator.updateTransactionStatus(tx, task.transactionType, task.transactionId, 'APPROVED');
+      }
       return tx.approvalTask.findUniqueOrThrow({ where: { id: taskId } });
     });
 
@@ -151,6 +197,51 @@ export class ApprovalTaskService {
     });
 
     return updated;
+  }
+
+  /**
+   * Buat task untuk langkah applicable BERIKUTNYA (setelah `task.stepOrder`).
+   * Mengembalikan task baru, atau `null` bila ini sudah langkah terakhir
+   * (dokumen boleh menjadi APPROVED). Dipanggil di dalam transaksi `decide`.
+   */
+  private async openNextStep(
+    tx: Prisma.TransactionClient,
+    task: { transactionType: string; transactionId: string; transactionCode: string | null; stepOrder: number; requesterId: string },
+  ) {
+    const workflow = await this.getActiveDefinition(task.transactionType);
+    if (!workflow) return null;
+
+    const doc = await this.evaluator.getTransaction(task.transactionType, task.transactionId);
+    if (!doc) return null;
+
+    const applicable = this.applicableSteps(workflow, doc as unknown as Record<string, unknown>);
+    const next = applicable.find((s) => s.stepOrder > task.stepOrder);
+    if (!next) return null;
+
+    // Pastikan role langkah berikutnya benar-benar dipegang seseorang, kalau tidak
+    // rantai akan macet. Pesan errornya spesifik agar mudah ditindak.
+    // Catatan: maker-checker (BR-003) berlaku terhadap PEMOHON, bukan terhadap
+    // approver langkah sebelumnya — orang yang sama boleh memegang dua role
+    // berurutan, jadi tidak ada pemeriksaan `actorId` di sini.
+    const role = await tx.role.findUnique({ where: { code: next.approverRoleCode } });
+    if (!role) throw new ConflictException({ code: 'ROLE_NOT_FOUND', message: `Approver role ${next.approverRoleCode} not found` });
+    const assignment = await tx.userRole.findFirst({
+      where: { roleId: role.id, OR: [{ effectiveTo: null }, { effectiveTo: { gt: new Date() } }] },
+    });
+    if (!assignment) throw new ConflictException({ code: 'NO_APPROVER', message: `No user holds role ${next.approverRoleCode}` });
+
+    return tx.approvalTask.create({
+      data: {
+        transactionType: task.transactionType,
+        transactionId: task.transactionId,
+        transactionCode: task.transactionCode,
+        stepOrder: next.stepOrder,
+        stepName: next.name,
+        approverRoleCode: next.approverRoleCode,
+        requesterId: task.requesterId,
+        status: 'PENDING',
+      },
+    });
   }
 
   async pendingCount(): Promise<number> {
