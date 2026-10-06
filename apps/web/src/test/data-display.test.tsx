@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { SignalChip, BulletBar, MiniStackedBar } from '@aec/ui';
+import { SignalChip, BulletBar, MiniStackedBar, StackedBar } from '@aec/ui';
 
 describe('SignalChip', () => {
   it('renders count, label and context with a hidden severity dot', () => {
@@ -34,6 +34,28 @@ describe('BulletBar', () => {
     const fill = container.querySelector('[data-slot="bullet-fill"]');
     expect(fill?.className).toContain('bg-neutral-400');
     expect(fill?.className).not.toContain('racing-red');
+  });
+});
+
+describe('StackedBar', () => {
+  it('exposes every segment value in the accessible label (not colour alone)', () => {
+    render(
+      <StackedBar
+        segments={[
+          { value: 150, tone: 'neutral-mid', label: 'Committed' },
+          { value: 30, tone: 'neutral-dark', label: 'This request' },
+          { value: 570, tone: 'neutral-light', label: 'Remaining' },
+        ]}
+      />,
+    );
+    expect(screen.getByRole('img', { name: /Committed 150, This request 30, Remaining 570/ })).toBeTruthy();
+  });
+
+  it('renders no segments when the total is zero (no division by zero)', () => {
+    const { container } = render(
+      <StackedBar segments={[{ value: 0, tone: 'neutral-dark', label: 'Empty' }]} />,
+    );
+    expect(container.querySelectorAll('[data-slot="stacked-segment"]').length).toBe(0);
   });
 });
 

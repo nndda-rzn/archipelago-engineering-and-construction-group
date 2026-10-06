@@ -40,7 +40,8 @@ const queue = vi.hoisted(() => ({
       transactionType: 'PurchaseRequisition',
       transactionId: 'pr1',
       transactionCode: 'PR-2027-EPC-000014',
-      stepName: 'approval',
+      stepOrder: 2,
+      stepName: 'Approval Direksi',
       status: 'PENDING',
       requesterId: 'other',
       approverId: null,
@@ -59,7 +60,8 @@ const queue = vi.hoisted(() => ({
       transactionType: 'PurchaseOrder',
       transactionId: 'po1',
       transactionCode: 'PO-2027-EPC-000088',
-      stepName: 'approval',
+      stepOrder: 1,
+      stepName: 'Approval Manager Pengadaan',
       status: 'PENDING',
       requesterId: 'other',
       approverId: null,
@@ -85,7 +87,7 @@ vi.mock('@/features/approval', async () => {
     useApprovalQueue: () => ({ data: queue, isLoading: false, isError: false, refetch: vi.fn() }),
     useApprovalDetail: () => ({
       data: {
-        task: { ...queue.items[0] },
+        task: { ...queue.items[0], stepOrder: 2, stepName: 'Approval Direksi' },
         document: {
           type: 'PurchaseRequisition',
           code: 'PR-2027-EPC-000014',
@@ -97,13 +99,24 @@ vi.mock('@/features/approval', async () => {
           vendor: null,
           requesterName: 'Andi',
           items: [
-            { description: 'Semen PC-40', quantity: 500, unit: 'bag', unitPrice: 60_000, totalPrice: 30_000_000 },
-            { description: 'Besi D13', quantity: 2000, unit: 'kg', unitPrice: 12_000, totalPrice: 24_000_000 },
+            { description: 'Semen PC-40', quantity: 500, unit: 'bag', unitPrice: 60_000, totalPrice: 30_000_000, wbsCode: '2' },
+            { description: 'Besi D13', quantity: 2000, unit: 'kg', unitPrice: 12_000, totalPrice: 24_000_000, wbsCode: '1' },
           ],
         },
         history: [
           { action: 'APPROVAL.SUBMIT', actorId: 'u-andi', actorName: 'Andi', comment: null, at: '2026-10-04T12:00:00.000Z' },
         ],
+        budget: { budget: 3_000_000_000, commitment: 150_000_000, existingPr: 0, remaining: 2_000_000_000, within: true },        chain: [
+          { stepOrder: 1, name: 'Approval Manager Pengadaan', approverRoleCode: 'PROCUREMENT_MANAGER', condition: null, status: 'done' },
+          { stepOrder: 2, name: 'Approval Direksi', approverRoleCode: 'SUPER_ADMIN', condition: 'estimatedTotal > 5.000.000', status: 'current' },
+        ],
+        project: {
+          code: 'PRJ-01', name: 'Tower B', client: 'PT Klien', status: 'ACTIVE', contractValue: 5_000_000_000,
+          startDate: '2026-01-01T00:00:00.000Z', completionDate: '2027-01-01T00:00:00.000Z', location: 'Jakarta', manager: 'Budi',
+          baselineByCostType: [{ costType: 'MATERIAL', amount: 300_000_000 }, { costType: 'LABOR', amount: 100_000_000 }],
+        },
+        vendor: null,
+        related: [{ type: 'PurchaseOrder', code: 'PO-1', status: 'RELEASED' }],
       },
       isLoading: false,
       isError: false,
@@ -167,6 +180,42 @@ describe('ApprovalPage — queue & detail', () => {
     fireEvent.click(screen.getByRole('button', { name: /PR-2027-EPC-000014/ }));
     expect(nav.get().task).toBe('t1');
     expect(screen.getByText('Semen PC-40')).toBeTruthy();
+  });
+});
+
+describe('ApprovalPage — rich detail context', () => {
+  const openTask = () => fireEvent.click(screen.getByRole('button', { name: /PR-2027-EPC-000014/ }));
+
+  it('shows the budget impact with an explicit within/exceeds verdict', () => {
+    const { container } = renderWithProviders(<ApprovalPage />);
+    openTask();
+    expect(screen.getByLabelText('Budget impact')).toBeTruthy();
+    // Verdict eksplisit sebagai teks — bukan hanya warna.
+    expect(container.textContent).toMatch(/Within budget/i);
+    expect(container.textContent).toMatch(/Committed/);
+  });
+  it('shows the approval chain with step states derived from real data', () => {
+    const { container } = renderWithProviders(<ApprovalPage />);
+    openTask();
+    expect(screen.getByLabelText('Approval chain')).toBeTruthy();
+    expect(container.textContent).toMatch(/step 2 of 2/i);
+    expect(container.textContent).toMatch(/you are here/i);
+    expect(container.textContent).toMatch(/estimatedTotal > 5\.000\.000/);
+  });
+
+  it('labels the cost-type breakdown as the project baseline, not this document', () => {
+    renderWithProviders(<ApprovalPage />);
+    openTask();
+    expect(screen.getByText(/Project baseline by cost type/i)).toBeTruthy();
+    expect(screen.getByText(/not this document/i)).toBeTruthy();
+  });
+
+  it('shows related documents as links without claiming invoice matching', () => {
+    renderWithProviders(<ApprovalPage />);
+    openTask();
+    const related = screen.getByLabelText('Related documents');
+    expect(within(related).getByText('PO-1')).toBeTruthy();
+    expect(within(related).getByText(/matching is not evaluated/i)).toBeTruthy();
   });
 });
 
