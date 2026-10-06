@@ -222,10 +222,138 @@ export const workflowDefinitionSchema = z.object({
   status: z.string(),
   transactionType: z.string(),
   createdBy: z.string(),
+  /** Nama tampil pembuat — `null` bila user sudah tidak ada (baris audit tetap). */
+  createdByName: z.string().nullable(),
   createdAt: z.string(),
+  updatedAt: z.string(),
   steps: z.array(workflowStepSchema),
 });
 export type WorkflowDefinition = z.infer<typeof workflowDefinitionSchema>;
+
+/**
+ * Field dokumen yang boleh dipakai sebagai syarat langkah. **Satu sumber
+ * kebenaran** untuk form (frontend) dan validasi (backend) — mencegah field
+ * bebas yang `getDocValue` diam-diam kembalikan `null` sehingga syaratnya tidak
+ * pernah berlaku (bug senyap).
+ */
+export const CONDITION_FIELDS: Record<string, readonly string[]> = {
+  PurchaseRequisition: ['estimatedTotal'],
+  PurchaseOrder: ['totalAmount'],
+};
+export type ConditionTransactionType = keyof typeof CONDITION_FIELDS;
+
+/** Label manusiawi untuk field kondisi (UI menampilkan "Amount", bukan "totalAmount"). */
+export const CONDITION_FIELD_LABELS: Record<string, string> = {
+  estimatedTotal: 'Estimated total',
+  totalAmount: 'Order total',
+};
+
+export const updateWorkflowDefinitionSchema = z.object({
+  name: z.string().min(2).max(100).optional(),
+  description: z.string().max(500).nullable().optional(),
+});
+export type UpdateWorkflowDefinition = z.infer<typeof updateWorkflowDefinitionSchema>;
+
+export const updateWorkflowStepSchema = z
+  .object({
+    name: z.string().min(1).max(100).optional(),
+    approverRoleCode: z.string().min(2).max(50).optional(),
+    /** `null` membersihkan syarat langkah. */
+    conditionField: z.string().max(50).nullable().optional(),
+    conditionOp: z.enum(['>', '<', '>=', '<=', '==']).nullable().optional(),
+    conditionValue: z.number().nullable().optional(),
+  })
+  .superRefine((value, ctx) => {
+    // Syarat harus lengkap atau kosong — sebagian terisi menghasilkan langkah
+    // yang tampak bersyarat tetapi selalu berlaku.
+    const parts = [value.conditionField, value.conditionOp, value.conditionValue];
+    const filled = parts.filter((p) => p !== undefined && p !== null).length;
+    if (filled !== 0 && filled !== 3) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['conditionField'], message: 'Condition needs a field, an operator and a value' });
+    }
+  });
+export type UpdateWorkflowStep = z.infer<typeof updateWorkflowStepSchema>;
+
+/** Urutan baru langkah — id lengkap, terurut. Divalidasi ulang di server. */
+export const reorderWorkflowStepsSchema = z.object({
+  stepIds: z.array(z.string()).min(1),
+});
+export type ReorderWorkflowSteps = z.infer<typeof reorderWorkflowStepsSchema>;
+
+/** Satu baris riwayat versi — nomor, status, waktu, pembuat. */
+export const workflowVersionSummarySchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  version: z.number(),
+  status: z.string(),
+  name: z.string(),
+  stepCount: z.number(),
+  createdByName: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  /** Versi yang sedang dipakai runtime untuk jenis transaksi ini. */
+  isActive: z.boolean(),
+});
+export type WorkflowVersionSummary = z.infer<typeof workflowVersionSummarySchema>;
+
+/** Perbandingan dua versi: langkah yang ditambah / dihapus / diubah. */
+export const workflowVersionDiffSchema = z.object({
+  from: workflowVersionSummarySchema,
+  to: workflowVersionSummarySchema,
+  added: z.array(z.object({ stepOrder: z.number(), name: z.string(), approverRoleCode: z.string() })),
+  removed: z.array(z.object({ stepOrder: z.number(), name: z.string(), approverRoleCode: z.string() })),
+  changed: z.array(
+    z.object({
+      stepOrder: z.number(),
+      fields: z.array(z.object({ field: z.string(), from: z.string().nullable(), to: z.string().nullable() })),
+    }),
+  ),
+});
+export type WorkflowVersionDiff = z.infer<typeof workflowVersionDiffSchema>;
+
+/**
+ * Insight operasional untuk sebuah definisi. Dihitung dari `ApprovalTask` per
+ * **jenis transaksi** — bukan per versi — karena task tidak menyimpan versi
+ * definisi yang dipakai. `note` menyatakan batas ini secara eksplisit.
+ */
+export const workflowInsightsSchema = z.object({
+  transactionType: z.string(),
+  generatedAt: z.string(),
+  /** Sebaran task menurut langkah + hasilnya. */
+  byStep: z.array(
+    z.object({
+      stepOrder: z.number(),
+      stepName: z.string(),
+      total: z.number(),
+      approved: z.number(),
+      rejected: z.number(),
+      pending: z.number(),
+      cancelled: z.number(),
+    }),
+  ),
+  /** Volume per bulan (UTC). Kosong bila tidak ada task. */
+  monthly: z.array(z.object({ month: z.string(), created: z.number(), decided: z.number() })),
+  /** Sebaran nominal dokumen + bucket tetap agar bisa dibandingkan antar waktu. */
+  amounts: z.object({
+    count: z.number(),
+    min: z.number().nullable(),
+    max: z.number().nullable(),
+    buckets: z.array(z.object({ label: z.string(), count: z.number() })),
+  }),
+  /** Berapa dokumen yang benar-benar memenuhi syarat tiap langkah. */
+  ruleHits: z.array(
+    z.object({
+      stepOrder: z.number(),
+      name: z.string(),
+      condition: z.string().nullable(),
+      matching: z.number(),
+    }),
+  ),
+  /** Jumlah pemegang role per langkah definisi AKTIF — 0 berarti rantai macet. */
+  coverage: z.array(z.object({ stepOrder: z.number(), roleCode: z.string(), holders: z.number() })),
+  note: z.string(),
+});
+export type WorkflowInsights = z.infer<typeof workflowInsightsSchema>;
 
 export const createWorkflowDefinitionSchema = z.object({
   code: z.string().min(2).max(50),
