@@ -453,6 +453,20 @@ describe('WorkflowDefinitionPage: condition builder terpandu', () => {
     expect(input.conditionGroup.conditions).toHaveLength(2);
     expect(['AND', 'OR']).toContain(input.conditionGroup.combinator);
   });
+
+  it('lays the rule out so labels cannot wrap inside the narrow inspector', () => {
+    const { container } = renderWithProviders(<WorkflowDefinitionPage />);
+    selectVersion(3);
+    fireEvent.click(screen.getByLabelText(/Step 2: Finance review/));
+
+    const rule = container.querySelector('[data-slot="condition-rule"]')!;
+    // Inspector hanya 20rem (320px); grid 4 kolom menyisakan ~68px per kolom dan
+    // memaksa "Estimated total" / "Amount (IDR)" pecah dua baris.
+    expect(rule.className).not.toMatch(/sm:grid-cols-\[minmax\(0,1fr\)_minmax\(0,7rem\)/);
+    // Field punya barisnya sendiri; operator + amount berbagi baris kedua.
+    expect(container.querySelector('[data-slot="rule-row-field"]')).toBeTruthy();
+    expect(container.querySelector('[data-slot="rule-row-operator-amount"]')).toBeTruthy();
+  });
 });
 
 describe('WorkflowDefinitionPage: simulasi multi-skenario menyalakan rantai', () => {
