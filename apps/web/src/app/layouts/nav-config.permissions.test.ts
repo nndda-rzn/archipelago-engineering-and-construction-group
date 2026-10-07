@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { Permission, SUPERADMIN_ONLY } from '@aec/shared-types';
+import { Permission } from '@aec/shared-types';
 import { allNavItems, navGroups, visibleNavGroups } from './nav-config';
 
-const VALID = new Set<string>([...Object.values(Permission), SUPERADMIN_ONLY]);
+const VALID = new Set<string>(Object.values(Permission));
 
 describe('nav-config permissions', () => {
   it('every nav item permission is a known code (no typos, no drift)', () => {
@@ -44,9 +44,10 @@ describe('visibleNavGroups', () => {
     expect(allNavItems(groups).map((i) => i.label)).toEqual(['Executive Analytics', 'Advanced Reporting']);
   });
 
-  it('SUPERADMIN_ONLY items are hidden from a non-admin user', () => {
+  it('admin-only pages are hidden from a non-admin user', () => {
     const labels = allNavItems(visibleNavGroups(() => false)).map((i) => i.label);
     expect(labels).not.toContain('Master Data');
     expect(labels).not.toContain('Foundation Hardening');
+    expect(labels).not.toContain('Procurement Hardening');
   });
 });

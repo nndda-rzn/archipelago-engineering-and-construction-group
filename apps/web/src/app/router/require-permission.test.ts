@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { SUPERADMIN_ONLY } from '@aec/shared-types';
 
 const store = vi.hoisted(() => ({ user: null as { roles: string[]; permissions?: string[] } | null }));
 const redirectSpy = vi.hoisted(() => vi.fn((opts: unknown) => ({ __redirect: opts })));
@@ -24,15 +23,15 @@ describe('canAccess', () => {
     expect(canAccess('Analytics.VIEW')).toBe(false);
   });
 
-  it('SUPER_ADMIN holds everything, including SUPERADMIN_ONLY', () => {
+  it('SUPER_ADMIN holds everything', () => {
     store.user = { roles: ['SUPER_ADMIN'], permissions: [] };
     expect(canAccess('Analytics.VIEW')).toBe(true);
-    expect(canAccess(SUPERADMIN_ONLY)).toBe(true);
+    expect(canAccess('MasterData.VIEW')).toBe(true);
   });
 
-  it('a non-admin never gets SUPERADMIN_ONLY', () => {
+  it('a non-admin only gets what it holds', () => {
     store.user = { roles: ['BUYER'], permissions: ['Project.VIEW'] };
-    expect(canAccess(SUPERADMIN_ONLY)).toBe(false);
+    expect(canAccess('MasterData.VIEW')).toBe(false);
   });
 });
 

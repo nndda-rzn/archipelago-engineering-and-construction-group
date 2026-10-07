@@ -1,14 +1,13 @@
 import type { LucideIcon } from 'lucide-react';
 import { Briefcase, Building2, FolderKanban, HardHat, LayoutDashboard, Shield, ShoppingCart, Wallet } from 'lucide-react';
-import { Permission, SUPERADMIN_ONLY, type NavPermission } from '@aec/shared-types';
+import { Permission, type PermissionCode } from '@aec/shared-types';
 
 /**
  * Satu item navigasi. `permission` menentukan siapa yang melihatnya: item tanpa
  * `permission` terlihat oleh semua user yang login; item dengan `permission`
  * hanya terlihat bila user memegang permission itu (atau SUPER_ADMIN).
- * `SUPERADMIN_ONLY` dipakai untuk halaman yang tidak punya resource permission.
  */
-export type NavItem = { label: string; to: string; permission?: NavPermission };
+export type NavItem = { label: string; to: string; permission?: PermissionCode };
 
 /**
  * Subgrup (level 2) — hanya dipakai grup besar yang itemnya bercabang alami.
@@ -51,8 +50,8 @@ export const navGroups: NavGroup[] = [
     icon: Building2,
     items: [
       { label: 'Legal Entities', to: '/foundation/legal-entities', permission: Permission.LegalEntityView },
-      { label: 'Foundation Hardening', to: '/foundation/hardening', permission: SUPERADMIN_ONLY },
-      { label: 'Master Data', to: '/master-data', permission: SUPERADMIN_ONLY },
+      { label: 'Foundation Hardening', to: '/foundation/hardening', permission: Permission.FoundationHardeningView },
+      { label: 'Master Data', to: '/master-data', permission: Permission.MasterDataView },
       { label: 'User Management', to: '/foundation/users', permission: Permission.UserView },
       { label: 'Role Management', to: '/foundation/roles', permission: Permission.RoleView },
       { label: 'Audit Trail', to: '/foundation/audit-logs', permission: Permission.AuditView },
@@ -63,7 +62,7 @@ export const navGroups: NavGroup[] = [
     icon: FolderKanban,
     items: [
       { label: 'Projects', to: '/projects', permission: Permission.ProjectView },
-      { label: 'WBS', to: '/wbs', permission: Permission.WBSView },
+      { label: 'WBS', to: '/wbs', permission: Permission.WbsView },
       { label: 'Budget', to: '/budget', permission: Permission.BudgetView },
       { label: 'Project Health', to: '/project-health', permission: Permission.ProjectView },
       { label: 'Project Controls', to: '/project-controls', permission: Permission.ControlAccountView },
@@ -89,7 +88,7 @@ export const navGroups: NavGroup[] = [
           { label: 'Purchase Requisition', to: '/procurement/pr', permission: Permission.PurchaseRequisitionView },
           { label: 'Purchase Order', to: '/procurement/po', permission: Permission.PurchaseOrderView },
           { label: 'RFQ', to: '/procurement/rfq', permission: Permission.RfqView },
-          { label: 'Procurement Hardening', to: '/procurement/hardening', permission: SUPERADMIN_ONLY },
+          { label: 'Procurement Hardening', to: '/procurement/hardening', permission: Permission.ProcurementHardeningView },
         ],
       },
       {

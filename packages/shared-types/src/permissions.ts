@@ -1,10 +1,11 @@
 /**
- * Kode permission AEC ERP - satu sumber untuk backend & frontend.
+ * Kode permission AEC ERP - SATU sumber kebenaran untuk backend & frontend.
  *
- * Diambil dari daftar permission di `apps/api/prisma/seed.ts` (sumber kebenaran
- * RBAC). Backend menegakkannya lewat PermissionsGuard; frontend memakainya untuk
- * menyembunyikan menu/route/widget yang tidak diizinkan. Karena keduanya impor
- * dari sini, tidak ada logika ganda yang bisa drift.
+ * Ini gabungan dari tiga daftar yang sebelumnya terpisah dan sempat berbeda:
+ * controller backend (`@Permissions`), matrix seed (yang masuk DB), dan
+ * kebutuhan UI. Menyatukannya di sini menghapus drift - dulu `Handover.EDIT`
+ * dipakai controller tapi tak pernah di-seed, sehingga endpoint handover
+ * approve/verify tidak bisa diakses siapa pun.
  *
  * Format kode: `Resource.ACTION` (mis. `Analytics.VIEW`).
  */
@@ -64,10 +65,12 @@ export const Permission = {
   FiscalPeriodView: 'FiscalPeriod.VIEW',
   ForecastCreate: 'Forecast.CREATE',
   ForecastView: 'Forecast.VIEW',
+  FoundationHardeningView: 'FoundationHardening.VIEW',
   GoodsReceiptCreate: 'GoodsReceipt.CREATE',
   GoodsReceiptView: 'GoodsReceipt.VIEW',
   HandoverApprove: 'Handover.APPROVE',
   HandoverCreate: 'Handover.CREATE',
+  HandoverEdit: 'Handover.EDIT',
   HandoverView: 'Handover.VIEW',
   HseIncidentCreate: 'HseIncident.CREATE',
   HseIncidentInvestigate: 'HseIncident.INVESTIGATE',
@@ -83,6 +86,7 @@ export const Permission = {
   LegalEntityCreate: 'LegalEntity.CREATE',
   LegalEntityEdit: 'LegalEntity.EDIT',
   LegalEntityView: 'LegalEntity.VIEW',
+  MasterDataView: 'MasterData.VIEW',
   MaterialIssueCreate: 'MaterialIssue.CREATE',
   MaterialIssueView: 'MaterialIssue.VIEW',
   OpportunityCreate: 'Opportunity.CREATE',
@@ -97,6 +101,7 @@ export const Permission = {
   PermitToWorkCreate: 'PermitToWork.CREATE',
   PermitToWorkRevoke: 'PermitToWork.REVOKE',
   PermitToWorkView: 'PermitToWork.VIEW',
+  ProcurementHardeningView: 'ProcurementHardening.VIEW',
   ProgressClaimCertify: 'ProgressClaim.CERTIFY',
   ProgressClaimCreate: 'ProgressClaim.CREATE',
   ProgressClaimView: 'ProgressClaim.VIEW',
@@ -160,9 +165,9 @@ export const Permission = {
   VendorInvoiceCreate: 'VendorInvoice.CREATE',
   VendorInvoicePost: 'VendorInvoice.POST',
   VendorInvoiceView: 'VendorInvoice.VIEW',
-  WBSCreate: 'WBS.CREATE',
-  WBSEdit: 'WBS.EDIT',
-  WBSView: 'WBS.VIEW',
+  WbsCreate: 'WBS.CREATE',
+  WbsEdit: 'WBS.EDIT',
+  WbsView: 'WBS.VIEW',
   WarehouseCreate: 'Warehouse.CREATE',
   WarehouseView: 'Warehouse.VIEW',
   WorkPackageCreate: 'WorkPackage.CREATE',
@@ -175,12 +180,3 @@ export const Permission = {
 } as const;
 
 export type PermissionCode = (typeof Permission)[keyof typeof Permission];
-
-/**
- * Sentinel untuk halaman yang tidak punya resource permission sendiri
- * (mis. Foundation Hardening, Master Data, Procurement Hardening). Hanya
- * SUPER_ADMIN yang melihatnya. Nilai ini BUKAN kode permission backend; ia
- * hanya dipakai di frontend untuk menandai "admin-only".
- */
-export const SUPERADMIN_ONLY = '__superadmin__';
-export type NavPermission = PermissionCode | typeof SUPERADMIN_ONLY;
