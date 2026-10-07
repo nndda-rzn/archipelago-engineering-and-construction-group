@@ -1,5 +1,22 @@
 import { AnalyticsService } from './analytics.service';
+import { ExecutiveAnalyticsService } from './executive-analytics.service';
+import { FinancialAnalyticsService } from './financial-analytics.service';
+import { ProjectAnalyticsService } from './project-analytics.service';
+import { AnalyticsExportService } from './analytics-export.service';
 import { analyticsCacheKey } from '@/shared/cache/analytics-cache';
+
+/**
+ * Facade kini meng-compose empat capability service. Test lama tetap membangun
+ * `AnalyticsService` dengan (prisma, cache) — helper ini menyusun sub-service
+ * dengan dependensi yang sama sehingga assertion tidak perlu berubah.
+ */
+function makeService(prisma: unknown, cache: unknown): AnalyticsService {
+  const executive = new ExecutiveAnalyticsService(prisma as never, cache as never);
+  const financial = new FinancialAnalyticsService(prisma as never, cache as never);
+  const project = new ProjectAnalyticsService(prisma as never, cache as never);
+  const exporter = new AnalyticsExportService(financial, project);
+  return new AnalyticsService(executive, financial, project, exporter);
+}
 
 describe('analyticsCacheKey', () => {
   it('suffixes with all + empty bounds when no filter', () => {
@@ -22,7 +39,7 @@ describe('AnalyticsService.aging filter', () => {
     } as never;
     const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
 
-    const svc = new AnalyticsService(prisma, cache);
+    const svc = makeService(prisma, cache);
     await svc.aging({ legalEntityId: 'LE1' });
 
     expect(findMany).toHaveBeenCalledWith(
@@ -40,7 +57,7 @@ describe('AnalyticsService.aging filter', () => {
     } as never;
     const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
 
-    const svc = new AnalyticsService(prisma, cache);
+    const svc = makeService(prisma, cache);
     await svc.aging({ from: '2026-01-01', to: '2026-03-31' });
 
     const where = findMany.mock.calls[0]![0].where;
@@ -56,7 +73,7 @@ describe('AnalyticsService.aging filter', () => {
     } as never;
     const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
 
-    const svc = new AnalyticsService(prisma, cache);
+    const svc = makeService(prisma, cache);
     await svc.aging({ from: '2026-02-01' });
 
     const where = vendorFindMany.mock.calls[0]![0].where;
@@ -83,7 +100,7 @@ describe('AnalyticsService.aging filter', () => {
     } as never;
     const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
 
-    const svc = new AnalyticsService(prisma, cache);
+    const svc = makeService(prisma, cache);
     const res = await svc.aging();
 
     const bucket = res.ar.find((b) => b.bucket === '31-60');
@@ -106,7 +123,7 @@ describe('AnalyticsService.aging filter', () => {
     } as never;
     const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
 
-    const svc = new AnalyticsService(prisma, cache);
+    const svc = makeService(prisma, cache);
     const res = await svc.aging();
     expect(res.ar.find((b) => b.bucket === 'CURRENT')?.amount).toBe(0);
     expect(res.ar.flatMap((b) => b.detail)).toHaveLength(0);
@@ -124,7 +141,7 @@ describe('AnalyticsService.cashFlow', () => {
     } as never;
     const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
 
-    const svc = new AnalyticsService(prisma, cache);
+    const svc = makeService(prisma, cache);
     const res = await svc.cashFlow();
 
     expect(res.series).toHaveLength(6);
@@ -148,7 +165,7 @@ describe('AnalyticsService.arConcentration', () => {
     } as never;
     const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
 
-    const svc = new AnalyticsService(prisma, cache);
+    const svc = makeService(prisma, cache);
     const res = await svc.arConcentration();
 
     expect(res.total).toBe(500);
@@ -167,7 +184,7 @@ describe('AnalyticsService.forecastVsActual', () => {
     } as never;
     const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
 
-    const svc = new AnalyticsService(prisma, cache);
+    const svc = makeService(prisma, cache);
     const res = await svc.forecastVsActual();
 
     expect(res.periods).toHaveLength(1);
@@ -189,7 +206,7 @@ describe('AnalyticsService.signals', () => {
     } as never;
     const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
 
-    const svc = new AnalyticsService(prisma, cache);
+    const svc = makeService(prisma, cache);
     const result = await svc.signals();
 
     const ncrs = result.signals.find((s) => s.key === 'ncrs');
@@ -200,7 +217,7 @@ describe('AnalyticsService.signals', () => {
 });
 
 describe('AnalyticsService.computeDelta', () => {
-  const svc = new AnalyticsService({} as never, { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never);
+  const svc = makeService({} as never, { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never);
 
   it('is null pctChange when previous is zero', () => {
     const d = svc.computeDelta(100, 0);
@@ -231,7 +248,7 @@ describe('AnalyticsService.costComposition', () => {
       },
     } as never;
     const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
-    const svc = new AnalyticsService(prisma, cache);
+    const svc = makeService(prisma, cache);
 
     const result = await svc.costComposition();
     expect(result.total).toBe(400);
@@ -240,7 +257,7 @@ describe('AnalyticsService.costComposition', () => {
 });
 
 describe('AnalyticsService.monthlySeries', () => {
-  const svc = new AnalyticsService({} as never, {} as never);
+  const svc = makeService({} as never, {} as never);
 
   it('buckets rows into the last 6 months, zero-filling gaps', () => {
     const now = new Date('2026-10-15T00:00:00.000Z');
@@ -265,3 +282,4 @@ describe('AnalyticsService.monthlySeries', () => {
     expect(series.every((p) => p.value === 0)).toBe(true);
   });
 });
+
