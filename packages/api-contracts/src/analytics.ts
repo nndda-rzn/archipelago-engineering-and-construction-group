@@ -275,6 +275,14 @@ export const controlTowerOperationsSchema = z.object({
     equipmentUtilizationPct: z.number().nullable(),
     openBreakdowns: z.number(),
   }),
+  /** Ringkasan inventory: nilai stok, jumlah gudang, dan mutasi masuk/keluar. */
+  inventory: z.object({
+    stockValue: z.number(),
+    warehouseCount: z.number(),
+    negativeBalanceCount: z.number(),
+    movementInValue: z.number(),
+    movementOutValue: z.number(),
+  }),
 });
 export type ControlTowerOperations = z.infer<typeof controlTowerOperationsSchema>;
 

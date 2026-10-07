@@ -16,7 +16,7 @@ function makeService(prisma: unknown, cache: unknown): AnalyticsService {
   const financial = new FinancialAnalyticsService(prisma as never, cache as never);
   const project = new ProjectAnalyticsService(prisma as never, cache as never);
   const exporter = new AnalyticsExportService(financial, project);
-  const controlTower = new ControlTowerService(prisma as never, cache as never, executive, financial);
+  const controlTower = new ControlTowerService(prisma as never, cache as never, executive, financial, { computeBatch: async () => new Map(), computeTotals: () => ({ bac: 0, ev: 0, pv: 0, ac: 0, cpi: null, spi: null, eac: 0, vac: 0 }) } as never);
   return new AnalyticsService(executive, financial, project, exporter, controlTower);
 }
 

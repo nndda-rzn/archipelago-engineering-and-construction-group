@@ -27,6 +27,8 @@ export { BulletBar, MiniStackedBar, type BulletBarProps, type MiniStackedBarProp
 export { Sparkline, type SparklineProps } from './primitives/sparkline';
 export { DivergingBar, type DivergingBarProps } from './primitives/diverging-bar';
 export { StackedBar, type StackedBarProps, type StackedSegment, type StackedBarTone } from './primitives/stacked-bar';
+export { RiskHeatmap, type RiskHeatmapProps, type RiskCell } from './primitives/risk-heatmap';
+export { StageBars, type StageBarsProps, type StageDatum } from './primitives/stage-bars';
 export { Waterfall, waterfallSegments, type WaterfallProps, type WaterfallSegment, type WaterfallInput } from './primitives/waterfall';
 export { EvmBars, evmRatios, type EvmMetrics, type EvmRatios } from './primitives/evm-bars';
 export { EntityAvatar, initialsFrom, type EntityAvatarProps } from './primitives/entity-avatar';

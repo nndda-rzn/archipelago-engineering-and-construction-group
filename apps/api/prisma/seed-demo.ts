@@ -409,6 +409,229 @@ async function seedWorkflowDemo() {
   if (orphans.length > 0) console.log(`ApprovalTask: ${orphans.length} task yatim dihapus (transactionId tidak valid)`);
 }
 
+/**
+ * Portfolio demo multi-entitas (FR-DASH-003): 12 proyek di 3 legal entity,
+ * dengan baseline EVM (ControlAccount.plannedValue + WorkPackageProgress),
+ * opportunity funnel, dan inventory (gudang + stock ledger).
+ *
+ * Idempoten: seluruh baris di-upsert berdasarkan kode unik, jadi menjalankan
+ * seed dua kali tidak menggandakan data.
+ *
+ * Sengaja dibuat bervariasi: sebagian proyek di bawah anggaran (CPI>1), sebagian
+ * overrun (CPI<1), dan dua proyek tanpa baseline (NO_BUDGET → hasEvm=false),
+ * supaya scatter/health/ledger punya sinyal nyata, bukan satu titik.
+ */
+async function seedPortfolio() {
+  // ── A. Legal entity tambahan ──
+  const entities = [
+    { code: 'AEC-MAR', legalName: 'AEC Marine Works', taxIdentifier: '01.234.567.8-901.000', country: 'ID', functionalCurrency: 'IDR' },
+    { code: 'AEC-PWR', legalName: 'AEC Power Systems', taxIdentifier: '01.234.567.8-902.000', country: 'ID', functionalCurrency: 'USD' },
+  ];
+  const entityByCode = new Map<string, string>();
+  const con = await prisma.legalEntity.findUnique({ where: { code: 'AEC-CON' } });
+  if (con) entityByCode.set('AEC-CON', con.id);
+  for (const e of entities) {
+    const row = await prisma.legalEntity.upsert({
+      where: { code: e.code },
+      update: { legalName: e.legalName },
+      create: { code: e.code, legalName: e.legalName, taxIdentifier: e.taxIdentifier, country: e.country, functionalCurrency: e.functionalCurrency, reportingCurrency: 'IDR' },
+    });
+    entityByCode.set(e.code, row.id);
+  }
+  if (!con) throw new Error('LegalEntity AEC-CON tidak ada — jalankan seed dasar dulu.');
+
+  // ── B. Klien tambahan ──
+  const clientRows = [
+    { clientCode: `CLT-${year}-900002`, name: 'PT Marine Nusantara', industry: 'MARINE' },
+    { clientCode: `CLT-${year}-900003`, name: 'PT Power Indonesia', industry: 'POWER' },
+    { clientCode: `CLT-${year}-900004`, name: 'PT Energi Prima', industry: 'OIL_GAS' },
+  ];
+  const clientIds: string[] = [];
+  for (const c of clientRows) {
+    const row = await prisma.client.upsert({ where: { clientCode: c.clientCode }, update: { name: c.name }, create: { ...c, contactPerson: 'Demo Contact', email: 'demo@klien.co.id' } });
+    clientIds.push(row.id);
+  }
+
+  // ── C. 11 proyek tambahan ──
+  // `profile`: healthy = di bawah anggaran (CPI>1); overrun = over (CPI<1); nobudget = tanpa ControlAccount.
+  const projects = [
+    { code: 'PRJ-EPC-2027-020', name: 'Jetty Extension Phase 2', entity: 'AEC-MAR', bu: 'MARINE', loc: 'Surabaya', ccy: 'IDR', value: 1_850_000_000_000, profile: 'healthy', status: 'ACTIVE' },
+    { code: 'PRJ-EPC-2027-021', name: 'Dredging & Reclamation', entity: 'AEC-MAR', bu: 'MARINE', loc: 'Makassar', ccy: 'IDR', value: 960_000_000_000, profile: 'overrun', status: 'ACTIVE' },
+    { code: 'PRJ-EPC-2027-022', name: 'Offshore Platform Fabrication', entity: 'AEC-MAR', bu: 'MARINE', loc: 'Batam', ccy: 'USD', value: 240_000_000, profile: 'healthy', status: 'ACTIVE' },
+    { code: 'PRJ-EPC-2027-023', name: 'PLTU Unit 3 Balance of Plant', entity: 'AEC-PWR', bu: 'POWER', loc: 'Cirebon', ccy: 'IDR', value: 3_100_000_000_000, profile: 'overrun', status: 'ACTIVE' },
+    { code: 'PRJ-EPC-2027-024', name: 'Gas Turbine Installation', entity: 'AEC-PWR', bu: 'POWER', loc: 'Gresik', ccy: 'USD', value: 310_000_000, profile: 'healthy', status: 'ON_HOLD' },
+    { code: 'PRJ-EPC-2027-025', name: 'Substation EPC 150kV', entity: 'AEC-PWR', bu: 'POWER', loc: 'Bekasi', ccy: 'IDR', value: 780_000_000_000, profile: 'overrun', status: 'ACTIVE' },
+    { code: 'PRJ-EPC-2027-026', name: 'Transmission Line 70km', entity: 'AEC-PWR', bu: 'POWER', loc: 'Sumatra', ccy: 'IDR', value: 1_240_000_000_000, profile: 'healthy', status: 'ACTIVE' },
+    { code: 'PRJ-EPC-2027-027', name: 'Refinery Revamp', entity: 'AEC-CON', bu: 'PROCESS', loc: 'Balikpapan', ccy: 'IDR', value: 2_450_000_000_000, profile: 'healthy', status: 'ACTIVE' },
+    { code: 'PRJ-EPC-2027-028', name: 'Tank Farm Expansion', entity: 'AEC-CON', bu: 'PROCESS', loc: 'Tuban', ccy: 'IDR', value: 640_000_000_000, profile: 'overrun', status: 'COMPLETED' },
+    { code: 'PRJ-EPC-2027-029', name: 'Early Works — Site Prep', entity: 'AEC-CON', bu: 'PROCESS', loc: 'Kalimantan', ccy: 'IDR', value: 120_000_000_000, profile: 'nobudget', status: 'PLANNING' },
+    { code: 'PRJ-EPC-2027-030', name: 'Feasibility & Basic Eng.', entity: 'AEC-CON', bu: 'PROCESS', loc: 'Jakarta', ccy: 'IDR', value: 45_000_000_000, profile: 'nobudget', status: 'PLANNING' },
+  ] as const;
+
+  const createdProjectIds: { id: string; profile: string; code: string }[] = [];
+  for (const p of projects) {
+    const legalEntityId = entityByCode.get(p.entity);
+    if (!legalEntityId) continue;
+    const existing = await prisma.project.findUnique({ where: { code: p.code } });
+    const project = existing ?? (await prisma.project.create({
+      data: {
+        code: p.code, name: p.name, client: clientRows[0]!.name, legalEntityId, businessUnit: p.bu, location: p.loc,
+        currency: p.ccy, contractValue: p.value, advanceAmount: Math.round(p.value * 0.1), advanceRecoveryRate: 10,
+        status: p.status, director: 'Ir. Demo', manager: 'PM Demo',
+      },
+    }));
+    createdProjectIds.push({ id: project.id, profile: p.profile, code: p.code });
+
+    // WBS + Budget PUBLISHED + ControlAccount (PV) — kecuali `nobudget`.
+    const wbsSeed = [
+      { code: '1', name: 'Engineering', amount: p.value * 0.1, costType: 'LABOR' },
+      { code: '2', name: 'Procurement', amount: p.value * 0.4, costType: 'MATERIAL' },
+      { code: '3', name: 'Construction', amount: p.value * 0.4, costType: 'SUBCONTRACTOR' },
+      { code: '4', name: 'Commissioning', amount: p.value * 0.1, costType: 'EQUIPMENT' },
+    ];
+    for (const w of wbsSeed) {
+      const wbs = await prisma.wbsItem.upsert({
+        where: { projectId_code: { projectId: project.id, code: w.code } },
+        update: {},
+        create: { projectId: project.id, code: w.code, name: w.name, sortOrder: Number(w.code) },
+      });
+      if (p.profile === 'nobudget') continue;
+      const bi = await prisma.budgetItem.findUnique({ where: { projectId_wbsItemId_costType: { projectId: project.id, wbsItemId: wbs.id, costType: w.costType } } });
+      if (!bi) {
+        await prisma.budgetItem.create({ data: { projectId: project.id, wbsItemId: wbs.id, costType: w.costType, amount: w.amount, status: 'PUBLISHED', version: 1 } });
+      }
+    }
+
+    // Magnitudo EVM diselaraskan agar rasio realistis:
+    //   BAC  = Σ budget PUBLISHED  = p.value
+    //   PV   = BAC × planned%      (ControlAccount.plannedValue)
+    //   EV   = BAC × physical%     (WorkPackageProgress)
+    //   AC   = dibaca ActualCostCalculator dari ledger OUT → diset = EV / CPI target
+    // Proyek `nobudget` melewati blok budget/CA/EVM, tetapi tetap punya gudang,
+    // ledger, NCR, dan insiden (agar tiap domain terwakili di semua proyek).
+    const isNobudget = p.profile === 'nobudget';
+    const bac = p.value;
+    const plannedProgress = 60;
+    const physicalProgress = p.profile === 'healthy' ? 62 : 38; // sehat sedikit di depan; overrun tertinggal
+    const cpiTarget = p.profile === 'healthy' ? 1.1 : 0.85;
+    const ev = bac * (physicalProgress / 100);
+    const ac = isNobudget ? 0 : ev / cpiTarget;
+    const pv = bac * (plannedProgress / 100);
+
+    // ControlAccount (PV baseline) + WorkPackage + progress fisik — hanya bila ber-budget.
+    const firstWbs = await prisma.wbsItem.findFirst({ where: { projectId: project.id, code: '3' } });
+    const wbsForCa = firstWbs ?? (await prisma.wbsItem.findFirst({ where: { projectId: project.id } }));
+    if (!isNobudget && wbsForCa) {
+      const caCode = `CA-${p.code.slice(-3)}`;
+      const existingCa = await prisma.controlAccount.findUnique({ where: { projectId_code: { projectId: project.id, code: caCode } } });
+      if (!existingCa) {
+        await prisma.controlAccount.create({ data: { projectId: project.id, wbsItemId: wbsForCa.id, code: caCode, name: `${p.name} — Construction`, responsibleManager: 'PM Demo', budgetAmount: pv, plannedValue: pv, status: 'ACTIVE' } });
+      }
+    }
+
+    const wpNumber = `WP-${p.code.slice(-3)}`;
+    let wp = await prisma.constructionWorkPackage.findUnique({ where: { wpNumber } });
+    if (!wp && wbsForCa) {
+      wp = await prisma.constructionWorkPackage.create({
+        data: { wpNumber, projectId: project.id, wbsItemId: wbsForCa.id, title: `${p.name} — Construction`, plannedQty: 1000, unit: 'EA', status: 'IN_PROGRESS' },
+      });
+    }
+    if (wp && !isNobudget) {
+      const hasProgress = await prisma.workPackageProgress.findFirst({ where: { workPackageId: wp.id } });
+      if (!hasProgress) {
+        await prisma.workPackageProgress.create({ data: { workPackageId: wp.id, physicalProgress, achievedQty: physicalProgress * 10, measuredBy: 'Surveyor Demo' } });
+      }
+    }
+
+    // PO + VendorInvoice POSTED (rekaman pengadaan; AC sebenarnya dari ledger OUT).
+    const poNumber = `PO-${p.code.slice(-3)}-900001`;
+    let po = await prisma.purchaseOrder.findUnique({ where: { poNumber } });
+    if (!po) {
+      po = await prisma.purchaseOrder.create({
+        data: { poNumber, projectId: project.id, vendor: 'PT Baja Utama', currency: p.ccy, totalAmount: p.value * 0.35, status: 'RELEASED', issuedAt: new Date(`${year}-03-01`), releasedBy: 'buyer@aec.local' },
+      });
+    }
+    const invNumber = `INV-${p.code.slice(-3)}-900001`;
+    const existingInv = await prisma.vendorInvoice.findUnique({ where: { invoiceNumber: invNumber } });
+    if (!existingInv && !isNobudget) {
+      await prisma.vendorInvoice.create({
+        data: { invoiceNumber: invNumber, poId: po.id, projectId: project.id, vendor: 'PT Baja Utama', vendorInvoiceNo: invNumber, invoiceDate: new Date(`${year}-04-15`), currency: p.ccy, amount: ac, taxAmount: ac * 0.11, totalAmount: ac * 1.11, status: 'POSTED', postedAt: new Date(`${year}-04-16`), postedBy: 'admin@aec.local' },
+      });
+    }
+
+    // Warehouse + stock ledger. Ledger OUT = AC (dibaca ActualCostCalculator);
+    // ledger IN lebih besar agar saldo positif, kecuali satu gudang overrun
+    // yang sengaja dibuat negatif sebagai sinyal data-error.
+    const whCode = `WH-${p.code.slice(-3)}`;
+    const wh = await prisma.warehouse.upsert({
+      where: { code: whCode },
+      update: {},
+      create: { code: whCode, name: `Gudang ${p.loc}`, warehouseType: 'PROJECT', projectId: project.id, location: p.loc },
+    });
+    const existingLedger = await prisma.stockLedgerEntry.findFirst({ where: { projectId: project.id, reference: `SEED-${whCode}` } });
+    if (!existingLedger) {
+      const outValue = isNobudget ? p.value * 0.02 : ac;
+      const inValue = outValue * 1.25;
+      await prisma.stockLedgerEntry.create({ data: { projectId: project.id, warehouseId: wh.id, documentType: 'GR', reference: `SEED-${whCode}`, description: 'Penerimaan material (seed)', movementType: 'IN', quantity: 1000, unitPrice: inValue / 1000, totalValue: inValue, balanceAfter: 1000 } });
+      await prisma.stockLedgerEntry.create({ data: { projectId: project.id, warehouseId: wh.id, documentType: 'ISSUE', reference: `SEED-${whCode}`, description: 'Pemakaian material (seed)', movementType: 'OUT', quantity: 600, unitPrice: outValue / 600, totalValue: outValue, balanceAfter: 400 } });
+      if (p.profile === 'overrun') {
+        // Baris negatif sengaja: sinyal data-error yang harus muncul di tile inventory.
+        await prisma.stockLedgerEntry.create({ data: { projectId: project.id, warehouseId: wh.id, documentType: 'ADJUSTMENT', reference: `SEED-${whCode}`, description: 'Koreksi stok (seed, negatif)', movementType: 'ADJUST', quantity: -500, totalValue: -outValue * 0.1, balanceAfter: -100 } });
+      }
+    }
+
+    // NCR + insiden HSE tersebar (bukan satu proyek).
+    const ncrNumber = `NCR-${p.code.slice(-3)}-900001`;
+    const existingNcr = await prisma.ncr.findUnique({ where: { ncrNumber } });
+    if (!existingNcr) {
+      await prisma.ncr.create({ data: { ncrNumber, projectId: project.id, category: 'WORKMANSHIP', severity: p.profile === 'overrun' ? 'MAJOR' : 'MINOR', description: 'Ketidaksesuaian pekerjaan (seed)', status: 'OPEN' } });
+    }
+    const incNumber = `INC-${p.code.slice(-3)}-900001`;
+    const existingInc = await prisma.hseIncident.findUnique({ where: { incidentNumber: incNumber } });
+    if (!existingInc) {
+      await prisma.hseIncident.create({ data: { incidentNumber: incNumber, projectId: project.id, type: 'NEAR_MISS', severity: p.profile === 'overrun' ? 'HIGH' : 'LOW', description: 'Near miss di area kerja (seed)', status: 'OPEN', reportedBy: 'HSE Demo' } });
+    }
+  }
+  console.log(`Portfolio: ${createdProjectIds.length} proyek di 3 entitas (healthy/overrun/nobudget)`);
+
+  // ── D. Equipment utilization tersebar di beberapa proyek ──
+  const crane = await prisma.equipment.findFirst({ where: { category: 'HEAVY' } });
+  if (crane) {
+    for (const p of createdProjectIds.slice(0, 4)) {
+      const existing = await prisma.equipmentUtilization.findFirst({ where: { equipmentId: crane.id, projectId: p.id } });
+      if (!existing) {
+        await prisma.equipmentUtilization.create({ data: { equipmentId: crane.id, projectId: p.id, utilizationDate: new Date(now.getTime() - 86_400_000), availableHours: 10, operatingHours: 7, description: 'Seed utilization' } });
+      }
+    }
+    console.log('EquipmentUtilization: 4 proyek');
+  }
+
+  // ── E. Opportunity funnel (semua tahap + menang/kalah) ──
+  const oppSeed = [
+    { stage: 'LEAD', value: 120_000_000_000, status: 'OPEN', prob: 10 },
+    { stage: 'LEAD', value: 85_000_000_000, status: 'OPEN', prob: 10 },
+    { stage: 'QUALIFIED', value: 240_000_000_000, status: 'OPEN', prob: 30 },
+    { stage: 'QUALIFIED', value: 160_000_000_000, status: 'OPEN', prob: 30 },
+    { stage: 'PROPOSAL', value: 410_000_000_000, status: 'OPEN', prob: 55 },
+    { stage: 'NEGOTIATION', value: 320_000_000_000, status: 'OPEN', prob: 75 },
+    { stage: 'WON', value: 275_000_000_000, status: 'CLOSED_WON', prob: 100 },
+    { stage: 'WON', value: 150_000_000_000, status: 'CLOSED_LOST', prob: 0 },
+  ] as const;
+  let oppCount = 0;
+  for (let i = 0; i < oppSeed.length; i++) {
+    const o = oppSeed[i]!;
+    const oppNumber = `OPP-${year}-9000${String(i + 1).padStart(2, '0')}`;
+    const existing = await prisma.opportunity.findUnique({ where: { oppNumber } });
+    if (!existing) {
+      await prisma.opportunity.create({
+        data: { oppNumber, clientId: clientIds[i % clientIds.length]!, title: `Peluang ${o.stage} ${i + 1}`, stage: o.stage, probability: o.prob, expectedValue: o.value, owner: 'BD Demo', status: o.status, expectedDate: new Date(`${year + 1}-03-01`) },
+      });
+      oppCount++;
+    }
+  }
+  console.log(`Opportunity: +${oppCount} (funnel LEAD→WON + won/lost)`);
+}
+
 async function main() {
   const entity = await prisma.legalEntity.findUnique({ where: { code: 'AEC-CON' } });
   if (!entity) throw new Error('Seed base dulu: pnpm --filter @aec/api db:seed');
@@ -982,11 +1205,13 @@ async function main() {
   }
   console.log('Demo users: ceo/cfo/pm @aec.local / Demo123!');
 
+  // ── 13b. Portfolio multi-entitas (proyek, EVM baseline, inventory, funnel) ──
+  await seedPortfolio();
+
   // ── 14. Workflow demo: versi (DRAFT/ACTIVE/ARCHIVED) + task tersebar ──
   // Tanpa ini, halaman Workflow hanya punya 1 versi ACTIVE dan seluruh task
   // bertanggal hari ini — rail versi dan grafik bulanan jadi tak bermakna.
   await seedWorkflowDemo();
-
   console.log('\n=== DEMO SEED SELESAI ===');
   console.log('Login demo: admin@aec.local / Admin123! (super user)');
   console.log('Dashboard: /analytics, /project-controls, /treasury, /finance/closure');

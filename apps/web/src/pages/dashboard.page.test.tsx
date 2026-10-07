@@ -44,6 +44,7 @@ const sampleTower = {
     safety: { openIncidents: 1, highSeverityOpen: 0, openCorrectiveActions: 0, overdueCorrectiveActions: 0, trir: 0.24, daysSinceLastIncident: 1 },
     quality: { openNcrs: 2, criticalNcrs: 0, openPunchItems: 0 },
     hcm: { activeEmployees: 2, manpowerToday: 1240, pendingTimesheets: 0, equipmentUtilizationPct: 80, openBreakdowns: 0 },
+    inventory: { stockValue: 1_200_000_000, warehouseCount: 3, negativeBalanceCount: 1, movementInValue: 2_000_000_000, movementOutValue: 800_000_000 },
   },
   governance: { openRisks: 5, highRisks: 1, overdueAuditFindings: 0, openLegalCases: 0, riskMatrix: [] },
   commercial: { pipelineValue: 0, openOpportunities: 0, wonValue: 0, lostValue: 0, winRatePct: null, tendersDue: 0, approvedVariationValue: 0, funnel: [] },

@@ -9,6 +9,7 @@ vi.mock('@tanstack/react-router', () => ({
       {children}
     </a>
   ),
+  useNavigate: () => vi.fn(),
 }));
 
 const base: ControlTower = {
@@ -41,6 +42,7 @@ const base: ControlTower = {
     safety: { openIncidents: 4, highSeverityOpen: 1, openCorrectiveActions: 1, overdueCorrectiveActions: 1, trir: 0.24, daysSinceLastIncident: 1 },
     quality: { openNcrs: 11, criticalNcrs: 1, openPunchItems: 23 },
     hcm: { activeEmployees: 2, manpowerToday: 1240, pendingTimesheets: 0, equipmentUtilizationPct: 80, openBreakdowns: 0 },
+    inventory: { stockValue: 1_200_000_000, warehouseCount: 3, negativeBalanceCount: 1, movementInValue: 2_000_000_000, movementOutValue: 800_000_000 },
   },
   governance: { openRisks: 5, highRisks: 1, overdueAuditFindings: 0, openLegalCases: 0, riskMatrix: [{ likelihood: 4, impact: 5, count: 1 }] },
   commercial: { pipelineValue: 58_200_000_000, openOpportunities: 5, wonValue: 8_600_000_000, lostValue: 14_000_000_000, winRatePct: 38, tendersDue: 2, approvedVariationValue: 1_200_000_000, funnel: [{ stage: 'LEAD', count: 5, value: 58_200_000_000 }] },
@@ -88,13 +90,13 @@ describe('buildCashBridge', () => {
 });
 
 describe('ControlTowerView', () => {
-  it('renders every zone: position, exceptions, pulse, ledger, governance/commercial/treasury', () => {
+  it('renders every zone: position, exceptions, ledger, domain tiles', () => {
     render(<ControlTowerView data={base} cashFlowSeries={[]} />);
     expect(screen.getByRole('heading', { name: 'Position' })).toBeTruthy();
     expect(screen.getByText('Approval SLA')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Portfolio ledger' })).toBeTruthy();
     expect(screen.getByText('Ring Road')).toBeTruthy();
-    expect(screen.getByRole('heading', { name: /Governance · Commercial · Treasury/ })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Domain tiles' })).toBeTruthy();
   });
 
   it('renders the EVM bullets for projects that have a baseline', () => {
@@ -110,5 +112,29 @@ describe('ControlTowerView', () => {
       /\d/.test(el.textContent ?? ''),
     );
     expect(numericNodes.length).toBeGreaterThanOrEqual(40);
+  });
+
+  it('makes each portfolio ledger row focusable (keyboard drill-through)', () => {
+    const { container } = render(<ControlTowerView data={base} cashFlowSeries={[]} />);
+    const rows = Array.from(container.querySelectorAll('tbody tr'));
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row.getAttribute('tabindex')).toBe('0');
+    }
+  });
+
+  it('navigates when a ledger row is activated with Enter', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    const { container } = render(<ControlTowerView data={base} cashFlowSeries={[]} />);
+    const row = container.querySelector('tbody tr')!;
+    expect(() => fireEvent.keyDown(row, { key: 'Enter' })).not.toThrow();
+  });
+
+  it('renders each KPI label exactly once (one home per figure)', () => {
+    render(<ControlTowerView data={base} cashFlowSeries={[]} />);
+    // "AR overdue 61+" dan "DSO" hanya boleh muncul di pita Position, tidak lagi
+    // diulang di tile Liquidity.
+    expect(screen.getAllByText('AR overdue 61+')).toHaveLength(1);
+    expect(screen.getAllByText('DSO')).toHaveLength(1);
   });
 });

@@ -1,9 +1,10 @@
-import { Link } from '@tanstack/react-router';
-import { Bell } from 'lucide-react';
-import { Card, EmptyState, ErrorState, ExceptionQueue, MiniStat, SectionBand, StatTile, StatusPill, type ExceptionItem } from '@aec/ui';
-import type { ControlTower, ControlTowerKpi } from '@aec/api-contracts';
+import { Link, useNavigate } from '@tanstack/react-router';
+import { Card, DataGrid, ErrorState, ExceptionQueue, SectionBand, Sparkline, StatTile, StatusPill, type ExceptionItem } from '@aec/ui';
+import type { ControlTower, ControlTowerKpi, ControlTowerProject } from '@aec/api-contracts';
 import { formatIdr } from '@/shared/lib/format';
 import { CashFlowChart, EvmBullets, WaterfallChart, type WaterfallStep } from '@/widgets/dashboard-charts';
+import { DomainTiles } from './domain-tiles';
+import { PortfolioScatter } from './portfolio-scatter';
 
 /** Format nilai KPI sesuai satuannya. */
 export function formatKpiValue(kpi: Pick<ControlTowerKpi, 'value' | 'unit'>): string {
@@ -81,12 +82,8 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
   const budgetVar = byKey.get('budgetVariance');
   const arOverdue = byKey.get('arOverdue');
   const dso = byKey.get('dso');
-  const trir = byKey.get('trir');
-
-  const healthCounts = data.projects.reduce<Record<string, number>>((acc, p) => {
-    acc[p.health] = (acc[p.health] ?? 0) + 1;
-    return acc;
-  }, {});
+  // Tren kas (net per bulan) untuk sparkline pada KPI cash — hanya bila ada seri.
+  const cashSeries = cashFlowSeries.map((m) => m.cashIn - m.cashOut);
 
   return (
     <div className="flex flex-col gap-tier">
@@ -103,6 +100,7 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
               meetsTarget={k.meetsTarget}
               direction={k.direction}
               tone={kpiTone(k)}
+              viz={k.key === 'cash' && cashSeries.length > 1 ? <Sparkline values={cashSeries} label="Cash trend" /> : undefined}
             />
           ))}
         </div>
@@ -141,59 +139,17 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
         </div>
       </SectionBand>
 
-      {/* T4 — Operational pulse. */}
-      <SectionBand name="Operational pulse" right={<span>Liquidity · Safety/Quality · Procurement</span>}>
-        <div className="grid grid-cols-1 gap-cell sm:grid-cols-2 xl:grid-cols-4">
-          <Card variant="flat">
-            <h3 className="mb-2 text-h3 text-neutral-950">Portfolio map</h3>
-            <dl className="space-y-1.5">
-              <Row label="Projects" value={String(data.projectTotals.count)} />
-              <Row label="On track" value={String(healthCounts.ON_TRACK ?? 0)} tone="neutral" />
-              <Row label="At risk" value={String(healthCounts.AT_RISK ?? 0)} tone="warning" />
-              <Row label="Critical" value={String(healthCounts.CRITICAL ?? 0)} tone="negative" />
-            </dl>
-          </Card>
-
-          <Card variant="flat">
-            <h3 className="mb-2 text-h3 text-neutral-950">Working capital</h3>
-            <dl className="space-y-1.5">
-              <Row label="AR overdue 61+" value={formatIdr(data.kpis.find((k) => k.key === 'arOverdue')?.value ?? 0)} />
-              <Row label="DSO" value={dso ? `${Math.round(dso.value)} d` : '—'} />
-              <Row label="FX exposure" value={formatIdr(data.treasury.fxExposureValue)} />
-            </dl>
-          </Card>
-
-          <Card variant="flat">
-            <h3 className="mb-2 text-h3 text-neutral-950">Safety · Quality</h3>
-            <div className="mb-2 flex items-center gap-2">
-              <MiniStat label="TRIR" value={trir ? trir.value.toFixed(2) : '0.00'} context={trir?.target ? `target ≤ ${trir.target}` : undefined} tone={trir?.meetsTarget === false ? 'negative' : 'positive'} />
-            </div>
-            <dl className="space-y-1.5">
-              <Row label="Incidents open" value={String(data.operations.safety.openIncidents)} />
-              <Row label="NCR open" value={String(data.operations.quality.openNcrs)} />
-              <Row label="Punch open" value={String(data.operations.quality.openPunchItems)} />
-            </dl>
-          </Card>
-
-          <Card variant="flat">
-            <h3 className="mb-2 text-h3 text-neutral-950">Procurement</h3>
-            <dl className="space-y-1.5">
-              <Row label="Open PO" value={formatIdr(data.operations.procurement.openPoValue)} />
-              <Row label="PR pending" value={String(data.operations.procurement.pendingPrCount)} />
-              <Row label="RFQ due" value={String(data.operations.procurement.rfqDueCount)} />
-              <Row label="Vendor score" value={String(data.operations.procurement.avgVendorScore ?? '—')} />
-            </dl>
-          </Card>
-        </div>
-      </SectionBand>
-
       {/* T5 — Portfolio ledger + cash bridge + EVM bullets. */}
       <SectionBand name="Portfolio ledger" count={`${data.projectTotals.count} projects`}>
         <div className="flex flex-col gap-cell">
           <Card variant="flat">
             <PortfolioLedger data={data} />
           </Card>
-          <div className="grid grid-cols-1 gap-cell xl:grid-cols-2">
+          <div className="grid grid-cols-1 gap-cell xl:grid-cols-3">
+            <Card variant="flat">
+              <h3 className="mb-2 text-h3 text-neutral-950">CPI × SPI by project</h3>
+              <PortfolioScatter projects={data.projects} />
+            </Card>
             <Card variant="flat">
               <h3 className="mb-2 text-h3 text-neutral-950">Cash bridge · period</h3>
               <WaterfallChart steps={buildCashBridge(data)} />
@@ -209,60 +165,15 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
         </div>
       </SectionBand>
 
-      {/* T6 — Governance · Commercial · Treasury. */}
-      <SectionBand name="Governance · Commercial · Treasury">
-        <div className="grid grid-cols-1 gap-cell sm:grid-cols-2 md:grid-cols-3">
-          <Card variant="flat">
-            <h3 className="mb-2 text-h3 text-neutral-950">Governance</h3>
-            <dl className="space-y-1.5">
-              <Row label="Open risks" value={String(data.governance.openRisks)} />
-              <Row label="High risks" value={String(data.governance.highRisks)} tone={data.governance.highRisks > 0 ? 'warning' : 'neutral'} />
-              <Row label="Audit overdue" value={String(data.governance.overdueAuditFindings)} />
-              <Row label="Legal open" value={String(data.governance.openLegalCases)} />
-            </dl>
-          </Card>
-          <Card variant="flat">
-            <h3 className="mb-2 text-h3 text-neutral-950">Commercial</h3>
-            <dl className="space-y-1.5">
-              <Row label="Pipeline" value={formatIdr(data.commercial.pipelineValue)} />
-              <Row label="Win rate" value={data.commercial.winRatePct != null ? `${data.commercial.winRatePct}%` : '—'} />
-              <Row label="Tenders due" value={String(data.commercial.tendersDue)} />
-              <Row label="Variations" value={formatIdr(data.commercial.approvedVariationValue)} />
-            </dl>
-          </Card>
-          <Card variant="flat">
-            <h3 className="mb-2 text-h3 text-neutral-950">Treasury</h3>
-            <dl className="space-y-1.5">
-              <Row label="FX exposure" value={formatIdr(data.treasury.fxExposureValue)} />
-              <Row label="BG expiring" value={`${data.treasury.bgExpiringCount} · ${formatIdr(data.treasury.bgExpiringValue)}`} tone={data.treasury.bgExpiringCount > 0 ? 'warning' : 'neutral'} />
-              <Row label="Period close" value={data.treasury.periodCloseStatus ?? '—'} />
-            </dl>
-          </Card>
-        </div>
-      </SectionBand>
+      {/* T6 — Domain tiles (10 domains, visual per fungsi data). */}
+      <DomainTiles data={data} />
     </div>
   );
 }
 
-/** Satu baris label→nilai yang aman untuk teks panjang (label boleh terpotong,
- *  nilai tidak — angka finansial harus utuh). */
-function Row({ label, value, tone = 'neutral' }: { label: string; value: string; tone?: 'neutral' | 'warning' | 'negative' }) {
-  const cls = tone === 'warning' ? 'text-warning-700' : tone === 'negative' ? 'text-destructive-700' : 'text-neutral-900';
-  return (
-    <div className="flex items-baseline justify-between gap-3 text-body-sm">
-      <dt className="min-w-0 truncate text-neutral-500" title={label}>
-        {label}
-      </dt>
-      <dd className={`shrink-0 font-mono tabular-nums ${cls}`}>{value}</dd>
-    </div>
-  );
-}
-
-/** Tabel ledger padat: satu baris per proyek dengan health, budget/actual, variance, CPI/SPI, risk. */
+/** Tabel ledger padat: satu baris per proyek, drill-through keyboard-friendly. */
 export function PortfolioLedger({ data }: { data: ControlTower }) {
-  if (data.projects.length === 0) {
-    return <EmptyState title="No projects" description="No projects in this scope." />;
-  }
+  const navigate = useNavigate();
   const HEALTH_LABEL: Record<string, string> = { ON_TRACK: 'On Track', AT_RISK: 'At Risk', CRITICAL: 'Critical', NO_BUDGET: 'No Budget' };
   const HEALTH_TONE: Record<string, 'positive' | 'warning' | 'critical' | 'neutral'> = {
     ON_TRACK: 'positive',
@@ -270,73 +181,100 @@ export function PortfolioLedger({ data }: { data: ControlTower }) {
     CRITICAL: 'critical',
     NO_BUDGET: 'neutral',
   };
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-body-sm">
-        <thead>
-          <tr className="border-b border-neutral-300 text-left text-overline uppercase text-neutral-500">
-            <th className="whitespace-nowrap py-2 pr-3 font-medium">Code</th>
-            <th className="whitespace-nowrap py-2 pr-3 font-medium">Project</th>
-            <th className="whitespace-nowrap py-2 pr-3 font-medium">Health</th>
-            <th className="whitespace-nowrap py-2 pr-3 text-right font-medium">Budget / Actual</th>
-            <th className="whitespace-nowrap py-2 pr-3 text-right font-medium">Variance</th>
-            <th className="whitespace-nowrap py-2 pr-3 text-right font-medium">CPI / SPI</th>
-            <th className="whitespace-nowrap py-2 font-medium">Risk</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.projects.map((p) => {
-            const overrun = p.actual > p.budget && p.budget > 0;
-            return (
-              <tr key={p.projectId} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50">
-                <td className="py-1.5 pr-3 font-mono text-caption text-neutral-500">{p.projectCode}</td>
-                <td className="py-1.5 pr-3 text-neutral-800">{p.projectName}</td>
-                <td className="py-1.5 pr-3">
-                  <StatusPill tone={HEALTH_TONE[p.health] ?? 'neutral'} label={HEALTH_LABEL[p.health] ?? p.health} />
-                </td>
-                <td className={`py-1.5 pr-3 text-right font-mono tabular-nums ${overrun ? 'text-destructive-700' : 'text-neutral-700'}`}>
-                  {formatIdr(p.actual)} / {formatIdr(p.budget)}
-                </td>
-                <td className={`py-1.5 pr-3 text-right font-mono tabular-nums ${p.variance < 0 ? 'text-destructive-700' : 'text-success-700'}`}>
-                  {p.variance < 0 ? '−' : '+'}{formatIdr(Math.abs(p.variance))}
-                </td>
-                <td className="py-1.5 pr-3 text-right font-mono tabular-nums text-neutral-700">
-                  {p.hasEvm && p.cpi != null && p.spi != null ? `${p.cpi.toFixed(2)} / ${p.spi.toFixed(2)}` : '—'}
-                </td>
-                <td className="py-1.5 font-mono tabular-nums text-neutral-700">{p.riskScore ?? '—'}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-        <tfoot>
-          <tr className="border-t border-neutral-300 bg-surface-sunken text-neutral-800">
-            <td colSpan={3} className="py-2 pr-3 font-medium">Σ {data.projectTotals.count} projects</td>
-            <td className="py-2 pr-3 text-right font-mono tabular-nums">{formatIdr(data.projectTotals.actual)} / {formatIdr(data.projectTotals.budget)}</td>
-            <td className={`py-2 pr-3 text-right font-mono tabular-nums ${data.projectTotals.variance < 0 ? 'text-destructive-700' : 'text-success-700'}`}>
-              {data.projectTotals.variance < 0 ? '−' : '+'}{formatIdr(Math.abs(data.projectTotals.variance))}
-            </td>
-            <td colSpan={2} className="py-2" />
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  );
-}
 
-/** Header zona anomaly untuk tier terakhir. */
-export function AnomalyHeader({ total }: { total: number }) {
+  const columns = [
+    {
+      id: 'projectCode',
+      header: 'Code',
+      cell: ({ row }: { row: { original: ControlTowerProject } }) => (
+        <span className="font-mono text-caption text-neutral-500">{row.original.projectCode}</span>
+      ),
+    },
+    { id: 'projectName', header: 'Project', cell: ({ row }: { row: { original: ControlTowerProject } }) => row.original.projectName },
+    {
+      id: 'health',
+      header: 'Health',
+      cell: ({ row }: { row: { original: ControlTowerProject } }) => (
+        <StatusPill tone={HEALTH_TONE[row.original.health] ?? 'neutral'} label={HEALTH_LABEL[row.original.health] ?? row.original.health} />
+      ),
+    },
+    {
+      id: 'budgetActual',
+      header: 'Budget / Actual',
+      meta: { align: 'right' as const },
+      cell: ({ row }: { row: { original: ControlTowerProject } }) => {
+        const p = row.original;
+        const overrun = p.actual > p.budget && p.budget > 0;
+        return (
+          <span className={`font-mono tabular-nums ${overrun ? 'text-destructive-700' : 'text-neutral-700'}`}>
+            {formatIdr(p.actual)} / {formatIdr(p.budget)}
+          </span>
+        );
+      },
+    },
+    {
+      id: 'variance',
+      header: 'Variance',
+      meta: { align: 'right' as const },
+      cell: ({ row }: { row: { original: ControlTowerProject } }) => {
+        const v = row.original.variance;
+        return (
+          <span className={`font-mono tabular-nums ${v < 0 ? 'text-destructive-700' : 'text-success-700'}`}>
+            {v < 0 ? '−' : '+'}{formatIdr(Math.abs(v))}
+          </span>
+        );
+      },
+    },
+    {
+      id: 'evm',
+      header: 'CPI / SPI',
+      meta: { align: 'right' as const },
+      cell: ({ row }: { row: { original: ControlTowerProject } }) => {
+        const p = row.original;
+        return (
+          <span className="font-mono tabular-nums text-neutral-700">
+            {p.hasEvm && p.cpi != null && p.spi != null ? `${p.cpi.toFixed(2)} / ${p.spi.toFixed(2)}` : '—'}
+          </span>
+        );
+      },
+    },
+    {
+      id: 'risk',
+      header: 'Risk',
+      meta: { align: 'right' as const },
+      cell: ({ row }: { row: { original: ControlTowerProject } }) => (
+        <span className="font-mono tabular-nums text-neutral-700">{row.original.riskScore ?? '—'}</span>
+      ),
+    },
+  ];
+
   return (
-    <SectionBand
-      name="Anomaly triage"
-      right={
-        <StatusPill
-          tone={total > 0 ? 'warning' : 'positive'}
-          label={`${total} anomalies`}
-          icon={<Bell className="h-3.5 w-3.5" aria-hidden="true" />}
-          dot={false}
-        />
-      }
-    />
+    <div className="flex flex-col gap-2">
+      <DataGrid
+        columns={columns as never}
+        data={data.projects}
+        getRowId={(row) => row.projectId}
+        onRowClick={(row) => navigate({ to: '/project-health', search: { project: row.original.projectId } as never })}
+        emptyMessage="No projects in this scope."
+        hideToolbar
+      />
+      {/* Footer agregat Σ — menjaga superset data (actual/budget/variance) yang
+          dulu ada di <tfoot>; hilang bila tidak dirender ulang di sini. */}
+      {data.projects.length > 0 && (
+        <div className="flex flex-wrap items-baseline justify-end gap-x-6 gap-y-1 border-t border-neutral-300 pt-2 text-body-sm text-neutral-800">
+          <span className="font-medium">Σ {data.projectTotals.count} projects</span>
+          <span className="font-mono tabular-nums">
+            {formatIdr(data.projectTotals.actual)} / {formatIdr(data.projectTotals.budget)}
+          </span>
+          <span
+            className={`font-mono tabular-nums ${data.projectTotals.variance < 0 ? 'text-destructive-700' : 'text-success-700'}`}
+          >
+            {data.projectTotals.variance < 0 ? '−' : '+'}
+            {formatIdr(Math.abs(data.projectTotals.variance))}
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
 

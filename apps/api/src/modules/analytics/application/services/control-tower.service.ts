@@ -12,6 +12,7 @@ import { analyticsCacheKey } from '@/shared/cache/analytics-cache';
 import { resolveDateRange } from '@/shared/utils/date-range';
 import { ExecutiveAnalyticsService } from './executive-analytics.service';
 import { FinancialAnalyticsService } from './financial-analytics.service';
+import { PortfolioEvmCalculator } from '@/shared/project/portfolio-evm.calculator';
 
 /** Batas SLA default (hari) bila sebuah exception tidak punya tenggat eksplisit. */
 const DEFAULT_SLA_DAYS = 7;
@@ -88,6 +89,7 @@ export class ControlTowerService {
     @Inject(CacheService) private readonly cache: CacheService,
     @Inject(ExecutiveAnalyticsService) private readonly executive: ExecutiveAnalyticsService,
     @Inject(FinancialAnalyticsService) private readonly financial: FinancialAnalyticsService,
+    @Inject(PortfolioEvmCalculator) private readonly evm: PortfolioEvmCalculator,
   ) {}
 
   async controlTower(filter: AnalyticsFilterParams = {}): Promise<ControlTower> {
@@ -117,6 +119,7 @@ export class ControlTowerService {
         hcm,
         governance,
         commercial,
+        inventory,
       ] = await Promise.all([
         this.loadPendingApprovals(now),
         this.loadOverdueNcrs(now, projectWhere),
@@ -128,6 +131,7 @@ export class ControlTowerService {
         this.loadHcm(now, projectWhere),
         this.loadGovernance(projectWhere),
         this.loadCommercial(now, dateWhere),
+        this.loadInventory(projectWhere, dateWhere),
       ]);
 
       const exceptions = rankExceptions([...pendingApprovals, ...overdueNcrs, ...openIncidents, ...overdueCas, ...bgExpiring]);
@@ -169,6 +173,7 @@ export class ControlTowerService {
           safety: hcm.safety,
           quality: hcm.quality,
           hcm: hcm.hcm,
+          inventory,
         },
         governance,
         commercial,
@@ -258,11 +263,12 @@ export class ControlTowerService {
       where: projectWhere,
       select: { id: true, code: true, name: true, client: true, contractValue: true },
     });
-    const [budgetAgg, costAgg, revenueAgg, riskAgg] = await Promise.all([
+    const [budgetAgg, costAgg, revenueAgg, riskAgg, evmMap] = await Promise.all([
       this.prisma.budgetItem.groupBy({ by: ['projectId'], where: { status: 'PUBLISHED' }, _sum: { amount: true } }),
       this.prisma.vendorInvoice.groupBy({ by: ['projectId'], where: { status: 'POSTED' }, _sum: { totalAmount: true } }),
       this.prisma.clientInvoice.groupBy({ by: ['projectId'], where: { status: 'POSTED' }, _sum: { totalAmount: true } }),
       this.prisma.risk.groupBy({ by: ['projectId'], where: { status: 'OPEN' }, _max: { score: true } }),
+      this.evm.computeBatch(projects.map((p) => p.id)),
     ]);
     const budgetMap = new Map(budgetAgg.map((r) => [r.projectId, Number(r._sum?.amount ?? 0)]));
     const costMap = new Map(costAgg.map((r) => [r.projectId, Number(r._sum?.totalAmount ?? 0)]));
@@ -278,6 +284,7 @@ export class ControlTowerService {
       const variance = Math.round((budget - actual) * 100) / 100;
       const health: 'ON_TRACK' | 'AT_RISK' | 'CRITICAL' | 'NO_BUDGET' =
         budget <= 0 ? 'NO_BUDGET' : actual > budget ? 'CRITICAL' : actual / budget > 0.9 ? 'AT_RISK' : 'ON_TRACK';
+      const rollup = evmMap.get(p.id);
       return {
         projectId: p.id,
         projectCode: p.code,
@@ -291,9 +298,9 @@ export class ControlTowerService {
         revenue: Math.round(revenue * 100) / 100,
         utilization,
         progressPct: budget > 0 ? Math.min(100, Math.round((actual / budget) * 1000) / 10) : 0,
-        cpi: null,
-        spi: null,
-        hasEvm: false,
+        cpi: rollup?.cpi ?? null,
+        spi: rollup?.spi ?? null,
+        hasEvm: rollup?.hasEvm ?? false,
         riskScore: riskMap.get(p.id) ?? null,
       };
     });
@@ -548,6 +555,52 @@ export class ControlTowerService {
       if (count > 0) riskMatrix.push({ likelihood: l, impact: i, count });
     }
     return { openRisks, highRisks, overdueAuditFindings: overdueAudit, openLegalCases: openLegal, riskMatrix };
+  }
+
+  /**
+   * Ringkasan inventory: nilai stok bersih, jumlah gudang, dan mutasi masuk/keluar.
+   *
+   * `stockValue` = jumlah besaran masuk dikurangi jumlah besaran keluar
+   * (`|IN| − |OUT|`) — nilai stok **bersih**, bukan nilai bruto seluruh
+   * pergerakan (yang sudah diwakili `movementIn/OutValue`). Baris ADJUSTMENT
+   * tidak dihitung di sini; ini selisih mutasi pada jendela filter, bukan
+   * saldo on-hand.
+   * `negativeBalanceCount` = jumlah gudang (unik) yang punya minimal satu baris
+   * ledger dengan `balanceAfter < 0` — sinyal data-error nyata, bukan nol palsu.
+   * Selalu mengembalikan angka (0), tidak pernah null.
+   */
+  private async loadInventory(projectWhere: Record<string, unknown>, dateWhere?: { gte?: Date; lte?: Date }) {
+    const ledgerWhere = { ...projectWhere, ...(dateWhere ? { createdAt: dateWhere } : {}) };
+    const [warehouseCount, movementGroups, negativeRows] = await Promise.all([
+      this.prisma.warehouse.count({ where: projectWhere }),
+      this.prisma.stockLedgerEntry.groupBy({
+        by: ['movementType'],
+        where: ledgerWhere,
+        _sum: { totalValue: true },
+      }),
+      this.prisma.stockLedgerEntry.findMany({
+        where: { ...ledgerWhere, balanceAfter: { lt: 0 } },
+        select: { warehouseId: true },
+      }),
+    ]);
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+    // `totalValue` tidak dijamin bertanda (lihat ActualCostCalculator yang memakai
+    // Math.abs pada OUT), jadi ambil besaran per jenis lalu hitung net eksplisit.
+    const magnitudeFor = (type: string) =>
+      Math.abs(Number(movementGroups.find((g) => g.movementType === type)?._sum?.totalValue ?? 0));
+    const movementInValue = magnitudeFor('IN');
+    const movementOutValue = magnitudeFor('OUT');
+    // Nilai stok bersih = masuk − keluar (bukan nilai bruto seluruh pergerakan,
+    // yang sudah diwakili movementIn/OutValue). Negatif = anomali (keluar > masuk).
+    const stockValue = movementInValue - movementOutValue;
+    const negativeBalanceCount = new Set(negativeRows.map((r) => r.warehouseId)).size;
+    return {
+      stockValue: round2(stockValue),
+      warehouseCount,
+      negativeBalanceCount,
+      movementInValue: round2(movementInValue),
+      movementOutValue: round2(movementOutValue),
+    };
   }
 
   private async loadCommercial(now: Date, dateWhere?: { gte?: Date; lte?: Date }) {

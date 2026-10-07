@@ -3,6 +3,7 @@ import { PrismaService } from '@/shared/database/prisma.service';
 import { SequenceHelper } from './utils/sequence.helper';
 import { StockLedgerWriter } from './inventory/stock-ledger-writer';
 import { ActualCostCalculator } from './project/actual-cost.calculator';
+import { PortfolioEvmCalculator } from './project/portfolio-evm.calculator';
 import { AnalyticsEventsService } from '@/shared/events/analytics-events.service';
 
 /**
@@ -18,7 +19,21 @@ import { AnalyticsEventsService } from '@/shared/events/analytics-events.service
  */
 @Global()
 @Module({
-  providers: [PrismaService, SequenceHelper, StockLedgerWriter, ActualCostCalculator, AnalyticsEventsService],
-  exports: [PrismaService, SequenceHelper, StockLedgerWriter, ActualCostCalculator, AnalyticsEventsService],
+  providers: [
+    PrismaService,
+    SequenceHelper,
+    StockLedgerWriter,
+    ActualCostCalculator,
+    PortfolioEvmCalculator,
+    AnalyticsEventsService,
+  ],
+  exports: [
+    PrismaService,
+    SequenceHelper,
+    StockLedgerWriter,
+    ActualCostCalculator,
+    PortfolioEvmCalculator,
+    AnalyticsEventsService,
+  ],
 })
 export class SharedModule {}

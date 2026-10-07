@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { StatusBadge } from '@aec/ui';
 import type { ProjectRegisterItem as RegisterItem } from '@aec/api-contracts';
 import { formatIdr } from '@/shared/lib/format';
-import { healthMeta } from '@/widgets/portfolio-spine';
+import { healthMeta } from '@/entities/health';
 
 /** Baris register = item dari `GET /projects/register`. */
 export type RegisterRow = RegisterItem;
