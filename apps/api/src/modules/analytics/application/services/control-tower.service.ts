@@ -12,6 +12,7 @@ import { analyticsCacheKey } from '@/shared/cache/analytics-cache';
 import { resolveDateRange } from '@/shared/utils/date-range';
 import { ExecutiveAnalyticsService } from './executive-analytics.service';
 import { FinancialAnalyticsService } from './financial-analytics.service';
+import { PortfolioEvmCalculator } from '@/shared/project/portfolio-evm.calculator';
 
 /** Batas SLA default (hari) bila sebuah exception tidak punya tenggat eksplisit. */
 const DEFAULT_SLA_DAYS = 7;
@@ -88,6 +89,7 @@ export class ControlTowerService {
     @Inject(CacheService) private readonly cache: CacheService,
     @Inject(ExecutiveAnalyticsService) private readonly executive: ExecutiveAnalyticsService,
     @Inject(FinancialAnalyticsService) private readonly financial: FinancialAnalyticsService,
+    @Inject(PortfolioEvmCalculator) private readonly evm: PortfolioEvmCalculator,
   ) {}
 
   async controlTower(filter: AnalyticsFilterParams = {}): Promise<ControlTower> {
@@ -258,11 +260,12 @@ export class ControlTowerService {
       where: projectWhere,
       select: { id: true, code: true, name: true, client: true, contractValue: true },
     });
-    const [budgetAgg, costAgg, revenueAgg, riskAgg] = await Promise.all([
+    const [budgetAgg, costAgg, revenueAgg, riskAgg, evmMap] = await Promise.all([
       this.prisma.budgetItem.groupBy({ by: ['projectId'], where: { status: 'PUBLISHED' }, _sum: { amount: true } }),
       this.prisma.vendorInvoice.groupBy({ by: ['projectId'], where: { status: 'POSTED' }, _sum: { totalAmount: true } }),
       this.prisma.clientInvoice.groupBy({ by: ['projectId'], where: { status: 'POSTED' }, _sum: { totalAmount: true } }),
       this.prisma.risk.groupBy({ by: ['projectId'], where: { status: 'OPEN' }, _max: { score: true } }),
+      this.evm.computeBatch(projects.map((p) => p.id)),
     ]);
     const budgetMap = new Map(budgetAgg.map((r) => [r.projectId, Number(r._sum?.amount ?? 0)]));
     const costMap = new Map(costAgg.map((r) => [r.projectId, Number(r._sum?.totalAmount ?? 0)]));
@@ -278,6 +281,7 @@ export class ControlTowerService {
       const variance = Math.round((budget - actual) * 100) / 100;
       const health: 'ON_TRACK' | 'AT_RISK' | 'CRITICAL' | 'NO_BUDGET' =
         budget <= 0 ? 'NO_BUDGET' : actual > budget ? 'CRITICAL' : actual / budget > 0.9 ? 'AT_RISK' : 'ON_TRACK';
+      const rollup = evmMap.get(p.id);
       return {
         projectId: p.id,
         projectCode: p.code,
@@ -291,9 +295,9 @@ export class ControlTowerService {
         revenue: Math.round(revenue * 100) / 100,
         utilization,
         progressPct: budget > 0 ? Math.min(100, Math.round((actual / budget) * 1000) / 10) : 0,
-        cpi: null,
-        spi: null,
-        hasEvm: false,
+        cpi: rollup?.cpi ?? null,
+        spi: rollup?.spi ?? null,
+        hasEvm: rollup?.hasEvm ?? false,
         riskScore: riskMap.get(p.id) ?? null,
       };
     });

@@ -112,11 +112,29 @@ describe('rankExceptions', () => {
  * valid (array/objek kosong, bukan null) dan target benar-benar dipakai.
  */
 describe('ControlTowerService (shape)', () => {
-  function makePrisma() {
+  /** Rollup EVM tiruan yang dikembalikan oleh stub `PortfolioEvmCalculator`. */
+  const EVM_ROLLUP = {
+    bac: 1_000,
+    ev: 820,
+    pv: 900,
+    ac: 1_000,
+    cpi: 0.82,
+    spi: 0.91,
+    eac: 1_219.51,
+    vac: -219.51,
+    tcpi: null,
+    progressPercent: 82,
+    hasEvm: true,
+  };
+  const EVM_TOTALS = { bac: 1_000, ev: 820, pv: 900, ac: 1_000, cpi: 0.82, spi: 0.91, eac: 1_219.51, vac: -219.51 };
+  /** Satu proyek ber-budget supaya ada baris portofolio yang bisa diperiksa. */
+  const PROJECT = { id: 'P1', code: 'PRJ-1', name: 'Proyek Satu', client: 'Klien', contractValue: 2_000 };
+
+  function makePrisma(opts: { projects?: unknown[]; budgets?: unknown[] } = {}) {
     const empty = { findMany: async () => [], count: async () => 0, aggregate: async () => ({ _sum: {}, _count: { _all: 0 } }), groupBy: async () => [], findFirst: async () => null };
     return {
-      project: { ...empty, findMany: async () => [] },
-      budgetItem: { ...empty, groupBy: async () => [] },
+      project: { ...empty, findMany: async () => opts.projects ?? [] },
+      budgetItem: { ...empty, groupBy: async () => opts.budgets ?? [] },
       vendorInvoice: { ...empty, groupBy: async () => [] },
       clientInvoice: { ...empty, groupBy: async () => [] },
       risk: { ...empty, groupBy: async () => [], findMany: async () => [] },
@@ -147,15 +165,19 @@ describe('ControlTowerService (shape)', () => {
     };
   }
 
-  function makeService() {
+  function makeService(opts: { projects?: unknown[]; budgets?: unknown[]; rollups?: Map<string, unknown> } = {}) {
     const cache = { wrap: async (_k: string, _t: number, fn: () => Promise<unknown>) => fn() };
-    const prisma = makePrisma();
+    const prisma = makePrisma(opts);
     const executive = { executive: async () => ({ projects: { total: 0, byStatus: {}, totalContractValue: 0, totalAdvance: 0 }, finance: { totalBudget: 0, postedVendorInvoice: 0, postedClientInvoice: 0, cashIn: 0, cashOut: 0 }, operational: { openClaims: 0, openNcrs: 0, openIncidents: 0, overduePm: 0, openPunchItems: 0 }, generatedAt: new Date().toISOString() }) };
     const financial = {
       cashFlow: async () => ({ series: [], totalCashIn: 0, totalCashOut: 0, netCash: 0, generatedAt: new Date().toISOString() }),
       aging: async () => ({ ar: [], ap: [], asOf: new Date().toISOString(), basisDate: 'invoiceDate', generatedAt: new Date().toISOString() }),
     };
-    return new ControlTowerService(prisma as never, cache as never, executive as never, financial as never);
+    const evm = {
+      computeBatch: async () => opts.rollups ?? new Map(),
+      computeTotals: () => EVM_TOTALS,
+    };
+    return new ControlTowerService(prisma as never, cache as never, executive as never, financial as never, evm as never);
   }
 
   it('returns a valid shape even with zero data (arrays, not null)', async () => {
@@ -179,5 +201,17 @@ describe('ControlTowerService (shape)', () => {
     const cash = out.kpis.find((k) => k.key === 'cash');
     expect(cash?.target).toBe(15000000000);
     expect(cash?.direction).toBe('MIN');
+  });
+
+  it('fills cpi/spi/hasEvm from the EVM rollup', async () => {
+    const svc = makeService({
+      projects: [PROJECT],
+      budgets: [{ projectId: 'P1', _sum: { amount: 1_000 } }],
+      rollups: new Map([['P1', EVM_ROLLUP]]),
+    });
+    const out = await svc.controlTower({});
+    expect(out.projects[0]!.hasEvm).toBe(true);
+    expect(out.projects[0]!.cpi).toBeCloseTo(0.82, 2);
+    expect(out.projects[0]!.spi).toBeCloseTo(0.91, 2);
   });
 });
