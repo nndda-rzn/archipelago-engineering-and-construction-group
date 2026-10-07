@@ -1,6 +1,8 @@
 import { SegmentedControl } from '@aec/ui';
 import { useNavigate } from '@tanstack/react-router';
+import { Permission } from '@aec/shared-types';
 import { useUrlFilter } from '@/shared/lib/use-url-state';
+import { usePermissions } from '@/entities/session';
 import { DashboardFilterBar, useDashboardFilter } from '@/widgets/dashboard-filter-bar';
 import { SignalRail } from '@/widgets/signal-rail';
 import { HeroBand } from '@/widgets/hero-band';
@@ -52,23 +54,33 @@ function PortfolioZone({ filter, health, onSelectHealth }: { filter: DashboardFi
 
 export function DashboardPage() {
   const { filter } = useDashboardFilter();
+  const { can } = usePermissions();
   const [health, setHealth] = useUrlFilter('health');
   const [bucket, setBucket] = useUrlFilter('bucket');
 
+  // Widget analitik memanggil endpoint yang dijaga `Analytics.VIEW`. Tanpa izin
+  // itu, widget disembunyikan — bukan dibiarkan memanggil dan gagal 403. Dashboard
+  // sendiri tetap tampil (dijaga `Project.VIEW`).
+  const canAnalytics = can(Permission.AnalyticsView);
+
   const zones = [
     <DashboardFilterBar key="filter" />,
-    <SignalRail key="signal" filter={filter} />,
-    <div key="bands" data-slot="hero-liquidity-row" className="grid gap-6 xl:grid-cols-12">
-      <div className="xl:col-span-7">
-        <HeroBand filter={filter} health={health} />
-      </div>
-      <div className="xl:col-span-5">
-        <LiquidityPanel filter={filter} />
-      </div>
-    </div>,
-    <FinancialBand key="financial" filter={filter} bucket={bucket} onSelectBucket={setBucket} />,
+    ...(canAnalytics
+      ? [
+          <SignalRail key="signal" filter={filter} />,
+          <div key="bands" data-slot="hero-liquidity-row" className="grid gap-6 xl:grid-cols-12">
+            <div className="xl:col-span-7">
+              <HeroBand filter={filter} health={health} />
+            </div>
+            <div className="xl:col-span-5">
+              <LiquidityPanel filter={filter} />
+            </div>
+          </div>,
+          <FinancialBand key="financial" filter={filter} bucket={bucket} onSelectBucket={setBucket} />,
+        ]
+      : []),
     <PortfolioZone key="portfolio" filter={filter} health={health} onSelectHealth={setHealth} />,
-    <AnomalyTriage key="triage" />,
+    ...(canAnalytics ? [<AnomalyTriage key="triage" />] : []),
   ];
 
   return (

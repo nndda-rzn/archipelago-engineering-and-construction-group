@@ -1,7 +1,14 @@
 import type { LucideIcon } from 'lucide-react';
 import { Briefcase, Building2, FolderKanban, HardHat, LayoutDashboard, Shield, ShoppingCart, Wallet } from 'lucide-react';
+import { Permission, SUPERADMIN_ONLY, type NavPermission } from '@aec/shared-types';
 
-export type NavItem = { label: string; to: string };
+/**
+ * Satu item navigasi. `permission` menentukan siapa yang melihatnya: item tanpa
+ * `permission` terlihat oleh semua user yang login; item dengan `permission`
+ * hanya terlihat bila user memegang permission itu (atau SUPER_ADMIN).
+ * `SUPERADMIN_ONLY` dipakai untuk halaman yang tidak punya resource permission.
+ */
+export type NavItem = { label: string; to: string; permission?: NavPermission };
 
 /**
  * Subgrup (level 2) — hanya dipakai grup besar yang itemnya bercabang alami.
@@ -32,43 +39,43 @@ export const navGroups: NavGroup[] = [
     label: 'Main',
     icon: LayoutDashboard,
     items: [
-      { label: 'Dashboard', to: '/' },
-      { label: 'Executive Analytics', to: '/analytics' },
-      { label: 'Advanced Reporting', to: '/analytics/reporting' },
-      { label: 'Approval', to: '/approvals' },
-      { label: 'Workflow', to: '/workflows' },
+      { label: 'Dashboard', to: '/', permission: Permission.ProjectView },
+      { label: 'Executive Analytics', to: '/analytics', permission: Permission.AnalyticsView },
+      { label: 'Advanced Reporting', to: '/analytics/reporting', permission: Permission.AnalyticsView },
+      { label: 'Approval', to: '/approvals', permission: Permission.ApprovalView },
+      { label: 'Workflow', to: '/workflows', permission: Permission.WorkflowView },
     ],
   },
   {
     label: 'Foundation',
     icon: Building2,
     items: [
-      { label: 'Legal Entities', to: '/foundation/legal-entities' },
-      { label: 'Foundation Hardening', to: '/foundation/hardening' },
-      { label: 'Master Data', to: '/master-data' },
-      { label: 'User Management', to: '/foundation/users' },
-      { label: 'Role Management', to: '/foundation/roles' },
-      { label: 'Audit Trail', to: '/foundation/audit-logs' },
+      { label: 'Legal Entities', to: '/foundation/legal-entities', permission: Permission.LegalEntityView },
+      { label: 'Foundation Hardening', to: '/foundation/hardening', permission: SUPERADMIN_ONLY },
+      { label: 'Master Data', to: '/master-data', permission: SUPERADMIN_ONLY },
+      { label: 'User Management', to: '/foundation/users', permission: Permission.UserView },
+      { label: 'Role Management', to: '/foundation/roles', permission: Permission.RoleView },
+      { label: 'Audit Trail', to: '/foundation/audit-logs', permission: Permission.AuditView },
     ],
   },
   {
     label: 'Project & Engineering',
     icon: FolderKanban,
     items: [
-      { label: 'Projects', to: '/projects' },
-      { label: 'WBS', to: '/wbs' },
-      { label: 'Budget', to: '/budget' },
-      { label: 'Project Health', to: '/project-health' },
-      { label: 'Project Controls', to: '/project-controls' },
-      { label: 'Engineering', to: '/engineering' },
+      { label: 'Projects', to: '/projects', permission: Permission.ProjectView },
+      { label: 'WBS', to: '/wbs', permission: Permission.WBSView },
+      { label: 'Budget', to: '/budget', permission: Permission.BudgetView },
+      { label: 'Project Health', to: '/project-health', permission: Permission.ProjectView },
+      { label: 'Project Controls', to: '/project-controls', permission: Permission.ControlAccountView },
+      { label: 'Engineering', to: '/engineering', permission: Permission.EngineeringView },
     ],
   },
   {
     label: 'Commercial & Tender',
     icon: Briefcase,
     items: [
-      { label: 'Commercial', to: '/commercial' },
-      { label: 'Tender & Bid', to: '/commercial/tender' },
+      { label: 'Commercial', to: '/commercial', permission: Permission.ClientView },
+      { label: 'Tender & Bid', to: '/commercial/tender', permission: Permission.OpportunityView },
     ],
   },
   {
@@ -79,21 +86,21 @@ export const navGroups: NavGroup[] = [
       {
         label: 'Procurement',
         items: [
-          { label: 'Purchase Requisition', to: '/procurement/pr' },
-          { label: 'Purchase Order', to: '/procurement/po' },
-          { label: 'RFQ', to: '/procurement/rfq' },
-          { label: 'Procurement Hardening', to: '/procurement/hardening' },
+          { label: 'Purchase Requisition', to: '/procurement/pr', permission: Permission.PurchaseRequisitionView },
+          { label: 'Purchase Order', to: '/procurement/po', permission: Permission.PurchaseOrderView },
+          { label: 'RFQ', to: '/procurement/rfq', permission: Permission.RfqView },
+          { label: 'Procurement Hardening', to: '/procurement/hardening', permission: SUPERADMIN_ONLY },
         ],
       },
       {
         label: 'Inventory',
         items: [
-          { label: 'Goods Receipt', to: '/inventory/goods-receipts' },
-          { label: 'Material Issue', to: '/inventory/material-issues' },
-          { label: 'Stock Adjustment', to: '/inventory/stock-adjustments' },
-          { label: 'Stock Opname', to: '/inventory/stock-opnames' },
-          { label: 'Stock Transfer', to: '/inventory/stock-transfers' },
-          { label: 'Stock Ledger', to: '/inventory/stock-ledger' },
+          { label: 'Goods Receipt', to: '/inventory/goods-receipts', permission: Permission.GoodsReceiptView },
+          { label: 'Material Issue', to: '/inventory/material-issues', permission: Permission.MaterialIssueView },
+          { label: 'Stock Adjustment', to: '/inventory/stock-adjustments', permission: Permission.StockAdjustmentView },
+          { label: 'Stock Opname', to: '/inventory/stock-opnames', permission: Permission.StockOpnameView },
+          { label: 'Stock Transfer', to: '/inventory/stock-transfers', permission: Permission.StockTransferView },
+          { label: 'Stock Ledger', to: '/inventory/stock-ledger', permission: Permission.StockLedgerView },
         ],
       },
     ],
@@ -106,32 +113,32 @@ export const navGroups: NavGroup[] = [
       {
         label: 'Receivable',
         items: [
-          { label: 'Progress Claim', to: '/finance/progress-claims' },
-          { label: 'Client Invoice', to: '/finance/client-invoices' },
-          { label: 'Collection', to: '/finance/collections' },
+          { label: 'Progress Claim', to: '/finance/progress-claims', permission: Permission.ProgressClaimView },
+          { label: 'Client Invoice', to: '/finance/client-invoices', permission: Permission.ClientInvoiceView },
+          { label: 'Collection', to: '/finance/collections', permission: Permission.CollectionView },
         ],
       },
       {
         label: 'Payable',
         items: [
-          { label: 'Vendor Invoice', to: '/finance/vendor-invoices' },
-          { label: 'Payment', to: '/finance/payments' },
-          { label: 'Variation Order', to: '/finance/variations' },
-          { label: 'Subcontract', to: '/finance/subcontracts' },
+          { label: 'Vendor Invoice', to: '/finance/vendor-invoices', permission: Permission.VendorInvoiceView },
+          { label: 'Payment', to: '/finance/payments', permission: Permission.PaymentView },
+          { label: 'Variation Order', to: '/finance/variations', permission: Permission.VariationView },
+          { label: 'Subcontract', to: '/finance/subcontracts', permission: Permission.SubcontractView },
         ],
       },
       {
         label: 'Accounting',
         items: [
-          { label: 'GL Journal', to: '/finance/journals' },
-          { label: 'Trial Balance', to: '/finance/trial-balance' },
-          { label: 'Chart of Accounts', to: '/finance/chart-of-accounts' },
-          { label: 'Finance Closure', to: '/finance/closure' },
+          { label: 'GL Journal', to: '/finance/journals', permission: Permission.JournalView },
+          { label: 'Trial Balance', to: '/finance/trial-balance', permission: Permission.JournalView },
+          { label: 'Chart of Accounts', to: '/finance/chart-of-accounts', permission: Permission.ChartOfAccountView },
+          { label: 'Finance Closure', to: '/finance/closure', permission: Permission.FiscalPeriodView },
         ],
       },
       {
         label: 'Treasury',
-        items: [{ label: 'Treasury', to: '/treasury' }],
+        items: [{ label: 'Treasury', to: '/treasury', permission: Permission.TreasuryView }],
       },
     ],
   },
@@ -142,19 +149,19 @@ export const navGroups: NavGroup[] = [
       {
         label: 'Construction',
         items: [
-          { label: 'Work Packages', to: '/construction/work-packages' },
-          { label: 'Daily Report', to: '/construction/daily-reports' },
-          { label: 'Commissioning', to: '/construction/commissioning' },
-          { label: 'Handover', to: '/construction/handover' },
+          { label: 'Work Packages', to: '/construction/work-packages', permission: Permission.WorkPackageView },
+          { label: 'Daily Report', to: '/construction/daily-reports', permission: Permission.DailyReportView },
+          { label: 'Commissioning', to: '/construction/commissioning', permission: Permission.CommissioningView },
+          { label: 'Handover', to: '/construction/handover', permission: Permission.HandoverView },
         ],
       },
       {
         label: 'HCM',
         items: [
-          { label: 'Employee', to: '/hcm/employees' },
-          { label: 'Timesheet', to: '/hcm/timesheets' },
-          { label: 'Equipment', to: '/hcm/equipment' },
-          { label: 'Payroll Allocation', to: '/hcm/payroll' },
+          { label: 'Employee', to: '/hcm/employees', permission: Permission.EmployeeView },
+          { label: 'Timesheet', to: '/hcm/timesheets', permission: Permission.TimesheetView },
+          { label: 'Equipment', to: '/hcm/equipment', permission: Permission.EquipmentView },
+          { label: 'Payroll Allocation', to: '/hcm/payroll', permission: Permission.PayrollView },
         ],
       },
     ],
@@ -163,9 +170,9 @@ export const navGroups: NavGroup[] = [
     label: 'Governance',
     icon: Shield,
     items: [
-      { label: 'HSE', to: '/hse' },
-      { label: 'Quality', to: '/quality' },
-      { label: 'Governance', to: '/governance' },
+      { label: 'HSE', to: '/hse', permission: Permission.HseIncidentView },
+      { label: 'Quality', to: '/quality', permission: Permission.QualityView },
+      { label: 'Governance', to: '/governance', permission: Permission.RiskView },
     ],
   },
 ];
@@ -176,11 +183,37 @@ export function leavesOf(group: NavGroup): NavItem[] {
   return group.items ?? [];
 }
 
+/** `true` bila user (via `can`) boleh melihat item ini. Item tanpa `permission` selalu boleh. */
+export function canSeeItem(item: NavItem, can: (code: string) => boolean): boolean {
+  return !item.permission || can(item.permission);
+}
+
+/**
+ * Saring navigasi untuk user tertentu: buang item tanpa izin, lalu buang grup
+ * dan subgrup yang tidak menyisakan anak. Hasilnya dipakai sidebar agar menu
+ * yang tidak boleh diakses **hilang** (bukan disabled).
+ */
+export function visibleNavGroups(can: (code: string) => boolean): NavGroup[] {
+  const result: NavGroup[] = [];
+  for (const group of navGroups) {
+    if (group.subgroups) {
+      const subgroups = group.subgroups
+        .map((sub) => ({ ...sub, items: sub.items.filter((item) => canSeeItem(item, can)) }))
+        .filter((sub) => sub.items.length > 0);
+      if (subgroups.length > 0) result.push({ ...group, subgroups });
+      continue;
+    }
+    const items = (group.items ?? []).filter((item) => canSeeItem(item, can));
+    if (items.length > 0) result.push({ ...group, items });
+  }
+  return result;
+}
+
 export type NavItemRef = NavItem & { group: string; subgroup?: string };
 
 /** Daftar rata seluruh leaf dengan nama grup + subgrupnya — dipakai pencarian menu. */
-export function allNavItems(): NavItemRef[] {
-  return navGroups.flatMap((group) => {
+export function allNavItems(groups: NavGroup[] = navGroups): NavItemRef[] {
+  return groups.flatMap((group) => {
     if (group.subgroups) {
       return group.subgroups.flatMap((sub) => sub.items.map((item) => ({ ...item, group: group.label, subgroup: sub.label })));
     }
