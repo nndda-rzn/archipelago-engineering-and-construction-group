@@ -228,17 +228,42 @@ describe('ControlTowerService (shape)', () => {
     });
   });
 
-  it('counts a warehouse whose running balance went negative', async () => {
+  it('counts DISTINCT warehouses with a negative balance, not rows', async () => {
+    // Dua baris negatif untuk gudang yang sama + satu baris untuk gudang lain
+    // → harus 2 (gudang unik), bukan 3 (jumlah baris).
+    const out = await makeService({
+      prisma: {
+        warehouse: { count: async () => 2, findMany: async () => [] },
+        stockLedgerEntry: {
+          groupBy: async () => [],
+          findMany: async (args: { where?: { balanceAfter?: unknown } }) =>
+            args?.where?.balanceAfter
+              ? [{ warehouseId: 'w1' }, { warehouseId: 'w1' }, { warehouseId: 'w2' }]
+              : [],
+        },
+      },
+    }).controlTower({});
+    expect(out.operations.inventory.negativeBalanceCount).toBe(2);
+  });
+
+  it('computes stock value as net movement (in − out)', async () => {
     const out = await makeService({
       prisma: {
         warehouse: { count: async () => 1, findMany: async () => [] },
         stockLedgerEntry: {
-          groupBy: async () => [],
-          findMany: async (args: { where?: { balanceAfter?: unknown } }) =>
-            args?.where?.balanceAfter ? [{ warehouseId: 'w1' }] : [{ totalValue: 100 }],
+          groupBy: async () => [
+            { movementType: 'IN', _sum: { totalValue: 1000 } },
+            { movementType: 'OUT', _sum: { totalValue: 400 } },
+          ],
+          findMany: async () => [],
         },
       },
     }).controlTower({});
-    expect(out.operations.inventory.negativeBalanceCount).toBe(1);
+    expect(out.operations.inventory).toMatchObject({
+      stockValue: 600,
+      movementInValue: 1000,
+      movementOutValue: 400,
+      negativeBalanceCount: 0,
+    });
   });
 });

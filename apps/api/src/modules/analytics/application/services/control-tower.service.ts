@@ -558,14 +558,18 @@ export class ControlTowerService {
   }
 
   /**
-   * Ringkasan inventory: nilai stok, jumlah gudang, dan mutasi masuk/keluar.
+   * Ringkasan inventory: nilai stok bersih, jumlah gudang, dan mutasi masuk/keluar.
+   *
+   * `stockValue` = jumlah `totalValue` bertanda dari seluruh pergerakan
+   * (IN positif, OUT negatif, ADJUST sesuai tanda) = **nilai stok bersih**,
+   * bukan nilai bruto pergerakan (yang sudah diwakili `movementIn/OutValue`).
    * `negativeBalanceCount` = jumlah gudang (unik) yang punya minimal satu baris
    * ledger dengan `balanceAfter < 0` — sinyal data-error nyata, bukan nol palsu.
    * Selalu mengembalikan angka (0), tidak pernah null.
    */
   private async loadInventory(projectWhere: Record<string, unknown>, dateWhere?: { gte?: Date; lte?: Date }) {
     const ledgerWhere = { ...projectWhere, ...(dateWhere ? { createdAt: dateWhere } : {}) };
-    const [warehouseCount, movementGroups, allMovements, negativeRows] = await Promise.all([
+    const [warehouseCount, movementGroups, negativeRows] = await Promise.all([
       this.prisma.warehouse.count({ where: projectWhere }),
       this.prisma.stockLedgerEntry.groupBy({
         by: ['movementType'],
@@ -573,24 +577,27 @@ export class ControlTowerService {
         _sum: { totalValue: true },
       }),
       this.prisma.stockLedgerEntry.findMany({
-        where: ledgerWhere,
-        select: { totalValue: true },
-      }),
-      this.prisma.stockLedgerEntry.findMany({
         where: { ...ledgerWhere, balanceAfter: { lt: 0 } },
         select: { warehouseId: true },
       }),
     ]);
-    const sumFor = (type: string) =>
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+    // `totalValue` tidak dijamin bertanda (lihat ActualCostCalculator yang memakai
+    // Math.abs pada OUT), jadi ambil besaran per jenis lalu hitung net eksplisit.
+    const magnitudeFor = (type: string) =>
       Math.abs(Number(movementGroups.find((g) => g.movementType === type)?._sum?.totalValue ?? 0));
-    const stockValue = allMovements.reduce((s, m) => s + Math.abs(Number(m.totalValue ?? 0)), 0);
+    const movementInValue = magnitudeFor('IN');
+    const movementOutValue = magnitudeFor('OUT');
+    // Nilai stok bersih = masuk − keluar (bukan nilai bruto seluruh pergerakan,
+    // yang sudah diwakili movementIn/OutValue). Negatif = anomali (keluar > masuk).
+    const stockValue = movementInValue - movementOutValue;
     const negativeBalanceCount = new Set(negativeRows.map((r) => r.warehouseId)).size;
     return {
-      stockValue: Math.round(stockValue * 100) / 100,
+      stockValue: round2(stockValue),
       warehouseCount,
       negativeBalanceCount,
-      movementInValue: sumFor('IN'),
-      movementOutValue: sumFor('OUT'),
+      movementInValue: round2(movementInValue),
+      movementOutValue: round2(movementOutValue),
     };
   }
 
