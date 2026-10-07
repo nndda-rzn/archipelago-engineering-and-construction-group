@@ -190,14 +190,28 @@ export function PortfolioLedger({ data }: { data: ControlTower }) {
     {
       id: 'projectCode',
       header: 'Code',
+      size: 150,
+      meta: { nowrap: true },
       cell: ({ row }: { row: { original: ControlTowerProject } }) => (
         <span className="font-mono text-caption text-neutral-500">{row.original.projectCode}</span>
       ),
     },
-    { id: 'projectName', header: 'Project', cell: ({ row }: { row: { original: ControlTowerProject } }) => row.original.projectName },
+    {
+      id: 'projectName',
+      header: 'Project',
+      size: 240,
+      meta: { truncate: true },
+      cell: ({ row }: { row: { original: ControlTowerProject } }) => (
+        <span className="block truncate" title={row.original.projectName}>
+          {row.original.projectName}
+        </span>
+      ),
+    },
     {
       id: 'health',
       header: 'Health',
+      size: 110,
+      meta: { nowrap: true },
       cell: ({ row }: { row: { original: ControlTowerProject } }) => (
         <StatusPill tone={HEALTH_TONE[row.original.health] ?? 'neutral'} label={HEALTH_LABEL[row.original.health] ?? row.original.health} />
       ),
@@ -205,7 +219,8 @@ export function PortfolioLedger({ data }: { data: ControlTower }) {
     {
       id: 'budgetActual',
       header: 'Budget / Actual',
-      meta: { align: 'right' as const },
+      size: 210,
+      meta: { align: 'right' as const, nowrap: true },
       cell: ({ row }: { row: { original: ControlTowerProject } }) => {
         const p = row.original;
         const overrun = p.actual > p.budget && p.budget > 0;
@@ -219,7 +234,8 @@ export function PortfolioLedger({ data }: { data: ControlTower }) {
     {
       id: 'variance',
       header: 'Variance',
-      meta: { align: 'right' as const },
+      size: 140,
+      meta: { align: 'right' as const, nowrap: true },
       cell: ({ row }: { row: { original: ControlTowerProject } }) => {
         const v = row.original.variance;
         return (
@@ -232,7 +248,8 @@ export function PortfolioLedger({ data }: { data: ControlTower }) {
     {
       id: 'evm',
       header: 'CPI / SPI',
-      meta: { align: 'right' as const },
+      size: 110,
+      meta: { align: 'right' as const, nowrap: true },
       cell: ({ row }: { row: { original: ControlTowerProject } }) => {
         const p = row.original;
         return (
@@ -245,7 +262,8 @@ export function PortfolioLedger({ data }: { data: ControlTower }) {
     {
       id: 'risk',
       header: 'Risk',
-      meta: { align: 'right' as const },
+      size: 80,
+      meta: { align: 'right' as const, nowrap: true },
       cell: ({ row }: { row: { original: ControlTowerProject } }) => (
         <span className="font-mono tabular-nums text-neutral-700">{row.original.riskScore ?? '—'}</span>
       ),
@@ -263,6 +281,7 @@ export function PortfolioLedger({ data }: { data: ControlTower }) {
         hideToolbar
         clientPagination
         pageSize={5}
+        tableLayout="fixed"
       />
       {/* Footer agregat Σ — menjaga superset data (actual/budget/variance) yang
           dulu ada di <tfoot>; hilang bila tidak dirender ulang di sini. */}

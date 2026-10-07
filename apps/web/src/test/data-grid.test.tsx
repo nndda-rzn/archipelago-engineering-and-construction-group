@@ -98,4 +98,22 @@ describe('DataGrid', () => {
     expect(screen.getByText('Row 5')).toBeTruthy();
     expect(screen.queryByText('Row 0')).toBeNull();
   });
+
+  it('uses auto layout by default (table-fixed only when opted in)', () => {
+    const { container: auto } = render(<DataGrid columns={columns} data={rows} />);
+    expect(auto.querySelector('table')!.className).not.toContain('table-fixed');
+
+    const { container: fixed } = render(<DataGrid columns={columns} data={rows} tableLayout="fixed" />);
+    expect(fixed.querySelector('table')!.className).toContain('table-fixed');
+  });
+
+  it('applies width (not minWidth) and nowrap in fixed layout', () => {
+    const sized = [columnHelper.accessor('name', { header: 'Nama', size: 180, meta: { nowrap: true }, cell: (i) => i.getValue() })];
+    const { container } = render(<DataGrid columns={sized} data={rows} tableLayout="fixed" />);
+    const th = screen.getByText('Nama').closest('th')!;
+    expect(th.style.width).toBe('180px');
+    expect(th.style.minWidth).toBe('');
+    const td = container.querySelector('tbody td')!;
+    expect(td.className).toContain('whitespace-nowrap');
+  });
 });
