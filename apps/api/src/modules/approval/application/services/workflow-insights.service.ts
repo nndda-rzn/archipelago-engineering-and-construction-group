@@ -4,6 +4,7 @@ import { ConditionEvaluator } from './shared/condition-evaluator';
 import { summariseDocumentOutcomes, type TaskOutcomeRow } from './shared/document-outcomes';
 import { toConditionGroupLoose as toGroup } from './shared/condition-group-mapper';
 import { approvalConditionText } from './shared/approval-condition-text';
+import { monthKeyUtc as monthKey } from '@/shared/utils/month-key';
 import type { WorkflowInsights } from '@aec/api-contracts';
 
 /**
@@ -23,11 +24,6 @@ const AMOUNT_BUCKETS: Array<{ label: string; from: number; to: number }> = [
 
 const INSIGHTS_NOTE =
   'Based on recorded approval tasks for this transaction type. Steps may have changed between versions, so older tasks are not necessarily comparable with the current definition.';
-
-/** `2026-10-06T…` → `2026-10` (UTC, sama seperti modul analytics). */
-function monthKey(date: Date): string {
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
-}
 
 /**
  * Insight operasional sebuah definisi: di mana dokumen menumpuk, bagaimana

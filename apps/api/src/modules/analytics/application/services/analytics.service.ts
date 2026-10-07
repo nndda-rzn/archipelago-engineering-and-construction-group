@@ -5,6 +5,7 @@ import { PrismaService } from '@/shared/database/prisma.service';
 import { CacheService } from '@/shared/cache/cache.service';
 import { ANALYTICS_CACHE_KEYS, analyticsCacheKey } from '@/shared/cache/analytics-cache';
 import { resolveDateRange } from '@/shared/utils/date-range';
+import { monthKeyUtc } from '@/shared/utils/month-key';
 import { toCsvLines } from '@/shared/export/csv';
 
 /** Baris invoice di balik angka sebuah bucket aging. */
@@ -15,11 +16,6 @@ export interface AgingDetail {
   date: string;
   ageDays: number;
   outstanding: number;
-}
-
-/** Kunci bulan UTC — konsisten dengan sisa modul (jangan pakai waktu lokal). */
-function monthKeyUtc(d: Date): string {
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
 /** N bulan terakhir (termasuk bulan berjalan), urut lama → baru. */
