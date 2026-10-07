@@ -199,6 +199,25 @@ export function PortfolioCanvasView({ points, health = '', onSelectHealth, onSel
       )}
 
       {legend}
+      {/* Padanan keyboard untuk drill-through scatter: daftar tautan fokusable.
+          Scatter SVG tidak dapat difokus, jadi proyek yang sama disediakan
+          sebagai tombol-tombol yang bisa di-Tab (WCAG 2.1 SC 2.1.1). */}
+      {points.length > 0 && (
+        <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Projects (keyboard drill-through)">
+          {points.map((p) => (
+            <li key={p.projectId}>
+              <button
+                type="button"
+                onClick={() => onSelectProject?.(p.projectId)}
+                className="rounded border border-neutral-200 px-1.5 py-0.5 font-mono text-caption text-neutral-600 transition-colors duration-fast hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-racing-red-600"
+              >
+                {p.projectCode}
+                {p.hasEvm ? ` · ${p.cpi.toFixed(2)}/${p.spi.toFixed(2)}` : ' · no EVM'}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       <p className="mt-2 text-caption text-neutral-500">
         X = CPI (cost efficiency) · Y = SPI (schedule efficiency) · quadrants cross at 1.0 · bubble colour = health
       </p>
