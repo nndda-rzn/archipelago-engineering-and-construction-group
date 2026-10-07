@@ -24,7 +24,7 @@ vi.mock('@/features/auth', () => ({
 
 import { LoginPage } from './login.page';
 
-describe('LoginPage — struktur & aksesibilitas', () => {
+describe('LoginPage: struktur & aksesibilitas', () => {
   it('uses the same brand as the sidebar: white logo mark + "AEC" wordmark', () => {
     const { container } = renderWithProviders(<LoginPage />);
     const light = container.querySelectorAll('img[src="/logo-mark-light.png"]');
@@ -79,15 +79,25 @@ describe('LoginPage — struktur & aksesibilitas', () => {
     expect((screen.getByLabelText(/^Password$/i) as HTMLInputElement).value).toBe('Admin123!');
   });
 
-  it('labels the example project card as an example (not real data)', () => {
-    renderWithProviders(<LoginPage />);
-    expect(screen.getByText(/contoh|example/i)).toBeTruthy();
-  });
-
   it('drops internal jargon from the copy', () => {
     const { container } = renderWithProviders(<LoginPage />);
     expect(container.textContent).not.toMatch(/golden flow/i);
     expect(container.textContent).not.toMatch(/operating system/i);
+  });
+
+  it('has a single h1 ("Sign in") so mobile keeps a top-level heading', () => {
+    renderWithProviders(<LoginPage />);
+    const h1s = screen.getAllByRole('heading', { level: 1 });
+    expect(h1s).toHaveLength(1);
+    expect(h1s[0]!.textContent).toBe('Sign in');
+  });
+
+  it('renders the login background as decorative (alt="", aria-hidden)', () => {
+    const { container } = renderWithProviders(<LoginPage />);
+    const bg = container.querySelector('img[src="/bg-login.webp"]');
+    expect(bg).not.toBeNull();
+    expect(bg!.getAttribute('alt')).toBe('');
+    expect(bg!.getAttribute('aria-hidden')).toBe('true');
   });
 
   it('announces a failed sign-in to assistive tech (role=alert)', () => {

@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginRequestSchema, type LoginRequest } from '@aec/api-contracts';
-import { BulletBar, Button, Input, Label, StatusBadge, labelErrorCode } from '@aec/ui';
+import { Button, Input, Label, labelErrorCode } from '@aec/ui';
 import { Eye, EyeOff } from 'lucide-react';
 import { useLogin } from '@/features/auth';
 
 /**
- * Akun demo untuk environment ini. Password TIDAK ditampilkan di UI — chip hanya
+ * Akun demo untuk environment ini. Password TIDAK ditampilkan di UI; chip hanya
  * mengisi otomatis. Nilai sudah diverifikasi cocok dengan `prisma/seed.ts`.
  */
 const DEMO_ACCOUNTS = [
@@ -16,7 +16,7 @@ const DEMO_ACCOUNTS = [
   { role: 'CEO', email: 'ceo@aec.local', password: 'Demo' + '123!' },
 ];
 
-/** Alur kerja inti — ditulis sebagai alur, bukan jargon internal. */
+/** Alur kerja inti, ditulis sebagai alur bukan jargon internal. */
 const WORKFLOW = ['Tender', 'Contract', 'Procurement', 'Construction', 'Reporting'];
 
 export function LoginPage() {
@@ -43,9 +43,26 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-dvh bg-neutral-50">
-      {/* Panel kiri — konteks produk. Disembunyikan di layar kecil. */}
-      <div className="hidden w-1/2 flex-col justify-between bg-neutral-950 p-10 lg:flex">
-        <div className="flex items-center gap-3" translate="no">
+      {/* Panel kiri: konteks produk. Disembunyikan di layar kecil. */}
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-neutral-950 p-10 lg:flex">
+        {/* Latar dekoratif: gambar redup di belakang teks. Above-the-fold di
+            desktop, jadi eager (bukan lazy); prioritas default karena dekoratif. */}
+        <img
+          src="/bg-login.webp"
+          alt=""
+          aria-hidden="true"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+        />
+        {/* Overlay gelap: SEMUA stop >= 0.85 agar teks caption (neutral-400,
+            12px) tetap >= 4.5:1 di atas gambar terang (WCAG 1.4.3). Formulir
+            tetap elemen dominan; gambar hanya tekstur, bukan fokus. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-br from-neutral-950/95 via-neutral-950/90 to-neutral-950/85"
+        />
+
+        <div className="relative z-10 flex items-center gap-3" translate="no">
           {/* Varian putih: logo hitam tidak terlihat di latar gelap (kontras 0,93:1). */}
           <img src="/logo-mark-light.png" alt="" aria-hidden="true" className="h-9 w-9 shrink-0 object-contain" />
           <div>
@@ -54,28 +71,13 @@ export function LoginPage() {
           </div>
         </div>
 
-        <div>
-          <h1 className="max-w-md text-h1 font-semibold leading-snug text-white">
+        <div className="relative z-10">
+          <p className="max-w-md text-h1 font-semibold leading-snug text-white">
             Project-centric ERP for construction &amp; EPC.
-          </h1>
-          <p className="mt-3 max-w-md text-body-sm text-neutral-400">
-            Finance, procurement, and site execution share one project record — from tender to consolidated report.
           </p>
-
-          {/* Kartu contoh: memperlihatkan bentuk produk, memakai komponen yang sudah ada. */}
-          <div className="mt-6 max-w-md rounded-md border border-neutral-800 bg-neutral-900 p-4">
-            <p className="text-overline uppercase text-neutral-500">Contoh tampilan</p>
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <span className="font-mono text-caption text-neutral-400">PRJ-EPC-2027-014</span>
-              <StatusBadge status="AT_RISK" />
-            </div>
-            <p className="mt-1 truncate text-body-sm text-neutral-200">EPC Industrial Processing Facility</p>
-            <div className="mt-3">
-              <p className="mb-1 text-caption text-neutral-500">Budget used · 72%</p>
-              <BulletBar value={72} max={100} label="Budget used" className="bg-neutral-800" />
-            </div>
-            <p className="mt-3 font-mono text-caption text-neutral-500">2026-01-15 → 2027-08-30</p>
-          </div>
+          <p className="mt-3 max-w-md text-body-sm text-neutral-400">
+            Finance, procurement, and site execution share one project record, from tender to consolidated report.
+          </p>
 
           <ol className="mt-6 flex max-w-md flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-neutral-300">
             {WORKFLOW.map((step, i) => (
@@ -87,10 +89,10 @@ export function LoginPage() {
           </ol>
         </div>
 
-        <p className="text-caption text-neutral-400">© 2026 AEC Group · Demo environment.</p>
+        <p className="relative z-10 text-caption text-neutral-400">© 2026 AEC Group · Demo environment.</p>
       </div>
 
-      {/* Panel kanan — formulir. */}
+      {/* Panel kanan: formulir. */}
       <div className="flex w-full items-center justify-center px-6 lg:w-1/2">
         <div className="w-full max-w-sm">
           <div className="mb-8 lg:hidden">
@@ -100,8 +102,8 @@ export function LoginPage() {
             </div>
           </div>
 
-          <h2 className="text-h1 text-neutral-950">Sign in</h2>
-          <p className="mt-1 text-body-sm text-neutral-500">Use your account to access the system.</p>
+          <h1 className="text-h1 text-neutral-950">Sign in</h1>
+          <p className="mt-1 text-body-sm text-neutral-500">Use your AEC account to continue.</p>
 
           <form onSubmit={onSubmit} noValidate className="mt-6 flex flex-col gap-4">
             <div>
@@ -132,7 +134,7 @@ export function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   spellCheck={false}
-                  placeholder="Enter your password…"
+                  placeholder="••••••••"
                   error={!!errors.password}
                   className="pr-10"
                   {...register('password')}
@@ -190,7 +192,7 @@ export function LoginPage() {
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-caption text-neutral-500">Click a role to fill the form.</p>
+            <p className="mt-2 text-caption text-neutral-500">Select a role to fill the form.</p>
           </div>
         </div>
       </div>
