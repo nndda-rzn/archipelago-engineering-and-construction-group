@@ -3,10 +3,19 @@ import { render, screen } from '@testing-library/react';
 
 vi.mock('@tanstack/react-router', () => ({
   Outlet: () => <div />,
+  Link: ({ children, to, ...rest }: { children: React.ReactNode; to: string }) => (
+    <a href={to} {...rest}>
+      {children}
+    </a>
+  ),
 }));
 vi.mock('./sidebar-nav', () => ({ SidebarNav: () => <div data-testid="sidebar-nav" /> }));
 vi.mock('./topbar-breadcrumb', () => ({ TopbarBreadcrumb: () => <div /> }));
 vi.mock('./user-menu', () => ({ UserMenu: () => <div /> }));
+vi.mock('@/widgets/command-palette', () => ({ CommandPalette: () => null }));
+vi.mock('@/features/analytics/model/analytics.api', () => ({
+  usePendingApprovals: () => ({ data: { count: 0 } }),
+}));
 
 import { AppShell } from './app-shell';
 
