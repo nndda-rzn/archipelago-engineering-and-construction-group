@@ -211,7 +211,7 @@ export function PortfolioLedger({ data }: { data: ControlTower }) {
         const overrun = p.actual > p.budget && p.budget > 0;
         return (
           <span className={`font-mono tabular-nums ${overrun ? 'text-destructive-700' : 'text-neutral-700'}`}>
-            {formatIdr(p.actual)} / {formatIdr(p.budget)}
+            {formatIdrAxis(p.actual)} / {formatIdrAxis(p.budget)}
           </span>
         );
       },
@@ -224,7 +224,7 @@ export function PortfolioLedger({ data }: { data: ControlTower }) {
         const v = row.original.variance;
         return (
           <span className={`font-mono tabular-nums ${v < 0 ? 'text-destructive-700' : 'text-success-700'}`}>
-            {v < 0 ? '−' : '+'}{formatIdr(Math.abs(v))}
+            {v < 0 ? '−' : '+'}{formatIdrAxis(Math.abs(v))}
           </span>
         );
       },
@@ -261,6 +261,8 @@ export function PortfolioLedger({ data }: { data: ControlTower }) {
         onRowClick={(row) => navigate({ to: '/project-health', search: { project: row.original.projectId } as never })}
         emptyMessage="No projects in this scope."
         hideToolbar
+        clientPagination
+        pageSize={5}
       />
       {/* Footer agregat Σ — menjaga superset data (actual/budget/variance) yang
           dulu ada di <tfoot>; hilang bila tidak dirender ulang di sini. */}

@@ -140,6 +140,24 @@ describe('ControlTowerView', () => {
     expect(() => fireEvent.keyDown(row, { key: 'Enter' })).not.toThrow();
   });
 
+  it('abbreviates ledger money and paginates the ledger at 5 rows', () => {
+    const many = {
+      ...base,
+      projects: Array.from({ length: 12 }).map((_, i) => ({
+        ...base.projects[0]!,
+        projectId: `p${i}`,
+        projectCode: `PRJ-${i}`,
+        projectName: `Project ${i}`,
+      })),
+    };
+    const { container } = render(<ControlTowerView data={many} cashFlowSeries={[]} />);
+    // Maksimal 5 baris body (pagination klien).
+    const bodyRows = container.querySelectorAll('tbody tr');
+    expect(bodyRows.length).toBe(5);
+    // Angka disingkat, bukan penuh.
+    expect(container.querySelector('tbody')!.textContent).not.toMatch(/Rp \d{1,3}\.\d{3}\.\d{3}/);
+  });
+
   it('renders each KPI label exactly once (one home per figure)', () => {
     render(<ControlTowerView data={base} cashFlowSeries={[]} />);
     // "AR overdue 61+" dan "DSO" hanya boleh muncul di pita Position, tidak lagi
