@@ -1,6 +1,12 @@
 /**
- * Warna chart bersumber dari token design system (`packages/config/tailwind/tailwind.preset.cjs`).
- * Setiap nilai di bawah mencerminkan token; jangan tulis hex baru di komponen — impor dari sini.
+ * Palet chart bersama untuk SELURUH aplikasi (dashboard + approval/workflow).
+ *
+ * PENTING — blast radius: file ini dipakai lintas-halaman
+ * (`apps/web/src/features/approval/ui/workflow-insights-charts.tsx` juga
+ * mengimpornya). Mengubah sebuah nilai di sini mengubah setiap chart di app.
+ * Itulah sebabnya palet ini **sengaja** menjadi satu sumber: dulu dua tempat
+ * mendefinisikan warna sendiri dan hasilnya tidak konsisten. Setiap perubahan
+ * wajib diperiksa terhadap seluruh konsumen.
  *
  * Aturan (FR-DASH-010):
  * - Merah = aksi/kritis saja; tidak dipakai sebagai kategori.
