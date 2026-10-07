@@ -63,6 +63,14 @@ module.exports = {
         // Financial
         'financial-positive': { 50: '#ecfdf5', 500: '#10b981', 600: '#059669', 700: '#047857' },
         'financial-negative': { 50: '#fef2f2', 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c' },
+        // Surface layering (FR-DASH-006). Nama semantik untuk tiga kedalaman
+        // permukaan agar komponen tidak lagi menulis `bg-neutral-50` mentah dan
+        // batas kartu-vs-kanvas menjadi eksplisit. Nilai = token netral yang ada.
+        surface: {
+          canvas: '#f4f4f5', // neutral-100 — latar halaman (di belakang kartu)
+          raised: '#ffffff', // neutral-0 — panel/kartu
+          sunken: '#fafafa', // neutral-50 — well chart di dalam kartu
+        },
       },
       fontFamily: {
         sans: ['"IBM Plex Sans"', 'system-ui', '-apple-system', 'sans-serif'],
@@ -84,6 +92,10 @@ module.exports = {
         'body-sm': ['0.8125rem', { lineHeight: '1.5' }],
         caption: ['0.75rem', { lineHeight: '1.5' }],
         overline: ['0.6875rem', { lineHeight: '1.4', fontWeight: '500', letterSpacing: '0.05em' }],
+        // FR-DASH-007: skala angka untuk kartu metrik. `metric` = angka juara per
+        // KPI tile, `metric-sm` = angka di dalam baris tabel/sel padat.
+        metric: ['1.5rem', { lineHeight: '1.15', fontWeight: '600' }],
+        'metric-sm': ['1.125rem', { lineHeight: '1.2', fontWeight: '600' }],
       },
       borderRadius: {
         DEFAULT: '6px',
@@ -112,6 +124,11 @@ module.exports = {
         10: '40px',
         12: '48px',
         16: '64px',
+        // FR-DASH-007: densitas untuk permukaan dashboard. `cell` = jarak antar
+        // blok dalam satu zona, `tier` = jarak antar zona. Dipakai lewat
+        // `gap-cell` / `gap-tier` (Tailwind memetakan `spacing.cell` → `gap-cell`).
+        cell: '20px',
+        tier: '26px',
       },
       transitionDuration: {
         fast: '150ms',
