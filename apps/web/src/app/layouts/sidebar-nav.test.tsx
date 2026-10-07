@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 // State yang bisa diubah per-test; `vi.hoisted` agar tersedia sebelum import.
-const state = vi.hoisted(() => ({ path: '/', pendingCount: undefined as number | undefined }));
+const state = vi.hoisted(() => ({ path: '/', pendingCount: undefined as number | undefined, permissions: undefined as string[] | undefined }));
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to, ...rest }: { children: ReactNode; to: string }) => (
@@ -16,6 +16,17 @@ vi.mock('@tanstack/react-router', () => ({
 
 vi.mock('@/features/analytics/model/analytics.api', () => ({
   usePendingApprovals: () => ({ data: state.pendingCount === undefined ? undefined : { count: state.pendingCount } }),
+}));
+
+// Sidebar kini menyaring menu lewat permission. Default: semua izin dianggap ada
+// (semua item tampil), sehingga test struktur/state identik dengan sebelum gating.
+// Test gating men-set `state.permissions` untuk menyimulasikan role tertentu.
+vi.mock('@/entities/session', () => ({
+  usePermissions: () => ({
+    set: new Set(state.permissions ?? []),
+    can: (code: string) => state.permissions === undefined || state.permissions.includes(code),
+    canAny: (codes: string[]) => state.permissions === undefined || codes.some((c) => state.permissions!.includes(c)),
+  }),
 }));
 
 import { SidebarNav, resolveOpenNodes, scrollActiveIntoView } from './sidebar-nav';
@@ -81,6 +92,7 @@ describe('SidebarNav rendering', () => {
   beforeEach(() => {
     localStorage.clear();
     state.pendingCount = undefined;
+    state.permissions = undefined;
     Element.prototype.scrollIntoView = vi.fn();
   });
 
@@ -289,6 +301,7 @@ describe('satu item aktif saja (tidak double highlight)', () => {
   beforeEach(() => {
     localStorage.clear();
     state.pendingCount = undefined;
+    state.permissions = undefined;
     Element.prototype.scrollIntoView = vi.fn();
   });
 
@@ -325,6 +338,24 @@ describe('satu item aktif saja (tidak double highlight)', () => {
     for (const item of allNavItems()) {
       expect(matchNav(item.to)?.to, `route ${item.to}`).toBe(item.to);
     }
+  });
+
+  it('menyembunyikan menu yang permission-nya tidak dimiliki user (mis. Buyer)', () => {
+    // Hanya izin Buyer yang dipegang; menu lain harus benar-benar hilang.
+    state.permissions = ['Project.VIEW', 'WBS.VIEW', 'PurchaseRequisition.VIEW', 'PurchaseOrder.VIEW', 'Approval.VIEW'];
+    state.path = '/';
+    render(<SidebarNav onNavigate={() => {}} />);
+
+    const labels = screen.queryAllByRole('link').map((el) => el.textContent?.trim());
+    // Item level-1 yang boleh: Dashboard, Approval (Procurement tertutup default).
+    expect(labels).toContain('Dashboard');
+    expect(labels).toContain('Approval');
+    // Menu yang tidak diizinkan hilang, bukan disabled.
+    expect(labels).not.toContain('Executive Analytics');
+    expect(labels).not.toContain('User Management');
+    // Grup tanpa satu pun item yang boleh tidak dirender sama sekali.
+    expect(screen.queryByRole('button', { name: 'Finance & Treasury' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Foundation' })).toBeNull();
   });
 
   it('komponen menandai tepat satu item untuk route perwakilan (rerender, bukan mount ulang)', () => {

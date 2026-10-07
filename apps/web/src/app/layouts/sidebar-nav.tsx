@@ -3,7 +3,8 @@ import { Link, useLocation } from '@tanstack/react-router';
 import { ChevronDown, Search } from 'lucide-react';
 import { cn, Collapsible, CollapsibleContent, CollapsibleTrigger, Input } from '@aec/ui';
 import { usePendingApprovals } from '@/features/analytics/model/analytics.api';
-import { allNavItems, leavesOf, matchNav, navGroups, nodeKey, readCollapsed, STORAGE_KEY } from './nav-config';
+import { allNavItems, leavesOf, matchNav, navGroups, nodeKey, readCollapsed, STORAGE_KEY, visibleNavGroups, type NavGroup } from './nav-config';
+import { usePermissions } from '@/entities/session';
 import { Guides, NavLink, type GuideSpec } from './sidebar-nav-parts';
 
 interface SidebarNavProps {
@@ -25,10 +26,10 @@ function normalize(value: string): string {
  * `matchNav` (match paling spesifik), bukan sekadar prefix — supaya route
  * bersarang (`/analytics/reporting`) tidak ikut membuka/menyalakan induknya.
  */
-export function resolveOpenNodes(pathname: string, saved: Record<string, boolean>): Record<string, boolean> {
+export function resolveOpenNodes(pathname: string, saved: Record<string, boolean>, groups: NavGroup[] = navGroups): Record<string, boolean> {
   const activeTo = matchNav(pathname)?.to ?? null;
   const result: Record<string, boolean> = {};
-  for (const group of navGroups) {
+  for (const group of groups) {
     const groupHasActive = leavesOf(group).some((item) => item.to === activeTo);
     result[group.label] = groupHasActive ? true : (saved[group.label] ?? !(group.defaultCollapsed ?? false));
 
@@ -47,12 +48,12 @@ export function scrollActiveIntoView(container: ParentNode | null): void {
   el?.scrollIntoView({ block: 'nearest' });
 }
 
-function useOpenNodes(pathname: string) {
+function useOpenNodes(pathname: string, groups: NavGroup[]) {
   const [saved, setSaved] = useState<Record<string, boolean>>(() => readCollapsed());
   const toggle = (key: string) => {
     setSaved((prev) => {
       // Baca status efektif saat ini (node aktif selalu terbuka) lalu balik.
-      const effective = resolveOpenNodes(pathname, prev);
+      const effective = resolveOpenNodes(pathname, prev, groups);
       const next = { ...prev, [key]: !effective[key] };
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -62,7 +63,7 @@ function useOpenNodes(pathname: string) {
       return next;
     });
   };
-  return { open: resolveOpenNodes(pathname, saved), toggle };
+  return { open: resolveOpenNodes(pathname, saved, groups), toggle };
 }
 
 /**
@@ -71,7 +72,11 @@ function useOpenNodes(pathname: string) {
  */
 export function SidebarNav({ onNavigate }: SidebarNavProps) {
   const { pathname } = useLocation();
-  const { open, toggle } = useOpenNodes(pathname);
+  const { can } = usePermissions();
+  // Navigasi disaring ke item yang permission-nya dimiliki user. Grup/subgrup
+  // yang jadi kosong ikut hilang, jadi menu terlarang benar-benar tidak dirender.
+  const groups = useMemo(() => visibleNavGroups(can), [can]);
+  const { open, toggle } = useOpenNodes(pathname, groups);
   const [query, setQuery] = useState('');
   const navRef = useRef<HTMLElement>(null);
   const { data: pending } = usePendingApprovals();
@@ -92,8 +97,8 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
   const results = useMemo(() => {
     const q = normalize(query);
     if (!q) return null;
-    return allNavItems().filter((item) => normalize(`${item.group} ${item.subgroup ?? ''} ${item.label}`).includes(q));
-  }, [query]);
+    return allNavItems(groups).filter((item) => normalize(`${item.group} ${item.subgroup ?? ''} ${item.label}`).includes(q));
+  }, [query, groups]);
 
   const headerClass = (active: boolean) =>
     cn(
@@ -145,7 +150,7 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
             )}
           </div>
         ) : (
-          navGroups.map((group) => {
+          groups.map((group) => {
             const isOpen = open[group.label] === true;
             const groupActive = leavesOf(group).some((item) => isItemActive(item.to));
             const Icon = group.icon;
