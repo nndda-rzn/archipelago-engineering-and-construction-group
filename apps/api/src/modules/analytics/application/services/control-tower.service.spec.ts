@@ -162,12 +162,14 @@ describe('ControlTowerService (shape)', () => {
       opportunity: { ...empty, findMany: async () => [], aggregate: async () => ({ _sum: { expectedValue: 0 }, _count: { _all: 0 } }) },
       tenderSubmission: { ...empty, count: async () => 0 },
       projectVariation: { ...empty, aggregate: async () => ({ _sum: { amountChange: 0 } }) },
+      warehouse: { ...empty, count: async () => 0 },
+      stockLedgerEntry: { ...empty, groupBy: async () => [], findMany: async () => [] },
     };
   }
 
-  function makeService(opts: { projects?: unknown[]; budgets?: unknown[]; rollups?: Map<string, unknown> } = {}) {
+  function makeService(opts: { projects?: unknown[]; budgets?: unknown[]; rollups?: Map<string, unknown>; prisma?: Record<string, unknown> } = {}) {
     const cache = { wrap: async (_k: string, _t: number, fn: () => Promise<unknown>) => fn() };
-    const prisma = makePrisma(opts);
+    const prisma = { ...makePrisma(opts), ...(opts.prisma ?? {}) };
     const executive = { executive: async () => ({ projects: { total: 0, byStatus: {}, totalContractValue: 0, totalAdvance: 0 }, finance: { totalBudget: 0, postedVendorInvoice: 0, postedClientInvoice: 0, cashIn: 0, cashOut: 0 }, operational: { openClaims: 0, openNcrs: 0, openIncidents: 0, overduePm: 0, openPunchItems: 0 }, generatedAt: new Date().toISOString() }) };
     const financial = {
       cashFlow: async () => ({ series: [], totalCashIn: 0, totalCashOut: 0, netCash: 0, generatedAt: new Date().toISOString() }),
@@ -213,5 +215,30 @@ describe('ControlTowerService (shape)', () => {
     expect(out.projects[0]!.hasEvm).toBe(true);
     expect(out.projects[0]!.cpi).toBeCloseTo(0.82, 2);
     expect(out.projects[0]!.spi).toBeCloseTo(0.91, 2);
+  });
+
+  it('returns a valid inventory block (zeros, not null)', async () => {
+    const out = await makeService().controlTower({});
+    expect(out.operations.inventory).toEqual({
+      stockValue: 0,
+      warehouseCount: 0,
+      negativeBalanceCount: 0,
+      movementInValue: 0,
+      movementOutValue: 0,
+    });
+  });
+
+  it('counts a warehouse whose running balance went negative', async () => {
+    const out = await makeService({
+      prisma: {
+        warehouse: { count: async () => 1, findMany: async () => [] },
+        stockLedgerEntry: {
+          groupBy: async () => [],
+          findMany: async (args: { where?: { balanceAfter?: unknown } }) =>
+            args?.where?.balanceAfter ? [{ warehouseId: 'w1' }] : [{ totalValue: 100 }],
+        },
+      },
+    }).controlTower({});
+    expect(out.operations.inventory.negativeBalanceCount).toBe(1);
   });
 });

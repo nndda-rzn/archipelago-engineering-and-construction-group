@@ -119,6 +119,7 @@ export class ControlTowerService {
         hcm,
         governance,
         commercial,
+        inventory,
       ] = await Promise.all([
         this.loadPendingApprovals(now),
         this.loadOverdueNcrs(now, projectWhere),
@@ -130,6 +131,7 @@ export class ControlTowerService {
         this.loadHcm(now, projectWhere),
         this.loadGovernance(projectWhere),
         this.loadCommercial(now, dateWhere),
+        this.loadInventory(projectWhere, dateWhere),
       ]);
 
       const exceptions = rankExceptions([...pendingApprovals, ...overdueNcrs, ...openIncidents, ...overdueCas, ...bgExpiring]);
@@ -171,6 +173,7 @@ export class ControlTowerService {
           safety: hcm.safety,
           quality: hcm.quality,
           hcm: hcm.hcm,
+          inventory,
         },
         governance,
         commercial,
@@ -552,6 +555,43 @@ export class ControlTowerService {
       if (count > 0) riskMatrix.push({ likelihood: l, impact: i, count });
     }
     return { openRisks, highRisks, overdueAuditFindings: overdueAudit, openLegalCases: openLegal, riskMatrix };
+  }
+
+  /**
+   * Ringkasan inventory: nilai stok, jumlah gudang, dan mutasi masuk/keluar.
+   * `negativeBalanceCount` = jumlah gudang (unik) yang punya minimal satu baris
+   * ledger dengan `balanceAfter < 0` — sinyal data-error nyata, bukan nol palsu.
+   * Selalu mengembalikan angka (0), tidak pernah null.
+   */
+  private async loadInventory(projectWhere: Record<string, unknown>, dateWhere?: { gte?: Date; lte?: Date }) {
+    const ledgerWhere = { ...projectWhere, ...(dateWhere ? { createdAt: dateWhere } : {}) };
+    const [warehouseCount, movementGroups, allMovements, negativeRows] = await Promise.all([
+      this.prisma.warehouse.count({ where: projectWhere }),
+      this.prisma.stockLedgerEntry.groupBy({
+        by: ['movementType'],
+        where: ledgerWhere,
+        _sum: { totalValue: true },
+      }),
+      this.prisma.stockLedgerEntry.findMany({
+        where: ledgerWhere,
+        select: { totalValue: true },
+      }),
+      this.prisma.stockLedgerEntry.findMany({
+        where: { ...ledgerWhere, balanceAfter: { lt: 0 } },
+        select: { warehouseId: true },
+      }),
+    ]);
+    const sumFor = (type: string) =>
+      Math.abs(Number(movementGroups.find((g) => g.movementType === type)?._sum?.totalValue ?? 0));
+    const stockValue = allMovements.reduce((s, m) => s + Math.abs(Number(m.totalValue ?? 0)), 0);
+    const negativeBalanceCount = new Set(negativeRows.map((r) => r.warehouseId)).size;
+    return {
+      stockValue: Math.round(stockValue * 100) / 100,
+      warehouseCount,
+      negativeBalanceCount,
+      movementInValue: sumFor('IN'),
+      movementOutValue: sumFor('OUT'),
+    };
   }
 
   private async loadCommercial(now: Date, dateWhere?: { gte?: Date; lte?: Date }) {
