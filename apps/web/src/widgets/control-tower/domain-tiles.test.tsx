@@ -44,11 +44,24 @@ describe('DomainTiles', () => {
       expect(screen.getByRole('heading', { name })).toBeTruthy();
   });
 
-  it('pairs each visual with an adjacent text value', () => {
+  it('pairs each tile visual with an adjacent text value (per-tile check)', () => {
     const { container } = render(<DomainTiles data={sampleTower} />);
-    // Setiap tile punya minimal satu visual role="img" dan satu nilai angka teks.
-    expect(container.querySelectorAll('[role="img"]').length).toBeGreaterThanOrEqual(10);
-    expect(screen.getAllByText(/Rp/).length).toBeGreaterThan(0);
+    // Setiap tile harus punya >=1 visual role="img" DAN >=1 nilai teks numerik,
+    // diperiksa per-tile (bukan hanya total halaman) agar satu tile tanpa nilai
+    // tidak lolos. Sebagian tile punya 2 visual (mis. Liquidity) — ok.
+    const tiles = Array.from(container.querySelectorAll('h3')).map((h) => h.parentElement!);
+    expect(tiles.length).toBe(10);
+    for (const tile of tiles) {
+      expect(tile.querySelectorAll('[role="img"]').length).toBeGreaterThanOrEqual(1);
+      const numeric = Array.from(tile.querySelectorAll('dd')).some((dd) => /\d/.test(dd.textContent ?? ''));
+      expect(numeric).toBe(true);
+    }
+  });
+
+  it('renders a neutral empty state when BG utilisation is missing (no fake 0%)', () => {
+    render(<DomainTiles data={{ ...sampleTower, treasury: { ...sampleTower.treasury, bgUtilisationPct: null } }} />);
+    expect(screen.getByText('No BG utilisation data.')).toBeTruthy();
+    expect(screen.queryByText('0%')).toBeNull();
   });
 
   it('keeps tile headings normal-case (no uppercase eyebrow class)', () => {

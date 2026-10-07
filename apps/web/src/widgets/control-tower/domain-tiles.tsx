@@ -6,7 +6,6 @@ import {
   MiniStackedBar,
   RiskHeatmap,
   SectionBand,
-  Sparkline,
   StackedBar,
   StageBars,
   type StackedSegment,
@@ -65,7 +64,7 @@ function Tile({
   );
 }
 
-/** Runway kas (bulan) dari kas di tangan dan arus kas neto periode. */
+/** Runway kas (bulan) — hanya bermakna bila arus kas neto negatif. */
 function runwayLabel(cashOnHand: number, netCashFlow: number): string {
   if (netCashFlow >= 0) return 'net positive';
   const months = cashOnHand / Math.abs(netCashFlow);
@@ -79,8 +78,11 @@ function runwayLabel(cashOnHand: number, netCashFlow: number): string {
  * Setiap visual selalu disertai nilai teks (dapat dibaca tanpa warna).
  */
 export function DomainTiles({ data }: { data: ControlTower }) {
-  // ── 1. Liquidity — diverging AR ◀▶ AP (proxy AP = nilai PO terbuka) + runway.
-  const apOpenPo = data.operations.procurement.openPoValue;
+  // ── 1. Liquidity — komitmen PO terbuka ◀▶ AR lewat jatuh tempo + runway.
+  // Catatan kejujuran: payload tidak punya saldo AP sebenarnya; sisi kiri
+  // memakai **komitmen PO terbuka** (bukan hutang usaha) dan diberi label apa
+  // adanya. Sisi kanan = AR overdue 61+ (bucket non-current).
+  const openPoCommitment = data.operations.procurement.openPoValue;
   const arOverdue = kpiValue(data, 'arOverdue');
   const dso = kpiValue(data, 'dso');
   const netCashFlow = kpiValue(data, 'netCashFlow');
@@ -115,11 +117,11 @@ export function DomainTiles({ data }: { data: ControlTower }) {
     { value: nonCriticalNcrs, tone: 'neutral-mid', label: 'Other NCR' },
   ];
 
-  // ── 5. Procurement — bullet pangsa PO terbuka + hitungan PR/RFQ.
+  // ── 5. Procurement — bullet PO terbuka vs total dokumen terbuka (rasio eksplisit).
   const procurement = data.operations.procurement;
   const procurementLoad = procurement.openPoCount + procurement.pendingPrCount + procurement.rfqDueCount;
 
-  // ── 6. HCM — sparkline manpower vs karyawan aktif + hitungan.
+  // ── 6. HCM — perbandingan dua skalar (bukan tren; payload tanpa seri waktu).
   const hcm = data.operations.hcm;
 
   // ── 7. Inventory — mini stacked mutasi masuk/keluar + saldo + anomali.
@@ -127,7 +129,7 @@ export function DomainTiles({ data }: { data: ControlTower }) {
 
   // ── 10. Treasury — bullet utilisasi BG + FX/close.
   const treasury = data.treasury;
-  const bgUtilisation = treasury.bgUtilisationPct ?? 0;
+  const hasBgUtilisation = treasury.bgUtilisationPct != null;
 
   return (
     <SectionBand name="Domain tiles" count="10 domains" right={<span>Liquidity · Delivery · Ops · Governance</span>}>
@@ -135,15 +137,16 @@ export function DomainTiles({ data }: { data: ControlTower }) {
         {/* 1 — Liquidity */}
         <Tile title="Liquidity" className="sm:col-span-2">
           <DivergingBar
-            left={apOpenPo}
+            left={openPoCommitment}
             right={arOverdue}
-            leftLabel="AP · open PO"
-            rightLabel="AR · overdue 61+"
+            leftLabel="Open PO commitment"
+            rightLabel="AR overdue 61+"
             format={formatIdr}
           />
+          <p className="text-caption text-neutral-500">Open PO commitment ◀▶ AR overdue 61+</p>
           <dl className="space-y-1.5">
-            <Value label="AP · open PO" value={formatIdr(apOpenPo)} tone="warning" />
-            <Value label="AR · overdue 61+" value={formatIdr(arOverdue)} tone="negative" />
+            <Value label="Open PO commitment" value={formatIdr(openPoCommitment)} tone="warning" />
+            <Value label="AR overdue 61+" value={formatIdr(arOverdue)} tone="negative" />
             <Value label="DSO" value={`${Math.round(dso)} d`} />
             <Value label="Runway" value={runway} />
           </dl>
@@ -191,9 +194,10 @@ export function DomainTiles({ data }: { data: ControlTower }) {
           <BulletBar
             value={procurement.openPoCount}
             max={procurementLoad}
-            label="Open PO share"
+            label="Open PO vs total open procurement docs"
             tone="brand"
           />
+          <p className="text-caption text-neutral-500">Open PO vs all open procurement documents</p>
           <dl className="space-y-1.5">
             <Value label="Open PO value" value={formatIdr(procurement.openPoValue)} />
             <Value label="Open PO" value={String(procurement.openPoCount)} />
@@ -204,10 +208,12 @@ export function DomainTiles({ data }: { data: ControlTower }) {
 
         {/* 6 — HCM */}
         <Tile title="HCM">
-          <Sparkline
-            values={[hcm.activeEmployees, hcm.manpowerToday]}
+          <MiniStackedBar
+            primary={hcm.manpowerToday}
+            secondary={hcm.activeEmployees}
             label="Manpower today vs active employees"
           />
+          <p className="text-caption text-neutral-500">Manpower today vs active employees</p>
           <dl className="space-y-1.5">
             <Value label="Manpower today" value={hcm.manpowerToday.toLocaleString('id-ID')} />
             <Value label="Active employees" value={String(hcm.activeEmployees)} />
@@ -256,10 +262,14 @@ export function DomainTiles({ data }: { data: ControlTower }) {
 
         {/* 9 — Commercial */}
         <Tile title="Commercial" className="sm:col-span-2">
-          <StageBars
-            stages={data.commercial.funnel.map((f) => ({ stage: f.stage, count: f.count, value: f.value }))}
-            format={formatIdr}
-          />
+          {data.commercial.funnel.length > 0 ? (
+            <StageBars
+              stages={data.commercial.funnel.map((f) => ({ stage: f.stage, count: f.count, value: f.value }))}
+              format={formatIdr}
+            />
+          ) : (
+            <p className="text-body-sm text-neutral-500">No pipeline stages.</p>
+          )}
           <dl className="space-y-1.5">
             <Value label="Pipeline" value={formatIdr(data.commercial.pipelineValue)} />
             <Value
@@ -272,13 +282,24 @@ export function DomainTiles({ data }: { data: ControlTower }) {
 
         {/* 10 — Treasury */}
         <Tile title="Treasury">
-          <BulletBar
-            value={bgUtilisation}
-            max={100}
-            label="BG utilisation vs 100%"
-            tone={bgUtilisation > 90 ? 'warning' : 'neutral'}
-          />
+          {hasBgUtilisation ? (
+            <>
+              <BulletBar
+                value={treasury.bgUtilisationPct!}
+                max={100}
+                label="BG utilisation vs 100%"
+                tone={treasury.bgUtilisationPct! > 90 ? 'warning' : 'neutral'}
+              />
+              <p className="text-caption text-neutral-500">BG utilisation</p>
+            </>
+          ) : (
+            <p className="text-caption text-neutral-500">No BG utilisation data.</p>
+          )}
           <dl className="space-y-1.5">
+            <Value
+              label="BG utilisation"
+              value={hasBgUtilisation ? `${treasury.bgUtilisationPct}%` : '—'}
+            />
             <Value
               label="BG expiring · 30d"
               value={`${treasury.bgExpiringCount} · ${formatIdr(treasury.bgExpiringValue)}`}
