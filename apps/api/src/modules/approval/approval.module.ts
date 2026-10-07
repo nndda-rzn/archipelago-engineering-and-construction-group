@@ -10,10 +10,11 @@ import { WorkflowQueryService } from './application/services/shared/workflow-que
 import { ApprovalDetailService } from './application/services/approval-detail.service';
 import { ApprovalQueueService } from './application/services/approval-queue.service';
 import { ApprovalWorkflowEngine } from './application/services/approval-workflow-engine.service';
+import { WorkflowStepService } from './application/services/workflow-step.service';
 
 @Module({
   imports: [SharedModule],
   controllers: [ApprovalController],
-  providers: [ConditionEvaluator, RoleAssignmentLookup, WorkflowQueryService, ApprovalDetailService, ApprovalQueueService, ApprovalWorkflowEngine, ApprovalTaskService, WorkflowDefinitionService, WorkflowInsightsService],
+  providers: [ConditionEvaluator, RoleAssignmentLookup, WorkflowQueryService, ApprovalDetailService, ApprovalQueueService, ApprovalWorkflowEngine, WorkflowStepService, ApprovalTaskService, WorkflowDefinitionService, WorkflowInsightsService],
 })
 export class ApprovalModule {}
