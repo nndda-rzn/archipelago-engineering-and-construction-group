@@ -49,13 +49,14 @@ export function PortfolioScatter({ projects }: PortfolioScatterProps) {
           </ScatterChart>
         </ResponsiveContainer>
       </div>
-      {/* Padanan non-warna: nilai tiap titik sebagai teks. */}
-      <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+      {/* Padanan non-warna: nilai tiap titik sebagai teks. Grid kolom tetap agar
+          tidak menyisakan ruang kosong di kanan seperti `flex-wrap`. */}
+      <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
         {points.map((p) => (
-          <li key={p.projectId} className="flex items-center gap-1.5 text-caption text-neutral-600">
-            <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: HEALTH_COLORS[p.health] }} aria-hidden="true" />
-            <span className="font-mono">{p.projectCode}</span>
-            <span className="font-mono tabular-nums text-neutral-500">
+          <li key={p.projectId} className="flex min-w-0 items-center gap-1.5 text-caption text-neutral-600">
+            <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: HEALTH_COLORS[p.health] }} aria-hidden="true" />
+            <span className="truncate font-mono">{p.projectCode}</span>
+            <span className="ml-auto shrink-0 font-mono tabular-nums text-neutral-500">
               {p.cpi.toFixed(2)} / {p.spi.toFixed(2)}
             </span>
           </li>

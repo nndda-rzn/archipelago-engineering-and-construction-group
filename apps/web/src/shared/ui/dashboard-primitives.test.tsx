@@ -155,4 +155,32 @@ describe('ExceptionQueue', () => {
     expect(links).toHaveLength(3);
     expect(links[0]?.getAttribute('href')).toBe('/approvals');
   });
+
+  it('caps the list height with internal scroll so a long list cannot stretch the row', () => {
+    const many = Array.from({ length: 40 }).map((_, i) => ({
+      key: `k${i}`,
+      severity: 'HIGH' as const,
+      type: 'Approval SLA',
+      documentCode: `PO-${i}`,
+      domain: 'Procurement',
+      ageDays: i,
+      slaDays: 7,
+      overdue: true,
+      to: '/approvals',
+    }));
+    const { container } = render(<ExceptionQueue items={many} />);
+    const list = container.querySelector('ul')!;
+    expect(list.className).toContain('max-h-');
+    expect(list.className).toContain('overflow-y-auto');
+    // Semua item tetap dirender (scroll, bukan dipotong).
+    expect(container.querySelectorAll('li')).toHaveLength(40);
+  });
+
+  it('renders document and domain on their own line (no cramped fixed columns)', () => {
+    const { container } = render(<ExceptionQueue items={[items[1]!]} />);
+    // Baris tidak lagi memakai grid kolom-kaku yang menyusutkan kolom teks.
+    expect(container.querySelector('.grid-cols-\\[56px_1fr_80px_38px\\]')).toBeNull();
+    expect(screen.getByText('NCR-1')).toBeTruthy();
+    expect(screen.getByText('Quality')).toBeTruthy();
+  });
 });

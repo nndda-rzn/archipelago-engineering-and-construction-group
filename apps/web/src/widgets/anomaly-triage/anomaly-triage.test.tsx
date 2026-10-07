@@ -29,4 +29,27 @@ describe('AnomalyTriageView', () => {
     expect(screen.getByLabelText('Loading anomalies')).toBeTruthy();
     expect(screen.queryByText(/loading/i)).toBeNull();
   });
+
+  it('keeps HIGH anomalies visible and collapses MEDIUM/LOW', () => {
+    const anomalies = [
+      { type: 'NCR overdue', severity: 'HIGH' as const, message: 'high one' },
+      { type: 'Incident open', severity: 'MEDIUM' as const, message: 'medium one' },
+      { type: 'Claim DRAFT', severity: 'LOW' as const, message: 'low one' },
+    ];
+    render(<AnomalyTriageView anomalies={anomalies} />);
+    expect(screen.getByText('high one')).toBeTruthy();
+    expect(screen.getAllByRole('button').length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText('medium one')).toBeNull();
+    expect(screen.queryByText('low one')).toBeNull();
+  });
+
+  it('caps the always-open HIGH group with a "+N more" line', () => {
+    const anomalies = Array.from({ length: 11 }).map((_, i) => ({
+      type: 'NCR overdue',
+      severity: 'HIGH' as const,
+      message: `high ${i}`,
+    }));
+    render(<AnomalyTriageView anomalies={anomalies} total={11} />);
+    expect(screen.getByText('+3 more high-severity anomalies')).toBeTruthy();
+  });
 });
