@@ -114,10 +114,17 @@
   --financial-negative-500: #ef4444;
   --financial-negative-600: #dc2626;
   --financial-negative-700: #b91c1c;
+
+  /* Surface layering (FR-DASH-006) — cermin token `surface.*` di tailwind preset.
+   * Hanya dipakai di file ini (body background). Komponen memakai utility class
+   * `bg-surface-*`, bukan var(). */
+  --surface-canvas: #f4f4f5;
+  --surface-raised: #ffffff;
+  --surface-sunken: #fafafa;
 }
 
 body {
-  background-color: var(--neutral-50);
+  background-color: var(--surface-canvas);
   color: var(--neutral-900);
   font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
   font-size: 14px;
