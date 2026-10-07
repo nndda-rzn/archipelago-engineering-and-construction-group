@@ -15,8 +15,12 @@ export {
 export { Button, buttonVariants, type ButtonProps } from './primitives/button';
 export { Input, type InputProps } from './primitives/input';
 export { Badge, type BadgeProps, type BadgeVariant } from './primitives/badge';
-export { Card, CardHeader, CardTitle } from './primitives/card';
+export { Card, CardHeader, CardTitle, type CardProps, type CardVariant } from './primitives/card';
 export { StatCard, type StatCardProps } from './primitives/stat-card';
+export { StatTile, type StatTileProps } from './primitives/stat-tile';
+export { MiniStat, type MiniStatProps } from './primitives/mini-stat';
+export { SectionBand, type SectionBandProps } from './primitives/section-band';
+export { StatusPill, type StatusPillProps, type StatusTone } from './primitives/status-pill';
 export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } from './primitives/segmented-control';
 export { SignalChip, type SignalChipProps, type SignalSeverity } from './primitives/signal-chip';
 export { BulletBar, MiniStackedBar, type BulletBarProps, type MiniStackedBarProps, type BarTone } from './primitives/data-bar';
@@ -36,6 +40,7 @@ export { Select, SelectGroup, SelectValue, SelectTrigger, SelectContent, SelectI
 export { ToastProvider, ToastPrimitive, useToast } from './primitives/toast';
 export { Skeleton, TableSkeleton, KpiSkeleton, ChartSkeleton, ListSkeleton } from './primitives/skeleton';
 export { EmptyState, ErrorState, GridState } from './enterprise/state';
+export { ExceptionQueue, severityBreakdown, type ExceptionQueueProps, type ExceptionItem, type ExceptionSeverity } from './enterprise/exception-queue';
 export { EmptyCell } from './enterprise/empty-cell';
 export { StatusBadge, statusMeta } from './enterprise/status-badge';
 export { EntitySelect, type EntitySelectOption } from './enterprise/entity-select';
