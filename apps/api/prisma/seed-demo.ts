@@ -455,17 +455,17 @@ async function seedPortfolio() {
   // ── C. 11 proyek tambahan ──
   // `profile`: healthy = di bawah anggaran (CPI>1); overrun = over (CPI<1); nobudget = tanpa ControlAccount.
   const projects = [
-    { code: 'PRJ-EPC-2027-020', name: 'Jetty Extension Phase 2', entity: 'AEC-MAR', bu: 'MARINE', loc: 'Surabaya', ccy: 'IDR', value: 1_850_000_000_000, profile: 'healthy' },
-    { code: 'PRJ-EPC-2027-021', name: 'Dredging & Reclamation', entity: 'AEC-MAR', bu: 'MARINE', loc: 'Makassar', ccy: 'IDR', value: 960_000_000_000, profile: 'overrun' },
-    { code: 'PRJ-EPC-2027-022', name: 'Offshore Platform Fabrication', entity: 'AEC-MAR', bu: 'MARINE', loc: 'Batam', ccy: 'USD', value: 240_000_000, profile: 'healthy' },
-    { code: 'PRJ-EPC-2027-023', name: 'PLTU Unit 3 Balance of Plant', entity: 'AEC-PWR', bu: 'POWER', loc: 'Cirebon', ccy: 'IDR', value: 3_100_000_000_000, profile: 'overrun' },
-    { code: 'PRJ-EPC-2027-024', name: 'Gas Turbine Installation', entity: 'AEC-PWR', bu: 'POWER', loc: 'Gresik', ccy: 'USD', value: 310_000_000, profile: 'healthy' },
-    { code: 'PRJ-EPC-2027-025', name: 'Substation EPC 150kV', entity: 'AEC-PWR', bu: 'POWER', loc: 'Bekasi', ccy: 'IDR', value: 780_000_000_000, profile: 'overrun' },
-    { code: 'PRJ-EPC-2027-026', name: 'Transmission Line 70km', entity: 'AEC-PWR', bu: 'POWER', loc: 'Sumatra', ccy: 'IDR', value: 1_240_000_000_000, profile: 'healthy' },
-    { code: 'PRJ-EPC-2027-027', name: 'Refinery Revamp', entity: 'AEC-CON', bu: 'PROCESS', loc: 'Balikpapan', ccy: 'IDR', value: 2_450_000_000_000, profile: 'healthy' },
-    { code: 'PRJ-EPC-2027-028', name: 'Tank Farm Expansion', entity: 'AEC-CON', bu: 'PROCESS', loc: 'Tuban', ccy: 'IDR', value: 640_000_000_000, profile: 'overrun' },
-    { code: 'PRJ-EPC-2027-029', name: 'Early Works — Site Prep', entity: 'AEC-CON', bu: 'PROCESS', loc: 'Kalimantan', ccy: 'IDR', value: 120_000_000_000, profile: 'nobudget' },
-    { code: 'PRJ-EPC-2027-030', name: 'Feasibility & Basic Eng.', entity: 'AEC-CON', bu: 'PROCESS', loc: 'Jakarta', ccy: 'IDR', value: 45_000_000_000, profile: 'nobudget' },
+    { code: 'PRJ-EPC-2027-020', name: 'Jetty Extension Phase 2', entity: 'AEC-MAR', bu: 'MARINE', loc: 'Surabaya', ccy: 'IDR', value: 1_850_000_000_000, profile: 'healthy', status: 'ACTIVE' },
+    { code: 'PRJ-EPC-2027-021', name: 'Dredging & Reclamation', entity: 'AEC-MAR', bu: 'MARINE', loc: 'Makassar', ccy: 'IDR', value: 960_000_000_000, profile: 'overrun', status: 'ACTIVE' },
+    { code: 'PRJ-EPC-2027-022', name: 'Offshore Platform Fabrication', entity: 'AEC-MAR', bu: 'MARINE', loc: 'Batam', ccy: 'USD', value: 240_000_000, profile: 'healthy', status: 'ACTIVE' },
+    { code: 'PRJ-EPC-2027-023', name: 'PLTU Unit 3 Balance of Plant', entity: 'AEC-PWR', bu: 'POWER', loc: 'Cirebon', ccy: 'IDR', value: 3_100_000_000_000, profile: 'overrun', status: 'ACTIVE' },
+    { code: 'PRJ-EPC-2027-024', name: 'Gas Turbine Installation', entity: 'AEC-PWR', bu: 'POWER', loc: 'Gresik', ccy: 'USD', value: 310_000_000, profile: 'healthy', status: 'ON_HOLD' },
+    { code: 'PRJ-EPC-2027-025', name: 'Substation EPC 150kV', entity: 'AEC-PWR', bu: 'POWER', loc: 'Bekasi', ccy: 'IDR', value: 780_000_000_000, profile: 'overrun', status: 'ACTIVE' },
+    { code: 'PRJ-EPC-2027-026', name: 'Transmission Line 70km', entity: 'AEC-PWR', bu: 'POWER', loc: 'Sumatra', ccy: 'IDR', value: 1_240_000_000_000, profile: 'healthy', status: 'ACTIVE' },
+    { code: 'PRJ-EPC-2027-027', name: 'Refinery Revamp', entity: 'AEC-CON', bu: 'PROCESS', loc: 'Balikpapan', ccy: 'IDR', value: 2_450_000_000_000, profile: 'healthy', status: 'ACTIVE' },
+    { code: 'PRJ-EPC-2027-028', name: 'Tank Farm Expansion', entity: 'AEC-CON', bu: 'PROCESS', loc: 'Tuban', ccy: 'IDR', value: 640_000_000_000, profile: 'overrun', status: 'COMPLETED' },
+    { code: 'PRJ-EPC-2027-029', name: 'Early Works — Site Prep', entity: 'AEC-CON', bu: 'PROCESS', loc: 'Kalimantan', ccy: 'IDR', value: 120_000_000_000, profile: 'nobudget', status: 'PLANNING' },
+    { code: 'PRJ-EPC-2027-030', name: 'Feasibility & Basic Eng.', entity: 'AEC-CON', bu: 'PROCESS', loc: 'Jakarta', ccy: 'IDR', value: 45_000_000_000, profile: 'nobudget', status: 'PLANNING' },
   ] as const;
 
   const createdProjectIds: { id: string; profile: string; code: string }[] = [];
@@ -477,7 +477,7 @@ async function seedPortfolio() {
       data: {
         code: p.code, name: p.name, client: clientRows[0]!.name, legalEntityId, businessUnit: p.bu, location: p.loc,
         currency: p.ccy, contractValue: p.value, advanceAmount: Math.round(p.value * 0.1), advanceRecoveryRate: 10,
-        status: 'ACTIVE', director: 'Ir. Demo', manager: 'PM Demo',
+        status: p.status, director: 'Ir. Demo', manager: 'PM Demo',
       },
     }));
     createdProjectIds.push({ id: project.id, profile: p.profile, code: p.code });
@@ -502,25 +502,26 @@ async function seedPortfolio() {
       }
     }
 
-    if (p.profile === 'nobudget') continue;
-
     // Magnitudo EVM diselaraskan agar rasio realistis:
     //   BAC  = Σ budget PUBLISHED  = p.value
     //   PV   = BAC × planned%      (ControlAccount.plannedValue)
     //   EV   = BAC × physical%     (WorkPackageProgress)
     //   AC   = dibaca ActualCostCalculator dari ledger OUT → diset = EV / CPI target
+    // Proyek `nobudget` melewati blok budget/CA/EVM, tetapi tetap punya gudang,
+    // ledger, NCR, dan insiden (agar tiap domain terwakili di semua proyek).
+    const isNobudget = p.profile === 'nobudget';
     const bac = p.value;
     const plannedProgress = 60;
     const physicalProgress = p.profile === 'healthy' ? 62 : 38; // sehat sedikit di depan; overrun tertinggal
     const cpiTarget = p.profile === 'healthy' ? 1.1 : 0.85;
     const ev = bac * (physicalProgress / 100);
-    const ac = ev / cpiTarget;
+    const ac = isNobudget ? 0 : ev / cpiTarget;
     const pv = bac * (plannedProgress / 100);
 
-    // ControlAccount (PV baseline) + WorkPackage + progress fisik.
+    // ControlAccount (PV baseline) + WorkPackage + progress fisik — hanya bila ber-budget.
     const firstWbs = await prisma.wbsItem.findFirst({ where: { projectId: project.id, code: '3' } });
     const wbsForCa = firstWbs ?? (await prisma.wbsItem.findFirst({ where: { projectId: project.id } }));
-    if (wbsForCa) {
+    if (!isNobudget && wbsForCa) {
       const caCode = `CA-${p.code.slice(-3)}`;
       const existingCa = await prisma.controlAccount.findUnique({ where: { projectId_code: { projectId: project.id, code: caCode } } });
       if (!existingCa) {
@@ -535,7 +536,7 @@ async function seedPortfolio() {
         data: { wpNumber, projectId: project.id, wbsItemId: wbsForCa.id, title: `${p.name} — Construction`, plannedQty: 1000, unit: 'EA', status: 'IN_PROGRESS' },
       });
     }
-    if (wp) {
+    if (wp && !isNobudget) {
       const hasProgress = await prisma.workPackageProgress.findFirst({ where: { workPackageId: wp.id } });
       if (!hasProgress) {
         await prisma.workPackageProgress.create({ data: { workPackageId: wp.id, physicalProgress, achievedQty: physicalProgress * 10, measuredBy: 'Surveyor Demo' } });
@@ -552,7 +553,7 @@ async function seedPortfolio() {
     }
     const invNumber = `INV-${p.code.slice(-3)}-900001`;
     const existingInv = await prisma.vendorInvoice.findUnique({ where: { invoiceNumber: invNumber } });
-    if (!existingInv) {
+    if (!existingInv && !isNobudget) {
       await prisma.vendorInvoice.create({
         data: { invoiceNumber: invNumber, poId: po.id, projectId: project.id, vendor: 'PT Baja Utama', vendorInvoiceNo: invNumber, invoiceDate: new Date(`${year}-04-15`), currency: p.ccy, amount: ac, taxAmount: ac * 0.11, totalAmount: ac * 1.11, status: 'POSTED', postedAt: new Date(`${year}-04-16`), postedBy: 'admin@aec.local' },
       });
@@ -569,8 +570,8 @@ async function seedPortfolio() {
     });
     const existingLedger = await prisma.stockLedgerEntry.findFirst({ where: { projectId: project.id, reference: `SEED-${whCode}` } });
     if (!existingLedger) {
-      const outValue = ac;
-      const inValue = ac * 1.25;
+      const outValue = isNobudget ? p.value * 0.02 : ac;
+      const inValue = outValue * 1.25;
       await prisma.stockLedgerEntry.create({ data: { projectId: project.id, warehouseId: wh.id, documentType: 'GR', reference: `SEED-${whCode}`, description: 'Penerimaan material (seed)', movementType: 'IN', quantity: 1000, unitPrice: inValue / 1000, totalValue: inValue, balanceAfter: 1000 } });
       await prisma.stockLedgerEntry.create({ data: { projectId: project.id, warehouseId: wh.id, documentType: 'ISSUE', reference: `SEED-${whCode}`, description: 'Pemakaian material (seed)', movementType: 'OUT', quantity: 600, unitPrice: outValue / 600, totalValue: outValue, balanceAfter: 400 } });
       if (p.profile === 'overrun') {
