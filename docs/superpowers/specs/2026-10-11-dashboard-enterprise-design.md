@@ -21,8 +21,9 @@ Temuan yang membentuk spec ini (semua berbukti kode):
 | 3 | **Seed hanya 1 proyek** → portfolio/ledger/scatter/ranking degenerasi | `seed-demo.ts` (satu `PRJ`, 4.8T) |
 | 4 | Seed **tanpa `ControlAccount`** → `hasEvm=false` di mana-mana | tidak ada `controlAccount.create` di `seed-demo.ts` |
 | 5 | Seed **tanpa `Opportunity`** → `commercial.funnel` kosong | tidak ada `opportunity.create` |
-| 6 | **`operations.hcm`** di-query tapi tidak dirender | `control-tower.service.ts:522-529` vs `control-tower.tsx` |
-| 7 | **`governance.riskMatrix`** di-query tapi tidak dirender | `control-tower.service.ts:538` |
+| 6 | **`operations.hcm`** ada di payload tapi tidak dirender UI | `control-tower.service.ts:522-529` (payload) vs `control-tower.tsx` (tidak menyentuhnya) |
+| 7 | **`governance.riskMatrix`** ada di payload tapi tidak dirender UI | `control-tower.service.ts:545-550`; test `control-tower.service.spec.ts:170` |
+| 7b | **`commercial.funnel`** ada di payload tapi tidak dirender UI | `control-tower.service.ts:561-565`; test `:171` |
 | 8 | **7 angka tampil dua kali** (AR, DSO, FX, NCR, cash, net cash, insiden) | T2↔T4, T4↔T6, T4↔T7 |
 | 9 | **T4/T6 = 7 kartu setara** → hierarki datar (anti-pola `no-slop-ui`) | `control-tower.tsx:146-187, 214-241` |
 | 10 | Tabel portofolio tanpa drill-through keyboard | `control-tower.tsx:262` (`<table>` tulis-tangan) |
@@ -121,9 +122,8 @@ Seed harus **idempoten** (upsert/rekonsiliasi, tidak menggandakan) seperti pola 
 - **Hitung EVM nyata.** Buang hardcode `cpi:null/spi:null/hasEvm:false` (`:294-296`);
   **reuse `PortfolioEvmService.portfolioEvm(filter)`** untuk mengisi `cpi/spi/hasEvm` per proyek
   di `loadPortfolio()`.
-- **Ekspos blok yang sudah di-query tapi dibuang** ke payload `ControlTower`:
-  `operations.hcm`, `governance.riskMatrix`, `commercial.funnel` (+ `openOpportunities`,
-  `wonValue`, `lostValue`), `treasury.fxExposureByCurrency`.
+- **Tidak perlu mengekspos HCM/riskMatrix/funnel** — ketiganya **sudah** ada di payload
+  (`control-tower.service.ts:522-529, 545-550, 561-565`). Yang kurang hanya **rendering di UI**.
 - **Tambah blok `operations.inventory`** (baru): `stockValue` (Σ `totalValue` pergerakan),
   `warehouseCount`, `negativeBalanceCount`, `movementInValue` / `movementOutValue`
   (dari `StockLedgerEntry` dalam periode). Filter mengikuti `legalEntityId` via `project`.
@@ -132,8 +132,9 @@ Seed harus **idempoten** (upsert/rekonsiliasi, tidak menggandakan) seperti pola 
 ### 5.3 Kontrak — `packages/api-contracts/src/analytics.ts`
 
 - `ControlTowerProject`: `cpi/spi/hasEvm` sudah ada → kini **terisi nyata**.
-- Tambah ke `controlTowerSchema` field yang hilang (mis. `commercial.funnel` sudah ada di skema;
-  pastikan `governance.riskMatrix` & `operations.hcm` benar-benar dikirim).
+- Tambah **`operations.inventory`** ke `controlTowerOperationsSchema` (baru).
+- `governance.riskMatrix`, `commercial.funnel`, `operations.hcm` **sudah** ada di skema —
+  tidak diubah.
 - Semua perubahan **aditif** — konsumen lama tidak rusak.
 
 ---
