@@ -34,6 +34,7 @@ model LegalEntity {
   employees        Employee[]
   equipment        Equipment[]
   legalCases       LegalCase[]
+  kpiTargets       KpiTarget[]
   bankAccounts     BankAccount[]
   paymentProposals PaymentProposal[]
   bankGuarantees   BankGuarantee[]
@@ -630,6 +631,10 @@ model ApprovalTask {
   approverRoleCode String // role yang boleh approve (mis. "PROCUREMENT_MANAGER")
   comment          String?
   decidedAt        DateTime?
+  // FR-DASH-002: batas waktu (SLA) sebuah approval. Nullable — task lama dan
+  // definisi tanpa SLA tidak punya tenggat; dashboard menghitung umur dari
+  // `createdAt` bila kolom ini null, jadi tidak ada data yang "hilang".
+  dueAt            DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -647,6 +652,7 @@ model ApprovalTask {
   @@index([approverRoleCode])
   @@index([transactionType, transactionId])
   @@index([definitionId])
+  @@index([status, dueAt])
 }
 
 // FR-INV-006: Stock Adjustment — wajib approval + reason code
@@ -2413,7 +2419,7 @@ model ExchangeRate {
   @@index([effectiveDate])
 }
 
-// FR-FND-008: Audit Trail (PRD §28) — immutable audit record
+// FR-FND-008: Audit Trail (PRD §28) - immutable audit record
 model AuditLog {
   id            String   @id @default(cuid())
   userId        String
@@ -2431,4 +2437,25 @@ model AuditLog {
   @@index([action])
   @@index([userId])
   @@index([createdAt])
+}
+
+// FR-DASH-001: Target KPI per entitas & periode — tulang punggung "vs target" di
+// dashboard Control Tower. Tanpa tabel ini tidak ada acuan pembanding sehingga
+// setiap angka hanya "nilai telanjang". `direction` menjelaskan makna target:
+// MIN = makin kecil makin baik (mis. DSO, TRIR), MAX = makin besar makin baik
+// (mis. cash, utilisasi), EXACT = harus tepat sama.
+model KpiTarget {
+  id            String   @id @default(cuid())
+  // Nullable = target berlaku untuk SELURUH grup (lintas entitas).
+  legalEntityId String?
+  legalEntity   LegalEntity? @relation(fields: [legalEntityId], references: [id], onDelete: Cascade)
+  metric        String // "cash.min" | "budget.utilization" | "dso.max" | "safety.trir" | ...
+  period        String // "FY2026" | "2026-Q1"
+  target        Decimal  @db.Decimal(18, 2)
+  direction     String   @default("MIN") // MIN | MAX | EXACT
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([legalEntityId, metric, period])
+  @@index([metric, period])
 }
