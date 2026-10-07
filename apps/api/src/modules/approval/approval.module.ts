@@ -9,10 +9,11 @@ import { RoleAssignmentLookup } from './application/services/shared/role-assignm
 import { WorkflowQueryService } from './application/services/shared/workflow-query.service';
 import { ApprovalDetailService } from './application/services/approval-detail.service';
 import { ApprovalQueueService } from './application/services/approval-queue.service';
+import { ApprovalWorkflowEngine } from './application/services/approval-workflow-engine.service';
 
 @Module({
   imports: [SharedModule],
   controllers: [ApprovalController],
-  providers: [ConditionEvaluator, RoleAssignmentLookup, WorkflowQueryService, ApprovalDetailService, ApprovalQueueService, ApprovalTaskService, WorkflowDefinitionService, WorkflowInsightsService],
+  providers: [ConditionEvaluator, RoleAssignmentLookup, WorkflowQueryService, ApprovalDetailService, ApprovalQueueService, ApprovalWorkflowEngine, ApprovalTaskService, WorkflowDefinitionService, WorkflowInsightsService],
 })
 export class ApprovalModule {}
