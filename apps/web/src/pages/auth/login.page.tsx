@@ -72,9 +72,9 @@ export function LoginPage() {
         </div>
 
         <div className="relative z-10">
-          <h1 className="max-w-md text-h1 font-semibold leading-snug text-white">
+          <p className="max-w-md text-h1 font-semibold leading-snug text-white">
             Project-centric ERP for construction &amp; EPC.
-          </h1>
+          </p>
           <p className="mt-3 max-w-md text-body-sm text-neutral-400">
             Finance, procurement, and site execution share one project record, from tender to consolidated report.
           </p>
@@ -102,8 +102,8 @@ export function LoginPage() {
             </div>
           </div>
 
-          <h2 className="text-h1 text-neutral-950">Sign in</h2>
-          <p className="mt-1 text-body-sm text-neutral-500">Use your account to access the system.</p>
+          <h1 className="text-h1 text-neutral-950">Sign in</h1>
+          <p className="mt-1 text-body-sm text-neutral-500">Use your AEC account to continue.</p>
 
           <form onSubmit={onSubmit} noValidate className="mt-6 flex flex-col gap-4">
             <div>
@@ -134,7 +134,7 @@ export function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   spellCheck={false}
-                  placeholder="Enter your password…"
+                  placeholder="••••••••"
                   error={!!errors.password}
                   className="pr-10"
                   {...register('password')}

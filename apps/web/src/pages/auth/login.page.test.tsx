@@ -85,6 +85,13 @@ describe('LoginPage: struktur & aksesibilitas', () => {
     expect(container.textContent).not.toMatch(/operating system/i);
   });
 
+  it('has a single h1 ("Sign in") so mobile keeps a top-level heading', () => {
+    renderWithProviders(<LoginPage />);
+    const h1s = screen.getAllByRole('heading', { level: 1 });
+    expect(h1s).toHaveLength(1);
+    expect(h1s[0]!.textContent).toBe('Sign in');
+  });
+
   it('renders the login background as decorative (alt="", aria-hidden)', () => {
     const { container } = renderWithProviders(<LoginPage />);
     const bg = container.querySelector('img[src="/bg-login.webp"]');
