@@ -2,6 +2,7 @@ import * as React from 'react';
 import {
   flexRender,
   getCoreRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
@@ -41,6 +42,16 @@ export interface DataGridProps<TData> {
   density?: 'compact' | 'comfortable';
 
   hideToolbar?: boolean;
+
+  /**
+   * Aktifkan pagination **sisi klien** (default `false`). Hanya berlaku bila mode
+   * server tidak dipakai (`pagination`/`onPaginationChange` tidak diberikan).
+   * Bila `true`, baris dibatasi `pageSize` per halaman + kontrol halaman muncul.
+   * Sengaja opt-in agar 40+ konsumen lama tidak berubah perilakunya.
+   */
+  clientPagination?: boolean;
+  /** Ukuran halaman untuk `clientPagination` (default 10). */
+  pageSize?: number;
 }
 
 function escapeCsv(value: unknown): string {
@@ -78,10 +89,14 @@ export function DataGrid<TData>({
   exportFilename,
   density = 'compact',
   hideToolbar,
+  clientPagination = false,
+  pageSize = 10,
 }: DataGridProps<TData>) {
   const isServer = pagination !== undefined && onPaginationChange !== undefined;
+  // Pagination klien: opt-in, dan tidak boleh bentrok dengan mode server.
+  const isClientPaginated = clientPagination && !isServer;
 
-  const [internalPagination, setInternalPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
+  const [internalPagination, setInternalPagination] = React.useState<PaginationState>({ pageIndex: 0, pageSize });
   const effectivePagination = pagination ?? internalPagination;
 
   const table = useReactTable({
@@ -90,6 +105,7 @@ export function DataGrid<TData>({
     getRowId,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: sorting !== undefined ? getSortedRowModel() : undefined,
+    getPaginationRowModel: isClientPaginated ? getPaginationRowModel() : undefined,
     manualPagination: isServer,
     manualSorting: sorting !== undefined && onSortingChange !== undefined,
     rowCount: rowCount ?? data.length,
@@ -133,7 +149,7 @@ export function DataGrid<TData>({
 
   const pageCount = table.getPageCount();
   const pageIndex = table.getState().pagination.pageIndex;
-  const pageSize = table.getState().pagination.pageSize;
+  const currentPageSize = table.getState().pagination.pageSize;
 
   return (
     <div>
@@ -249,10 +265,11 @@ export function DataGrid<TData>({
         </table>
       </div>
 
-      {isServer && pageCount > 1 && (
+      {(isServer || isClientPaginated) && pageCount > 1 && (
         <div className="flex items-center justify-between border-t border-neutral-200 px-4 py-2">
           <span className="text-caption text-neutral-500">
-            {pageIndex * pageSize + 1}–{Math.min((pageIndex + 1) * pageSize, rowCount ?? 0)} of {rowCount?.toLocaleString('id-ID') ?? 0}
+            {pageIndex * currentPageSize + 1}–{Math.min((pageIndex + 1) * currentPageSize, isServer ? rowCount ?? 0 : data.length)} of{' '}
+            {isServer ? rowCount?.toLocaleString('id-ID') ?? 0 : data.length}
           </span>
           <div className="flex items-center gap-2">
             <Button

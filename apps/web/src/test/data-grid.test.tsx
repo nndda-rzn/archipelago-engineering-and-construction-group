@@ -71,4 +71,31 @@ describe('DataGrid', () => {
     expect(th?.className).toContain('text-right');
     expect(td?.className).toContain('text-right');
   });
+
+  it('renders every row when clientPagination is off (no behaviour change)', () => {
+    const many: Row[] = Array.from({ length: 12 }).map((_, i) => ({ id: `r${i}`, name: `Row ${i}` }));
+    render(<DataGrid columns={columns} data={many} />);
+    expect(screen.getByText('Row 11')).toBeTruthy();
+    expect(screen.queryByText('Previous')).toBeNull();
+  });
+
+  it('caps rows at pageSize and shows pager when clientPagination is on', () => {
+    const many: Row[] = Array.from({ length: 12 }).map((_, i) => ({ id: `r${i}`, name: `Row ${i}` }));
+    render(<DataGrid columns={columns} data={many} clientPagination pageSize={5} />);
+    // Hanya 5 baris pertama yang ter-render.
+    expect(screen.getByText('Row 0')).toBeTruthy();
+    expect(screen.getByText('Row 4')).toBeTruthy();
+    expect(screen.queryByText('Row 5')).toBeNull();
+    // Pager muncul dengan rentang + navigasi.
+    expect(screen.getByText(/1–5 of 12/)).toBeTruthy();
+    expect(screen.getByText('Previous')).toBeTruthy();
+  });
+
+  it('moves to the next page when Next is clicked (client pagination)', () => {
+    const many: Row[] = Array.from({ length: 12 }).map((_, i) => ({ id: `r${i}`, name: `Row ${i}` }));
+    render(<DataGrid columns={columns} data={many} clientPagination pageSize={5} />);
+    fireEvent.click(screen.getByText('Next'));
+    expect(screen.getByText('Row 5')).toBeTruthy();
+    expect(screen.queryByText('Row 0')).toBeNull();
+  });
 });
