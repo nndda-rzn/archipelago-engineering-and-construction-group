@@ -10,7 +10,7 @@ import { useCashFlow, useControlTower, useLiveAnalytics } from '@/features/analy
 import { useLegalEntities } from '@/entities/legal-entity';
 import { LiveIndicator } from '@/shared/ui/live-indicator';
 import { LiveValue } from '@/shared/ui/live-value';
-import { formatIdr } from '@/shared/lib/format';
+import { formatIdrAxis } from '@/shared/lib/format';
 import { formatKpiValue } from '@/widgets/control-tower';
 
 /** Tick 1 detik agar "updated Ns ago" hidup tanpa membebani render. */
@@ -138,7 +138,7 @@ export function DashboardPage() {
         liveControl={<LiveIndicator connected={live.connected && live.enabled} lastChangeAt={live.lastChangeAt} now={now} />}
         renderKpiValue={(kpi) =>
           kpi.unit === 'idr' ? (
-            <LiveValue key={kpi.key} value={kpi.value} format={formatIdr} data-slot="kpi-value" />
+            <LiveValue key={kpi.key} value={kpi.value} format={formatIdrAxis} data-slot="kpi-value" />
           ) : (
             formatKpiValue(kpi)
           )

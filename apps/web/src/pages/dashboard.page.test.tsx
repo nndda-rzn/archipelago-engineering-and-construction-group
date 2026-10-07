@@ -77,6 +77,17 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Ring Road')).toBeTruthy();
   }, T);
 
+  it('renders abbreviated KPI money, not the full zero-filled figure', async () => {
+    const { DashboardPage } = await import('./dashboard.page');
+    const { container } = render(<DashboardPage />);
+    // Cash on hand = 18.240.500.000 → elemen KPI menampilkan "Rp 18,24 M".
+    const kpiValues = Array.from(container.querySelectorAll('[data-slot="kpi-value"]')).map((el) => el.textContent ?? '');
+    expect(kpiValues.length).toBeGreaterThanOrEqual(1);
+    expect(kpiValues.some((t) => t.includes('Rp 18,24 M'))).toBe(true);
+    // Tidak ada elemen KPI yang menampilkan angka penuh ber-nol.
+    expect(kpiValues.some((t) => t.includes('Rp 18.240.500.000'))).toBe(false);
+  }, T);
+
   it('shows an error state with a retry when the tower fails (never Rp 0)', async () => {
     ct.state = { data: undefined, isLoading: false, isError: true, refetch: vi.fn() };
     const { DashboardPage } = await import('./dashboard.page');
