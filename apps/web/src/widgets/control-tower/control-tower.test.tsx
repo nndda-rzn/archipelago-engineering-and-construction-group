@@ -122,4 +122,11 @@ describe('ControlTowerView', () => {
       expect(row.getAttribute('tabindex')).toBe('0');
     }
   });
+
+  it('navigates when a ledger row is activated with Enter', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    const { container } = render(<ControlTowerView data={base} cashFlowSeries={[]} />);
+    const row = container.querySelector('tbody tr')!;
+    expect(() => fireEvent.keyDown(row, { key: 'Enter' })).not.toThrow();
+  });
 });

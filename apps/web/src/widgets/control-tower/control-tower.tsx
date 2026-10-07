@@ -1,5 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router';
-import { Card, DataGrid, EmptyState, ErrorState, ExceptionQueue, SectionBand, StatTile, StatusPill, type ExceptionItem } from '@aec/ui';
+import { Card, DataGrid, ErrorState, ExceptionQueue, SectionBand, StatTile, StatusPill, type ExceptionItem } from '@aec/ui';
 import type { ControlTower, ControlTowerKpi, ControlTowerProject } from '@aec/api-contracts';
 import { formatIdr } from '@/shared/lib/format';
 import { CashFlowChart, EvmBullets, WaterfallChart, type WaterfallStep } from '@/widgets/dashboard-charts';
@@ -246,15 +246,32 @@ export function PortfolioLedger({ data }: { data: ControlTower }) {
   ];
 
   return (
-    <DataGrid
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- kolom generik TanStack.
-      columns={columns as never}
-      data={data.projects}
-      getRowId={(row) => row.projectId}
-      onRowClick={(row) => navigate({ to: '/project-health', search: { project: row.original.projectId } as never })}
-      emptyMessage="No projects in this scope."
-      hideToolbar
-    />
+    <div className="flex flex-col gap-2">
+      <DataGrid
+        columns={columns as never}
+        data={data.projects}
+        getRowId={(row) => row.projectId}
+        onRowClick={(row) => navigate({ to: '/project-health', search: { project: row.original.projectId } as never })}
+        emptyMessage="No projects in this scope."
+        hideToolbar
+      />
+      {/* Footer agregat Σ — menjaga superset data (actual/budget/variance) yang
+          dulu ada di <tfoot>; hilang bila tidak dirender ulang di sini. */}
+      {data.projects.length > 0 && (
+        <div className="flex flex-wrap items-baseline justify-end gap-x-6 gap-y-1 border-t border-neutral-300 pt-2 text-body-sm text-neutral-800">
+          <span className="font-medium">Σ {data.projectTotals.count} projects</span>
+          <span className="font-mono tabular-nums">
+            {formatIdr(data.projectTotals.actual)} / {formatIdr(data.projectTotals.budget)}
+          </span>
+          <span
+            className={`font-mono tabular-nums ${data.projectTotals.variance < 0 ? 'text-destructive-700' : 'text-success-700'}`}
+          >
+            {data.projectTotals.variance < 0 ? '−' : '+'}
+            {formatIdr(Math.abs(data.projectTotals.variance))}
+          </span>
+        </div>
+      )}
+    </div>
   );
 }
 
