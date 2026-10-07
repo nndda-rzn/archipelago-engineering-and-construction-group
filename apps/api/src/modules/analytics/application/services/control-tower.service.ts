@@ -560,9 +560,11 @@ export class ControlTowerService {
   /**
    * Ringkasan inventory: nilai stok bersih, jumlah gudang, dan mutasi masuk/keluar.
    *
-   * `stockValue` = jumlah `totalValue` bertanda dari seluruh pergerakan
-   * (IN positif, OUT negatif, ADJUST sesuai tanda) = **nilai stok bersih**,
-   * bukan nilai bruto pergerakan (yang sudah diwakili `movementIn/OutValue`).
+   * `stockValue` = jumlah besaran masuk dikurangi jumlah besaran keluar
+   * (`|IN| − |OUT|`) — nilai stok **bersih**, bukan nilai bruto seluruh
+   * pergerakan (yang sudah diwakili `movementIn/OutValue`). Baris ADJUSTMENT
+   * tidak dihitung di sini; ini selisih mutasi pada jendela filter, bukan
+   * saldo on-hand.
    * `negativeBalanceCount` = jumlah gudang (unik) yang punya minimal satu baris
    * ledger dengan `balanceAfter < 0` — sinyal data-error nyata, bukan nol palsu.
    * Selalu mengembalikan angka (0), tidak pernah null.
