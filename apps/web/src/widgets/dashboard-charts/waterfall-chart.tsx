@@ -1,3 +1,4 @@
+import { cn } from '@aec/ui';
 import { formatIdrAxis } from '@/shared/lib/format';
 import { CHART } from './chart-colors';
 
@@ -46,14 +47,14 @@ const TONE: Record<WaterfallStep['kind'], string> = {
  * dipilih agar label tahap + nilai rata kanan tetap terbaca di kartu sempit.
  * Aksesibel via `role="img"` + aria-label berisi seluruh tahap.
  */
-export function WaterfallChart({ steps }: { steps: WaterfallStep[] }) {
+export function WaterfallChart({ steps, className }: { steps: WaterfallStep[]; className?: string }) {
   const segs = waterfallSegments(steps);
   const max = Math.max(...segs.map((s) => Math.max(s.from, s.to)), 1);
   const summary = segs.map((s) => `${s.label} ${formatIdrAxis(s.value)}`).join(', ');
   const pct = (v: number) => Math.min(100, Math.max(0, (v / max) * 100));
 
   return (
-    <div role="img" aria-label={`Cash bridge: ${summary}`} className="space-y-2">
+    <div role="img" aria-label={`Cash bridge: ${summary}`} className={cn('space-y-2', className)}>
       {segs.map((s) => {
         const startPct = pct(Math.min(s.from, s.to));
         const widthPct = Math.max(1, pct(Math.abs(s.to - s.from)));
@@ -68,7 +69,7 @@ export function WaterfallChart({ steps }: { steps: WaterfallStep[] }) {
             <span className="truncate text-caption text-neutral-600" title={s.label}>
               {s.label}
             </span>
-            <span className="relative h-3 w-full overflow-hidden rounded-sm bg-neutral-100">
+            <span className="relative h-4 w-full overflow-hidden rounded-sm bg-neutral-100">
               <span
                 data-slot="waterfall-bar"
                 data-kind={s.kind}

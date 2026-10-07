@@ -40,6 +40,21 @@ describe('WaterfallChart', () => {
     expect(container.querySelectorAll('[data-slot="waterfall-bar"]')).toHaveLength(3);
     expect(screen.getByRole('img', { name: /Cash bridge/ })).toBeTruthy();
   });
+
+  it('applies a caller className so the card can stretch it', () => {
+    const { container } = render(
+      <WaterfallChart
+        className="flex-1 justify-between"
+        steps={[
+          { label: 'Open', value: 100, kind: 'base' },
+          { label: 'Close', value: 100, kind: 'total' },
+        ]}
+      />,
+    );
+    const root = container.querySelector('[role="img"]')!;
+    expect(root.className).toContain('flex-1');
+    expect(root.className).toContain('justify-between');
+  });
 });
 
 describe('EvmSeriesBars', () => {
