@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { CONDITION_FIELDS, type ConditionGroup } from '@aec/api-contracts';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
+import { toNumber, toConditionGroup, toJsonInput, mirrorFirstCondition } from './shared/condition-group-mapper';
 import type {
   AddWorkflowStepDto,
   CreateWorkflowDefinitionDto,
@@ -12,41 +13,6 @@ import type {
   UpdateWorkflowDefinitionDto,
   UpdateWorkflowStepDto,
 } from '../../presentation/dto/approval.dto';
-
-/** Ambang yang dipakai langkah (Decimal di DB) → number untuk kontrak. */
-function toNumber(value: Prisma.Decimal | number | null): number | null {
-  if (value === null || value === undefined) return null;
-  return Number(value);
-}
-
-/**
- * Bentuk grup syarat yang disimpan (JSON) → bentuk kontrak. Prisma mengembalikan
- * `JsonValue`, jadi bentuknya diverifikasi di sini, bukan di-cast buta: data yang
- * cacat di DB tidak boleh menjadi `undefined` yang menjalar ke UI.
- */
-function toConditionGroup(value: Prisma.JsonValue | null): ConditionGroup | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-  const raw = value as { combinator?: unknown; conditions?: unknown };
-  const combinator = raw.combinator === 'OR' ? 'OR' : raw.combinator === 'AND' ? 'AND' : null;
-  if (!combinator || !Array.isArray(raw.conditions)) return null;
-  const OPS = ['>', '<', '>=', '<=', '=='] as const;
-  const conditions = raw.conditions
-    .filter((c): c is Record<string, unknown> => typeof c === 'object' && c !== null)
-    .map((c) => ({ field: String(c.field), op: String(c.op), value: Number(c.value) }))
-    .filter((c) => Number.isFinite(c.value))
-    .map((c) => ({ field: c.field, op: (OPS as readonly string[]).includes(c.op) ? (c.op as ConditionGroup['conditions'][number]['op']) : ('>' as const), value: c.value }));
-  if (conditions.length === 0) return null;
-  return { combinator, conditions };
-}
-
-/**
- * Grup → nilai JSON Prisma. Dikonversi ke bentuk polos (bukan objek kelas DTO)
- * agar lolos tipe `InputJsonValue` Prisma tanpa cast yang menyembunyikan bentuk.
- */
-function toJsonInput(group: ConditionGroup | null | undefined): Prisma.InputJsonValue | undefined {
-  if (group == null) return undefined;
-  return { combinator: group.combinator, conditions: group.conditions.map((c) => ({ field: c.field, op: c.op, value: c.value })) };
-}
 
 @Injectable()
 export class WorkflowDefinitionService {
@@ -127,18 +93,6 @@ export class WorkflowDefinitionService {
     }
   }
 
-  /**
-   * Kolom tunggal yang dicerminkan dari aturan pertama sebuah grup.
-   *
-   * Grup adalah sumber kebenaran, tetapi kolom tunggal tetap diisi supaya data
-   * tetap terbaca oleh kode/pembaca lama dan diff antar versi tetap bermakna.
-   */
-  private mirrorFirstCondition(group: ConditionGroup | null | undefined) {
-    const first = group?.conditions[0];
-    if (!first) return { conditionField: null, conditionOp: null, conditionValue: null };
-    return { conditionField: first.field, conditionOp: first.op, conditionValue: first.value };
-  }
-
   async addStep(id: string, dto: AddWorkflowStepDto, actorId: string) {
     const definition = await this.prisma.workflowDefinition.findUnique({ where: { id } });
     if (!definition) throw new NotFoundException({ code: 'WORKFLOW_NOT_FOUND', message: 'Workflow not found' });
@@ -153,7 +107,7 @@ export class WorkflowDefinitionService {
     const existing = await this.prisma.workflowStep.findUnique({ where: { definitionId_stepOrder: { definitionId: id, stepOrder: dto.stepOrder } } });
     if (existing) throw new ConflictException({ code: 'STEP_EXISTS', message: `Step order ${dto.stepOrder} already exists` });
 
-    const mirror = this.mirrorFirstCondition(dto.conditionGroup as ConditionGroup | null | undefined);
+    const mirror = mirrorFirstCondition(dto.conditionGroup as ConditionGroup | null | undefined);
     const step = await this.prisma.workflowStep.create({
       data: {
         definitionId: id,
@@ -220,7 +174,7 @@ export class WorkflowDefinitionService {
 
     // Grup menang bila dikirim: kolom tunggal diturunkan darinya, bukan sebaliknya.
     const groupProvided = dto.conditionGroup !== undefined;
-    const mirror = groupProvided ? this.mirrorFirstCondition(dto.conditionGroup as ConditionGroup | null) : null;
+    const mirror = groupProvided ? mirrorFirstCondition(dto.conditionGroup as ConditionGroup | null) : null;
 
     const updated = await this.prisma.workflowStep.update({
       where: { id: stepId },

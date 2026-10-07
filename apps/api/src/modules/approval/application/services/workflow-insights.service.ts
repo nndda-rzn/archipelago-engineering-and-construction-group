@@ -2,6 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { ConditionEvaluator } from './shared/condition-evaluator';
 import { summariseDocumentOutcomes, type TaskOutcomeRow } from './shared/document-outcomes';
+import { toConditionGroupLoose as toGroup } from './shared/condition-group-mapper';
 import type { WorkflowInsights } from '@aec/api-contracts';
 
 /**
@@ -25,20 +26,6 @@ const INSIGHTS_NOTE =
 /** `2026-10-06T…` → `2026-10` (UTC, sama seperti modul analytics). */
 function monthKey(date: Date): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
-}
-
-/** Bentuk grup syarat tersimpan (JSON) → bentuk yang bisa dibaca; `null` bila tak sah. */
-function toGroup(value: unknown): { combinator: 'AND' | 'OR'; conditions: Array<{ field: string; op: string; value: number }> } | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-  const raw = value as { combinator?: unknown; conditions?: unknown };
-  const combinator = raw.combinator === 'OR' ? 'OR' : raw.combinator === 'AND' ? 'AND' : null;
-  if (!combinator || !Array.isArray(raw.conditions)) return null;
-  const conditions = raw.conditions
-    .filter((c): c is Record<string, unknown> => typeof c === 'object' && c !== null)
-    .map((c) => ({ field: String(c.field), op: String(c.op), value: Number(c.value) }))
-    .filter((c) => Number.isFinite(c.value));
-  if (conditions.length === 0) return null;
-  return { combinator, conditions };
 }
 
 /**
