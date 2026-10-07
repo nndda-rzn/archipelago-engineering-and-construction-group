@@ -146,9 +146,10 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
           </Card>
           <div className="grid grid-cols-1 gap-cell xl:grid-cols-2">
             <Card variant="flat">
-              <h3 className="mb-2 text-h3 text-neutral-950">EVM: CPI &amp; SPI by project</h3>
+              <h3 className="mb-2 text-h3 text-neutral-950">EVM: CPI &amp; SPI · worst first</h3>
               <EvmSeriesBars
                 items={data.projects.map((p) => ({ name: p.projectCode, cpi: p.cpi, spi: p.spi }))}
+                limit={5}
                 emptyMessage="No EVM baseline published yet."
               />
             </Card>

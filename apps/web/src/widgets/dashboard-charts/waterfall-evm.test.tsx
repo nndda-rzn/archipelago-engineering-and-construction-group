@@ -63,11 +63,45 @@ describe('EvmSeriesBars', () => {
   it('shows "no data" for a null ratio without drawing a bar', () => {
     const { container } = render(<EvmSeriesBars items={[{ name: 'No EVM', cpi: null, spi: null }]} />);
     expect(container.querySelectorAll('[data-slot="evm-series-fill"]')).toHaveLength(0);
-    expect(screen.getByRole('img', { name: /No EVM CPI no data/ })).toBeTruthy();
+    expect(screen.getByText('No EVM data.')).toBeTruthy();
   });
 
   it('shows an empty message when there is no EVM data', () => {
     render(<EvmSeriesBars items={[]} />);
     expect(screen.getByText('No EVM data.')).toBeTruthy();
+  });
+
+  it('caps rows at the limit, worst-first, and summarizes the rest', () => {
+    const items = [
+      { name: 'P1', cpi: 1.10, spi: 1.03 },
+      { name: 'P2', cpi: 0.85, spi: 0.63 },
+      { name: 'P3', cpi: 0.90, spi: 0.70 },
+      { name: 'P4', cpi: 0.80, spi: 0.60 },
+      { name: 'P5', cpi: 1.00, spi: 1.00 },
+      { name: 'P6', cpi: 0.95, spi: 0.95 },
+      { name: 'P7', cpi: 1.20, spi: 1.10 },
+    ];
+    const { container } = render(<EvmSeriesBars items={items} limit={5} />);
+    const cpiFills = container.querySelectorAll('[data-slot="evm-series-fill"][data-series="cpi"]');
+    expect(cpiFills).toHaveLength(5);
+    // Worst-first: CPI 0.80 (P4) harus muncul; yang terbaik (P7) tersembunyi.
+    expect(screen.getByText('P4')).toBeTruthy();
+    expect(screen.queryByText('P7')).toBeNull();
+    expect(screen.getByText('+2 more')).toBeTruthy();
+  });
+
+  it('counts projects without a baseline in the footer instead of a blank row', () => {
+    const { container } = render(
+      <EvmSeriesBars
+        items={[
+          { name: 'HasEVM', cpi: 0.9, spi: 0.9 },
+          { name: 'NoEVM1', cpi: null, spi: null },
+          { name: 'NoEVM2', cpi: null, spi: null },
+        ]}
+      />,
+    );
+    expect(container.querySelectorAll('[data-slot="evm-series-fill"][data-series="cpi"]')).toHaveLength(1);
+    expect(screen.queryByText('NoEVM1')).toBeNull();
+    expect(screen.getByText('2 without baseline')).toBeTruthy();
   });
 });
