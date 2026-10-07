@@ -14,6 +14,7 @@ export const loginResponseSchema = z.object({
     username: z.string(),
     displayName: z.string(),
     roles: z.array(z.string()),
+    permissions: z.array(z.string()),
   }),
 });
 export type LoginResponse = z.infer<typeof loginResponseSchema>;
@@ -24,5 +25,6 @@ export const meResponseSchema = z.object({
   username: z.string(),
   displayName: z.string(),
   roles: z.array(z.string()),
+  permissions: z.array(z.string()),
 });
 export type MeResponse = z.infer<typeof meResponseSchema>;

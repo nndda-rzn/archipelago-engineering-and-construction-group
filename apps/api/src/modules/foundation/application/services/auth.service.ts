@@ -10,6 +10,7 @@ export type AuthUser = {
   username: string;
   displayName: string;
   roles: string[];
+  permissions: string[];
 };
 
 @Injectable()
@@ -19,6 +20,25 @@ export class AuthService {
     @Inject(JwtService) private readonly jwt: JwtService,
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
+
+  /**
+   * Kode permission yang aktif dipegang user. Sumbernya sama dengan yang
+   * ditegakkan `PermissionsGuard` (userRole → role → rolePermission → permission,
+   * assignment yang belum kedaluwarsa saja). Dipakai frontend untuk menyembunyikan
+   * menu/route/widget yang tidak diizinkan, jadi daftar ini harus konsisten dengan
+   * keputusan guard backend.
+   */
+  private async permissionsOf(userId: string): Promise<string[]> {
+    const assignments = await this.prisma.userRole.findMany({
+      where: { userId, OR: [{ effectiveTo: null }, { effectiveTo: { gt: new Date() } }] },
+      include: { role: { include: { permissions: { include: { permission: true } } } } },
+    });
+    const codes = new Set<string>();
+    for (const assignment of assignments) {
+      for (const rp of assignment.role.permissions) codes.add(rp.permission.code);
+    }
+    return [...codes].sort();
+  }
 
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
@@ -52,10 +72,11 @@ export class AuthService {
     });
 
     const roles = user.userRoles.filter((assignment) => assignment.role.status === 'ACTIVE').map((assignment) => assignment.role.code);
+    const permissions = await this.permissionsOf(user.id);
     const payload = { sub: user.id, email: user.email, roles };
     return {
       accessToken: await this.jwt.signAsync(payload),
-      user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, roles },
+      user: { id: user.id, email: user.email, username: user.username, displayName: user.displayName, roles, permissions },
     };
   }
 
@@ -68,6 +89,7 @@ export class AuthService {
       throw new UnauthorizedException({ code: 'USER_INACTIVE', message: 'User is inactive' });
     }
     const roles = user.userRoles.filter((assignment) => assignment.role.status === 'ACTIVE').map((assignment) => assignment.role.code);
-    return { id: user.id, email: user.email, username: user.username, displayName: user.displayName, roles };
+    const permissions = await this.permissionsOf(user.id);
+    return { id: user.id, email: user.email, username: user.username, displayName: user.displayName, roles, permissions };
   }
 }
