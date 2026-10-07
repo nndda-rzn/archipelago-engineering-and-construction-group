@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { waterfallSegments, WaterfallChart } from './waterfall-chart';
-import { EvmBullets } from './evm-bullets';
+import { EvmSeriesBars } from './evm-series-bars';
 
 describe('waterfallSegments', () => {
   it('chains deltas from the opening balance and closes at the total', () => {
@@ -42,24 +42,32 @@ describe('WaterfallChart', () => {
   });
 });
 
-describe('EvmBullets', () => {
-  it('marks projects below 1.0 with the destructive tone and a target marker', () => {
+describe('EvmSeriesBars', () => {
+  it('renders a CPI and an SPI bar per project with a target marker', () => {
     const { container } = render(
-      <EvmBullets
+      <EvmSeriesBars
         items={[
-          { name: 'Ring Road', value: 0.82 },
-          { name: 'Toll A-3', value: 1.05 },
+          { name: 'Ring Road', cpi: 0.82, spi: 0.91 },
+          { name: 'Toll A-3', cpi: 1.05, spi: 1.02 },
         ]}
       />,
     );
-    const fills = container.querySelectorAll('[data-slot="evm-bullet-fill"]');
-    expect(fills[0]?.className).toContain('bg-destructive-700');
-    expect(fills[1]?.className).toContain('bg-success-700');
-    expect(screen.getByRole('img', { name: /Ring Road index 0.82 vs target 1.00/ })).toBeTruthy();
+    const cpiFills = container.querySelectorAll('[data-slot="evm-series-fill"][data-series="cpi"]');
+    const spiFills = container.querySelectorAll('[data-slot="evm-series-fill"][data-series="spi"]');
+    expect(cpiFills).toHaveLength(2);
+    expect(spiFills).toHaveLength(2);
+    expect(screen.getByRole('img', { name: /Ring Road CPI 0.82 vs target 1.00/ })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /Ring Road SPI 0.91 vs target 1.00/ })).toBeTruthy();
+  });
+
+  it('shows "no data" for a null ratio without drawing a bar', () => {
+    const { container } = render(<EvmSeriesBars items={[{ name: 'No EVM', cpi: null, spi: null }]} />);
+    expect(container.querySelectorAll('[data-slot="evm-series-fill"]')).toHaveLength(0);
+    expect(screen.getByRole('img', { name: /No EVM CPI no data/ })).toBeTruthy();
   });
 
   it('shows an empty message when there is no EVM data', () => {
-    render(<EvmBullets items={[]} />);
+    render(<EvmSeriesBars items={[]} />);
     expect(screen.getByText('No EVM data.')).toBeTruthy();
   });
 });

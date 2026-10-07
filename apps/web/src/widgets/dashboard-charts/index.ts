@@ -11,4 +11,4 @@ export * from './budget-usage-bars';
 export * from './forecast-vs-actual';
 export * from './project-ranking-bar';
 export * from './waterfall-chart';
-export * from './evm-bullets';
+export * from './evm-series-bars';

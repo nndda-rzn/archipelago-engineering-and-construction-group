@@ -99,9 +99,10 @@ describe('ControlTowerView', () => {
     expect(screen.getByRole('heading', { name: 'Domain tiles' })).toBeTruthy();
   });
 
-  it('renders the EVM bullets for projects that have a baseline', () => {
+  it('renders the EVM series bars for projects that have a baseline', () => {
     render(<ControlTowerView data={base} cashFlowSeries={[]} />);
     expect(screen.getByRole('img', { name: /PRJ-014 CPI 0.82 vs target 1.00/ })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /PRJ-014 SPI 0.91 vs target 1.00/ })).toBeTruthy();
   });
 
   it('renders at least 60 labelled metric nodes (density guard)', () => {
