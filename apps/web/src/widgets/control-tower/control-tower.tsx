@@ -178,17 +178,18 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
             <PortfolioLedger data={data} />
           </Card>
           <div className="grid grid-cols-1 gap-cell xl:grid-cols-2">
-            <Card variant="flat">
-              <h3 className="mb-2 text-h3 text-neutral-950">EVM: CPI &amp; SPI · worst first</h3>
+            <Card variant="flat" className="flex h-full flex-col">
+              <h3 className="mb-2 shrink-0 text-h3 text-neutral-950">EVM: CPI &amp; SPI · worst first</h3>
               <EvmSeriesBars
+                className="flex-1"
                 items={data.projects.map((p) => ({ name: p.projectCode, cpi: p.cpi, spi: p.spi }))}
                 limit={5}
                 emptyMessage="No EVM baseline published yet."
               />
             </Card>
-            <Card variant="flat">
-              <h3 className="mb-2 text-h3 text-neutral-950">Cash bridge · period</h3>
-              <WaterfallChart steps={buildCashBridge(data, cashFlowSeries)} />
+            <Card variant="flat" className="flex h-full flex-col">
+              <h3 className="mb-2 shrink-0 text-h3 text-neutral-950">Cash bridge · period</h3>
+              <WaterfallChart className="flex flex-1 flex-col justify-between" steps={buildCashBridge(data, cashFlowSeries)} />
             </Card>
           </div>
         </div>
