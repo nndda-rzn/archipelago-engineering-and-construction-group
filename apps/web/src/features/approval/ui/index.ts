@@ -16,6 +16,7 @@ export { WorkflowInsightsPanel, ruleSummary } from './workflow-insights';
 export { ConditionBuilder, type ConditionValue } from './condition-builder';
 export { opLabel, conditionFieldLabel, conditionFieldsFor, VERSION_STATUS_LABEL } from './workflow-labels';
 export { WorkflowChainList, type WorkflowChainListProps } from './workflow-chain-list';
+export { WorkflowChainStepRow, type WorkflowChainStepRowProps } from './workflow-chain-step-row';
 export { WorkflowDefinitionsRail, groupByCode, type WorkflowDefinitionsRailProps } from './workflow-definitions-rail';
 export { WorkflowLifecycle, type WorkflowLifecycleProps } from './workflow-lifecycle';
 export { WorkflowScenarios, type Scenario } from './workflow-scenarios';
