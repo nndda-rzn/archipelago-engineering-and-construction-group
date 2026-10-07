@@ -41,6 +41,7 @@ const base: ControlTower = {
     safety: { openIncidents: 4, highSeverityOpen: 1, openCorrectiveActions: 1, overdueCorrectiveActions: 1, trir: 0.24, daysSinceLastIncident: 1 },
     quality: { openNcrs: 11, criticalNcrs: 1, openPunchItems: 23 },
     hcm: { activeEmployees: 2, manpowerToday: 1240, pendingTimesheets: 0, equipmentUtilizationPct: 80, openBreakdowns: 0 },
+    inventory: { stockValue: 1_200_000_000, warehouseCount: 3, negativeBalanceCount: 1, movementInValue: 2_000_000_000, movementOutValue: 800_000_000 },
   },
   governance: { openRisks: 5, highRisks: 1, overdueAuditFindings: 0, openLegalCases: 0, riskMatrix: [{ likelihood: 4, impact: 5, count: 1 }] },
   commercial: { pipelineValue: 58_200_000_000, openOpportunities: 5, wonValue: 8_600_000_000, lostValue: 14_000_000_000, winRatePct: 38, tendersDue: 2, approvedVariationValue: 1_200_000_000, funnel: [{ stage: 'LEAD', count: 5, value: 58_200_000_000 }] },
