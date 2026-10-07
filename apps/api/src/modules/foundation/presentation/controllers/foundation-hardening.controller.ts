@@ -20,61 +20,61 @@ export class FoundationHardeningController {
   ) {}
 
   @Get('legal-entities/:id/organizations')
-  @Permissions(Permission.LegalEntityView)
+  @Permissions(Permission.FoundationHardeningView, Permission.LegalEntityView)
   listOrganizations(@Param('id') id: string, @Query('asOf') asOf?: string) {
     return this.organization.listOrganizations(id, asOf);
   }
 
   @Post('organizations')
-  @Permissions(Permission.LegalEntityEdit)
+  @Permissions(Permission.FoundationHardeningView, Permission.LegalEntityEdit)
   createOrganization(@Body() dto: CreateOrganizationDto, @Req() request: { user?: { sub?: string } }) {
     return this.organization.createOrganization(dto, request.user?.sub ?? 'system');
   }
 
   @Get('doa-rules')
-  @Permissions(Permission.RoleView)
+  @Permissions(Permission.FoundationHardeningView, Permission.RoleView)
   listDoaRules() {
     return this.doa.listDoaRules();
   }
 
   @Post('doa-rules')
-  @Permissions(Permission.RoleCreate)
+  @Permissions(Permission.FoundationHardeningView, Permission.RoleCreate)
   createDoaRule(@Body() dto: CreateDoaRuleDto, @Req() request: { user?: { sub?: string } }) {
     return this.doa.createDoaRule(dto, request.user?.sub ?? 'system');
   }
 
   @Post('doa/resolve')
-  @Permissions(Permission.RoleView)
+  @Permissions(Permission.FoundationHardeningView, Permission.RoleView)
   resolveDoa(@Body() dto: ResolveDoaDto) {
     return this.doa.resolveDoa(dto);
   }
 
   @Get('currencies')
-  @Permissions(Permission.LegalEntityView)
+  @Permissions(Permission.FoundationHardeningView, Permission.LegalEntityView)
   listCurrencies() {
     return this.currency.listCurrencies();
   }
 
   @Post('currencies')
-  @Permissions(Permission.LegalEntityEdit)
+  @Permissions(Permission.FoundationHardeningView, Permission.LegalEntityEdit)
   createCurrency(@Body() dto: CreateCurrencyDto, @Req() request: { user?: { sub?: string } }) {
     return this.currency.createCurrency(dto, request.user?.sub ?? 'system');
   }
 
   @Get('exchange-rates')
-  @Permissions(Permission.LegalEntityView)
+  @Permissions(Permission.FoundationHardeningView, Permission.LegalEntityView)
   listExchangeRates() {
     return this.currency.listExchangeRates();
   }
 
   @Post('exchange-rates')
-  @Permissions(Permission.LegalEntityEdit)
+  @Permissions(Permission.FoundationHardeningView, Permission.LegalEntityEdit)
   createExchangeRate(@Body() dto: CreateExchangeRateDto, @Req() request: { user?: { sub?: string } }) {
     return this.currency.createExchangeRate(dto, request.user?.sub ?? 'system');
   }
 
   @Post('currencies/revalue')
-  @Permissions(Permission.LegalEntityView)
+  @Permissions(Permission.FoundationHardeningView, Permission.LegalEntityView)
   revalue(@Body() dto: { amount: number; fromCurrencyCode: string; toCurrencyCode: string; asOf?: string }) {
     return this.currency.revalue(dto.amount, dto.fromCurrencyCode, dto.toCurrencyCode, dto.asOf);
   }

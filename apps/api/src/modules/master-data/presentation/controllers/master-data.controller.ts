@@ -16,31 +16,31 @@ export class MasterDataController {
   ) {}
 
   @Get('vendors')
-  @Permissions(Permission.VendorView)
+  @Permissions(Permission.MasterDataView, Permission.VendorView)
   listVendors(@Query() query: ListVendorQueryDto) {
     return this.masterData.listVendors(query);
   }
 
   @Post('vendors')
-  @Permissions(Permission.VendorCreate)
+  @Permissions(Permission.MasterDataView, Permission.VendorCreate)
   createVendor(@Body() dto: CreateVendorDto, @Req() request: { user?: { sub?: string } }) {
     return this.masterData.createVendor(dto, request.user?.sub ?? 'system');
   }
 
   @Get('fiscal-periods')
-  @Permissions(Permission.FiscalPeriodView)
+  @Permissions(Permission.MasterDataView, Permission.FiscalPeriodView)
   listFiscalPeriods(@Query() query: ListFiscalPeriodQueryDto) {
     return this.masterData.listFiscalPeriods(query);
   }
 
   @Post('fiscal-periods')
-  @Permissions(Permission.FiscalPeriodCreate)
+  @Permissions(Permission.MasterDataView, Permission.FiscalPeriodCreate)
   createFiscalPeriod(@Body() dto: CreateFiscalPeriodDto, @Req() request: { user?: { sub?: string } }) {
     return this.masterData.createFiscalPeriod(dto, request.user?.sub ?? 'system');
   }
 
   @Post('fiscal-periods/:id/status')
-  @Permissions(Permission.FiscalPeriodEdit)
+  @Permissions(Permission.MasterDataView, Permission.FiscalPeriodEdit)
   updateFiscalPeriodStatus(@Param('id') id: string, @Body() dto: UpdateFiscalPeriodStatusDto, @Req() request: { user?: { sub?: string } }) {
     return this.masterData.updateFiscalPeriodStatus(id, dto, request.user?.sub ?? 'system');
   }

@@ -1,5 +1,5 @@
 import { createRootRoute, createRoute, lazyRouteComponent, Outlet } from '@tanstack/react-router';
-import { Permission, SUPERADMIN_ONLY } from '@aec/shared-types';
+import { Permission } from '@aec/shared-types';
 import { AppShell } from './app/layouts/app-shell';
 import { requireAuth } from './app/router/require-auth';
 import { requirePermission } from './app/router/require-permission';
@@ -49,7 +49,7 @@ const legalEntitiesRoute = createRoute({
 const foundationHardeningRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/foundation/hardening',
-  beforeLoad: requirePermission(SUPERADMIN_ONLY),
+  beforeLoad: requirePermission(Permission.FoundationHardeningView),
   component: lazyRouteComponent(() => import('./pages/foundation/foundation-hardening.page'), 'FoundationHardeningPage'),
 });
 
@@ -91,7 +91,7 @@ const projectDetailRoute = createRoute({
 const wbsRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/wbs',
-  beforeLoad: requirePermission(Permission.WBSView),
+  beforeLoad: requirePermission(Permission.WbsView),
   component: lazyRouteComponent(() => import('./pages/project/wbs.page'), 'WbsPage'),
 });
 
@@ -343,7 +343,7 @@ const engineeringRoute = createRoute({
 const masterDataRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/master-data',
-  beforeLoad: requirePermission(SUPERADMIN_ONLY),
+  beforeLoad: requirePermission(Permission.MasterDataView),
   component: lazyRouteComponent(() => import('./pages/master-data/master-data.page'), 'MasterDataPage'),
 });
 
@@ -371,7 +371,7 @@ const rfqRoute = createRoute({
 const procurementHardeningRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/procurement/hardening',
-  beforeLoad: requirePermission(SUPERADMIN_ONLY),
+  beforeLoad: requirePermission(Permission.ProcurementHardeningView),
   component: lazyRouteComponent(() => import('./pages/procurement/procurement-hardening.page'), 'ProcurementHardeningPage'),
 });
 
