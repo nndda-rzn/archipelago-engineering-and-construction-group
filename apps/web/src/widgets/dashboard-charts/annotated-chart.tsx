@@ -25,6 +25,8 @@ export interface AnnotatedChartProps {
   zeroLine?: boolean;
   /** Tampilkan legend (wajib bila seri > 1). */
   showLegend?: boolean;
+  /** Posisi legend; default `bottom`. `top` menghemat tinggi bawah. */
+  legendPosition?: 'top' | 'bottom';
   /** Pemformat nilai tooltip; default formatIdr. */
   formatValue?: (value: number) => string;
   /** Nama seri untuk tooltip, keyed by dataKey. */
@@ -47,6 +49,7 @@ export function AnnotatedChart({
   band,
   zeroLine,
   showLegend,
+  legendPosition = 'bottom',
   formatValue = formatIdr,
   seriesNames,
   children,
@@ -74,7 +77,13 @@ export function AnnotatedChart({
         />
       )}
       {children}
-      {showLegend && <Legend formatter={(value) => seriesNames?.[value] ?? value} wrapperStyle={{ fontSize: 12 }} />}
+      {showLegend && (
+        <Legend
+          formatter={(value) => seriesNames?.[value] ?? value}
+          verticalAlign={legendPosition}
+          wrapperStyle={{ fontSize: 12 }}
+        />
+      )}
       <Tooltip
         contentStyle={CHART_TOOLTIP_STYLE}
         cursor={{ fill: '#f4f4f5' }}
