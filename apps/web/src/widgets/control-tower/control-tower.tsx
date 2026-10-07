@@ -59,15 +59,40 @@ export function toExceptionItems(t: ControlTower): ExceptionItem[] {
   }));
 }
 
-/** Jembatan kas dari KPI + treasury: opening → net → closing. */
-export function buildCashBridge(t: ControlTower): WaterfallStep[] {
+/**
+ * Jembatan kas 4 tahap dari KPI + treasury + seri arus kas:
+ * `Opening → +Collections → −Payments → =Closing`.
+ *
+ * Collections/Payments diambil dari seri arus kas (sumber yang sama dengan chart
+ * arus kas), dan Opening diturunkan dari Closing dikurangi net seri tersebut —
+ * sehingga jembatan **selalu rekonsiliasi**: Opening + In − Out = Closing.
+ * Bila seri kosong, fallback ke satu delta net (perilaku lama).
+ */
+export function buildCashBridge(
+  t: ControlTower,
+  cashFlowSeries: { cashIn: number; cashOut: number }[] = [],
+): WaterfallStep[] {
+  const closing = t.treasury.cashOnHand;
+  const totalIn = cashFlowSeries.reduce((s, m) => s + m.cashIn, 0);
+  const totalOut = cashFlowSeries.reduce((s, m) => s + m.cashOut, 0);
+
+  if (cashFlowSeries.length > 0) {
+    const opening = closing - totalIn + totalOut;
+    return [
+      { label: 'Opening', value: Math.max(0, Number.isFinite(opening) ? opening : closing), kind: 'base' },
+      { label: '+ Collections', value: totalIn, kind: 'pos' },
+      { label: '− Payments', value: -Math.abs(totalOut), kind: 'neg' },
+      { label: 'Closing', value: closing, kind: 'total' },
+    ];
+  }
+
+  // Fallback: satu delta net (tanpa rincian collections/payments).
   const net = t.kpis.find((k) => k.key === 'netCashFlow')?.value ?? 0;
-  const opening = t.treasury.cashOnHand - net;
-  const openingSafe = Number.isFinite(opening) ? opening : t.treasury.cashOnHand;
+  const opening = closing - net;
   return [
-    { label: 'Opening', value: Math.max(0, openingSafe), kind: 'base' },
+    { label: 'Opening', value: Math.max(0, Number.isFinite(opening) ? opening : closing), kind: 'base' },
     { label: 'Net flow', value: net, kind: net >= 0 ? 'pos' : 'neg' },
-    { label: 'Closing', value: t.treasury.cashOnHand, kind: 'total' },
+    { label: 'Closing', value: closing, kind: 'total' },
   ];
 }
 
@@ -163,7 +188,7 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
             </Card>
             <Card variant="flat">
               <h3 className="mb-2 text-h3 text-neutral-950">Cash bridge · period</h3>
-              <WaterfallChart steps={buildCashBridge(data)} />
+              <WaterfallChart steps={buildCashBridge(data, cashFlowSeries)} />
             </Card>
           </div>
         </div>

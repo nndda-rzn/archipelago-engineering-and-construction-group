@@ -1,4 +1,5 @@
-import { formatIdr } from '@/shared/lib/format';
+import { formatIdrAxis } from '@/shared/lib/format';
+import { CHART } from './chart-colors';
 
 export interface WaterfallStep {
   label: string;
@@ -31,48 +32,54 @@ export function waterfallSegments(steps: WaterfallStep[]): WaterfallSegment[] {
   });
 }
 
+/** Warna dari token bersama (tanpa hex di komponen). */
 const TONE: Record<WaterfallStep['kind'], string> = {
-  base: '#71717a', // neutral-500
-  pos: '#15803d', // success-700
-  neg: '#b91c1c', // destructive-700
-  total: '#27272a', // neutral-800
+  base: CHART.axis, // neutral
+  pos: CHART.positive,
+  neg: CHART.negative,
+  total: CHART.strong,
 };
 
 /**
- * Jembatan kas (waterfall): menunjukkan **bagaimana** kas berubah, bukan hanya
- * berapa. Opening + collections − payments = closing. Aksesibel via tabel sr-only
- * + `role="img"` dengan ringkasan nilai.
+ * Jembatan kas (waterfall **horizontal**): menunjukkan **bagaimana** kas berubah
+ * dari Opening ke Closing melalui Collections (+) dan Payments (−). Horizontal
+ * dipilih agar label tahap + nilai rata kanan tetap terbaca di kartu sempit.
+ * Aksesibel via `role="img"` + aria-label berisi seluruh tahap.
  */
 export function WaterfallChart({ steps }: { steps: WaterfallStep[] }) {
   const segs = waterfallSegments(steps);
   const max = Math.max(...segs.map((s) => Math.max(s.from, s.to)), 1);
-  const summary = segs.map((s) => `${s.label} ${formatIdr(s.value)}`).join(', ');
+  const summary = segs.map((s) => `${s.label} ${formatIdrAxis(s.value)}`).join(', ');
+  const pct = (v: number) => Math.min(100, Math.max(0, (v / max) * 100));
 
   return (
-    <div role="img" aria-label={`Cash bridge: ${summary}`}>
-      <div className="flex h-44 items-end gap-3">
-        {segs.map((s) => {
-          const top = Math.min(s.from, s.to);
-          const height = Math.max(2, Math.abs(s.to - s.from));
-          const topPct = 100 - (top / max) * 100;
-          const heightPct = (height / max) * 100;
-          return (
-            <div key={s.label} className="flex flex-1 flex-col items-center justify-end">
-              <span className="mb-1 font-mono text-caption tabular-nums text-neutral-500">
-                {s.kind === 'pos' ? `+${formatIdr(s.value)}` : s.kind === 'neg' ? formatIdr(s.value) : formatIdr(s.value)}
-              </span>
-              <div className="relative w-full flex-1">
-                <div
-                  data-slot="waterfall-bar"
-                  className="absolute w-full rounded-sm"
-                  style={{ top: `${topPct}%`, height: `${heightPct}%`, backgroundColor: TONE[s.kind] }}
-                />
-              </div>
-              <span className="mt-1.5 text-caption text-neutral-500">{s.label}</span>
-            </div>
-          );
-        })}
-      </div>
+    <div role="img" aria-label={`Cash bridge: ${summary}`} className="space-y-2">
+      {segs.map((s) => {
+        const startPct = pct(Math.min(s.from, s.to));
+        const widthPct = Math.max(1, pct(Math.abs(s.to - s.from)));
+        const valueLabel =
+          s.kind === 'pos'
+            ? `+${formatIdrAxis(Math.abs(s.value))}`
+            : s.kind === 'neg'
+              ? `−${formatIdrAxis(Math.abs(s.value))}`
+              : formatIdrAxis(s.value);
+        return (
+          <div key={s.label} className="grid grid-cols-[7rem_1fr_5.5rem] items-center gap-2.5">
+            <span className="truncate text-caption text-neutral-600" title={s.label}>
+              {s.label}
+            </span>
+            <span className="relative h-3 w-full overflow-hidden rounded-sm bg-neutral-100">
+              <span
+                data-slot="waterfall-bar"
+                data-kind={s.kind}
+                className="absolute inset-y-0 rounded-sm"
+                style={{ left: `${startPct}%`, width: `${widthPct}%`, backgroundColor: TONE[s.kind] }}
+              />
+            </span>
+            <span className="text-right font-mono text-caption tabular-nums text-neutral-700">{valueLabel}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }

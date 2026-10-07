@@ -89,12 +89,26 @@ describe('toExceptionItems', () => {
 });
 
 describe('buildCashBridge', () => {
-  it('produces opening, net and closing steps that reconcile', () => {
+  it('falls back to opening/net/closing when there is no series', () => {
     const steps = buildCashBridge(base);
     expect(steps.map((s) => s.label)).toEqual(['Opening', 'Net flow', 'Closing']);
     const opening = steps[0]!.value;
     const net = steps[1]!.value;
     expect(opening + net).toBe(base.treasury.cashOnHand);
+  });
+
+  it('breaks the net into collections and payments and reconciles', () => {
+    const series = [
+      { month: '2026-01', cashIn: 300, cashOut: 100 },
+      { month: '2026-02', cashIn: 200, cashOut: 50 },
+    ];
+    const steps = buildCashBridge(base, series);
+    expect(steps.map((s) => s.label)).toEqual(['Opening', '+ Collections', '− Payments', 'Closing']);
+    const [opening, collections, payments, closing] = steps.map((s) => s.value);
+    // Opening + In − Out = Closing.
+    expect(opening! + collections! + payments!).toBe(closing);
+    expect(collections).toBe(500);
+    expect(payments).toBe(-150);
   });
 });
 

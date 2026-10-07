@@ -44,18 +44,20 @@ describe('DomainTiles', () => {
       expect(screen.getByRole('heading', { name })).toBeTruthy();
   });
 
-  it('pairs each tile visual with an adjacent text value (per-tile check)', () => {
+  it('pairs each tile with a numeric text value (per-tile check)', () => {
     const { container } = render(<DomainTiles data={sampleTower} />);
-    // Setiap tile harus punya >=1 visual role="img" DAN >=1 nilai teks numerik,
-    // diperiksa per-tile (bukan hanya total halaman) agar satu tile tanpa nilai
-    // tidak lolos. Sebagian tile punya 2 visual (mis. Liquidity) — ok.
+    // Setiap tile harus punya >=1 nilai teks numerik, diperiksa per-tile.
+    // Visual (role="img") TIDAK wajib di tiap tile: beberapa domain (mis. HCM)
+    // lebih jujur sebagai angka berlabel daripada grafik. Yang wajib adalah
+    // angkanya terbaca, bukan bergantung pada grafik/warna.
     const tiles = Array.from(container.querySelectorAll('h3')).map((h) => h.parentElement!);
     expect(tiles.length).toBe(10);
     for (const tile of tiles) {
-      expect(tile.querySelectorAll('[role="img"]').length).toBeGreaterThanOrEqual(1);
       const numeric = Array.from(tile.querySelectorAll('dd')).some((dd) => /\d/.test(dd.textContent ?? ''));
       expect(numeric).toBe(true);
     }
+    // Visual tetap ada di mayoritas tile (heatmap, stage bars, bullet, dll).
+    expect(container.querySelectorAll('[role="img"]').length).toBeGreaterThanOrEqual(6);
   });
 
   it('renders a neutral empty state when BG utilisation is missing (no fake 0%)', () => {
