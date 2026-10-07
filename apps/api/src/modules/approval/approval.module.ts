@@ -6,10 +6,11 @@ import { WorkflowDefinitionService } from './application/services/workflow-defin
 import { WorkflowInsightsService } from './application/services/workflow-insights.service';
 import { ConditionEvaluator } from './application/services/shared/condition-evaluator';
 import { RoleAssignmentLookup } from './application/services/shared/role-assignment.lookup';
+import { WorkflowQueryService } from './application/services/shared/workflow-query.service';
 
 @Module({
   imports: [SharedModule],
   controllers: [ApprovalController],
-  providers: [ConditionEvaluator, RoleAssignmentLookup, ApprovalTaskService, WorkflowDefinitionService, WorkflowInsightsService],
+  providers: [ConditionEvaluator, RoleAssignmentLookup, WorkflowQueryService, ApprovalTaskService, WorkflowDefinitionService, WorkflowInsightsService],
 })
 export class ApprovalModule {}
