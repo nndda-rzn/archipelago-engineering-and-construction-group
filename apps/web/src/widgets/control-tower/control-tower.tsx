@@ -92,7 +92,7 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
     <div className="flex flex-col gap-tier">
       {/* T2 — Position band: 6 stat ber-target sebagai teks, bukan kartu. */}
       <SectionBand name="Position" count={`updated ${new Date(data.generatedAt).toLocaleTimeString('id-ID')}`} right={liveControl}>
-        <div className="grid grid-cols-2 gap-x-cell gap-y-4 md:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-1 gap-x-cell gap-y-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
           {[cash, net, backlog, budgetVar, arOverdue, dso].filter((k): k is ControlTowerKpi => Boolean(k)).map((k) => (
             <StatTile
               key={k.key}
@@ -143,44 +143,23 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
 
       {/* T4 — Operational pulse. */}
       <SectionBand name="Operational pulse" right={<span>Liquidity · Safety/Quality · Procurement</span>}>
-        <div className="grid grid-cols-1 gap-cell md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-cell sm:grid-cols-2 xl:grid-cols-4">
           <Card variant="flat">
             <h3 className="mb-2 text-h3 text-neutral-950">Portfolio map</h3>
             <dl className="space-y-1.5">
-              <div className="flex items-center justify-between text-body-sm">
-                <dt className="text-neutral-500">Projects</dt>
-                <dd className="font-mono tabular-nums text-neutral-900">{data.projectTotals.count}</dd>
-              </div>
-              <div className="flex items-center justify-between text-body-sm">
-                <dt className="text-neutral-500">On track</dt>
-                <dd className="font-mono tabular-nums text-success-700">{healthCounts.ON_TRACK ?? 0}</dd>
-              </div>
-              <div className="flex items-center justify-between text-body-sm">
-                <dt className="text-neutral-500">At risk</dt>
-                <dd className="font-mono tabular-nums text-warning-700">{healthCounts.AT_RISK ?? 0}</dd>
-              </div>
-              <div className="flex items-center justify-between text-body-sm">
-                <dt className="text-neutral-500">Critical</dt>
-                <dd className="font-mono tabular-nums text-destructive-700">{healthCounts.CRITICAL ?? 0}</dd>
-              </div>
+              <Row label="Projects" value={String(data.projectTotals.count)} />
+              <Row label="On track" value={String(healthCounts.ON_TRACK ?? 0)} tone="neutral" />
+              <Row label="At risk" value={String(healthCounts.AT_RISK ?? 0)} tone="warning" />
+              <Row label="Critical" value={String(healthCounts.CRITICAL ?? 0)} tone="negative" />
             </dl>
           </Card>
 
           <Card variant="flat">
             <h3 className="mb-2 text-h3 text-neutral-950">Working capital</h3>
             <dl className="space-y-1.5">
-              <div className="flex items-center justify-between text-body-sm">
-                <dt className="text-neutral-500">AR overdue 61+</dt>
-                <dd className="font-mono tabular-nums text-neutral-900">{formatIdr(data.kpis.find((k) => k.key === 'arOverdue')?.value ?? 0)}</dd>
-              </div>
-              <div className="flex items-center justify-between text-body-sm">
-                <dt className="text-neutral-500">DSO</dt>
-                <dd className="font-mono tabular-nums text-neutral-900">{dso ? `${Math.round(dso.value)} d` : '—'}</dd>
-              </div>
-              <div className="flex items-center justify-between text-body-sm">
-                <dt className="text-neutral-500">FX exposure</dt>
-                <dd className="font-mono tabular-nums text-neutral-900">{formatIdr(data.treasury.fxExposureValue)}</dd>
-              </div>
+              <Row label="AR overdue 61+" value={formatIdr(data.kpis.find((k) => k.key === 'arOverdue')?.value ?? 0)} />
+              <Row label="DSO" value={dso ? `${Math.round(dso.value)} d` : '—'} />
+              <Row label="FX exposure" value={formatIdr(data.treasury.fxExposureValue)} />
             </dl>
           </Card>
 
@@ -190,40 +169,19 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
               <MiniStat label="TRIR" value={trir ? trir.value.toFixed(2) : '0.00'} context={trir?.target ? `target ≤ ${trir.target}` : undefined} tone={trir?.meetsTarget === false ? 'negative' : 'positive'} />
             </div>
             <dl className="space-y-1.5">
-              <div className="flex items-center justify-between text-body-sm">
-                <dt className="text-neutral-500">Incidents open</dt>
-                <dd className="font-mono tabular-nums text-neutral-900">{data.operations.safety.openIncidents}</dd>
-              </div>
-              <div className="flex items-center justify-between text-body-sm">
-                <dt className="text-neutral-500">NCR open</dt>
-                <dd className="font-mono tabular-nums text-neutral-900">{data.operations.quality.openNcrs}</dd>
-              </div>
-              <div className="flex items-center justify-between text-body-sm">
-                <dt className="text-neutral-500">Punch open</dt>
-                <dd className="font-mono tabular-nums text-neutral-900">{data.operations.quality.openPunchItems}</dd>
-              </div>
+              <Row label="Incidents open" value={String(data.operations.safety.openIncidents)} />
+              <Row label="NCR open" value={String(data.operations.quality.openNcrs)} />
+              <Row label="Punch open" value={String(data.operations.quality.openPunchItems)} />
             </dl>
           </Card>
 
           <Card variant="flat">
             <h3 className="mb-2 text-h3 text-neutral-950">Procurement</h3>
             <dl className="space-y-1.5">
-              <div className="flex items-center justify-between text-body-sm">
-                <dt className="text-neutral-500">Open PO</dt>
-                <dd className="font-mono tabular-nums text-neutral-900">{formatIdr(data.operations.procurement.openPoValue)}</dd>
-              </div>
-              <div className="flex items-center justify-between text-body-sm">
-                <dt className="text-neutral-500">PR pending</dt>
-                <dd className="font-mono tabular-nums text-neutral-900">{data.operations.procurement.pendingPrCount}</dd>
-              </div>
-              <div className="flex items-center justify-between text-body-sm">
-                <dt className="text-neutral-500">RFQ due</dt>
-                <dd className="font-mono tabular-nums text-neutral-900">{data.operations.procurement.rfqDueCount}</dd>
-              </div>
-              <div className="flex items-center justify-between text-body-sm">
-                <dt className="text-neutral-500">Vendor score</dt>
-                <dd className="font-mono tabular-nums text-neutral-900">{data.operations.procurement.avgVendorScore ?? '—'}</dd>
-              </div>
+              <Row label="Open PO" value={formatIdr(data.operations.procurement.openPoValue)} />
+              <Row label="PR pending" value={String(data.operations.procurement.pendingPrCount)} />
+              <Row label="RFQ due" value={String(data.operations.procurement.rfqDueCount)} />
+              <Row label="Vendor score" value={String(data.operations.procurement.avgVendorScore ?? '—')} />
             </dl>
           </Card>
         </div>
@@ -253,7 +211,7 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
 
       {/* T6 — Governance · Commercial · Treasury. */}
       <SectionBand name="Governance · Commercial · Treasury">
-        <div className="grid grid-cols-1 gap-cell md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-cell sm:grid-cols-2 md:grid-cols-3">
           <Card variant="flat">
             <h3 className="mb-2 text-h3 text-neutral-950">Governance</h3>
             <dl className="space-y-1.5">
@@ -286,12 +244,16 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
   );
 }
 
+/** Satu baris label→nilai yang aman untuk teks panjang (label boleh terpotong,
+ *  nilai tidak — angka finansial harus utuh). */
 function Row({ label, value, tone = 'neutral' }: { label: string; value: string; tone?: 'neutral' | 'warning' | 'negative' }) {
   const cls = tone === 'warning' ? 'text-warning-700' : tone === 'negative' ? 'text-destructive-700' : 'text-neutral-900';
   return (
-    <div className="flex items-center justify-between text-body-sm">
-      <dt className="text-neutral-500">{label}</dt>
-      <dd className={`font-mono tabular-nums ${cls}`}>{value}</dd>
+    <div className="flex items-baseline justify-between gap-3 text-body-sm">
+      <dt className="min-w-0 truncate text-neutral-500" title={label}>
+        {label}
+      </dt>
+      <dd className={`shrink-0 font-mono tabular-nums ${cls}`}>{value}</dd>
     </div>
   );
 }

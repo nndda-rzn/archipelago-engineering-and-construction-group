@@ -100,9 +100,9 @@ export function DashboardPage() {
       <div className="mx-auto flex max-w-[1680px] flex-col gap-tier" aria-label="Loading dashboard">
         {header}
         <DashboardFilterBar />
-        <div className="grid grid-cols-2 gap-x-cell gap-y-4 md:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-1 gap-x-cell gap-y-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex flex-col gap-2">
+            <div key={i} className="flex min-w-0 flex-col gap-2">
               <Skeleton className="h-3 w-24" />
               <Skeleton className="h-7 w-32" />
               <Skeleton className="h-1.5 w-full" />

@@ -202,7 +202,7 @@ export function AppShell() {
         </header>
 
         {}
-        <main id="main-content" className="flex-1 overflow-y-auto bg-surface-canvas p-6">
+        <main id="main-content" className="flex-1 overflow-y-auto overflow-x-hidden bg-surface-canvas p-6">
           <Outlet />
         </main>
       </div>

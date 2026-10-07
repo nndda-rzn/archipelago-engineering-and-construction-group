@@ -51,18 +51,32 @@ export function StatTile({
   const directionLabel = direction === 'MIN' ? 'minimum' : direction === 'MAX' ? 'maximum' : 'target';
 
   return (
-    <div className={cn('flex flex-col', className)} {...props}>
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-overline uppercase text-neutral-500">{label}</span>
-        {delta && <DeltaBadge pct={delta.pct} direction={delta.direction} />}
+    <div className={cn('flex min-w-0 flex-col', className)} {...props}>
+      <div className="flex min-w-0 items-baseline justify-between gap-2">
+        {/* Label boleh menyusut & terpotong; delta tidak boleh (angkanya pendek). */}
+        <span className="min-w-0 truncate text-overline uppercase text-neutral-500" title={label}>
+          {label}
+        </span>
+        {delta && <DeltaBadge pct={delta.pct} direction={delta.direction} className="shrink-0" />}
       </div>
 
-      <div className="mt-1 flex items-center gap-2.5">
-        {viz}
-        <span className={cn('font-mono tabular-nums text-metric', VALUE_TONE[tone])}>{value}</span>
+      <div className="mt-1 flex min-w-0 items-center gap-2.5">
+        {viz && <span className="shrink-0">{viz}</span>}
+        {/* Angka besar (mis. Rp 18.240.500.000) pada text-metric bisa lebih lebar
+            dari selnya. Font turun di layar sempit + truncate sebagai jaring
+            pengaman; `title` menjaga angka penuh tetap terbaca (hover).
+            Kelas ukuran ditulis sebagai string (bukan lewat `cn`) karena
+            tailwind-merge tidak mengenal token `metric*` dan akan menghapus
+            salah satunya. */}
+        <span
+          className={`min-w-0 truncate font-mono tabular-nums text-metric-sm md:text-metric ${VALUE_TONE[tone]}`}
+          title={typeof value === 'string' ? value : undefined}
+        >
+          {value}
+        </span>
       </div>
 
-      <div className="mt-auto pt-2">
+      <div className="mt-auto min-w-0 pt-2">
         {pct != null && (
           <div
             role="img"
@@ -72,7 +86,11 @@ export function StatTile({
             <div data-slot="stat-attainment" className={cn('h-full rounded-sm', barTone)} style={{ width: `${pct}%` }} />
           </div>
         )}
-        {targetLabel && <p className="mt-1 text-caption text-neutral-500">{targetLabel}</p>}
+        {targetLabel && (
+          <p className="mt-1 truncate text-caption text-neutral-500" title={targetLabel}>
+            {targetLabel}
+          </p>
+        )}
       </div>
     </div>
   );

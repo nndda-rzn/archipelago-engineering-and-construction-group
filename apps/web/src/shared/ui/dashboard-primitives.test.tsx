@@ -63,6 +63,56 @@ describe('SectionBand', () => {
     expect(screen.getByText('12 open')).toBeTruthy();
     expect(screen.getByText('content')).toBeTruthy();
   });
+
+  it('wraps its header and allows the title to truncate (no overlap at narrow widths)', () => {
+    const { container } = render(
+      <SectionBand name="Governance · Commercial · Treasury" right={<span>risk · pipeline</span>}>
+        <p>body</p>
+      </SectionBand>,
+    );
+    const header = container.querySelector('section > div')!;
+    expect(header.className).toContain('flex-wrap');
+    const title = screen.getByRole('heading', { name: /Governance/ });
+    expect(title.className).toContain('truncate');
+    expect(title.className).toContain('min-w-0');
+  });
+});
+
+describe('StatTile — long values never push the layout', () => {
+  it('truncates the value and exposes the full text via title', () => {
+    const { container } = render(<StatTile label="Cash on hand" value="Rp 18.240.500.000" />);
+    const value = Array.from(container.querySelectorAll('span')).find((s) => s.textContent === 'Rp 18.240.500.000')!;
+    expect(value.className).toContain('truncate');
+    expect(value.className).toContain('min-w-0');
+    expect(value.getAttribute('title')).toBe('Rp 18.240.500.000');
+  });
+
+  it('uses a smaller metric size on narrow screens (responsive font)', () => {
+    const { container } = render(<StatTile label="Cash" value="Rp 1" />);
+    const value = Array.from(container.querySelectorAll('span')).find((s) => s.textContent === 'Rp 1')!;
+    expect(value.className).toContain('text-metric-sm');
+    expect(value.className).toContain('md:text-metric');
+  });
+
+  it('truncates the label and keeps the delta from shrinking away', () => {
+    const { container } = render(
+      <StatTile label="A very long metric label that will not fit" value="1" delta={{ pct: 12.4, direction: 'up' }} />,
+    );
+    const label = Array.from(container.querySelectorAll('span')).find((s) => s.textContent?.startsWith('A very long'))!;
+    expect(label.className).toContain('truncate');
+    const delta = container.querySelector('[aria-label="up"]')!;
+    expect(delta.className).toContain('shrink-0');
+  });
+});
+
+describe('MiniStat — long values never push the layout', () => {
+  it('truncates value and context', () => {
+    const { container } = render(<MiniStat label="Open PO" value="Rp 150.000.000.000" context="target ≤ Rp 5B" />);
+    const value = Array.from(container.querySelectorAll('span')).find((s) => s.textContent === 'Rp 150.000.000.000')!;
+    expect(value.className).toContain('truncate');
+    const context = Array.from(container.querySelectorAll('span')).find((s) => s.textContent === 'target ≤ Rp 5B')!;
+    expect(context.className).toContain('truncate');
+  });
 });
 
 const items: ExceptionItem[] = [

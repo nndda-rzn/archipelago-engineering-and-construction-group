@@ -19,12 +19,17 @@ export interface SectionBandProps extends React.HTMLAttributes<HTMLDivElement> {
  */
 export function SectionBand({ name, count, right, children, className, ...props }: SectionBandProps) {
   return (
-    <section className={cn('flex flex-col', className)} {...props}>
-      <div className="mb-3.5 flex items-baseline gap-3">
-        <h2 className="text-overline uppercase text-neutral-900">{name}</h2>
-        {count && <span className="font-mono text-caption tabular-nums text-neutral-500">{count}</span>}
-        <span aria-hidden="true" className="h-px flex-1 bg-neutral-200" />
-        {right && <div className="flex shrink-0 items-center gap-3 text-caption text-neutral-500">{right}</div>}
+    <section className={cn('flex min-w-0 flex-col', className)} {...props}>
+      {/* Header boleh wrap: di layar sempit judul panjang + klaster kanan
+          (legenda/aksi) tidak boleh saling menimpa. Garis rule disembunyikan
+          saat wrap agar tidak "menggantung". */}
+      <div className="mb-3.5 flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
+        <h2 className="min-w-0 truncate text-overline uppercase text-neutral-900" title={name}>
+          {name}
+        </h2>
+        {count && <span className="shrink-0 font-mono text-caption tabular-nums text-neutral-500">{count}</span>}
+        <span aria-hidden="true" className="hidden h-px min-w-[2rem] flex-1 bg-neutral-200 sm:block" />
+        {right && <div className="flex shrink-0 flex-wrap items-center gap-3 text-caption text-neutral-500">{right}</div>}
       </div>
       {children}
     </section>
