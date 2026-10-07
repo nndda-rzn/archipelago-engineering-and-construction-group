@@ -3,6 +3,7 @@ import { PrismaService } from '@/shared/database/prisma.service';
 import { ConditionEvaluator } from './shared/condition-evaluator';
 import { summariseDocumentOutcomes, type TaskOutcomeRow } from './shared/document-outcomes';
 import { toConditionGroupLoose as toGroup } from './shared/condition-group-mapper';
+import { approvalConditionText } from './shared/approval-condition-text';
 import type { WorkflowInsights } from '@aec/api-contracts';
 
 /**
@@ -112,7 +113,7 @@ export class WorkflowInsightsService {
     const ruleHits = definition.steps.map((step) => ({
       stepOrder: step.stepOrder,
       name: step.name,
-      condition: this.conditionText(step),
+      condition: approvalConditionText(step),
       matching: amounts.values.filter((value) =>
         this.evaluator.evaluateCondition(
           step as unknown as { conditionField: string | null; conditionOp: string | null; conditionValue: never; conditionGroup?: never },
@@ -213,18 +214,6 @@ export class WorkflowInsightsService {
         if (b.definitionId === null) return -1;
         return (b.version ?? 0) - (a.version ?? 0);
       });
-  }
-
-  private conditionText(step: { conditionField: string | null; conditionOp: string | null; conditionValue: unknown; conditionGroup?: unknown }): string | null {
-    const group = toGroup(step.conditionGroup);
-    if (group) {
-      return group.conditions
-        .map((c) => `${c.field} ${c.op === '==' ? '=' : c.op} ${Number(c.value).toLocaleString('id-ID')}`)
-        .join(group.combinator === 'OR' ? ' or ' : ' and ');
-    }
-    if (!step.conditionField || !step.conditionOp || step.conditionValue == null) return null;
-    const op = step.conditionOp === '==' ? '=' : step.conditionOp;
-    return `${step.conditionField} ${op} ${Number(step.conditionValue).toLocaleString('id-ID')}`;
   }
 
   /** Nominal dokumen untuk jenis transaksi ini + sebaran bucket tetap. */

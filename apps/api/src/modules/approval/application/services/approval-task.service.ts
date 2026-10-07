@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation';
 import { ConditionEvaluator } from './shared/condition-evaluator';
+import { approvalConditionText } from './shared/approval-condition-text';
 import { computeBudgetCheck } from '@/shared/project/budget-check';
 import type {
   ApprovalCounts,
@@ -444,15 +445,9 @@ export class ApprovalTaskService {
       stepOrder: s.stepOrder,
       name: s.name,
       approverRoleCode: s.approverRoleCode,
-      condition: this.conditionText(s),
+      condition: approvalConditionText(s),
       status: s.stepOrder < currentStepOrder ? 'done' : s.stepOrder === currentStepOrder ? 'current' : 'upcoming',
     }));
-  }
-
-  private conditionText(step: { conditionField: string | null; conditionOp: string | null; conditionValue: unknown }): string | null {
-    if (!step.conditionField || !step.conditionOp || step.conditionValue == null) return null;
-    const op = step.conditionOp === '==' ? '=' : step.conditionOp;
-    return `${step.conditionField} ${op} ${Number(step.conditionValue).toLocaleString('id-ID')}`;
   }
 
   private async buildProjectContext(projectId: string): Promise<ApprovalDetail['project']> {
