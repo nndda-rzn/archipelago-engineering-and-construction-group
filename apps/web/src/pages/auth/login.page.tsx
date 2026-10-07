@@ -44,8 +44,25 @@ export function LoginPage() {
   return (
     <div className="flex min-h-dvh bg-neutral-50">
       {/* Panel kiri — konteks produk. Disembunyikan di layar kecil. */}
-      <div className="hidden w-1/2 flex-col justify-between bg-neutral-950 p-10 lg:flex">
-        <div className="flex items-center gap-3" translate="no">
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-neutral-950 p-10 lg:flex">
+        {/* Latar dekoratif: gambar redup di belakang teks. Above-the-fold di
+            desktop, jadi eager (bukan lazy); prioritas default karena dekoratif. */}
+        <img
+          src="/bg-login.webp"
+          alt=""
+          aria-hidden="true"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+        />
+        {/* Overlay gelap: SEMUA stop >= 0.85 agar teks caption (neutral-400,
+            12px) tetap >= 4.5:1 di atas gambar terang (WCAG 1.4.3). Formulir
+            tetap elemen dominan; gambar hanya tekstur, bukan fokus. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-br from-neutral-950/95 via-neutral-950/90 to-neutral-950/85"
+        />
+
+        <div className="relative z-10 flex items-center gap-3" translate="no">
           {/* Varian putih: logo hitam tidak terlihat di latar gelap (kontras 0,93:1). */}
           <img src="/logo-mark-light.png" alt="" aria-hidden="true" className="h-9 w-9 shrink-0 object-contain" />
           <div>
@@ -54,7 +71,7 @@ export function LoginPage() {
           </div>
         </div>
 
-        <div>
+        <div className="relative z-10">
           <h1 className="max-w-md text-h1 font-semibold leading-snug text-white">
             Project-centric ERP for construction &amp; EPC.
           </h1>
@@ -87,7 +104,7 @@ export function LoginPage() {
           </ol>
         </div>
 
-        <p className="text-caption text-neutral-400">© 2026 AEC Group · Demo environment.</p>
+        <p className="relative z-10 text-caption text-neutral-400">© 2026 AEC Group · Demo environment.</p>
       </div>
 
       {/* Panel kanan — formulir. */}

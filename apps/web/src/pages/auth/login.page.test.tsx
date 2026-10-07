@@ -90,6 +90,14 @@ describe('LoginPage — struktur & aksesibilitas', () => {
     expect(container.textContent).not.toMatch(/operating system/i);
   });
 
+  it('renders the login background as decorative (alt="", aria-hidden)', () => {
+    const { container } = renderWithProviders(<LoginPage />);
+    const bg = container.querySelector('img[src="/bg-login.webp"]');
+    expect(bg).not.toBeNull();
+    expect(bg!.getAttribute('alt')).toBe('');
+    expect(bg!.getAttribute('aria-hidden')).toBe('true');
+  });
+
   it('announces a failed sign-in to assistive tech (role=alert)', () => {
     auth.isError = true;
     try {
