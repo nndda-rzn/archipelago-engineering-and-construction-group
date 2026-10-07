@@ -615,10 +615,10 @@ async function main() {
   // ── 8b. Aging spread AR: beberapa claim + client invoice dengan tanggal berbeda ──
   // Agar bucket 1-30/31-60/61-90/90+ terisi dan konsentrasi klien bermakna.
   const arSeed: Array<{ client: string; amount: number; daysAgo: number; paidPct: number }> = [
-    { client: 'PT Klien Utama', amount: 40_000_000_000, daysAgo: 25, paidPct: 0 },
-    { client: 'PT Klien Utama', amount: 30_000_000_000, daysAgo: 55, paidPct: 50 },
-    { client: 'PT Nusantara Energi', amount: 60_000_000_000, daysAgo: 70, paidPct: 0 },
-    { client: 'PT Nusantara Energi', amount: 20_000_000_000, daysAgo: 100, paidPct: 0 },
+    { client: 'PT Klien Utama', amount: 12_000_000_000, daysAgo: 25, paidPct: 0 },
+    { client: 'PT Klien Utama', amount: 9_000_000_000, daysAgo: 55, paidPct: 50 },
+    { client: 'PT Nusantara Energi', amount: 14_000_000_000, daysAgo: 70, paidPct: 0 },
+    { client: 'PT Nusantara Energi', amount: 6_000_000_000, daysAgo: 100, paidPct: 0 },
   ];
   const wpForAr = await prisma.constructionWorkPackage.findFirst({ where: { projectId: project.id } });
   for (let i = 0; i < arSeed.length; i++) {
@@ -682,13 +682,25 @@ async function main() {
   }
   console.log(`Cash movement: ${cashMovSeed.length} transaksi multi-bulan`);
 
-  // ── 9. Treasury: bank account + cash forecast ──
-  const bankCount = await prisma.bankAccount.count();
-  if (bankCount === 0) {
-    await prisma.bankAccount.create({
+  // ── 9. Treasury: bank account + cash position + cash forecast ──
+  let bank = await prisma.bankAccount.findFirst({ where: { legalEntityId: entity.id } });
+  if (!bank) {
+    bank = await prisma.bankAccount.create({
       data: { accountCode: `BANK-${year}-000001`, legalEntityId: entity.id, bankCode: 'BCA', bankName: 'Bank Central Asia', accountNumber: '8880-7777-1111', accountName: 'PT AEC Construction', currency: 'IDR', openingBalance: 500000000000 },
     });
     console.log('BankAccount: BCA 500M');
+  }
+  // FR-DASH-004: CashPosition adalah sumber "Cash on hand" di dashboard. Tanpa
+  // baris ini angka juara dashboard selalu 0.
+  const existingPos = await prisma.cashPosition.findFirst({ where: { bankAccountId: bank.id } });
+  if (!existingPos) {
+    await prisma.cashPosition.create({
+      data: { bankAccountId: bank.id, legalEntityId: entity.id, currency: 'IDR', currentBalance: 18_240_500_000, lastUpdated: now },
+    });
+    console.log('CashPosition: Rp 18,2B');
+  } else if (Number(existingPos.currentBalance) === 0) {
+    await prisma.cashPosition.update({ where: { id: existingPos.id }, data: { currentBalance: 18_240_500_000, lastUpdated: now } });
+    console.log('CashPosition: diisi Rp 18,2B');
   }
   // Periode diturunkan dari `now` (bukan hardcoded) agar tidak bertabrakan
   // dengan bulan sebelumnya — forecast vs actual butuh periode yang berbeda.
@@ -732,6 +744,115 @@ async function main() {
     console.log('Risk: 1');
   }
 
+  // ── 11b. Operational exceptions (FR-DASH-005) ──
+  // NCR, insiden HSE, corrective action, dan risk tambahan supaya Exception
+  // Queue + pulse domain (Quality/HSE/Governance) dashboard terisi nyata.
+  const ncrCount = await prisma.ncr.count();
+  if (ncrCount === 0) {
+    const ncrs = [
+      { severity: 'CRITICAL', category: 'WORKMANSHIP', age: 34 },
+      { severity: 'MAJOR', category: 'MATERIAL', age: 12 },
+      { severity: 'MINOR', category: 'DOCUMENT', age: 5 },
+    ];
+    for (let i = 0; i < ncrs.length; i++) {
+      const n = ncrs[i];
+      const created = new Date(now.getTime() - n.age * 86_400_000);
+      await prisma.ncr.create({
+        data: {
+          ncrNumber: `NCR-${year}-${String(i + 1).padStart(6, '0')}`, projectId: project.id,
+          category: n.category, severity: n.severity, description: `Non-conformance: ${n.category.toLowerCase()}`,
+          status: 'OPEN', reinspectionRequired: true, createdAt: created,
+        },
+      });
+    }
+    console.log(`NCR: ${ncrs.length} (1 CRITICAL)`);
+  }
+  const incCount = await prisma.hseIncident.count();
+  if (incCount === 0) {
+    const incs = [
+      { severity: 'HIGH', type: 'INJURY', age: 5 },
+      { severity: 'MEDIUM', type: 'NEAR_MISS', age: 2 },
+      { severity: 'LOW', type: 'PROPERTY', age: 1 },
+    ];
+    let firstIncidentId: string | null = null;
+    for (let i = 0; i < incs.length; i++) {
+      const inc = incs[i];
+      const created = new Date(now.getTime() - inc.age * 86_400_000);
+      const row = await prisma.hseIncident.create({
+        data: {
+          incidentNumber: `INC-${year}-${String(i + 1).padStart(6, '0')}`, projectId: project.id,
+          incidentDate: created, type: inc.type, severity: inc.severity,
+          description: `${inc.type} reported on site`, status: i === 0 ? 'INVESTIGATING' : 'OPEN',
+          reportedBy: 'Safety Officer', createdAt: created,
+        },
+      });
+      if (i === 0) firstIncidentId = row.id;
+    }
+    // Corrective action yang sudah lewat tenggat → muncul di Exception Queue.
+    if (firstIncidentId) {
+      await prisma.correctiveAction.create({
+        data: {
+          sourceType: 'INCIDENT', sourceId: firstIncidentId, incidentId: firstIncidentId,
+          action: 'Install additional edge protection', owner: 'HSE Manager',
+          dueDate: new Date(now.getTime() - 3 * 86_400_000), status: 'OPEN',
+          createdAt: new Date(now.getTime() - 10 * 86_400_000),
+        },
+      });
+    }
+    console.log(`HseIncident: ${incs.length} + 1 corrective action overdue`);
+  }
+  const riskCount2 = await prisma.risk.count();
+  if (riskCount2 < 5) {
+    const extraRisks = [
+      { title: 'Cuaca ekstrem musim hujan', category: 'SCHEDULE', l: 3, i: 4 },
+      { title: 'Fluktuasi kurs material import', category: 'FINANCIAL', l: 4, i: 3 },
+      { title: 'Ketersediaan tenaga ahli las', category: 'TECHNICAL', l: 3, i: 3 },
+      { title: 'Perizinan lingkungan terlambat', category: 'HSE', l: 2, i: 4 },
+    ];
+    for (let i = 0; i < extraRisks.length; i++) {
+      const r = extraRisks[i];
+      await prisma.risk.create({
+        data: {
+          riskNumber: `RSK-${year}-${String(i + 2).padStart(6, '0')}`, projectId: project.id,
+          title: r.title, category: r.category, likelihood: r.l, impact: r.i, score: r.l * r.i,
+          owner: 'Risk Officer', mitigation: 'Monitoring berkala', status: 'OPEN',
+        },
+      });
+    }
+    console.log('Risk: +4 (matriks L×I terisi)');
+  }
+
+  // Equipment utilization + daily report supaya pulse HCM terisi.
+  const utilCount = await prisma.equipmentUtilization.count();
+  if (utilCount === 0) {
+    const eq = await prisma.equipment.findFirst({ where: { equipmentNumber: `EQ-${year}-000001` } });
+    if (eq) {
+      for (let d = 0; d < 6; d++) {
+        await prisma.equipmentUtilization.create({
+          data: {
+            equipmentId: eq.id, projectId: project.id,
+            utilizationDate: new Date(now.getTime() - d * 86_400_000),
+            availableHours: 10, operatingHours: 7 + (d % 3),
+          },
+        });
+      }
+      console.log('EquipmentUtilization: 6 hari (~71%)');
+    }
+  }
+  const drCount = await prisma.constructionDailyReport.count();
+  if (drCount === 0) {
+    for (let d = 0; d < 3; d++) {
+      await prisma.constructionDailyReport.create({
+        data: {
+          drNumber: `DR-${year}-EPC-${String(d + 1).padStart(6, '0')}`, projectId: project.id,
+          reportDate: new Date(now.getTime() - d * 86_400_000), summary: 'Pekerjaan struktur & ME berjalan',
+          manpowerTotal: 1240 - d * 20, weather: 'CERAH', reportedBy: 'Site Manager',
+        },
+      });
+    }
+    console.log('DailyReport: 3 hari (manpower 1.240)');
+  }
+
   // ── 12. KPI targets (FR-DASH-001) ──
   // Target per periode berjalan; tanpa ini dashboard hanya menampilkan angka
   // telanjang tanpa acuan "vs target".
@@ -741,11 +862,11 @@ async function main() {
     { metric: 'cash.min', target: 15000000000, direction: 'MIN', label: 'Cash on hand minimum' },
     { metric: 'cashflow.net.min', target: 500000000, direction: 'MIN', label: 'Net cash flow minimum' },
     { metric: 'backlog.min', target: 35000000000, direction: 'MIN', label: 'Contract backlog minimum' },
-    { metric: 'budget.utilization', target: 80, direction: 'MAX', label: 'Budget utilization ceiling' },
+    { metric: 'budget.remaining.min', target: 5000000000, direction: 'MIN', label: 'Budget remaining minimum' },
     { metric: 'ar.overdue.max', target: 2500000000, direction: 'MAX', label: 'AR overdue 61+ ceiling' },
     { metric: 'dso.max', target: 45, direction: 'MAX', label: 'DSO ceiling' },
     { metric: 'safety.trir.max', target: 1.5, direction: 'MAX', label: 'TRIR ceiling' },
-    { metric: 'equipment.utilization.min', target: 75, direction: 'MIN', label: 'Equipment utilization minimum' },
+    { metric: 'manpower.min', target: 1000, direction: 'MIN', label: 'Manpower minimum' },
   ];
   for (const t of kpiTargets) {
     for (const period of [fyPeriod, qPeriod]) {

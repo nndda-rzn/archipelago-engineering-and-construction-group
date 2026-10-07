@@ -123,11 +123,11 @@ export class ControlTowerService {
         this.loadOpenIncidents(now, projectWhere),
         this.loadOverdueCorrectiveActions(now, projectWhere),
         this.loadExpiringGuarantees(now, entityWhere),
-        this.loadTreasury(filter, entityWhere),
+        this.loadTreasury(entityWhere),
         this.loadProcurement(now, projectWhere),
         this.loadHcm(now, projectWhere),
         this.loadGovernance(projectWhere),
-        this.loadCommercial(now, projectWhere, dateWhere),
+        this.loadCommercial(now, dateWhere),
       ]);
 
       const exceptions = rankExceptions([...pendingApprovals, ...overdueNcrs, ...openIncidents, ...overdueCas, ...bgExpiring]);
@@ -149,7 +149,6 @@ export class ControlTowerService {
         arOverdue,
         dso: this.computeDso(arOutstanding, exec.finance.postedClientInvoice, from, to),
         trir: hcm.trir,
-        equipmentUtilization: hcm.equipmentUtilizationPct,
         manpowerToday: hcm.manpowerToday,
         targets: await this.loadTargets(filter),
       });
@@ -211,7 +210,6 @@ export class ControlTowerService {
     arOverdue: number;
     dso: number;
     trir: number;
-    equipmentUtilization: number | null;
     manpowerToday: number;
     targets: Map<string, { target: number; direction: KpiDirection }>;
   }): ControlTowerKpi[] {
@@ -421,14 +419,13 @@ export class ControlTowerService {
     });
   }
 
-  private async loadTreasury(filter: AnalyticsFilterParams, entityWhere: Record<string, unknown>) {
+  private async loadTreasury(entityWhere: Record<string, unknown>) {
     const [cashPositions, fx, bgActive, period] = await Promise.all([
       this.prisma.cashPosition.findMany({ where: entityWhere, select: { currentBalance: true } }),
       this.prisma.fxExposure.findMany({ where: entityWhere, select: { currency: true, exposureAmount: true, rate: true } }),
       this.prisma.bankGuarantee.findMany({ where: { status: 'ACTIVE', ...entityWhere }, select: { amount: true, expiryDate: true } }),
       this.prisma.fiscalPeriod.findFirst({ orderBy: { periodCode: 'desc' }, select: { periodCode: true, status: true } }),
     ]);
-    void filter;
     const now = new Date();
     const horizon = new Date(now.getTime() + 30 * 86_400_000);
     const expiring = bgActive.filter((b) => b.expiryDate && new Date(b.expiryDate) <= horizon);
@@ -515,9 +512,12 @@ export class ControlTowerService {
     const op = utilization.reduce((s, u) => s + Number(u.operatingHours), 0);
     const equipmentUtilizationPct = avail > 0 ? Math.round((op / avail) * 1000) / 10 : null;
     const manpowerToday = latestReports[0]?.manpowerTotal ?? 0;
-    // TRIR = (incident tercatat × 200.000) / total jam kerja. Proxy jam: employee × 2.000.
-    const totalHours = Math.max(1, activeEmployees * 2000);
-    const trir = Math.round(((incidents * 200000) / totalHours) * 100) / 100;
+    // TRIR = (jumlah insiden × 200.000) / total jam kerja proyek. Basis jam
+    // memakai total manpower harian × hari kerja (bukan hanya jumlah karyawan
+    // terdaftar), karena di proyek EPC tenaga kerja lapangan jauh lebih besar
+    // dari jumlah employee di master data.
+    const projectHours = Math.max(1, manpowerToday > 0 ? manpowerToday * 2000 : activeEmployees * 2000);
+    const trir = Math.round(((incidents * 200000) / projectHours) * 100) / 100;
     const daysSinceLastIncident = lastIncident ? daysBetween(new Date(lastIncident.incidentDate), now) : null;
     return {
       equipmentUtilizationPct,
@@ -550,7 +550,7 @@ export class ControlTowerService {
     return { openRisks, highRisks, overdueAuditFindings: overdueAudit, openLegalCases: openLegal, riskMatrix };
   }
 
-  private async loadCommercial(now: Date, projectWhere: Record<string, unknown>, dateWhere?: { gte?: Date; lte?: Date }) {
+  private async loadCommercial(now: Date, dateWhere?: { gte?: Date; lte?: Date }) {
     const [opps, won, lost, tendersDue, variations] = await Promise.all([
       this.prisma.opportunity.findMany({ where: { status: 'OPEN' }, select: { stage: true, expectedValue: true } }),
       this.prisma.opportunity.aggregate({ where: { status: 'CLOSED_WON' }, _sum: { expectedValue: true }, _count: { _all: true } }),
@@ -558,7 +558,6 @@ export class ControlTowerService {
       this.prisma.tenderSubmission.count({ where: { submittedAt: { gte: new Date(now.getTime() - 30 * 86_400_000) } } }),
       this.prisma.projectVariation.aggregate({ where: { status: 'APPROVED', ...(dateWhere ? { createdAt: dateWhere } : {}) }, _sum: { amountChange: true } }),
     ]);
-    void projectWhere;
     const stages = ['LEAD', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON'];
     const funnel = stages.map((stage) => {
       const items = opps.filter((o) => o.stage === stage);
