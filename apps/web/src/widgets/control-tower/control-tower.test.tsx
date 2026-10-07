@@ -9,6 +9,7 @@ vi.mock('@tanstack/react-router', () => ({
       {children}
     </a>
   ),
+  useNavigate: () => vi.fn(),
 }));
 
 const base: ControlTower = {
@@ -111,5 +112,14 @@ describe('ControlTowerView', () => {
       /\d/.test(el.textContent ?? ''),
     );
     expect(numericNodes.length).toBeGreaterThanOrEqual(40);
+  });
+
+  it('makes each portfolio ledger row focusable (keyboard drill-through)', () => {
+    const { container } = render(<ControlTowerView data={base} cashFlowSeries={[]} />);
+    const rows = Array.from(container.querySelectorAll('tbody tr'));
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row.getAttribute('tabindex')).toBe('0');
+    }
   });
 });
