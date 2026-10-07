@@ -1,8 +1,25 @@
 import * as React from 'react';
 import { cn } from '../lib/cn';
 
-const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('rounded-md border border-neutral-200 bg-white p-4 shadow-xs', className)} {...props} />
+export type CardVariant = 'panel' | 'panel-inset' | 'flat';
+
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  /**
+   * `panel` (default) — kartu permukaan terangkat: border + surface raised.
+   * `panel-inset` — well di dalam kartu: latar sunken, tanpa border luar.
+   * `flat` — tanpa border/latar; hanya wadah.
+   */
+  variant?: CardVariant;
+}
+
+const VARIANT: Record<CardVariant, string> = {
+  panel: 'rounded-md border border-neutral-200 bg-surface-raised p-4 shadow-xs',
+  'panel-inset': 'rounded-md bg-surface-sunken p-3',
+  flat: '',
+};
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(({ className, variant = 'panel', ...props }, ref) => (
+  <div ref={ref} className={cn(VARIANT[variant], className)} {...props} />
 ));
 Card.displayName = 'Card';
 
