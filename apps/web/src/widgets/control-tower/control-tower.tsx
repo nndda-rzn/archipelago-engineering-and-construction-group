@@ -1,15 +1,20 @@
 import { Link, useNavigate } from '@tanstack/react-router';
-import { Card, DataGrid, ErrorState, ExceptionQueue, SectionBand, Sparkline, StatTile, StatusPill, type ExceptionItem } from '@aec/ui';
+import { Card, DataGrid, ErrorState, ExceptionQueue, SectionBand, StatTile, StatusPill, type ExceptionItem } from '@aec/ui';
 import type { ControlTower, ControlTowerKpi, ControlTowerProject } from '@aec/api-contracts';
-import { formatIdr } from '@/shared/lib/format';
+import { formatIdr, formatIdrAxis } from '@/shared/lib/format';
 import { CashFlowChart, EvmSeriesBars, WaterfallChart, type WaterfallStep } from '@/widgets/dashboard-charts';
 import { DomainTiles } from './domain-tiles';
 
 /** Format nilai KPI sesuai satuannya. */
+/**
+ * Format nilai KPI sesuai satuannya. Nilai uang **disingkat dengan unit eksplisit**
+ * (`Rp 16,5 T`) agar selalu muat di sel KPI tanpa terpotong — bukan dipotong
+ * `truncate`. Nilai penuh tetap tersedia lewat `title`/aria (lihat `StatTile`).
+ */
 export function formatKpiValue(kpi: Pick<ControlTowerKpi, 'value' | 'unit'>): string {
   switch (kpi.unit) {
     case 'idr':
-      return formatIdr(kpi.value);
+      return formatIdrAxis(kpi.value);
     case 'percent':
       return `${kpi.value.toFixed(1)}%`;
     case 'days':
@@ -19,6 +24,11 @@ export function formatKpiValue(kpi: Pick<ControlTowerKpi, 'value' | 'unit'>): st
     default:
       return Math.round(kpi.value).toLocaleString('id-ID');
   }
+}
+
+/** Nilai KPI versi penuh (tanpa singkatan) untuk `title`/aria-label. */
+export function formatKpiValueFull(kpi: Pick<ControlTowerKpi, 'value' | 'unit'>): string {
+  return kpi.unit === 'idr' ? formatIdr(kpi.value) : formatKpiValue(kpi);
 }
 
 /** Label target untuk sebuah KPI (mis. "122% of Rp 15 jt M min"). */
@@ -81,8 +91,6 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
   const budgetVar = byKey.get('budgetVariance');
   const arOverdue = byKey.get('arOverdue');
   const dso = byKey.get('dso');
-  // Tren kas (net per bulan) untuk sparkline pada KPI cash — hanya bila ada seri.
-  const cashSeries = cashFlowSeries.map((m) => m.cashIn - m.cashOut);
 
   return (
     <div className="flex flex-col gap-tier">
@@ -94,12 +102,12 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
               key={k.key}
               label={k.label}
               value={renderKpiValue ? (renderKpiValue(k) as unknown as string) : formatKpiValue(k)}
+              valueTitle={formatKpiValueFull(k)}
               attainmentPct={k.attainmentPct}
               targetLabel={kpiTargetLabel(k)}
               meetsTarget={k.meetsTarget}
               direction={k.direction}
               tone={kpiTone(k)}
-              viz={k.key === 'cash' && cashSeries.length > 1 ? <Sparkline values={cashSeries} label="Cash trend" /> : undefined}
             />
           ))}
         </div>
