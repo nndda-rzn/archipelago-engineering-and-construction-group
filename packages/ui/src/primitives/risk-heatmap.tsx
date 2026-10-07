@@ -12,8 +12,9 @@ export interface RiskHeatmapProps extends React.HTMLAttributes<HTMLDivElement> {
   cells: RiskCell[];
 }
 
-/** Ramp satu hue (warning) — intensitas = besaran, bukan kategori. Merah tidak dipakai. */
-const RAMP = ['bg-neutral-100', 'bg-warning-100', 'bg-warning-300', 'bg-warning-500', 'bg-warning-700'];
+/** Ramp satu hue (warning) — intensitas = besaran, bukan kategori. Merah tidak dipakai.
+ *  Mulai dari warning-200 (bukan 100) agar sel terisi tetap terbedakan dari sel kosong. */
+const RAMP = ['bg-neutral-100', 'bg-warning-200', 'bg-warning-300', 'bg-warning-500', 'bg-warning-700'];
 
 /**
  * Heatmap risiko 5×5 (likelihood × impact). Intensitas warna mewakili jumlah

@@ -25,10 +25,10 @@ export function StageBars({ stages, format = String, className, ...props }: Stag
 
   return (
     <ul className={cn('space-y-1.5', className)} {...props}>
-      {stages.map((s) => {
-        const pct = max > 0 ? Math.min(100, (s.value / max) * 100) : 0;
+      {stages.map((s, i) => {
+        const pct = max > 0 ? Math.min(100, Math.max(0, (s.value / max) * 100)) : 0;
         return (
-          <li key={s.stage} className="grid grid-cols-[6.5rem_1fr_auto] items-center gap-2.5">
+          <li key={`${s.stage}-${i}`} className="grid grid-cols-[6.5rem_1fr_auto] items-center gap-2.5">
             <span className="truncate text-caption text-neutral-500" title={s.stage}>
               {s.stage}
             </span>
