@@ -1,5 +1,6 @@
 // Demo seed — data kaya untuk demo (PRD §46). Jalankan: pnpm --filter @aec/api exec tsx prisma/seed-demo.ts
 import { loadEnvFile } from '../src/shared/config/load-env';
+import { findOrphanApprovalTasks } from '../src/shared/utils/referential-integrity';
 import { PrismaClient } from '@prisma/client';
 
 // Muat .env dengan presedensi development-aware SEBELUM Prisma diinisialisasi.
@@ -297,21 +298,88 @@ async function seedWorkflowDemo() {
 
   // FR-DASH-002: jamin ada beberapa approval PENDING ber-SLA agar Exception
   // Queue dashboard punya isi (sebagian sengaja sudah lewat tenggat).
-  const pendingSeed: { code: string; type: string; role: string; ageDays: number; slaDays: number }[] = [
-    { code: 'PR-2026-EPC-900002', type: 'PurchaseRequisition', role: 'PROCUREMENT_MANAGER', ageDays: 12, slaDays: 7 },
-    { code: 'PR-2026-EPC-900003', type: 'PurchaseRequisition', role: 'PROCUREMENT_MANAGER', ageDays: 3, slaDays: 7 },
-    { code: 'PO-2026-EPC-900002', type: 'PurchaseOrder', role: 'FINANCE_MANAGER', ageDays: 9, slaDays: 5 },
+  //
+  // PENTING: `ApprovalTask.transactionId` harus menunjuk `id` ASLI dokumen
+  // sumber. Sebelumnya seed mengarang id (mis. "PurchaseRequisition-PR-..."),
+  // sehingga klik Approve → `purchaseRequisition.update` gagal P2025 (404).
+  // Sekarang kita buat dokumen nyata lalu pakai `.id`-nya, dan ada guard yang
+  // melewati task bila dokumen tidak ditemukan (jangan tinggalkan task yatim).
+  const pendingDocSeed: {
+    code: string; type: 'PurchaseRequisition' | 'PurchaseOrder'; role: string;
+    ageDays: number; slaDays: number; amount: number;
+  }[] = [
+    { code: `PR-${year}-EPC-900002`, type: 'PurchaseRequisition', role: 'PROCUREMENT_MANAGER', ageDays: 12, slaDays: 7, amount: 42_000_000_000 },
+    { code: `PR-${year}-EPC-900003`, type: 'PurchaseRequisition', role: 'PROCUREMENT_MANAGER', ageDays: 3, slaDays: 7, amount: 18_000_000_000 },
+    { code: `PO-${year}-EPC-900002`, type: 'PurchaseOrder', role: 'FINANCE_MANAGER', ageDays: 9, slaDays: 5, amount: 27_000_000_000 },
   ];
+
   let pendingCreated = 0;
-  for (const p of pendingSeed) {
-    const exists = await prisma.approvalTask.findFirst({
-      where: { transactionType: p.type, transactionCode: p.code, stepOrder: 1 },
-    });
-    if (exists) continue;
+  let pendingSkipped = 0;
+  // `seedWorkflowDemo` tidak menerima project; ambil proyek pertama sebagai induk
+  // dokumen demo (wbsItemId null — opsional di skema).
+  const demoProject = await prisma.project.findFirst({ select: { id: true } });
+  for (const p of pendingDocSeed) {
+    if (!demoProject) {
+      pendingSkipped += 1;
+      continue;
+    }
     const createdTs = new Date(now.getTime() - p.ageDays * 86_400_000);
+
+    // 1) Pastikan dokumen sumber ada; buat bila belum. Status diset menunggu
+    //    keputusan (PR SUBMITTED, PO DRAFT) agar alur approve benar-benar jalan.
+    let transactionId: string | null = null;
+    if (p.type === 'PurchaseRequisition') {
+      let doc = await prisma.purchaseRequisition.findUnique({ where: { prNumber: p.code } });
+      if (!doc) {
+        doc = await prisma.purchaseRequisition.create({
+          data: {
+            prNumber: p.code, projectId: demoProject.id, wbsItemId: null,
+            requestedBy: requesterId, description: 'Awaiting approval (demo SLA)', status: 'SUBMITTED',
+            estimatedTotal: p.amount,
+            items: { create: [{ description: 'Demo line item', quantity: 1, unit: 'lot', estimatedUnitPrice: p.amount, estimatedTotal: p.amount }] },
+            createdAt: createdTs,
+          },
+        });
+      }
+      transactionId = doc.id;
+    } else {
+      let doc = await prisma.purchaseOrder.findUnique({ where: { poNumber: p.code } });
+      if (!doc) {
+        doc = await prisma.purchaseOrder.create({
+          data: {
+            poNumber: p.code, projectId: demoProject.id, vendor: 'PT Mekanik Jaya', totalAmount: p.amount,
+            status: 'DRAFT', createdAt: createdTs,
+            items: { create: [{ description: 'Demo PO item', quantity: 1, unit: 'lot', unitPrice: p.amount, totalPrice: p.amount }] },
+          },
+        });
+      }
+      transactionId = doc.id;
+    }
+
+    // 2) Guard: jangan buat task tanpa dokumen nyata (mencegah task yatim/404).
+    if (!transactionId) {
+      pendingSkipped += 1;
+      console.warn(`ApprovalTask: lewati ${p.code} — dokumen sumber tidak ditemukan`);
+      continue;
+    }
+
+    const exists = await prisma.approvalTask.findFirst({
+      where: { transactionType: p.type, transactionId, stepOrder: 1 },
+    });
+    if (exists) {
+      // Rekonsiliasi: perbaiki task lama yang mungkin masih menunjuk id karangan.
+      if (exists.dueAt == null) {
+        await prisma.approvalTask.update({
+          where: { id: exists.id },
+          data: { dueAt: new Date(createdTs.getTime() + p.slaDays * 86_400_000) },
+        });
+      }
+      continue;
+    }
+
     await prisma.approvalTask.create({
       data: {
-        transactionType: p.type, transactionId: `${p.type}-${p.code}`, transactionCode: p.code,
+        transactionType: p.type, transactionId, transactionCode: p.code,
         stepOrder: 1, stepName: `${p.role} approval`, approverRoleCode: p.role,
         status: 'PENDING', requesterId,
         dueAt: new Date(createdTs.getTime() + p.slaDays * 86_400_000),
@@ -321,6 +389,24 @@ async function seedWorkflowDemo() {
     pendingCreated += 1;
   }
   if (pendingCreated > 0) console.log(`ApprovalTask: +${pendingCreated} PENDING ber-SLA (exception queue)`);
+  if (pendingSkipped > 0) console.log(`ApprovalTask: ${pendingSkipped} dilewati (dokumen sumber hilang)`);
+
+  // 3) Bersihkan task PENDING yatim dari seed lama (transactionId bukan id asli).
+  //    Task seperti ini selalu 404 saat di-approve, jadi lebih baik dihapus.
+  //    Deteksi memakai helper bersama agar aturannya dapat diuji tanpa DB.
+  const pendingTasks = await prisma.approvalTask.findMany({
+    where: { status: 'PENDING', transactionType: { in: ['PurchaseRequisition', 'PurchaseOrder'] } },
+    select: { id: true, transactionType: true, transactionId: true, transactionCode: true },
+  });
+  const prIds = new Set((await prisma.purchaseRequisition.findMany({ select: { id: true } })).map((r) => r.id));
+  const poIds = new Set((await prisma.purchaseOrder.findMany({ select: { id: true } })).map((r) => r.id));
+  const orphans = findOrphanApprovalTasks(pendingTasks, (type, id) =>
+    type === 'PurchaseRequisition' ? prIds.has(id) : poIds.has(id),
+  );
+  for (const t of orphans) {
+    await prisma.approvalTask.delete({ where: { id: t.id } });
+  }
+  if (orphans.length > 0) console.log(`ApprovalTask: ${orphans.length} task yatim dihapus (transactionId tidak valid)`);
 }
 
 async function main() {

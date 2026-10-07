@@ -59,3 +59,32 @@ describe('ConditionEvaluator — grup majemuk menang bila ada', () => {
     )).toBe(true);
   });
 });
+
+/**
+ * `updateTransactionStatus` memakai `transactionId` APA ADANYA sebagai primary
+ * key. Test ini mengunci kontrak itu: task approval WAJIB menyimpan id dokumen
+ * asli (CUID), bukan string karangan — kalau tidak, update gagal P2025 (404)
+ * tepat saat pengguna menekan Approve.
+ */
+describe('ConditionEvaluator — updateTransactionStatus', () => {
+  it('updates the PR by the exact id it is given', async () => {
+    const update = jest.fn().mockResolvedValue({ id: 'real-cuid', status: 'APPROVED' });
+    const ev = new ConditionEvaluator({ purchaseRequisition: { update } } as never);
+    await ev.updateTransactionStatus({ purchaseRequisition: { update } } as never, 'PurchaseRequisition', 'real-cuid', 'APPROVED');
+    expect(update).toHaveBeenCalledWith({ where: { id: 'real-cuid' }, data: { status: 'APPROVED' } });
+  });
+
+  it('updates the PO by the exact id it is given', async () => {
+    const update = jest.fn().mockResolvedValue({ id: 'po-cuid', status: 'APPROVED' });
+    const ev = new ConditionEvaluator({} as never);
+    await ev.updateTransactionStatus({ purchaseOrder: { update } } as never, 'PurchaseOrder', 'po-cuid', 'APPROVED');
+    expect(update).toHaveBeenCalledWith({ where: { id: 'po-cuid' }, data: { status: 'APPROVED' } });
+  });
+
+  it('rejects an unsupported transaction type instead of silently doing nothing', async () => {
+    const ev = new ConditionEvaluator({} as never);
+    await expect(
+      ev.updateTransactionStatus({} as never, 'Budget', 'x', 'APPROVED'),
+    ).rejects.toThrow();
+  });
+});
