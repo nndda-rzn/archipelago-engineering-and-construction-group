@@ -6,6 +6,11 @@ export interface StatTileProps extends React.HTMLAttributes<HTMLDivElement> {
   label: string;
   /** Nilai utama (teks atau node, mis. LiveValue untuk angka yang beranimasi). */
   value: React.ReactNode;
+  /**
+   * Nilai versi penuh untuk `title`/aria (mis. "Rp 16.500.000.000.000") bila
+   * `value` sudah disingkat ("Rp 16,5 T") — supaya angka penuh tetap terbaca.
+   */
+  valueTitle?: string;
   /** Delta vs periode sebelumnya. */
   delta?: { pct: number | null; direction: DeltaDirection };
   /** Konteks target: persentase pencapaian (0–…). Null = tanpa target. */
@@ -36,6 +41,7 @@ const VALUE_TONE: Record<NonNullable<StatTileProps['tone']>, string> = {
 export function StatTile({
   label,
   value,
+  valueTitle,
   delta,
   attainmentPct,
   targetLabel,
@@ -70,7 +76,7 @@ export function StatTile({
             salah satunya. */}
         <span
           className={`min-w-0 truncate font-mono tabular-nums text-metric-sm md:text-metric ${VALUE_TONE[tone]}`}
-          title={typeof value === 'string' ? value : undefined}
+          title={valueTitle ?? (typeof value === 'string' ? value : undefined)}
         >
           {value}
         </span>

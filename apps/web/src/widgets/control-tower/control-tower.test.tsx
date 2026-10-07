@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { ControlTowerView, formatKpiValue, kpiTargetLabel, toExceptionItems, buildCashBridge } from './control-tower';
+import { ControlTowerView, formatKpiValue, formatKpiValueFull, kpiTargetLabel, toExceptionItems, buildCashBridge } from './control-tower';
 import type { ControlTower } from '@aec/api-contracts';
 
 vi.mock('@tanstack/react-router', () => ({
@@ -57,6 +57,15 @@ describe('formatKpiValue', () => {
     expect(formatKpiValue({ value: 54, unit: 'days' })).toBe('54 d');
     expect(formatKpiValue({ value: 0.24, unit: 'ratio' })).toBe('0.24');
     expect(formatKpiValue({ value: 1240, unit: 'count' })).toBe('1.240');
+  });
+
+  it('abbreviates large idr values with an explicit unit (no truncation needed)', () => {
+    expect(formatKpiValue({ value: 16_500_000_000_000, unit: 'idr' })).toBe('Rp 16,5 T');
+    expect(formatKpiValue({ value: 18_240_500_000, unit: 'idr' })).toBe('Rp 18,24 M');
+  });
+
+  it('keeps the full, unabbreviated idr value for the title', () => {
+    expect(formatKpiValueFull({ value: 18_240_500_000, unit: 'idr' })).toMatch(/18\.240\.500\.000/);
   });
 });
 
