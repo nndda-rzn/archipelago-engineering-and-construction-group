@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 vi.mock('@tanstack/react-router', () => ({
@@ -20,7 +20,18 @@ vi.mock('@/widgets/anomaly-triage', () => ({ AnomalyTriage: () => <div data-test
 vi.mock('@/features/project', () => ({ usePortfolio: () => ({ data: { items: [] } }) }));
 vi.mock('@/widgets/dashboard-charts', () => ({ ProjectRankingBar: () => <div data-testid="ranking" /> }));
 
+// Gating analytics memakai usePermissions. Default: izin penuh (semua widget
+// tampil, sama seperti sebelum gating). Test Buyer men-set izin terbatas.
+const perms = vi.hoisted(() => ({ can: (() => true) as (code: string) => boolean }));
+vi.mock('@/entities/session', () => ({
+  usePermissions: () => ({ set: new Set(), can: perms.can, canAny: () => true }),
+}));
+
 describe('DashboardPage', () => {
+  beforeEach(() => {
+    perms.can = () => true;
+  });
+
   it('renders the zones', async () => {
     const { DashboardPage } = await import('./dashboard.page');
     render(<DashboardPage />);
@@ -44,5 +55,19 @@ describe('DashboardPage', () => {
     const row = hero.closest('[data-slot="hero-liquidity-row"]');
     expect(row).toBeTruthy();
     expect(row?.contains(financial)).toBe(false);
+  });
+
+  it('hides the analytics widgets for a user without Analytics.VIEW (e.g. Buyer)', async () => {
+    // Buyer tidak punya Analytics.VIEW → widget yang memanggil endpoint analytics
+    // harus hilang, sehingga tidak ada request yang berakhir 403.
+    perms.can = (code) => code !== 'Analytics.VIEW';
+    const { DashboardPage } = await import('./dashboard.page');
+    render(<DashboardPage />);
+
+    expect(screen.getByTestId('filter-bar')).toBeTruthy();
+    expect(screen.getByTestId('ranking')).toBeTruthy(); // portfolio tetap
+    for (const id of ['signal-rail', 'hero-band', 'liquidity', 'financial-band', 'triage']) {
+      expect(screen.queryByTestId(id)).toBeNull();
+    }
   });
 });

@@ -24,12 +24,14 @@ export interface Permissions {
  */
 export function usePermissions(): Permissions {
   const { data } = useMe();
-  const roles = data?.roles ?? [];
-  const permissions = data?.permissions ?? [];
+  const roles = data?.roles;
+  const permissions = data?.permissions;
 
   return useMemo(() => {
-    const isSuper = roles.includes(SUPER_ROLE);
-    const set = new Set<string>(permissions);
+    const roleList = roles ?? [];
+    const permList = permissions ?? [];
+    const isSuper = roleList.includes(SUPER_ROLE);
+    const set = new Set<string>(permList);
     const can = (code: PermissionCode | string) => isSuper || set.has(code);
     return {
       set,
