@@ -8,3 +8,4 @@ export * from './aging-detail-table';
 export * from './concentration-bars';
 export * from './budget-usage-bars';
 export * from './forecast-vs-actual';
+export * from './project-ranking-bar';
