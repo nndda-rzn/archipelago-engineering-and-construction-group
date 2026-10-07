@@ -89,13 +89,13 @@ describe('buildCashBridge', () => {
 });
 
 describe('ControlTowerView', () => {
-  it('renders every zone: position, exceptions, pulse, ledger, governance/commercial/treasury', () => {
+  it('renders every zone: position, exceptions, ledger, domain tiles', () => {
     render(<ControlTowerView data={base} cashFlowSeries={[]} />);
     expect(screen.getByRole('heading', { name: 'Position' })).toBeTruthy();
     expect(screen.getByText('Approval SLA')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Portfolio ledger' })).toBeTruthy();
     expect(screen.getByText('Ring Road')).toBeTruthy();
-    expect(screen.getByRole('heading', { name: /Governance · Commercial · Treasury/ })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Domain tiles' })).toBeTruthy();
   });
 
   it('renders the EVM bullets for projects that have a baseline', () => {

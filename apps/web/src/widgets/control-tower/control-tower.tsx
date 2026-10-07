@@ -1,9 +1,10 @@
 import { Link } from '@tanstack/react-router';
 import { Bell } from 'lucide-react';
-import { Card, EmptyState, ErrorState, ExceptionQueue, MiniStat, SectionBand, StatTile, StatusPill, type ExceptionItem } from '@aec/ui';
+import { Card, EmptyState, ErrorState, ExceptionQueue, SectionBand, StatTile, StatusPill, type ExceptionItem } from '@aec/ui';
 import type { ControlTower, ControlTowerKpi } from '@aec/api-contracts';
 import { formatIdr } from '@/shared/lib/format';
 import { CashFlowChart, EvmBullets, WaterfallChart, type WaterfallStep } from '@/widgets/dashboard-charts';
+import { DomainTiles } from './domain-tiles';
 
 /** Format nilai KPI sesuai satuannya. */
 export function formatKpiValue(kpi: Pick<ControlTowerKpi, 'value' | 'unit'>): string {
@@ -81,12 +82,6 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
   const budgetVar = byKey.get('budgetVariance');
   const arOverdue = byKey.get('arOverdue');
   const dso = byKey.get('dso');
-  const trir = byKey.get('trir');
-
-  const healthCounts = data.projects.reduce<Record<string, number>>((acc, p) => {
-    acc[p.health] = (acc[p.health] ?? 0) + 1;
-    return acc;
-  }, {});
 
   return (
     <div className="flex flex-col gap-tier">
@@ -141,52 +136,6 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
         </div>
       </SectionBand>
 
-      {/* T4 — Operational pulse. */}
-      <SectionBand name="Operational pulse" right={<span>Liquidity · Safety/Quality · Procurement</span>}>
-        <div className="grid grid-cols-1 gap-cell sm:grid-cols-2 xl:grid-cols-4">
-          <Card variant="flat">
-            <h3 className="mb-2 text-h3 text-neutral-950">Portfolio map</h3>
-            <dl className="space-y-1.5">
-              <Row label="Projects" value={String(data.projectTotals.count)} />
-              <Row label="On track" value={String(healthCounts.ON_TRACK ?? 0)} tone="neutral" />
-              <Row label="At risk" value={String(healthCounts.AT_RISK ?? 0)} tone="warning" />
-              <Row label="Critical" value={String(healthCounts.CRITICAL ?? 0)} tone="negative" />
-            </dl>
-          </Card>
-
-          <Card variant="flat">
-            <h3 className="mb-2 text-h3 text-neutral-950">Working capital</h3>
-            <dl className="space-y-1.5">
-              <Row label="AR overdue 61+" value={formatIdr(data.kpis.find((k) => k.key === 'arOverdue')?.value ?? 0)} />
-              <Row label="DSO" value={dso ? `${Math.round(dso.value)} d` : '—'} />
-              <Row label="FX exposure" value={formatIdr(data.treasury.fxExposureValue)} />
-            </dl>
-          </Card>
-
-          <Card variant="flat">
-            <h3 className="mb-2 text-h3 text-neutral-950">Safety · Quality</h3>
-            <div className="mb-2 flex items-center gap-2">
-              <MiniStat label="TRIR" value={trir ? trir.value.toFixed(2) : '0.00'} context={trir?.target ? `target ≤ ${trir.target}` : undefined} tone={trir?.meetsTarget === false ? 'negative' : 'positive'} />
-            </div>
-            <dl className="space-y-1.5">
-              <Row label="Incidents open" value={String(data.operations.safety.openIncidents)} />
-              <Row label="NCR open" value={String(data.operations.quality.openNcrs)} />
-              <Row label="Punch open" value={String(data.operations.quality.openPunchItems)} />
-            </dl>
-          </Card>
-
-          <Card variant="flat">
-            <h3 className="mb-2 text-h3 text-neutral-950">Procurement</h3>
-            <dl className="space-y-1.5">
-              <Row label="Open PO" value={formatIdr(data.operations.procurement.openPoValue)} />
-              <Row label="PR pending" value={String(data.operations.procurement.pendingPrCount)} />
-              <Row label="RFQ due" value={String(data.operations.procurement.rfqDueCount)} />
-              <Row label="Vendor score" value={String(data.operations.procurement.avgVendorScore ?? '—')} />
-            </dl>
-          </Card>
-        </div>
-      </SectionBand>
-
       {/* T5 — Portfolio ledger + cash bridge + EVM bullets. */}
       <SectionBand name="Portfolio ledger" count={`${data.projectTotals.count} projects`}>
         <div className="flex flex-col gap-cell">
@@ -209,51 +158,8 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
         </div>
       </SectionBand>
 
-      {/* T6 — Governance · Commercial · Treasury. */}
-      <SectionBand name="Governance · Commercial · Treasury">
-        <div className="grid grid-cols-1 gap-cell sm:grid-cols-2 md:grid-cols-3">
-          <Card variant="flat">
-            <h3 className="mb-2 text-h3 text-neutral-950">Governance</h3>
-            <dl className="space-y-1.5">
-              <Row label="Open risks" value={String(data.governance.openRisks)} />
-              <Row label="High risks" value={String(data.governance.highRisks)} tone={data.governance.highRisks > 0 ? 'warning' : 'neutral'} />
-              <Row label="Audit overdue" value={String(data.governance.overdueAuditFindings)} />
-              <Row label="Legal open" value={String(data.governance.openLegalCases)} />
-            </dl>
-          </Card>
-          <Card variant="flat">
-            <h3 className="mb-2 text-h3 text-neutral-950">Commercial</h3>
-            <dl className="space-y-1.5">
-              <Row label="Pipeline" value={formatIdr(data.commercial.pipelineValue)} />
-              <Row label="Win rate" value={data.commercial.winRatePct != null ? `${data.commercial.winRatePct}%` : '—'} />
-              <Row label="Tenders due" value={String(data.commercial.tendersDue)} />
-              <Row label="Variations" value={formatIdr(data.commercial.approvedVariationValue)} />
-            </dl>
-          </Card>
-          <Card variant="flat">
-            <h3 className="mb-2 text-h3 text-neutral-950">Treasury</h3>
-            <dl className="space-y-1.5">
-              <Row label="FX exposure" value={formatIdr(data.treasury.fxExposureValue)} />
-              <Row label="BG expiring" value={`${data.treasury.bgExpiringCount} · ${formatIdr(data.treasury.bgExpiringValue)}`} tone={data.treasury.bgExpiringCount > 0 ? 'warning' : 'neutral'} />
-              <Row label="Period close" value={data.treasury.periodCloseStatus ?? '—'} />
-            </dl>
-          </Card>
-        </div>
-      </SectionBand>
-    </div>
-  );
-}
-
-/** Satu baris label→nilai yang aman untuk teks panjang (label boleh terpotong,
- *  nilai tidak — angka finansial harus utuh). */
-function Row({ label, value, tone = 'neutral' }: { label: string; value: string; tone?: 'neutral' | 'warning' | 'negative' }) {
-  const cls = tone === 'warning' ? 'text-warning-700' : tone === 'negative' ? 'text-destructive-700' : 'text-neutral-900';
-  return (
-    <div className="flex items-baseline justify-between gap-3 text-body-sm">
-      <dt className="min-w-0 truncate text-neutral-500" title={label}>
-        {label}
-      </dt>
-      <dd className={`shrink-0 font-mono tabular-nums ${cls}`}>{value}</dd>
+      {/* T6 — Domain tiles (10 domains, visual per fungsi data). */}
+      <DomainTiles data={data} />
     </div>
   );
 }
