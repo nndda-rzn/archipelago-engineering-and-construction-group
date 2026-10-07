@@ -79,11 +79,6 @@ describe('LoginPage — struktur & aksesibilitas', () => {
     expect((screen.getByLabelText(/^Password$/i) as HTMLInputElement).value).toBe('Admin123!');
   });
 
-  it('labels the example project card as an example (not real data)', () => {
-    renderWithProviders(<LoginPage />);
-    expect(screen.getByText(/contoh|example/i)).toBeTruthy();
-  });
-
   it('drops internal jargon from the copy', () => {
     const { container } = renderWithProviders(<LoginPage />);
     expect(container.textContent).not.toMatch(/golden flow/i);

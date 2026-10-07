@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginRequestSchema, type LoginRequest } from '@aec/api-contracts';
-import { BulletBar, Button, Input, Label, StatusBadge, labelErrorCode } from '@aec/ui';
+import { Button, Input, Label, labelErrorCode } from '@aec/ui';
 import { Eye, EyeOff } from 'lucide-react';
 import { useLogin } from '@/features/auth';
 
@@ -78,21 +78,6 @@ export function LoginPage() {
           <p className="mt-3 max-w-md text-body-sm text-neutral-400">
             Finance, procurement, and site execution share one project record — from tender to consolidated report.
           </p>
-
-          {/* Kartu contoh: memperlihatkan bentuk produk, memakai komponen yang sudah ada. */}
-          <div className="mt-6 max-w-md rounded-md border border-neutral-800 bg-neutral-900 p-4">
-            <p className="text-overline uppercase text-neutral-500">Contoh tampilan</p>
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <span className="font-mono text-caption text-neutral-400">PRJ-EPC-2027-014</span>
-              <StatusBadge status="AT_RISK" />
-            </div>
-            <p className="mt-1 truncate text-body-sm text-neutral-200">EPC Industrial Processing Facility</p>
-            <div className="mt-3">
-              <p className="mb-1 text-caption text-neutral-500">Budget used · 72%</p>
-              <BulletBar value={72} max={100} label="Budget used" className="bg-neutral-800" />
-            </div>
-            <p className="mt-3 font-mono text-caption text-neutral-500">2026-01-15 → 2027-08-30</p>
-          </div>
 
           <ol className="mt-6 flex max-w-md flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-neutral-300">
             {WORKFLOW.map((step, i) => (
