@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { decodeCursor, encodeCursor, keysetWhere } from '@/shared/utils/keyset-cursor';
+import { AnalyticsEventsService } from '@/shared/events/analytics-events.service';
 
 export interface AuditEntry {
   userId: string;
@@ -19,7 +20,10 @@ export interface AuditEntry {
 export class AuditService {
   private readonly logger = new Logger(AuditService.name);
 
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(AnalyticsEventsService) private readonly events: AnalyticsEventsService,
+  ) {}
 
   async record(entry: AuditEntry) {
     try {
@@ -36,6 +40,10 @@ export class AuditService {
           correlationId: entry.correlationId ?? null,
         },
       });
+      // FR-DASH-011: setiap mutasi memancarkan sinyal perubahan sehingga dashboard
+      // memuat ulang angka tanpa polling buta. Publish tidak boleh memblokir audit:
+      // kegagalan Redis ditelan di dalam service.
+      await this.events.publish('analytics');
     } catch (error) {
 
       this.logger.error(`Gagal mencatat audit ${entry.action}: ${(error as Error).message}`);

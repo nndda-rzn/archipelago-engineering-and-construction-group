@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SharedModule } from '@/shared/shared.module';
 import { AnalyticsController } from './presentation/controllers/analytics.controller';
+import { AnalyticsStreamController } from './presentation/controllers/analytics-stream.controller';
 import { AnalyticsService } from './application/services/analytics.service';
 import { ExecutiveAnalyticsService } from './application/services/executive-analytics.service';
 import { FinancialAnalyticsService } from './application/services/financial-analytics.service';
@@ -10,7 +11,7 @@ import { ControlTowerService } from './application/services/control-tower.servic
 
 @Module({
   imports: [SharedModule],
-  controllers: [AnalyticsController],
+  controllers: [AnalyticsController, AnalyticsStreamController],
   providers: [
     ExecutiveAnalyticsService,
     FinancialAnalyticsService,
