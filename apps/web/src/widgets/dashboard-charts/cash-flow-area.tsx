@@ -1,6 +1,6 @@
 import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { EmptyState } from '@aec/ui';
-import { formatIdr } from '@/shared/lib/format';
+import { formatIdr, formatIdrAxis } from '@/shared/lib/format';
 import { CHART } from './chart-colors';
 
 export interface CashFlowSeriesPoint {
@@ -44,10 +44,14 @@ export function CashFlowArea({ series }: { series: CashFlowSeriesPoint[] }) {
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
         <XAxis dataKey="month" tick={{ fontSize: 11, fill: CHART.axis }} axisLine={{ stroke: CHART.grid }} tickLine={false} />
-        <YAxis tick={{ fontSize: 11, fill: CHART.axis }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${Math.round(v / 1e6)}jt`} width={48} />
-        <Tooltip contentStyle={tooltipStyle} formatter={(value) => formatIdr(Number(value))} cursor={{ fill: CHART.cursor }} />
-        <Area type="monotone" dataKey="cumulative" stroke={CHART.positive} strokeWidth={2} fill="url(#cashNetFill)" name="Cumulative net" />
-        <Line type="monotone" dataKey="net" stroke={CHART.axis} strokeWidth={1} dot={false} name="Monthly net" />
+        <YAxis tick={{ fontSize: 11, fill: CHART.axis }} axisLine={false} tickLine={false} tickFormatter={formatIdrAxis} width={64} />
+        <Tooltip
+          contentStyle={tooltipStyle}
+          formatter={(value, name) => [formatIdr(Number(value)), name === 'cumulative' ? 'Cumulative net' : 'Monthly net']}
+          cursor={{ fill: CHART.cursor }}
+        />
+        <Area type="monotone" dataKey="cumulative" stroke={CHART.positive} strokeWidth={2} fill="url(#cashNetFill)" name="cumulative" />
+        <Line type="monotone" dataKey="net" stroke={CHART.axis} strokeWidth={1} dot={false} name="net" />
       </AreaChart>
     </ResponsiveContainer>
   );
