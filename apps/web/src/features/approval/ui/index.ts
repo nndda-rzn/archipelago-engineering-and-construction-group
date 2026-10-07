@@ -10,6 +10,7 @@ export { ProjectContext } from './project-context';
 export { VendorCard } from './vendor-card';
 export { RelatedDocuments } from './related-documents';
 export { WorkflowStepForm } from './workflow-step-form';
+export { WorkflowMetadataEditor } from './workflow-metadata-editor';
 export { WorkflowVersionsRail } from './workflow-versions-rail';
 export { WorkflowInsightsPanel, ruleSummary } from './workflow-insights';
 export { ConditionBuilder, type ConditionValue } from './condition-builder';
