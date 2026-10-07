@@ -217,7 +217,20 @@ export function DataGrid<TData>({
                   <tr
                     key={row.id}
                     aria-selected={selectedRowId !== undefined ? isSelected : undefined}
-                    className={`border-b border-neutral-100 last:border-0 ${isSelected ? 'bg-racing-red-50' : 'hover:bg-neutral-50'} ${onRowClick ? 'cursor-pointer' : ''}`}
+                    // Baris drill-through harus dapat difokus & diaktifkan keyboard
+                    // (WCAG 2.1 SC 2.1.1). Tanpa ini, klik baris hanya bisa mouse.
+                    tabIndex={onRowClick ? 0 : undefined}
+                    onKeyDown={
+                      onRowClick
+                        ? (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onRowClick(row);
+                            }
+                          }
+                        : undefined
+                    }
+                    className={`border-b border-neutral-100 last:border-0 ${isSelected ? 'bg-racing-red-50' : 'hover:bg-neutral-50'} ${onRowClick ? 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-racing-red-600' : ''}`}
                     onClick={onRowClick ? () => onRowClick(row) : undefined}
                   >
                     {row.getVisibleCells().map((cell) => {
