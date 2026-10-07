@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Inject, Logger, Req, Res, UseGuards } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { AuthGuard } from '@/shared/guards/auth.guard';
@@ -22,6 +22,8 @@ const HEARTBEAT_MS = 15_000;
 @Controller('analytics')
 @UseGuards(AuthGuard, PermissionsGuard)
 export class AnalyticsStreamController {
+  private readonly logger = new Logger(AnalyticsStreamController.name);
+
   constructor(@Inject(AnalyticsEventsService) private readonly events: AnalyticsEventsService) {}
 
   // SSE adalah satu koneksi panjang; throttle per-request akan memutusnya.
@@ -38,18 +40,28 @@ export class AnalyticsStreamController {
     // Sinyal siap: klien bisa mulai menghitung sejak koneksi terbentuk.
     res.write(`event: ready\ndata: ${JSON.stringify({ at: new Date().toISOString() })}\n\n`);
 
-    const unsubscribe = await this.events.subscribe((event) => {
-      res.write(`event: change\ndata: ${JSON.stringify(event)}\n\n`);
-    });
+    // Setelah header terkirim, kesalahan TIDAK BOLEH dilempar ke filter global:
+    // filter akan mencoba menulis JSON dan memicu ERR_HTTP_HEADERS_SENT (crash).
+    // Semua kegagalan di sini ditangani lokal.
+    let unsubscribe: (() => Promise<void>) | null = null;
+    try {
+      unsubscribe = await this.events.subscribe((event) => {
+        if (!res.writableEnded) {
+          res.write(`event: change\ndata: ${JSON.stringify(event)}\n\n`);
+        }
+      });
+    } catch (err) {
+      this.logger.warn(`SSE subscribe failed: ${(err as Error).message}`);
+    }
 
     const heartbeat = setInterval(() => {
       // Komentar sebagai heartbeat: tidak memicu listener, hanya menjaga socket.
-      res.write(`: ping ${Date.now()}\n\n`);
+      if (!res.writableEnded) res.write(`: ping ${Date.now()}\n\n`);
     }, HEARTBEAT_MS);
 
     const cleanup = async () => {
       clearInterval(heartbeat);
-      await unsubscribe();
+      if (unsubscribe) await unsubscribe();
       if (!res.writableEnded) res.end();
     };
 

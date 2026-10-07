@@ -4,8 +4,8 @@ import { DeltaBadge, type DeltaDirection } from './delta-badge';
 
 export interface StatTileProps extends React.HTMLAttributes<HTMLDivElement> {
   label: string;
-  /** Nilai utama (sudah diformat). */
-  value: string;
+  /** Nilai utama (teks atau node, mis. LiveValue untuk angka yang beranimasi). */
+  value: React.ReactNode;
   /** Delta vs periode sebelumnya. */
   delta?: { pct: number | null; direction: DeltaDirection };
   /** Konteks target: persentase pencapaian (0–…). Null = tanpa target. */

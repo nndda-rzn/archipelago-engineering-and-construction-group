@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { executiveDashboardSchema, anomalyListSchema, cashFlowSchema, agingSchema, projectCostSummarySchema, pendingApprovalCountSchema, signalListSchema, costCompositionSchema, arConcentrationSchema, forecastVsActualSchema } from '@aec/api-contracts';
+import { executiveDashboardSchema, anomalyListSchema, cashFlowSchema, agingSchema, projectCostSummarySchema, pendingApprovalCountSchema, signalListSchema, costCompositionSchema, arConcentrationSchema, forecastVsActualSchema, controlTowerSchema } from '@aec/api-contracts';
 import { getJson, downloadFile } from '@/shared/lib/http';
 import type { DashboardFilter } from '@/shared/lib/dashboard-period';
 
@@ -111,6 +111,19 @@ export function useForecastVsActual(filter: DashboardFilter = {}) {
   return useQuery({
     queryKey: ['analytics-forecast-vs-actual', filter] as const,
     queryFn: async () => forecastVsActualSchema.parse(await getJson<unknown>(`/analytics/forecast-vs-actual${filterQuery(filter)}`)),
+  });
+}
+
+/**
+ * Control Tower (FR-DASH-003): satu payload komposit untuk dashboard `/`.
+ * Refetch interval ringan (60s) sebagai jaring pengaman; pembaruan utama datang
+ * dari SSE change-feed (`useLiveAnalytics`) yang meng-invalidate key ini.
+ */
+export function useControlTower(filter: DashboardFilter = {}) {
+  return useQuery({
+    queryKey: ['analytics-control-tower', filter] as const,
+    queryFn: async () => controlTowerSchema.parse(await getJson<unknown>(`/analytics/control-tower${filterQuery(filter)}`)),
+    refetchInterval: 60_000,
   });
 }
 
