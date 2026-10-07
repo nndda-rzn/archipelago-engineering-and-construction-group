@@ -170,7 +170,7 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
 }
 
-export type StoredUser = { id: string; email: string; displayName: string; roles: string[] };
+export type StoredUser = { id: string; email: string; displayName: string; roles: string[]; permissions?: string[] };
 
 export function getStoredUser(): StoredUser | null {
   try {
