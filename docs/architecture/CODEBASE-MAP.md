@@ -70,7 +70,7 @@ Registrasi modul: `src/app.module.ts`. Bootstrap: `src/main.ts` (global prefix `
 | **project** | 4 | Project, WBS (tree), Budget (publish), CostCode, ControlAccount, Forecast, EarnedValue, health, portfolio |
 | **procurement** | 2 | PurchaseRequisition → PurchaseOrder (+Change) → RFQ; vendor rating/performance |
 | **inventory** | 1 | Warehouse, GoodsReceipt, MaterialIssue, StockAdjustment/Opname/Transfer, StockLedger |
-| **approval** | 1 | WorkflowDefinition → steps, ApprovalTask, ConditionEvaluator, maker-checker (BR-003) |
+| **approval** | 1 | WorkflowDefinition → steps, ApprovalTask, ConditionEvaluator, maker-checker (BR-003). Services dipecah: `ApprovalTaskService`/`WorkflowDefinitionService` = facade; engine/queue/detail + step/lifecycle + shared `RoleAssignmentLookup`/`WorkflowQueryService` |
 | **finance** | 2 | GL (ChartOfAccount, Journal, TrialBalance), AP (VendorInvoice→Payment), AR (ProgressClaim→ClientInvoice→Collection), Variation, Subcontract, PeriodClose, Intercompany, Consolidation, FinancialStatement, `GlHelper` |
 | **treasury** | 1 | BankAccount, PaymentProposal, BankGuarantee, CashForecast, FxExposure, CashPosition |
 | **construction** | 1 | WorkPackage, DailyReport, Commissioning, Handover |
