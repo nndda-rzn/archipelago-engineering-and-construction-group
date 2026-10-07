@@ -21,25 +21,46 @@ export interface EvmSeriesItem {
 export function EvmSeriesBars({
   items,
   max = 1.5,
+  limit = 5,
   emptyMessage = 'No EVM data.',
   className,
 }: {
   items: EvmSeriesItem[];
   /** Skala maksimum batang (rasio). Default 1.5 agar batang 1.0 tak menyentuh tepi. */
   max?: number;
+  /** Jumlah baris maksimum yang ditampilkan (worst-first). Sisanya diringkas. */
+  limit?: number;
   emptyMessage?: string;
   className?: string;
 }) {
-  if (items.length === 0) {
+  // Hanya proyek ber-baseline yang punya batang; sisanya dihitung di footer
+  // (bukan baris hampa "— / —").
+  const withEvm = items.filter((i) => i.cpi != null || i.spi != null);
+  const withoutEvm = items.length - withEvm.length;
+
+  if (withEvm.length === 0) {
     return <p className="py-4 text-center text-body-sm text-neutral-500">{emptyMessage}</p>;
   }
+
+  // Worst-first: CPI terendah dulu (yang paling butuh perhatian), lalu SPI, lalu nama.
+  const ranked = [...withEvm].sort((a, b) => {
+    const ac = a.cpi ?? Infinity;
+    const bc = b.cpi ?? Infinity;
+    if (ac !== bc) return ac - bc;
+    const as = a.spi ?? Infinity;
+    const bs = b.spi ?? Infinity;
+    if (as !== bs) return as - bs;
+    return a.name.localeCompare(b.name);
+  });
+  const shown = ranked.slice(0, Math.max(0, limit));
+  const hidden = ranked.length - shown.length;
 
   const targetPct = (1 / max) * 100;
   const pctOf = (v: number) => Math.min(100, Math.max(0, (v / max) * 100));
 
   return (
-    <ul className={className} aria-label="CPI and SPI by project vs target 1.0">
-      {items.map((item) => (
+    <ul className={className} aria-label="CPI and SPI by project vs target 1.0, worst first">
+      {shown.map((item) => (
         <li key={item.name} className="grid grid-cols-[7rem_1fr_4.5rem] items-center gap-2.5 py-1">
           <span className="truncate font-mono text-caption text-neutral-600" title={item.name}>
             {item.name}
@@ -92,6 +113,13 @@ export function EvmSeriesBars({
         </span>
         <span>· target 1.0</span>
       </li>
+      {(hidden > 0 || withoutEvm > 0) && (
+        <li className="mt-0.5 text-caption text-neutral-500">
+          {hidden > 0 && <span>+{hidden} more</span>}
+          {hidden > 0 && withoutEvm > 0 && <span className="text-neutral-300"> · </span>}
+          {withoutEvm > 0 && <span>{withoutEvm} without baseline</span>}
+        </li>
+      )}
     </ul>
   );
 }
