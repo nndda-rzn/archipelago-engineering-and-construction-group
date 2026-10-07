@@ -251,14 +251,17 @@ async function seedWorkflowDemo() {
 
     if (!step1) {
       // Langkah 1 selalu ada; dokumen yang sampai langkah 2 punya baris tambahan.
+      const s1Status = outcome.stepOrder === 1 ? outcome.status : 'APPROVED';
       await prisma.approvalTask.create({
         data: {
           transactionType: 'PurchaseRequisition', transactionId: pr.id, transactionCode: pr.prNumber,
           stepOrder: 1, stepName: 'Procurement manager approval', approverRoleCode: 'PROCUREMENT_MANAGER',
-          status: outcome.stepOrder === 1 ? outcome.status : 'APPROVED',
+          status: s1Status,
           requesterId, approverId: outcome.stepOrder === 1 && outcome.status !== 'PENDING' ? approverId : null,
           comment: outcome.status === 'REJECTED' ? 'Budget line not available this quarter' : null,
           decidedAt: outcome.stepOrder === 1 ? step1DecidedAt : new Date(createdAt.getTime() + 2 * 86_400_000),
+          // FR-DASH-002: SLA 7 hari untuk yang masih menunggu.
+          dueAt: s1Status === 'PENDING' ? new Date(createdAt.getTime() + 7 * 86_400_000) : null,
           createdAt,
         },
       });
@@ -278,7 +281,9 @@ async function seedWorkflowDemo() {
             stepOrder: 2, stepName: 'Board approval', approverRoleCode: 'SUPER_ADMIN',
             status: outcome.status,
             requesterId, approverId: outcome.status === 'PENDING' ? null : approverId,
-            decidedAt: step1DecidedAt, createdAt: step2CreatedAt,
+            decidedAt: step1DecidedAt,
+            dueAt: outcome.status === 'PENDING' ? new Date(step2CreatedAt.getTime() + 7 * 86_400_000) : null,
+            createdAt: step2CreatedAt,
           },
         });
         created += 1;
@@ -289,6 +294,33 @@ async function seedWorkflowDemo() {
     }
   }
   console.log(`ApprovalTask: +${created} dibuat, ${reconciled} tanggal direkonsiliasi (tersebar 4 bulan)`);
+
+  // FR-DASH-002: jamin ada beberapa approval PENDING ber-SLA agar Exception
+  // Queue dashboard punya isi (sebagian sengaja sudah lewat tenggat).
+  const pendingSeed: { code: string; type: string; role: string; ageDays: number; slaDays: number }[] = [
+    { code: 'PR-2026-EPC-900002', type: 'PurchaseRequisition', role: 'PROCUREMENT_MANAGER', ageDays: 12, slaDays: 7 },
+    { code: 'PR-2026-EPC-900003', type: 'PurchaseRequisition', role: 'PROCUREMENT_MANAGER', ageDays: 3, slaDays: 7 },
+    { code: 'PO-2026-EPC-900002', type: 'PurchaseOrder', role: 'FINANCE_MANAGER', ageDays: 9, slaDays: 5 },
+  ];
+  let pendingCreated = 0;
+  for (const p of pendingSeed) {
+    const exists = await prisma.approvalTask.findFirst({
+      where: { transactionType: p.type, transactionCode: p.code, stepOrder: 1 },
+    });
+    if (exists) continue;
+    const createdTs = new Date(now.getTime() - p.ageDays * 86_400_000);
+    await prisma.approvalTask.create({
+      data: {
+        transactionType: p.type, transactionId: `${p.type}-${p.code}`, transactionCode: p.code,
+        stepOrder: 1, stepName: `${p.role} approval`, approverRoleCode: p.role,
+        status: 'PENDING', requesterId,
+        dueAt: new Date(createdTs.getTime() + p.slaDays * 86_400_000),
+        createdAt: createdTs,
+      },
+    });
+    pendingCreated += 1;
+  }
+  if (pendingCreated > 0) console.log(`ApprovalTask: +${pendingCreated} PENDING ber-SLA (exception queue)`);
 }
 
 async function main() {
@@ -700,7 +732,33 @@ async function main() {
     console.log('Risk: 1');
   }
 
-  // ── 12. Demo user roles ──
+  // ── 12. KPI targets (FR-DASH-001) ──
+  // Target per periode berjalan; tanpa ini dashboard hanya menampilkan angka
+  // telanjang tanpa acuan "vs target".
+  const fyPeriod = `FY${year}`;
+  const qPeriod = `${year}-Q${Math.floor(now.getUTCMonth() / 3) + 1}`;
+  const kpiTargets = [
+    { metric: 'cash.min', target: 15000000000, direction: 'MIN', label: 'Cash on hand minimum' },
+    { metric: 'cashflow.net.min', target: 500000000, direction: 'MIN', label: 'Net cash flow minimum' },
+    { metric: 'backlog.min', target: 35000000000, direction: 'MIN', label: 'Contract backlog minimum' },
+    { metric: 'budget.utilization', target: 80, direction: 'MAX', label: 'Budget utilization ceiling' },
+    { metric: 'ar.overdue.max', target: 2500000000, direction: 'MAX', label: 'AR overdue 61+ ceiling' },
+    { metric: 'dso.max', target: 45, direction: 'MAX', label: 'DSO ceiling' },
+    { metric: 'safety.trir.max', target: 1.5, direction: 'MAX', label: 'TRIR ceiling' },
+    { metric: 'equipment.utilization.min', target: 75, direction: 'MIN', label: 'Equipment utilization minimum' },
+  ];
+  for (const t of kpiTargets) {
+    for (const period of [fyPeriod, qPeriod]) {
+      await prisma.kpiTarget.upsert({
+        where: { legalEntityId_metric_period: { legalEntityId: entity.id, metric: t.metric, period } },
+        update: { target: t.target, direction: t.direction },
+        create: { legalEntityId: entity.id, metric: t.metric, period, target: t.target, direction: t.direction },
+      });
+    }
+  }
+  console.log(`KpiTarget: ${kpiTargets.length} metrik x ${fyPeriod}/${qPeriod}`);
+
+  // ── 13. Demo user roles ──
   const demoUsers = [
     { email: 'ceo@aec.local', name: 'CEO Demo', role: 'SUPER_ADMIN' },
     { email: 'cfo@aec.local', name: 'CFO Demo', role: 'SUPER_ADMIN' },
@@ -717,7 +775,7 @@ async function main() {
   }
   console.log('Demo users: ceo/cfo/pm @aec.local / Demo123!');
 
-  // ── 13. Workflow demo: versi (DRAFT/ACTIVE/ARCHIVED) + task tersebar ──
+  // ── 14. Workflow demo: versi (DRAFT/ACTIVE/ARCHIVED) + task tersebar ──
   // Tanpa ini, halaman Workflow hanya punya 1 versi ACTIVE dan seluruh task
   // bertanggal hari ini — rail versi dan grafik bulanan jadi tak bermakna.
   await seedWorkflowDemo();
