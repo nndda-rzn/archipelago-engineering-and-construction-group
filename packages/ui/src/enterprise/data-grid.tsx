@@ -52,6 +52,13 @@ export interface DataGridProps<TData> {
   clientPagination?: boolean;
   /** Ukuran halaman untuk `clientPagination` (default 10). */
   pageSize?: number;
+
+  /**
+   * Tata letak tabel. `'auto'` (default) = lebar kolom mengikuti isi (perilaku
+   * lama). `'fixed'` = lebar kolom dikunci oleh `size` kolom sehingga bentuk
+   * tabel tidak berubah antar-halaman/baris. Opt-in agar konsumen lama tetap sama.
+   */
+  tableLayout?: 'auto' | 'fixed';
 }
 
 function escapeCsv(value: unknown): string {
@@ -91,6 +98,7 @@ export function DataGrid<TData>({
   hideToolbar,
   clientPagination = false,
   pageSize = 10,
+  tableLayout = 'auto',
 }: DataGridProps<TData>) {
   const isServer = pagination !== undefined && onPaginationChange !== undefined;
   // Pagination klien: opt-in, dan tidak boleh bentrok dengan mode server.
@@ -169,7 +177,7 @@ export function DataGrid<TData>({
         </div>
       )}
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left text-body-sm">
+        <table className={cn('w-full border-collapse text-left text-body-sm', tableLayout === 'fixed' && 'table-fixed')}>
           <thead className="sticky top-0 z-sticky bg-neutral-50">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id} className="border-b border-neutral-200 bg-neutral-50">
@@ -186,7 +194,7 @@ export function DataGrid<TData>({
                         'whitespace-nowrap px-2 py-2 text-caption font-medium uppercase text-neutral-500',
                         align === 'right' && 'text-right',
                       )}
-                      style={size ? { minWidth: `${size}px` } : undefined}
+                      style={size ? (tableLayout === 'fixed' ? { width: `${size}px` } : { minWidth: `${size}px` }) : undefined}
                       aria-sort={
                         sortDir === 'asc' ? 'ascending'
                         : sortDir === 'desc' ? 'descending'
@@ -250,9 +258,19 @@ export function DataGrid<TData>({
                     onClick={onRowClick ? () => onRowClick(row) : undefined}
                   >
                     {row.getVisibleCells().map((cell) => {
-                      const align = (cell.column.columnDef.meta as { align?: 'left' | 'right' } | undefined)?.align;
+                      const cellMeta = cell.column.columnDef.meta as { align?: 'left' | 'right'; nowrap?: boolean; truncate?: boolean } | undefined;
+                      const align = cellMeta?.align;
                       return (
-                        <td key={cell.id} className={cn(density === 'compact' ? 'px-2 py-1.5' : 'px-4 py-3', align === 'right' && 'text-right')}>
+                        <td
+                          key={cell.id}
+                          className={cn(
+                            density === 'compact' ? 'px-2 py-1.5' : 'px-4 py-3',
+                            align === 'right' && 'text-right',
+                            // Angka/kode tidak boleh wrap; kolom teks panjang dipotong rapi.
+                            cellMeta?.nowrap && 'whitespace-nowrap',
+                            cellMeta?.truncate && 'max-w-0 truncate',
+                          )}
+                        >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </td>
                       );
