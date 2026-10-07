@@ -1,13 +1,7 @@
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { formatIdr } from '@/shared/lib/format';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { formatIdr, formatIdrAxis } from '@/shared/lib/format';
 import { AGING_COLORS, CHART } from './chart-colors';
-
-const tooltipStyle = {
-  borderRadius: 6,
-  border: `1px solid ${CHART.grid}`,
-  fontSize: 13,
-  fontFamily: 'IBM Plex Sans, sans-serif',
-};
+import { AnnotatedChart } from './annotated-chart';
 
 export function CashFlowChart({ data }: { data: { month: string; cashIn: number; cashOut: number }[] }) {
   return (
@@ -15,10 +9,13 @@ export function CashFlowChart({ data }: { data: { month: string; cashIn: number;
       <BarChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
         <XAxis dataKey="month" tick={{ fontSize: 11, fill: CHART.axis }} axisLine={{ stroke: CHART.grid }} tickLine={false} />
-        <YAxis tick={{ fontSize: 11, fill: CHART.axis }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `${Math.round(v / 1e6)}jt`} width={48} />
-        <Tooltip contentStyle={tooltipStyle} formatter={(value, name) => [formatIdr(Number(value)), name === 'cashIn' ? 'Cash In' : 'Cash Out']} cursor={{ fill: CHART.cursor }} />
-        <Bar dataKey="cashIn" fill={CHART.positive} radius={[3, 3, 0, 0]} maxBarSize={28} name="cashIn" />
-        <Bar dataKey="cashOut" fill={CHART.negative} radius={[3, 3, 0, 0]} maxBarSize={28} name="cashOut" />
+        {/* Sumbu memakai unit eksplisit (Rp … jt), bukan singkatan "jt" tanpa konteks. */}
+        <YAxis tick={{ fontSize: 11, fill: CHART.axis }} axisLine={false} tickLine={false} tickFormatter={formatIdrAxis} width={64} />
+        {/* Anotasi bersama: garis nol + legend + tooltip bernama. */}
+        <AnnotatedChart zeroLine showLegend formatValue={formatIdr} seriesNames={{ cashIn: 'Cash in', cashOut: 'Cash out' }}>
+          <Bar dataKey="cashIn" fill={CHART.positive} radius={[3, 3, 0, 0]} maxBarSize={28} name="cashIn" />
+          <Bar dataKey="cashOut" fill={CHART.negative} radius={[3, 3, 0, 0]} maxBarSize={28} name="cashOut" />
+        </AnnotatedChart>
       </BarChart>
     </ResponsiveContainer>
   );

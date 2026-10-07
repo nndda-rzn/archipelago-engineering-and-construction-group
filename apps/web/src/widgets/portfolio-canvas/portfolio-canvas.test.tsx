@@ -58,23 +58,23 @@ describe('PortfolioCanvasView', () => {
 
   it('renders an educational empty state (with faint axes) when there are no projects', () => {
     render(<PortfolioCanvasView points={[]} />);
-    expect(screen.getByText(/Belum ada data portofolio/i)).toBeTruthy();
-    expect(screen.getByText(/analisis EVM/i)).toBeTruthy();
+    expect(screen.getByText(/No portfolio data yet/i)).toBeTruthy();
+    expect(screen.getByText(/EVM analysis/i)).toBeTruthy();
   });
 
   it('exposes the empty-state message to screen readers', () => {
     render(<PortfolioCanvasView points={[]} />);
-    expect(screen.getByRole('img', { name: /Belum ada data portofolio/i })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /No portfolio data yet/i })).toBeTruthy();
   });
 
   it('renders a chart skeleton while loading', () => {
     render(<PortfolioCanvasView points={[]} isLoading />);
     expect(screen.getByLabelText('Loading portfolio canvas')).toBeTruthy();
-    expect(screen.queryByText(/Belum ada data portofolio/i)).toBeNull();
+    expect(screen.queryByText(/No portfolio data yet/i)).toBeNull();
   });
 
   it('renders the scatter canvas when points exist', () => {
     render(<PortfolioCanvasView points={points} />);
-    expect(screen.queryByText(/Belum ada data portofolio/i)).toBeNull();
+    expect(screen.queryByText(/No portfolio data yet/i)).toBeNull();
   });
 });

@@ -1,7 +1,7 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { EmptyState } from '@aec/ui';
 import type { ForecastVsActual } from '@aec/api-contracts';
-import { formatIdr } from '@/shared/lib/format';
+import { formatIdr, formatIdrAxis } from '@/shared/lib/format';
 import { CHART } from './chart-colors';
 
 /**
@@ -23,8 +23,8 @@ export function ForecastVsActualChart({ periods }: { periods: ForecastVsActual['
           tick={{ fontSize: 11, fill: CHART.axis }}
           axisLine={false}
           tickLine={false}
-          tickFormatter={(v: number) => `${Math.round(v / 1e6)}jt`}
-          width={56}
+          tickFormatter={formatIdrAxis}
+          width={64}
         />
         <Tooltip
           contentStyle={{ borderRadius: 6, border: `1px solid ${CHART.grid}`, fontSize: 13, fontFamily: 'IBM Plex Sans, sans-serif' }}

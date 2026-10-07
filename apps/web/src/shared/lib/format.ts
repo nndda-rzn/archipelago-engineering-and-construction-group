@@ -12,6 +12,29 @@ export function formatNumber(n: number) {
   return new Intl.NumberFormat('id-ID').format(n);
 }
 
+/**
+ * Pemformat tick sumbu chart: nilai uang besar disingkat dengan **unit eksplisit**
+ * (`Rp 12 jt`, `Rp 1,2 M`) sehingga pembaca tidak perlu menebak arti singkatan.
+ *
+ * Menggantikan formatter lama `${Math.round(v / 1e6)}jt` yang hanya menulis
+ * "jt" tanpa konteks dan berbeda unit dari tooltip (yang memakai formatIdr penuh).
+ */
+export function formatIdrAxis(n: number): string {
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '−' : '';
+  if (abs >= 1e12) return `${sign}Rp ${trimZero(abs / 1e12)} T`;
+  if (abs >= 1e9) return `${sign}Rp ${trimZero(abs / 1e9)} M`;
+  if (abs >= 1e6) return `${sign}Rp ${trimZero(abs / 1e6)} jt`;
+  if (abs >= 1e3) return `${sign}Rp ${trimZero(abs / 1e3)} rb`;
+  return `${sign}Rp ${Math.round(abs)}`;
+}
+
+/** Buang nol di belakang koma: 1.0 → "1", 1.25 → "1,25". */
+function trimZero(v: number): string {
+  const rounded = Math.round(v * 100) / 100;
+  return String(rounded).replace('.', ',');
+}
+
 const INVALID = '—';
 
 function safeDate(d: string | Date | null | undefined): Date | null {

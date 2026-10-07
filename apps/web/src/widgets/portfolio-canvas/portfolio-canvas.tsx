@@ -5,6 +5,7 @@ import type { Portfolio, PortfolioEvmItem } from '@aec/api-contracts';
 import { usePortfolio, usePortfolioEvm } from '@/features/project';
 import type { DashboardFilter } from '@/shared/lib/dashboard-period';
 import { formatIdr } from '@/shared/lib/format';
+import { CHART, HEALTH_COLORS } from '@/widgets/dashboard-charts/chart-colors';
 
 export interface EvmPoint {
   projectId: string;
@@ -19,13 +20,6 @@ export interface EvmPoint {
 
 type PortfolioItem = Portfolio['items'][number];
 
-const HEALTH_COLORS: Record<Portfolio['items'][number]['health'], string> = {
-  ON_TRACK: '#22c55e',
-  AT_RISK: '#f59e0b',
-  CRITICAL: '#ef4444',
-  NO_BUDGET: '#a1a1aa',
-};
-
 const HEALTH_LABEL: Record<Portfolio['items'][number]['health'], string> = {
   ON_TRACK: 'On Track',
   AT_RISK: 'At Risk',
@@ -33,7 +27,7 @@ const HEALTH_LABEL: Record<Portfolio['items'][number]['health'], string> = {
   NO_BUDGET: 'No Budget',
 };
 
-const EMPTY_MESSAGE = 'Belum ada data portofolio. Sinkronkan proyek Anda untuk memulai analisis EVM.';
+const EMPTY_MESSAGE = 'No portfolio data yet. Sync your projects to start EVM analysis.';
 
 /**
  * Gabungkan portofolio + EVM rollup (join lewat `projectId`) menjadi titik canvas.
@@ -97,14 +91,14 @@ function EducationalEmptyCanvas() {
     <div role="img" aria-label={EMPTY_MESSAGE} className="relative h-[280px] w-full">
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full" aria-hidden="true">
         {/* sumbu samar X (CPI) dan Y (SPI) */}
-        <line x1="0" y1="100" x2="100" y2="100" stroke="#e4e4e7" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
-        <line x1="0" y1="0" x2="0" y2="100" stroke="#e4e4e7" strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+        <line x1="0" y1="100" x2="100" y2="100" stroke={CHART.grid} strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
+        <line x1="0" y1="0" x2="0" y2="100" stroke={CHART.grid} strokeWidth="0.5" vectorEffect="non-scaling-stroke" />
         {/* crosshair referensi di 1.0 / 1.0 */}
-        <line x1={pos(1)} y1="0" x2={pos(1)} y2="100" stroke="#d4d4d8" strokeWidth="0.5" strokeDasharray="2 2" vectorEffect="non-scaling-stroke" />
-        <line x1="0" y1={100 - pos(1)} x2="100" y2={100 - pos(1)} stroke="#d4d4d8" strokeWidth="0.5" strokeDasharray="2 2" vectorEffect="non-scaling-stroke" />
+        <line x1={pos(1)} y1="0" x2={pos(1)} y2="100" stroke={CHART.gridStrong} strokeWidth="0.5" strokeDasharray="2 2" vectorEffect="non-scaling-stroke" />
+        <line x1="0" y1={100 - pos(1)} x2="100" y2={100 - pos(1)} stroke={CHART.gridStrong} strokeWidth="0.5" strokeDasharray="2 2" vectorEffect="non-scaling-stroke" />
         {/* watermark scatter transparan */}
         {[[0.9, 1.15], [1.1, 0.92], [1.25, 1.2], [0.82, 0.85], [1.05, 1.08], [0.95, 0.75]].map(([x, y], i) => (
-          <circle key={i} cx={pos(x!)} cy={100 - pos(y!)} r="1.4" fill="#a1a1aa" fillOpacity="0.18" />
+          <circle key={i} cx={pos(x!)} cy={100 - pos(y!)} r="1.4" fill={CHART.axis} fillOpacity="0.18" />
         ))}
       </svg>
 
@@ -126,6 +120,18 @@ function EducationalEmptyCanvas() {
   );
 }
 
+/** Domain sumbu dari data (CPI/SPI), dibulatkan ke 0,1 dan dijaga di sekitar 1.0. */
+export function evmDomain(values: number[]): [number, number] {
+  const finite = values.filter((v) => Number.isFinite(v));
+  if (finite.length === 0) return [0.6, 1.4];
+  const min = Math.min(...finite, 1);
+  const max = Math.max(...finite, 1);
+  // Beri margin 0,1 dan jaga minimal rentang 0,6 agar chart tidak "menyempit".
+  const lo = Math.max(0, Math.floor((min - 0.1) * 10) / 10);
+  const hi = Math.ceil((max + 0.1) * 10) / 10;
+  return hi - lo >= 0.6 ? [lo, hi] : [Math.max(0, lo - 0.3), lo + 0.3];
+}
+
 export interface PortfolioCanvasViewProps {
   points: EvmPoint[];
   health?: string;
@@ -135,6 +141,9 @@ export interface PortfolioCanvasViewProps {
 }
 
 export function PortfolioCanvasView({ points, health = '', onSelectHealth, onSelectProject, isLoading = false }: PortfolioCanvasViewProps) {
+  // Domain sumbu mengikuti data (bukan dipatok 0,6–1,4) agar titik ekstrem tidak
+  // terpotong di tepi chart.
+  const domain = evmDomain(points.flatMap((p) => [p.cpi, p.spi]));
   const legend = (
     <div className="mt-3 flex flex-wrap items-center gap-3">
       {(Object.keys(HEALTH_LABEL) as Array<keyof typeof HEALTH_LABEL>).map((k) => (
@@ -166,11 +175,11 @@ export function PortfolioCanvasView({ points, health = '', onSelectHealth, onSel
       ) : (
         <ResponsiveContainer width="100%" height={280}>
           <ScatterChart margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
-            <XAxis type="number" dataKey="cpi" name="CPI" domain={[0.6, 1.4]} tick={{ fontSize: 11, fill: '#71717a' }} axisLine={{ stroke: '#e4e4e7' }} tickLine={false} />
-            <YAxis type="number" dataKey="spi" name="SPI" domain={[0.6, 1.4]} tick={{ fontSize: 11, fill: '#71717a' }} axisLine={{ stroke: '#e4e4e7' }} tickLine={false} width={40} />
-            <ReferenceLine x={1} stroke="#d4d4d8" />
-            <ReferenceLine y={1} stroke="#d4d4d8" />
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+            <XAxis type="number" dataKey="cpi" name="CPI" domain={domain} tick={{ fontSize: 11, fill: CHART.axis }} axisLine={{ stroke: CHART.grid }} tickLine={false} />
+            <YAxis type="number" dataKey="spi" name="SPI" domain={domain} tick={{ fontSize: 11, fill: CHART.axis }} axisLine={{ stroke: CHART.grid }} tickLine={false} width={40} />
+            <ReferenceLine x={1} stroke={CHART.gridStrong} />
+            <ReferenceLine y={1} stroke={CHART.gridStrong} />
             <Tooltip content={<CanvasTooltip />} cursor={{ strokeDasharray: '3 3' }} />
             <Scatter data={points} onClick={(point: unknown) => {
               const p = point as EvmPoint;
@@ -190,7 +199,9 @@ export function PortfolioCanvasView({ points, health = '', onSelectHealth, onSel
       )}
 
       {legend}
-      <p className="mt-2 text-caption text-neutral-500">X = CPI (cost efficiency) · Y = SPI (schedule efficiency) · crosshair at 1.0 · click a legend to filter</p>
+      <p className="mt-2 text-caption text-neutral-500">
+        X = CPI (cost efficiency) · Y = SPI (schedule efficiency) · quadrants cross at 1.0 · bubble colour = health
+      </p>
     </div>
   );
 }
