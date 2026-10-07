@@ -40,4 +40,11 @@ describe('PortfolioScatter', () => {
     expect(screen.getByRole('img').getAttribute('aria-label')).toMatch(/PRJ-1/);
     expect(screen.getByText('PRJ-1')).toBeTruthy();
   });
+
+  it('lays the point legend out on a fixed grid (no ragged right edge)', () => {
+    const { container } = render(<PortfolioScatter projects={[base, { ...base, projectId: 'p2', projectCode: 'PRJ-2' }]} />);
+    const legend = container.querySelector('ul')!;
+    expect(legend.className).toContain('grid');
+    expect(legend.className).toContain('grid-cols-2');
+  });
 });
