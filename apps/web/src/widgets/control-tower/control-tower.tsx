@@ -2,9 +2,8 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { Card, DataGrid, ErrorState, ExceptionQueue, SectionBand, Sparkline, StatTile, StatusPill, type ExceptionItem } from '@aec/ui';
 import type { ControlTower, ControlTowerKpi, ControlTowerProject } from '@aec/api-contracts';
 import { formatIdr } from '@/shared/lib/format';
-import { CashFlowChart, EvmBullets, WaterfallChart, type WaterfallStep } from '@/widgets/dashboard-charts';
+import { CashFlowChart, EvmSeriesBars, WaterfallChart, type WaterfallStep } from '@/widgets/dashboard-charts';
 import { DomainTiles } from './domain-tiles';
-import { PortfolioScatter } from './portfolio-scatter';
 
 /** Format nilai KPI sesuai satuannya. */
 export function formatKpiValue(kpi: Pick<ControlTowerKpi, 'value' | 'unit'>): string {
@@ -145,21 +144,17 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
           <Card variant="flat">
             <PortfolioLedger data={data} />
           </Card>
-          <div className="grid grid-cols-1 gap-cell xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-cell xl:grid-cols-2">
             <Card variant="flat">
-              <h3 className="mb-2 text-h3 text-neutral-950">CPI × SPI by project</h3>
-              <PortfolioScatter projects={data.projects} />
+              <h3 className="mb-2 text-h3 text-neutral-950">EVM: CPI &amp; SPI by project</h3>
+              <EvmSeriesBars
+                items={data.projects.map((p) => ({ name: p.projectCode, cpi: p.cpi, spi: p.spi }))}
+                emptyMessage="No EVM baseline published yet."
+              />
             </Card>
             <Card variant="flat">
               <h3 className="mb-2 text-h3 text-neutral-950">Cash bridge · period</h3>
               <WaterfallChart steps={buildCashBridge(data)} />
-            </Card>
-            <Card variant="flat">
-              <h3 className="mb-2 text-h3 text-neutral-950">EVM index by project</h3>
-              <EvmBullets items={data.projects.filter((p) => p.hasEvm).map((p) => ({ name: p.projectCode, value: p.cpi ?? 1 }))} label="CPI" />
-              {data.projects.every((p) => !p.hasEvm) && (
-                <p className="text-body-sm text-neutral-500">No EVM baseline published yet.</p>
-              )}
             </Card>
           </div>
         </div>

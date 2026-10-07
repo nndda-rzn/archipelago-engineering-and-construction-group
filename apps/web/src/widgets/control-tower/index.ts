@@ -8,4 +8,3 @@ export {
   type ControlTowerViewProps,
 } from './control-tower';
 export { DomainTiles } from './domain-tiles';
-export { PortfolioScatter, evmPoints, type PortfolioScatterProps } from './portfolio-scatter';
