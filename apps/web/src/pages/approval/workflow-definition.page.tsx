@@ -1,24 +1,15 @@
-import { useMemo, useState } from 'react';
 import { AlertTriangle, LayoutTemplate, Plus, Workflow as WorkflowIcon } from 'lucide-react';
 import {
   Button, ConfirmActionButton, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader,
-  DialogTitle, EmptyState, ErrorState, Input, Label, Skeleton, StatusBadge, cn, labelResource, useToast,
+  DialogTitle, EmptyState, ErrorState, Input, Skeleton, StatusBadge, cn, labelResource, useToast,
 } from '@aec/ui';
-import type { WorkflowDefinition, WorkflowStep } from '@aec/api-contracts';
-import {
-  CreateWorkflowForm, useAddWorkflowStep, useArchiveWorkflow, useCreateWorkflowFromTemplate,
-  useDeleteWorkflow, useDuplicateWorkflow, useNewWorkflowVersion, usePublishWorkflow,
-  useRemoveWorkflowStep, useReorderWorkflowSteps, useUpdateWorkflowDefinition, useUpdateWorkflowStep,
-  useWorkflowDefinitions, useWorkflowInsights, useWorkflowTemplates, useWorkflowVersions,
-} from '@/features/approval';
+import { CreateWorkflowForm } from '@/features/approval';
 import {
   WorkflowChainList, WorkflowDefinitionsRail, WorkflowDrawer, WorkflowInsightsPanel, WorkflowLifecycle,
   WorkflowPreflight, WorkflowScenarios, WorkflowStepForm, WorkflowTemplateDialog, WorkflowVersionsRail,
-  DRAWER_ICONS, VERSION_STATUS_LABEL,
+  WorkflowMetadataEditor, DRAWER_ICONS, VERSION_STATUS_LABEL,
 } from '@/features/approval/ui';
-import { preflight, hasBlockers } from '@/features/approval/lib/preflight';
-import { useRoles } from '@/entities/role';
-import { useUrlFilter } from '@/shared/lib/use-url-state';
+import { useWorkflowEditor } from '@/features/approval/model/use-workflow-editor';
 
 /**
  * Builder definisi approval sebagai **workspace**.
@@ -38,157 +29,23 @@ import { useUrlFilter } from '@/shared/lib/use-url-state';
  * - **DRAFT** boleh mengubah struktur (langkah/syarat).
  * - **ACTIVE** terkunci; perubahan = versi baru. Nama/deskripsi tetap boleh diubah.
  * - **ARCHIVED** hanya dilihat atau dihapus.
+ *
+ * State & orkestrasi ada di `useWorkflowEditor`; halaman ini hanya menyusun tampilan.
  */
 export function WorkflowDefinitionPage() {
-  const [code, setCode] = useUrlFilter('code');
-  const [versionRaw, setVersionRaw] = useUrlFilter('version');
-  const [stepId, setStepId] = useUrlFilter('step');
-  const [drawer, setDrawer] = useUrlFilter('panel');
-  const [query, setQuery] = useState('');
-  const [showCreate, setShowCreate] = useState(false);
-  const [templateOpen, setTemplateOpen] = useState(false);
-  const [publishOpen, setPublishOpen] = useState(false);
+  const {
+    setCode, setVersionRaw, setStepId, drawer, setDrawer,
+    query, setQuery, showCreate, setShowCreate, templateOpen, setTemplateOpen, publishOpen, setPublishOpen,
+    definitions, templates, versions, insights,
+    roleOptions, holdersByRole,
+    filtered, selected, steps, selectedStep, locked,
+    holderNamesByRole, warningCount, activeCount, draftCount,
+    issues, blocked, simulatedPath, setSimulatedPath,
+    updateDefinition, addStep, updateStep, removeStep, publish, archive, remove, newVersion, duplicate,
+    reorderSteps, doPublish, doDuplicate, doCreateFromTemplate,
+  } = useWorkflowEditor();
+
   const toast = useToast();
-
-  const definitions = useWorkflowDefinitions();
-  const roles = useRoles();
-  const templates = useWorkflowTemplates();
-
-  const roleOptions = useMemo(
-    () => (roles.data ?? []).map((r) => ({ code: r.code, name: r.name, holders: r._count?.userRoles ?? 0 })),
-    [roles.data],
-  );
-  const holdersByRole = useMemo(
-    () => Object.fromEntries(roleOptions.map((r) => [r.code, r.holders])),
-    [roleOptions],
-  );
-  const knownRoleCodes = useMemo(() => roleOptions.map((r) => r.code), [roleOptions]);
-
-  // Definisi yang lolos pencarian. Pengelompokan & pengurutan ditangani rail,
-  // karena "grup mana dulu" adalah keputusan tampilan, bukan keputusan data.
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return definitions.data ?? [];
-    return (definitions.data ?? []).filter(
-      (d) => d.code.toLowerCase().includes(q) || d.name.toLowerCase().includes(q),
-    );
-  }, [definitions.data, query]);
-
-  const selected = useMemo(() => {
-    if (code) {
-      const match = filtered.find((d) => d.code === code && String(d.version) === versionRaw);
-      if (match) return match;
-      // Versi yang diminta tidak ada → jatuh ke versi ACTIVE/terbaru dari code itu.
-      return filtered.find((d) => d.code === code) ?? null;
-    }
-    // Tanpa pilihan eksplisit: versi ACTIVE pertama, kalau tidak ada versi teratas.
-    return filtered.find((d) => d.status === 'ACTIVE') ?? filtered[0] ?? null;
-  }, [filtered, code, versionRaw]);
-
-  const selectedCode = selected?.code ?? null;
-  const selectedId = selected?.id ?? null;
-
-  const versions = useWorkflowVersions(selectedCode);
-  const insights = useWorkflowInsights(selectedId);
-
-  const updateDefinition = useUpdateWorkflowDefinition();
-  const addStep = useAddWorkflowStep();
-  const updateStep = useUpdateWorkflowStep();
-  const removeStep = useRemoveWorkflowStep();
-  const reorder = useReorderWorkflowSteps();
-  const publish = usePublishWorkflow();
-  const archive = useArchiveWorkflow();
-  const remove = useDeleteWorkflow();
-  const newVersion = useNewWorkflowVersion();
-  const duplicate = useDuplicateWorkflow();
-  const fromTemplate = useCreateWorkflowFromTemplate();
-
-  const locked = selected != null && selected.status !== 'DRAFT';
-  const steps = useMemo(() => selected?.steps ?? [], [selected]);
-  const selectedStep: WorkflowStep | null = steps.find((s) => s.id === stepId) ?? steps[0] ?? null;
-
-  // Jalur hasil simulasi. `null` berarti belum disimulasikan.
-  const [simulatedPath, setSimulatedPath] = useState<number[] | null>(null);
-  // Ganti definisi atau versi membatalkan simulasi, karena syaratnya berbeda.
-  const selectedKey = selected ? `${selected.id}` : '';
-  const [simKey, setSimKey] = useState(selectedKey);
-  if (simKey !== selectedKey) {
-    setSimKey(selectedKey);
-    setSimulatedPath(null);
-  }
-
-  const holderNamesByRole = useMemo(
-    () => Object.fromEntries(
-      (insights.data?.coverage ?? []).map((c) => [c.roleCode, c.holderNames]),
-    ),
-    [insights.data],
-  );
-
-  const warningCount = useMemo(
-    () => steps.filter((s) => (holdersByRole[s.approverRoleCode] ?? 0) === 0).length,
-    [steps, holdersByRole],
-  );
-
-  const activeCount = (definitions.data ?? []).filter((d) => d.status === 'ACTIVE').length;
-  const draftCount = (definitions.data ?? []).filter((d) => d.status === 'DRAFT').length;
-
-  // Pemeriksaan sebelum publish, dihitung dari data yang sudah ada di klien.
-  const issues = useMemo(
-    () => preflight({ steps, holdersByRole, knownRoleCodes }),
-    [steps, holdersByRole, knownRoleCodes],
-  );
-  const blocked = hasBlockers(issues);
-
-  const reorderSteps = (stepIds: string[]) => {
-    if (!selected) return;
-    reorder.mutate(
-      { id: selected.id, input: { stepIds } },
-      { onError: () => toast({ title: 'Could not reorder steps', variant: 'error' }) },
-    );
-  };
-
-  const doPublish = () => {
-    if (!selected) return;
-    publish.mutate(
-      { id: selected.id, input: { newVersionName: selected.name } },
-      {
-        onSuccess: () => {
-          toast({ title: 'Workflow published', variant: 'success' });
-          setPublishOpen(false);
-        },
-        onError: () => toast({
-          title: 'Workflow not ready',
-          description: 'Every step needs an approver role that at least one user holds.',
-          variant: 'error',
-        }),
-      },
-    );
-  };
-
-  const doDuplicate = () => {
-    if (!selected) return;
-    const suggested = `${selected.code}_COPY`;
-    duplicate.mutate(
-      { id: selected.id, input: { code: suggested } },
-      {
-        onSuccess: () => toast({ title: `Duplicated as ${suggested}`, variant: 'success' }),
-        onError: () => toast({ title: 'Could not duplicate', description: `${suggested} may already exist.`, variant: 'error' }),
-      },
-    );
-  };
-
-  const doCreateFromTemplate = (args: { template: Parameters<typeof fromTemplate.mutate>[0]['template']; code: string; name: string }) => {
-    fromTemplate.mutate(args, {
-      onSuccess: () => {
-        toast({ title: `Created ${args.code}`, variant: 'success' });
-        setTemplateOpen(false);
-        setCode(args.code);
-        setVersionRaw('1');
-        setStepId('');
-      },
-      onError: () => toast({ title: 'Could not create workflow', description: `${args.code} may already exist.`, variant: 'error' }),
-    });
-  };
 
   return (
     <div className="mx-auto flex h-full max-w-[1600px] flex-col">
@@ -525,7 +382,7 @@ export function WorkflowDefinitionPage() {
                     label: 'Settings',
                     icon: DRAWER_ICONS.settings,
                     content: (
-                      <MetadataEditor
+                      <WorkflowMetadataEditor
                         definition={selected}
                         saving={updateDefinition.isPending}
                         onSave={(input) => updateDefinition.mutate(
@@ -579,58 +436,3 @@ export function WorkflowDefinitionPage() {
     </div>
   );
 }
-
-/** Nama + deskripsi. Disimpan eksplisit agar tidak menulis pada tiap ketikan. */
-function MetadataEditor({
-  definition, saving, onSave,
-}: {
-  definition: WorkflowDefinition;
-  saving: boolean;
-  onSave: (input: { name?: string; description?: string | null }) => void;
-}) {
-  const [name, setName] = useState(definition.name);
-  const [description, setDescription] = useState(definition.description ?? '');
-  const [editing, setEditing] = useState(false);
-
-  const dirty = name !== definition.name || description !== (definition.description ?? '');
-  const valid = name.trim().length >= 2;
-
-  if (!editing) {
-    return (
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-body font-medium text-neutral-900">{definition.name}</p>
-          <p className="mt-0.5 text-caption text-neutral-500">{definition.description ?? 'No description.'}</p>
-        </div>
-        <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>Edit</Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="max-w-md">
-        <Label htmlFor="wf-meta-name">Name</Label>
-        <Input id="wf-meta-name" value={name} onChange={(e) => setName(e.target.value)} error={!valid} />
-        {!valid && <p role="alert" className="mt-1 text-caption text-destructive-600">Name must be at least 2 characters.</p>}
-      </div>
-      <div className="max-w-md">
-        <Label htmlFor="wf-meta-desc">Description</Label>
-        <Input id="wf-meta-desc" value={description} onChange={(e) => setDescription(e.target.value)} />
-      </div>
-      <div className="flex justify-end gap-2">
-        <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={!dirty || !valid}
-          loading={saving}
-          onClick={() => onSave({ name: name.trim(), description: description.trim() === '' ? null : description.trim() })}
-        >
-          Save
-        </Button>
-      </div>
-    </div>
-  );
-}
-
