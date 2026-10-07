@@ -205,14 +205,9 @@ export function DomainTiles({ data }: { data: ControlTower }) {
           </dl>
         </Tile>
 
-        {/* 6 — HCM */}
+        {/* 6 — HCM — dua angka berlabel (bukan stacked: manpower lapangan dan
+            karyawan master data bukan bagian-dari-keseluruhan). */}
         <Tile title="HCM">
-          <MiniStackedBar
-            primary={hcm.manpowerToday}
-            secondary={hcm.activeEmployees}
-            label="Manpower today vs active employees"
-          />
-          <p className="text-caption text-neutral-500">Manpower today vs active employees</p>
           <dl className="space-y-1.5">
             <Value label="Manpower today" value={hcm.manpowerToday.toLocaleString('id-ID')} />
             <Value label="Active employees" value={String(hcm.activeEmployees)} />
