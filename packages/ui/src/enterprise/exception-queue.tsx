@@ -56,7 +56,9 @@ function RowContent({ item }: { item: ExceptionItem }) {
         <span aria-hidden="true" className={cn('inline-block h-2 w-2 shrink-0 rounded-full', SEV_DOT[item.severity])} />
         {item.severity}
       </span>
-      <span className="min-w-0 truncate text-body-sm text-neutral-900">
+      {/* Kolom teks boleh menyusut & terpotong; dokumen/domain tidak mendorong
+          lebar kolom (penyebab utama tumpang tindih di layar sempit). */}
+      <span className="min-w-0 truncate text-body-sm text-neutral-900" title={`${item.type}${item.documentCode ? ' · ' + item.documentCode : ''}`}>
         {item.type}
         {item.documentCode && <span className="ml-1.5 font-mono text-caption text-neutral-500">{item.documentCode}</span>}
         <span className="ml-1.5 text-caption text-neutral-400">· {item.domain}</span>
@@ -64,7 +66,7 @@ function RowContent({ item }: { item: ExceptionItem }) {
       <span
         role="img"
         aria-label={`age ${item.ageDays} of ${item.slaDays ?? '—'} day SLA`}
-        className="h-1.5 w-full overflow-hidden rounded-sm bg-neutral-100"
+        className="hidden h-1.5 w-full overflow-hidden rounded-sm bg-neutral-100 sm:block"
       >
         {slaPct != null && (
           <span
@@ -106,8 +108,12 @@ export function ExceptionQueue({ items, renderRow, emptyMessage = 'No open excep
         <ul className="divide-y divide-neutral-100">
           {items.map((item) => {
             const content = <RowContent item={item} />;
+            // 4 kolom di layar lebar; di bawah sm kolom bar SLA disembunyikan
+            // (bukan diperkecil) agar teks tidak tumpang tindih.
             const inner = (
-              <div className="grid grid-cols-[56px_1fr_80px_38px] items-center gap-2.5 py-1.5">{content}</div>
+              <div className="grid grid-cols-[52px_1fr_34px] items-center gap-2.5 py-1.5 sm:grid-cols-[56px_1fr_80px_38px]">
+                {content}
+              </div>
             );
             return (
               <li key={item.key}>

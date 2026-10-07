@@ -20,10 +20,21 @@ const TONE: Record<NonNullable<MiniStatProps['tone']>, string> = {
 /** Metrik ringkas tanpa kartu: label kecil + angka + konteks. Untuk grid padat. */
 export function MiniStat({ label, value, context, tone = 'neutral', className, ...props }: MiniStatProps) {
   return (
-    <div className={cn('flex flex-col', className)} {...props}>
-      <span className="text-overline uppercase text-neutral-500">{label}</span>
-      <span className={cn('mt-0.5 font-mono tabular-nums text-metric-sm', TONE[tone])}>{value}</span>
-      {context && <span className="text-caption text-neutral-500">{context}</span>}
+    <div className={cn('flex min-w-0 flex-col', className)} {...props}>
+      <span className="truncate text-overline uppercase text-neutral-500" title={label}>
+        {label}
+      </span>
+      <span
+        className={cn('mt-0.5 truncate font-mono tabular-nums text-metric-sm', TONE[tone])}
+        title={value}
+      >
+        {value}
+      </span>
+      {context && (
+        <span className="truncate text-caption text-neutral-500" title={context}>
+          {context}
+        </span>
+      )}
     </div>
   );
 }
