@@ -1,5 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router';
-import { Card, DataGrid, ErrorState, ExceptionQueue, SectionBand, StatTile, StatusPill, type ExceptionItem } from '@aec/ui';
+import { Card, DataGrid, ErrorState, ExceptionQueue, SectionBand, Sparkline, StatTile, StatusPill, type ExceptionItem } from '@aec/ui';
 import type { ControlTower, ControlTowerKpi, ControlTowerProject } from '@aec/api-contracts';
 import { formatIdr } from '@/shared/lib/format';
 import { CashFlowChart, EvmBullets, WaterfallChart, type WaterfallStep } from '@/widgets/dashboard-charts';
@@ -82,6 +82,8 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
   const budgetVar = byKey.get('budgetVariance');
   const arOverdue = byKey.get('arOverdue');
   const dso = byKey.get('dso');
+  // Tren kas (net per bulan) untuk sparkline pada KPI cash — hanya bila ada seri.
+  const cashSeries = cashFlowSeries.map((m) => m.cashIn - m.cashOut);
 
   return (
     <div className="flex flex-col gap-tier">
@@ -98,6 +100,7 @@ export function ControlTowerView({ data, cashFlowSeries, liveControl, renderKpiV
               meetsTarget={k.meetsTarget}
               direction={k.direction}
               tone={kpiTone(k)}
+              viz={k.key === 'cash' && cashSeries.length > 1 ? <Sparkline values={cashSeries} label="Cash trend" /> : undefined}
             />
           ))}
         </div>

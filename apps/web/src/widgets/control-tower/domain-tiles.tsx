@@ -84,7 +84,6 @@ export function DomainTiles({ data }: { data: ControlTower }) {
   // adanya. Sisi kanan = AR overdue 61+ (bucket non-current).
   const openPoCommitment = data.operations.procurement.openPoValue;
   const arOverdue = kpiValue(data, 'arOverdue');
-  const dso = kpiValue(data, 'dso');
   const netCashFlow = kpiValue(data, 'netCashFlow');
   const runway = runwayLabel(data.treasury.cashOnHand, netCashFlow);
 
@@ -143,11 +142,11 @@ export function DomainTiles({ data }: { data: ControlTower }) {
             rightLabel="AR overdue 61+"
             format={formatIdr}
           />
-          <p className="text-caption text-neutral-500">Open PO commitment ◀▶ AR overdue 61+</p>
+          <p className="text-caption text-neutral-500">
+            Open PO commitment ◀▶ AR overdue 61+ · both target-bearing KPIs sit in the Position band
+          </p>
           <dl className="space-y-1.5">
             <Value label="Open PO commitment" value={formatIdr(openPoCommitment)} tone="warning" />
-            <Value label="AR overdue 61+" value={formatIdr(arOverdue)} tone="negative" />
-            <Value label="DSO" value={`${Math.round(dso)} d`} />
             <Value label="Runway" value={runway} />
           </dl>
         </Tile>

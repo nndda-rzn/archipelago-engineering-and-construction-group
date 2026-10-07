@@ -129,4 +129,12 @@ describe('ControlTowerView', () => {
     const row = container.querySelector('tbody tr')!;
     expect(() => fireEvent.keyDown(row, { key: 'Enter' })).not.toThrow();
   });
+
+  it('renders each KPI label exactly once (one home per figure)', () => {
+    render(<ControlTowerView data={base} cashFlowSeries={[]} />);
+    // "AR overdue 61+" dan "DSO" hanya boleh muncul di pita Position, tidak lagi
+    // diulang di tile Liquidity.
+    expect(screen.getAllByText('AR overdue 61+')).toHaveLength(1);
+    expect(screen.getAllByText('DSO')).toHaveLength(1);
+  });
 });
