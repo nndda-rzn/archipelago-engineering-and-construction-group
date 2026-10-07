@@ -6,6 +6,8 @@ import { CacheService } from '@/shared/cache/cache.service';
 import { ANALYTICS_CACHE_KEYS, analyticsCacheKey } from '@/shared/cache/analytics-cache';
 import { resolveDateRange } from '@/shared/utils/date-range';
 import { monthKeyUtc } from '@/shared/utils/month-key';
+import { lastNMonthsUtc, monthSpanUtc } from './shared/analytics-date';
+import { computeDelta as computeDeltaPure, monthlySeries as monthlySeriesPure } from './shared/analytics-metrics';
 import { toCsvLines } from '@/shared/export/csv';
 
 /** Baris invoice di balik angka sebuah bucket aging. */
@@ -16,29 +18,6 @@ export interface AgingDetail {
   date: string;
   ageDays: number;
   outstanding: number;
-}
-
-/** N bulan terakhir (termasuk bulan berjalan), urut lama → baru. */
-function lastNMonthsUtc(n: number, now = new Date()): string[] {
-  const out: string[] = [];
-  for (let i = n - 1; i >= 0; i--) {
-    out.push(monthKeyUtc(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1))));
-  }
-  return out;
-}
-
-/** Semua bulan yang menyentuh rentang `a`..`b`, urut lama → baru. */
-function monthSpanUtc(a: Date, b: Date): string[] {
-  const start = a.getTime() <= b.getTime() ? a : b;
-  const end = a.getTime() <= b.getTime() ? b : a;
-  const out: string[] = [];
-  const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
-  const last = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
-  while (cursor.getTime() <= last.getTime()) {
-    out.push(monthKeyUtc(cursor));
-    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
-  }
-  return out;
 }
 
 @Injectable()
@@ -53,9 +32,7 @@ export class AnalyticsService {
     current: number,
     previous: number,
   ): { current: number; previous: number; pctChange: number | null; direction: 'up' | 'down' | 'flat' } {
-    const pctChange = previous !== 0 ? Math.round(((current - previous) / Math.abs(previous)) * 1000) / 10 : null;
-    const direction = current > previous ? 'up' : current < previous ? 'down' : 'flat';
-    return { current, previous, pctChange, direction };
+    return computeDeltaPure(current, previous);
   }
 
   /**
@@ -67,21 +44,7 @@ export class AnalyticsService {
    * (berapa banyak terbuka saat itu). Label UI harus mencerminkan itu.
    */
   monthlySeries(rows: { at: Date; value?: number }[], now: Date = new Date(), months = 6): { month: string; value: number }[] {
-    const key = (d: Date) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-    const buckets = new Map<string, number>();
-    const monthsList: string[] = [];
-    for (let i = months - 1; i >= 0; i--) {
-      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
-      const k = key(d);
-      monthsList.push(k);
-      buckets.set(k, 0);
-    }
-    for (const r of rows) {
-      const k = key(r.at);
-      if (!buckets.has(k)) continue; // di luar jendela 6 bulan
-      buckets.set(k, (buckets.get(k) ?? 0) + (r.value ?? 1));
-    }
-    return monthsList.map((month) => ({ month, value: Math.round((buckets.get(month) ?? 0) * 100) / 100 }));
+    return monthlySeriesPure(rows, now, months);
   }
 
   async executive(
