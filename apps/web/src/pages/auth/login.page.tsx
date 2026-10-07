@@ -7,7 +7,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { useLogin } from '@/features/auth';
 
 /**
- * Akun demo untuk environment ini. Password TIDAK ditampilkan di UI — chip hanya
+ * Akun demo untuk environment ini. Password TIDAK ditampilkan di UI; chip hanya
  * mengisi otomatis. Nilai sudah diverifikasi cocok dengan `prisma/seed.ts`.
  */
 const DEMO_ACCOUNTS = [
@@ -16,7 +16,7 @@ const DEMO_ACCOUNTS = [
   { role: 'CEO', email: 'ceo@aec.local', password: 'Demo' + '123!' },
 ];
 
-/** Alur kerja inti — ditulis sebagai alur, bukan jargon internal. */
+/** Alur kerja inti, ditulis sebagai alur bukan jargon internal. */
 const WORKFLOW = ['Tender', 'Contract', 'Procurement', 'Construction', 'Reporting'];
 
 export function LoginPage() {
@@ -43,7 +43,7 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-dvh bg-neutral-50">
-      {/* Panel kiri — konteks produk. Disembunyikan di layar kecil. */}
+      {/* Panel kiri: konteks produk. Disembunyikan di layar kecil. */}
       <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-neutral-950 p-10 lg:flex">
         {/* Latar dekoratif: gambar redup di belakang teks. Above-the-fold di
             desktop, jadi eager (bukan lazy); prioritas default karena dekoratif. */}
@@ -76,7 +76,7 @@ export function LoginPage() {
             Project-centric ERP for construction &amp; EPC.
           </h1>
           <p className="mt-3 max-w-md text-body-sm text-neutral-400">
-            Finance, procurement, and site execution share one project record — from tender to consolidated report.
+            Finance, procurement, and site execution share one project record, from tender to consolidated report.
           </p>
 
           <ol className="mt-6 flex max-w-md flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-neutral-300">
@@ -92,7 +92,7 @@ export function LoginPage() {
         <p className="relative z-10 text-caption text-neutral-400">© 2026 AEC Group · Demo environment.</p>
       </div>
 
-      {/* Panel kanan — formulir. */}
+      {/* Panel kanan: formulir. */}
       <div className="flex w-full items-center justify-center px-6 lg:w-1/2">
         <div className="w-full max-w-sm">
           <div className="mb-8 lg:hidden">
@@ -192,7 +192,7 @@ export function LoginPage() {
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-caption text-neutral-500">Click a role to fill the form.</p>
+            <p className="mt-2 text-caption text-neutral-500">Select a role to fill the form.</p>
           </div>
         </div>
       </div>

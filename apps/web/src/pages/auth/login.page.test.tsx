@@ -24,7 +24,7 @@ vi.mock('@/features/auth', () => ({
 
 import { LoginPage } from './login.page';
 
-describe('LoginPage — struktur & aksesibilitas', () => {
+describe('LoginPage: struktur & aksesibilitas', () => {
   it('uses the same brand as the sidebar: white logo mark + "AEC" wordmark', () => {
     const { container } = renderWithProviders(<LoginPage />);
     const light = container.querySelectorAll('img[src="/logo-mark-light.png"]');
