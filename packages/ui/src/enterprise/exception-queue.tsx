@@ -52,21 +52,37 @@ function RowContent({ item }: { item: ExceptionItem }) {
   const slaPct = item.slaDays && item.slaDays > 0 ? Math.min(100, (item.ageDays / item.slaDays) * 100) : null;
   return (
     <>
-      <span className={cn('inline-flex items-center gap-1.5 text-caption font-semibold', SEV_TEXT[item.severity])}>
-        <span aria-hidden="true" className={cn('inline-block h-2 w-2 shrink-0 rounded-full', SEV_DOT[item.severity])} />
-        {item.severity}
+      {/* Baris 1: severity + jenis exception + umur (umur rata kanan, tidak menyusut). */}
+      <span className="flex min-w-0 items-center gap-2">
+        <span className={cn('inline-flex shrink-0 items-center gap-1.5 text-caption font-semibold', SEV_TEXT[item.severity])}>
+          <span aria-hidden="true" className={cn('inline-block h-2 w-2 shrink-0 rounded-full', SEV_DOT[item.severity])} />
+          {item.severity}
+        </span>
+        <span className="min-w-0 truncate text-body-sm text-neutral-900" title={item.type}>
+          {item.type}
+        </span>
+        <span
+          className={cn(
+            'ml-auto shrink-0 font-mono text-caption tabular-nums',
+            item.overdue ? 'text-destructive-700' : 'text-neutral-500',
+          )}
+        >
+          {item.ageDays}d
+        </span>
       </span>
-      {/* Kolom teks boleh menyusut & terpotong; dokumen/domain tidak mendorong
-          lebar kolom (penyebab utama tumpang tindih di layar sempit). */}
-      <span className="min-w-0 truncate text-body-sm text-neutral-900" title={`${item.type}${item.documentCode ? ' · ' + item.documentCode : ''}`}>
-        {item.type}
-        {item.documentCode && <span className="ml-1.5 font-mono text-caption text-neutral-500">{item.documentCode}</span>}
-        <span className="ml-1.5 text-caption text-neutral-400">· {item.domain}</span>
-      </span>
+      {/* Baris 2: dokumen · domain — mendapat lebar penuh, tidak berdesakan dengan severity. */}
+      {(item.documentCode || item.domain) && (
+        <span className="min-w-0 truncate font-mono text-caption text-neutral-500" title={`${item.documentCode ?? ''}${item.documentCode ? ' · ' : ''}${item.domain}`}>
+          {item.documentCode}
+          {item.documentCode && item.domain ? <span className="text-neutral-400"> · </span> : null}
+          <span className="text-neutral-400">{item.domain}</span>
+        </span>
+      )}
+      {/* Baris 3: bar SLA penuh lebar. */}
       <span
         role="img"
         aria-label={`age ${item.ageDays} of ${item.slaDays ?? '—'} day SLA`}
-        className="hidden h-1.5 w-full overflow-hidden rounded-sm bg-neutral-100 sm:block"
+        className="block h-1.5 w-full overflow-hidden rounded-sm bg-neutral-100"
       >
         {slaPct != null && (
           <span
@@ -76,18 +92,15 @@ function RowContent({ item }: { item: ExceptionItem }) {
           />
         )}
       </span>
-      <span className={cn('text-right font-mono text-caption tabular-nums', item.overdue ? 'text-destructive-700' : 'text-neutral-500')}>
-        {item.ageDays}d
-      </span>
     </>
   );
 }
 
 /**
- * Daftar exception ber-SLA: bar proporsi severity di atas, lalu baris per item
- * (severity + dokumen + domain + bar SLA + umur). Setiap baris adalah tautan
- * nyata lewat `renderRow` (biasanya `Link`), sehingga drill-through bisa dibuka
- * dengan keyboard dan klik-tengah.
+ * Daftar exception ber-SLA. Header proporsi severity tetap di atas; daftar baris
+ * punya **tinggi terkunci + scroll internal** agar panel tidak mendikte tinggi
+ * baris grid (penyebab ruang kosong besar di kolom sebelahnya) dan tiap baris
+ * memakai tata letak 3-baris yang tahan terhadap kolom sempit.
  */
 export function ExceptionQueue({ items, renderRow, emptyMessage = 'No open exceptions.', className, ...props }: ExceptionQueueProps) {
   const { HIGH, MEDIUM, LOW, total } = severityBreakdown(items);
@@ -105,16 +118,12 @@ export function ExceptionQueue({ items, renderRow, emptyMessage = 'No open excep
       {total === 0 ? (
         <p className="py-6 text-center text-body-sm text-neutral-500">{emptyMessage}</p>
       ) : (
-        <ul className="divide-y divide-neutral-100">
+        // Tinggi terkunci (~ setara chart cash flow) + scroll; `pr-1` memberi ruang
+        // untuk scrollbar agar teks tidak tertutup.
+        <ul className="max-h-[280px] divide-y divide-neutral-100 overflow-y-auto pr-1 [scrollbar-gutter:stable]">
           {items.map((item) => {
             const content = <RowContent item={item} />;
-            // 4 kolom di layar lebar; di bawah sm kolom bar SLA disembunyikan
-            // (bukan diperkecil) agar teks tidak tumpang tindih.
-            const inner = (
-              <div className="grid grid-cols-[52px_1fr_34px] items-center gap-2.5 py-1.5 sm:grid-cols-[56px_1fr_80px_38px]">
-                {content}
-              </div>
-            );
+            const inner = <div className="flex flex-col gap-1 py-2">{content}</div>;
             return (
               <li key={item.key}>
                 {renderRow ? renderRow(item, inner) : <div className="px-0">{inner}</div>}
