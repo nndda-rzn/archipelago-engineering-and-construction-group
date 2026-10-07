@@ -3,6 +3,7 @@ import { ExecutiveAnalyticsService } from './executive-analytics.service';
 import { FinancialAnalyticsService } from './financial-analytics.service';
 import { ProjectAnalyticsService } from './project-analytics.service';
 import { AnalyticsExportService } from './analytics-export.service';
+import { ControlTowerService } from './control-tower.service';
 import { analyticsCacheKey } from '@/shared/cache/analytics-cache';
 
 /**
@@ -15,7 +16,8 @@ function makeService(prisma: unknown, cache: unknown): AnalyticsService {
   const financial = new FinancialAnalyticsService(prisma as never, cache as never);
   const project = new ProjectAnalyticsService(prisma as never, cache as never);
   const exporter = new AnalyticsExportService(financial, project);
-  return new AnalyticsService(executive, financial, project, exporter);
+  const controlTower = new ControlTowerService(prisma as never, cache as never, executive, financial);
+  return new AnalyticsService(executive, financial, project, exporter, controlTower);
 }
 
 describe('analyticsCacheKey', () => {

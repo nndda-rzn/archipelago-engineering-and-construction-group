@@ -6,6 +6,7 @@ import { ExecutiveAnalyticsService } from './application/services/executive-anal
 import { FinancialAnalyticsService } from './application/services/financial-analytics.service';
 import { ProjectAnalyticsService } from './application/services/project-analytics.service';
 import { AnalyticsExportService } from './application/services/analytics-export.service';
+import { ControlTowerService } from './application/services/control-tower.service';
 
 @Module({
   imports: [SharedModule],
@@ -15,6 +16,7 @@ import { AnalyticsExportService } from './application/services/analytics-export.
     FinancialAnalyticsService,
     ProjectAnalyticsService,
     AnalyticsExportService,
+    ControlTowerService,
     AnalyticsService,
   ],
 })
