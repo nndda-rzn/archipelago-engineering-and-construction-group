@@ -1,100 +1,153 @@
-import { SegmentedControl } from '@aec/ui';
-import { useNavigate } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
 import { Permission } from '@aec/shared-types';
-import { useUrlFilter } from '@/shared/lib/use-url-state';
+import { Button, ErrorState, SectionBand, Skeleton } from '@aec/ui';
 import { usePermissions } from '@/entities/session';
 import { DashboardFilterBar, useDashboardFilter } from '@/widgets/dashboard-filter-bar';
-import { SignalRail } from '@/widgets/signal-rail';
-import { HeroBand } from '@/widgets/hero-band';
-import { LiquidityPanel } from '@/widgets/liquidity-panel';
-import { FinancialBand } from '@/widgets/financial-band';
-import { PortfolioCanvas } from '@/widgets/portfolio-canvas';
-import { PortfolioSpine } from '@/widgets/portfolio-spine';
+import { PageHeader, ScopeChip } from '@/widgets/page-header';
+import { ControlTowerView } from '@/widgets/control-tower';
 import { AnomalyTriage } from '@/widgets/anomaly-triage';
-import { ProjectRankingBar } from '@/widgets/dashboard-charts';
-import { usePortfolio } from '@/features/project';
-import type { DashboardFilter } from '@/shared/lib/dashboard-period';
+import { useCashFlow, useControlTower, useLiveAnalytics } from '@/features/analytics';
+import { useLegalEntities } from '@/entities/legal-entity';
+import { LiveIndicator } from '@/shared/ui/live-indicator';
+import { LiveValue } from '@/shared/ui/live-value';
+import { formatIdr } from '@/shared/lib/format';
+import { formatKpiValue } from '@/widgets/control-tower';
 
-const VIEW_OPTIONS = [
-  { value: 'canvas', label: 'Canvas' },
-  { value: 'table', label: 'Table' },
-];
+/** Tick 1 detik agar "updated Ns ago" hidup tanpa membebani render. */
+function useNow(active: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [active]);
+  return now;
+}
 
-function PortfolioZone({ filter, health, onSelectHealth }: { filter: DashboardFilter; health: string; onSelectHealth: (h: string) => void }) {
-  const [view, setView] = useUrlFilter('view', 'canvas');
-  const navigate = useNavigate();
-  const { data } = usePortfolio(filter);
-  const items = data?.items ?? [];
-
+/** Tombol Live/Paused + indikator koneksi. */
+function LiveControls({ connected, lastChangeAt, enabled, onToggle, now }: {
+  connected: boolean;
+  lastChangeAt: number | null;
+  enabled: boolean;
+  onToggle: () => void;
+  now: number;
+}) {
   return (
-    <section className="grid gap-6 xl:grid-cols-12">
-      <div className="xl:col-span-7">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-h2 text-neutral-950">Portfolio</h2>
-          <SegmentedControl aria-label="Portfolio view" options={VIEW_OPTIONS} value={view} onValueChange={setView} />
-        </div>
-        {view === 'table' ? (
-          <PortfolioSpine filter={filter} health={health} />
-        ) : (
-          <PortfolioCanvas filter={filter} health={health} onSelectHealth={onSelectHealth} />
-        )}
-      </div>
-      <div className="xl:col-span-5">
-        <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-          <h2 className="mb-3 text-h2 text-neutral-950">Worst variance</h2>
-          <ProjectRankingBar
-            items={items}
-            onSelect={(projectId) => navigate({ to: '/project-health', search: { project: projectId } as never })}
-          />
-        </div>
-      </div>
-    </section>
+    <>
+      <LiveIndicator connected={connected && enabled} lastChangeAt={lastChangeAt} now={now} />
+      <Button size="sm" variant={enabled ? 'primary' : 'secondary'} onClick={onToggle} aria-pressed={enabled}>
+        {enabled ? '● Live' : '○ Paused'}
+      </Button>
+    </>
   );
 }
 
 export function DashboardPage() {
-  const { filter } = useDashboardFilter();
+  const { filter, preset, entityId } = useDashboardFilter();
   const { can } = usePermissions();
-  const [health, setHealth] = useUrlFilter('health');
-  const [bucket, setBucket] = useUrlFilter('bucket');
+  const entities = useLegalEntities({ page: 1, pageSize: 200 });
 
-  // Widget analitik memanggil endpoint yang dijaga `Analytics.VIEW`. Tanpa izin
-  // itu, widget disembunyikan — bukan dibiarkan memanggil dan gagal 403. Dashboard
-  // sendiri tetap tampil (dijaga `Project.VIEW`).
   const canAnalytics = can(Permission.AnalyticsView);
 
-  const zones = [
-    <DashboardFilterBar key="filter" />,
-    ...(canAnalytics
-      ? [
-          <SignalRail key="signal" filter={filter} />,
-          <div key="bands" data-slot="hero-liquidity-row" className="grid gap-6 xl:grid-cols-12">
-            <div className="xl:col-span-7">
-              <HeroBand filter={filter} health={health} />
+  const controlTower = useControlTower(filter);
+  const cashFlow = useCashFlow(filter);
+  const live = useLiveAnalytics(canAnalytics);
+  const now = useNow(live.enabled);
+
+  const entityLabel = entityId
+    ? entities.data?.items.find((e) => e.id === entityId)?.code ?? 'Entity'
+    : 'All entities';
+
+  const header = (
+    <PageHeader
+      title="Dashboard · Control Tower"
+      subtitle="Portfolio command center · cost, cash, delivery & risk"
+      scope={
+        <>
+          <ScopeChip>{entityLabel}</ScopeChip>
+          <ScopeChip mono>{preset}</ScopeChip>
+        </>
+      }
+      actions={
+        canAnalytics ? (
+          <LiveControls
+            connected={live.connected}
+            lastChangeAt={live.lastChangeAt}
+            enabled={live.enabled}
+            onToggle={() => live.setEnabled(!live.enabled)}
+            now={now}
+          />
+        ) : undefined
+      }
+    />
+  );
+
+  // Tanpa izin analytics, dashboard tetap menampilkan filter + portfolio sederhana.
+  if (!canAnalytics) {
+    return (
+      <div className="mx-auto flex max-w-[1680px] flex-col gap-tier">
+        {header}
+        <DashboardFilterBar />
+        <SectionBand name="Portfolio">
+          <p className="text-body-sm text-neutral-500">Analytics is not available for your role.</p>
+        </SectionBand>
+      </div>
+    );
+  }
+
+  if (controlTower.isLoading) {
+    return (
+      <div className="mx-auto flex max-w-[1680px] flex-col gap-tier" aria-label="Loading dashboard">
+        {header}
+        <DashboardFilterBar />
+        <div className="grid grid-cols-2 gap-x-cell gap-y-4 md:grid-cols-3 xl:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-2">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-7 w-32" />
+              <Skeleton className="h-1.5 w-full" />
             </div>
-            <div className="xl:col-span-5">
-              <LiquidityPanel filter={filter} />
-            </div>
-          </div>,
-          <FinancialBand key="financial" filter={filter} bucket={bucket} onSelectBucket={setBucket} />,
-        ]
-      : []),
-    <PortfolioZone key="portfolio" filter={filter} health={health} onSelectHealth={setHealth} />,
-    ...(canAnalytics ? [<AnomalyTriage key="triage" />] : []),
-  ];
+          ))}
+        </div>
+        <Skeleton className="h-56 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  if (controlTower.isError || !controlTower.data) {
+    return (
+      <div className="mx-auto flex max-w-[1680px] flex-col gap-tier">
+        {header}
+        <DashboardFilterBar />
+        <div role="alert">
+          <ErrorState message="The control tower could not be loaded." onRetry={() => controlTower.refetch()} />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-[1600px] space-y-6">
-      <div>
-        <h1 className="text-h1 text-neutral-950">Dashboard</h1>
-        <p className="mt-1 text-body-sm text-neutral-500">Portfolio command center · cost, cash &amp; health</p>
-      </div>
+    <div className="mx-auto flex max-w-[1680px] flex-col gap-tier">
+      {header}
+      <DashboardFilterBar />
 
-      {zones.map((zone, i) => (
-        <div key={i} className="animate-slide-up" style={{ animationDelay: `${i * 40}ms` }}>
-          {zone}
-        </div>
-      ))}
+      <ControlTowerView
+        data={controlTower.data}
+        cashFlowSeries={cashFlow.data?.series ?? []}
+        liveControl={<LiveIndicator connected={live.connected && live.enabled} lastChangeAt={live.lastChangeAt} now={now} />}
+        renderKpiValue={(kpi) =>
+          kpi.unit === 'idr' ? (
+            <LiveValue key={kpi.key} value={kpi.value} format={formatIdr} data-slot="kpi-value" />
+          ) : (
+            formatKpiValue(kpi)
+          )
+        }
+      />
+
+      <SectionBand name="Anomaly triage">
+        <AnomalyTriage />
+      </SectionBand>
     </div>
   );
 }

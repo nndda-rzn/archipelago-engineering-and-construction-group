@@ -58,6 +58,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
       error: { code, message, details, correlationId },
     };
 
+    // Sebagian respons (mis. SSE/streaming) sudah mengirim header sebelum error
+    // muncul. Menulis lagi akan melempar ERR_HTTP_HEADERS_SENT dan — lebih buruk —
+    // merobohkan proses. Bila header sudah terkirim, cukup akhiri respons.
+    if (response.headersSent) {
+      if (!response.writableEnded) response.end();
+      return;
+    }
+
     response.status(status).json(body);
   }
 
