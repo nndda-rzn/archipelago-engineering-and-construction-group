@@ -36,10 +36,8 @@ adalah **memperkaya seed**, **menghitung EVM di backend**, dan **merender yang s
 ## 2. Tujuan
 
 1. **Data maksimal** — semua angka dashboard nyata, konsisten, dan mengikuti scope entitas.
-2. **Sembilan domain terlihat** — finance/liquidity, project, treasury, procurement, HCM, HSE,
-   quality, governance, commercial — masing-masing dengan visual yang sesuai fungsinya.
-   *(Domain **inventory** belum punya pembacaan di payload Control Tower; ditambahkan hanya bila
-   backend menyediakan bloknya — lihat §12. Tidak diklaim sebelum benar-benar ada.)*
+2. **Sepuluh domain terlihat** — finance/liquidity, project, treasury, procurement, **inventory**,
+   HCM, HSE, quality, governance, commercial — masing-masing dengan visual yang sesuai fungsinya.
 3. **Kejelasan data** — setiap angka punya acuan (target atau periode lalu), tidak ada duplikasi,
    setiap visual punya nilai teks pendamping.
 4. **Traceable** — setiap angka punya drill-through, dapat dioperasikan keyboard.
@@ -112,6 +110,9 @@ Semua model sudah ada. Yang ditambah ke seed:
   → mengisi `commercial.funnel`, `winRatePct`, `pipelineValue`.
 - `Risk` cukup untuk matriks 5×5 terisi sebagian (likelihood×impact bervariasi).
 - `Ncr`/`HseIncident`/`Equipment`/`EquipmentUtilization` tersebar per proyek (bukan satu proyek).
+- **Inventory**: `Warehouse` per proyek, `StockLedgerEntry` (GR/ISSUE/ADJUSTMENT) dengan
+  `balanceAfter` & `totalValue` — termasuk **satu warehouse bersaldo negatif** (data-error
+  scenario) agar tile inventory punya sinyal nyata, bukan angka kosong.
 
 Seed harus **idempoten** (upsert/rekonsiliasi, tidak menggandakan) seperti pola yang sudah ada.
 
@@ -123,6 +124,9 @@ Seed harus **idempoten** (upsert/rekonsiliasi, tidak menggandakan) seperti pola 
 - **Ekspos blok yang sudah di-query tapi dibuang** ke payload `ControlTower`:
   `operations.hcm`, `governance.riskMatrix`, `commercial.funnel` (+ `openOpportunities`,
   `wonValue`, `lostValue`), `treasury.fxExposureByCurrency`.
+- **Tambah blok `operations.inventory`** (baru): `stockValue` (Σ `totalValue` pergerakan),
+  `warehouseCount`, `negativeBalanceCount`, `movementInValue` / `movementOutValue`
+  (dari `StockLedgerEntry` dalam periode). Filter mengikuti `legalEntityId` via `project`.
 - Pertahankan cache 45s dan sifat aditif (tanpa param → perilaku lama).
 
 ### 5.3 Kontrak — `packages/api-contracts/src/analytics.ts`
@@ -143,7 +147,7 @@ T2  Filter bar     periode · entity · reload · last-updated · chip filter ak
 T3  Position       6 KPI ber-target (bullet attainment + sparkline)     ← teks, bukan kartu
 T4  Cash flow (8) ‖ Exception queue (4)                                 ← blok dominan
 T5  Portfolio      ledger proyek (tabel, drill-through) · scatter CPI×SPI · EVM bullets
-T6  Domain tiles   9 tile visual (lihat §7)                             ← menggantikan T4/T6 lama
+T6  Domain tiles   10 tile visual (lihat §7)                            ← menggantikan T4/T6 lama
 T7  Anomaly triage severity bar (konsisten dengan ExceptionQueue)
 ```
 
@@ -166,6 +170,7 @@ Guard test: tidak ada label metrik yang berulang di zona berbeda.
 | Quality | komposisi urgensi | stacked kritis vs biasa + punch | `StackedBar` *(ada)* |
 | Procurement | value vs target | bullet open PO + mini stacked PR/RFQ | `BulletBar`/`MiniStackedBar` *(ada)* |
 | HCM | tren | sparkline manpower + employees/timesheet/equipment | `Sparkline` *(ada)* |
+| Inventory | komposisi keluar-masuk + anomali | mini stacked in/out + bullet saldo | `MiniStackedBar`/`BulletBar` *(ada)* |
 | Governance | grid 2D | heatmap likelihood×impact 5×5 + hitungan | **`RiskHeatmap` (baru)** |
 | Commercial | tahapan | bar per stage LEAD→WON + win rate | **`StageBars` (baru)** |
 | Treasury | jatuh tempo | bullet BG vs 30 hari + FX/close | `BulletBar` *(ada)* |
@@ -194,7 +199,7 @@ atribut sama, perlu sortir & drill), bukan template. Ditambah drill-through keyb
 Keduanya: `font-mono tabular-nums`, pendamping non-warna, target sentuh ≥24px.
 
 ### 8.3 Dibubarkan
-- 7 kartu T4/T6 lama (digantikan 9 tile visual).
+- 7 kartu T4/T6 lama (digantikan 10 tile visual).
 - `AnomalyHeader` (dead export) — hapus.
 - Badge `DEMO` di `app-shell.tsx` — hapus.
 - 6 widget mati (`hero-band`, `liquidity-panel`, `financial-band`, `portfolio-canvas`,
@@ -216,7 +221,8 @@ Keduanya: `font-mono tabular-nums`, pendamping non-warna, target sentuh ≥24px.
 
 **API** (`control-tower.service.spec.ts`):
 - EVM tidak `null` saat `plannedValue > 0`; `hasEvm` benar.
-- Sembilan domain terisi dari seed; zero-data → array/objek valid (bukan `null`).
+- Sepuluh domain terisi dari seed; zero-data → array/objek valid (bukan `null`).
+- `operations.inventory`: saldo negatif terdeteksi; nilai mengikuti scope entitas.
 - Scope `legalEntityId` benar-benar menyaring.
 
 **Web**:
@@ -264,7 +270,7 @@ PR 1–2 (data) dan PR 3 (primitives) dapat berjalan paralel.
 
 ## 13. Kriteria penerimaan
 
-1. Sembilan domain terlihat, masing-masing dengan visual sesuai fungsi (§7).
+1. Sepuluh domain terlihat, masing-masing dengan visual sesuai fungsi (§7).
 2. EVM nyata: scatter CPI×SPI & EVM bullets terisi (tidak semua `null`).
 3. Tidak ada angka duplikat antar-zona; setiap angka punya acuan (target/delta).
 4. Tidak ada metric-card grid; tidak ada eyebrow uppercase berlebihan.
