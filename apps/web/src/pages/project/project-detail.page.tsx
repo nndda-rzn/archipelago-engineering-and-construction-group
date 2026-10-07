@@ -9,7 +9,7 @@ import { CommitmentBar } from '@/features/project/ui/commitment-bar';
 import { ProjectEditForm } from '@/features/project/ui/project-edit-form';
 import { ZoneCard } from '@/features/project/ui/zone-card';
 import { healthLabel } from '@/features/project/ui/health-summary';
-import { healthMeta } from '@/widgets/portfolio-spine';
+import { healthMeta } from '@/entities/health';
 import { formatIdr } from '@/shared/lib/format';
 
 const fmtDate = (d: string | null | undefined) => (d ? d.slice(0, 10) : '—');

@@ -7,9 +7,6 @@ import { TopbarBreadcrumb } from './topbar-breadcrumb';
 import { UserMenu } from './user-menu';
 import { CommandPalette } from '@/widgets/command-palette';
 
-/** Label environment untuk shell bar. `DEMO` saat build non-produksi. */
-const ENV_LABEL = import.meta.env.PROD ? 'PROD' : 'DEMO';
-
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -155,14 +152,6 @@ export function AppShell() {
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
-            {/* Environment badge — konteks sistem: di mana saya berada. */}
-            <span
-              className="hidden rounded border border-warning-400 bg-warning-50 px-1.5 py-0.5 text-caption font-semibold tracking-wide text-warning-700 sm:inline"
-              translate="no"
-            >
-              {ENV_LABEL}
-            </span>
-
             {/* Global search / command palette. */}
             <button
               type="button"

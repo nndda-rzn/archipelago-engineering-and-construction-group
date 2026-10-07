@@ -1,5 +1,5 @@
 import type { Anomaly, ExecutiveDashboard, TrendPoint } from '@aec/api-contracts';
-import { healthMeta } from '@/widgets/portfolio-spine';
+import { healthMeta } from '@/entities/health';
 import { formatIdr } from '@/shared/lib/format';
 
 type Delta = NonNullable<ExecutiveDashboard['delta']>[string];
