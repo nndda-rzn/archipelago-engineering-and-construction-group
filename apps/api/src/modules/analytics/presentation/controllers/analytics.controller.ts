@@ -69,6 +69,12 @@ export class AnalyticsController {
     return this.analytics.costComposition(query);
   }
 
+  @Get('control-tower')
+  @Permissions(Permission.AnalyticsView)
+  controlTower(@Query() query: AnalyticsFilterParams) {
+    return this.analytics.controlTower(query);
+  }
+
   @Get('aging/export.csv')
   @Permissions(Permission.AnalyticsView)
   async exportAging(@Query() query: AnalyticsFilterParams, @Res({ passthrough: true }) res: Response) {

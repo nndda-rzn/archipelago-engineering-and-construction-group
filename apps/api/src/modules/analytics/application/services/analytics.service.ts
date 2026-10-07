@@ -1,11 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Readable } from 'node:stream';
-import type { AnalyticsFilterParams, ExecutiveDashboard } from '@aec/api-contracts';
+import type { AnalyticsFilterParams, ControlTower, ExecutiveDashboard } from '@aec/api-contracts';
 import { computeDelta, monthlySeries } from './shared/analytics-metrics';
 import { ExecutiveAnalyticsService } from './executive-analytics.service';
 import { FinancialAnalyticsService } from './financial-analytics.service';
 import { ProjectAnalyticsService } from './project-analytics.service';
 import { AnalyticsExportService } from './analytics-export.service';
+import { ControlTowerService } from './control-tower.service';
 
 export type { AgingDetail } from './financial-analytics.service';
 
@@ -25,6 +26,7 @@ export class AnalyticsService {
     @Inject(FinancialAnalyticsService) private readonly financial: FinancialAnalyticsService,
     @Inject(ProjectAnalyticsService) private readonly project: ProjectAnalyticsService,
     @Inject(AnalyticsExportService) private readonly exporter: AnalyticsExportService,
+    @Inject(ControlTowerService) private readonly controlTowerSvc: ControlTowerService,
   ) {}
 
   /** Delta metrik periode ini vs periode sebelumnya. `pctChange` null bila pembanding 0. */
@@ -81,6 +83,11 @@ export class AnalyticsService {
 
   projectCostSummary(filter: AnalyticsFilterParams = {}) {
     return this.project.projectCostSummary(filter);
+  }
+
+  /** Control Tower (FR-DASH-003): payload komposit untuk dashboard `/`. */
+  controlTower(filter: AnalyticsFilterParams = {}): Promise<ControlTower> {
+    return this.controlTowerSvc.controlTower(filter);
   }
 
   exportAgingCsv(filter: AnalyticsFilterParams = {}): Promise<Readable> {

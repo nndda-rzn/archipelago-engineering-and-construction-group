@@ -174,3 +174,164 @@ export const forecastVsActualSchema = z.object({
   generatedAt: z.string(),
 });
 export type ForecastVsActual = z.infer<typeof forecastVsActualSchema>;
+
+/* ============================================================================
+   Control Tower (FR-DASH-003) — satu payload komposit untuk dashboard `/`.
+   Menggabungkan KPI ber-target, exception queue ber-SLA, dan pulse 9 domain.
+   Aditif: tanpa param → seluruh grup. Semua blok selalu ada (array kosong,
+   bukan null) supaya klien tidak perlu menebak bentuk saat data kosong.
+   ============================================================================ */
+
+/** Arah makna target: MIN = makin kecil makin baik, MAX = makin besar makin baik. */
+export const kpiDirectionSchema = z.enum(['MIN', 'MAX', 'EXACT']);
+export type KpiDirection = z.infer<typeof kpiDirectionSchema>;
+
+/** Satu KPI: nilai + target + pencapaian + arah. `attainmentPct` null bila tanpa target. */
+export const controlTowerKpiSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  value: z.number(),
+  /** Satuan: "idr" | "days" | "percent" | "ratio" | "count". */
+  unit: z.string(),
+  target: z.number().nullable(),
+  direction: kpiDirectionSchema,
+  /** 0-… ; >100 berarti melampaui target. Null bila tidak ada target. */
+  attainmentPct: z.number().nullable(),
+  /** Apakah nilai saat ini memenuhi target (sesuai `direction`). Null bila tanpa target. */
+  meetsTarget: z.boolean().nullable(),
+});
+export type ControlTowerKpi = z.infer<typeof controlTowerKpiSchema>;
+
+/** Satu baris exception queue: apa, di mana, sudah berapa lama, batasnya berapa. */
+export const controlTowerExceptionSchema = z.object({
+  key: z.string(),
+  severity: z.enum(['HIGH', 'MEDIUM', 'LOW']),
+  /** Jenis dokumen/sinyal, mis. "Approval SLA" | "NCR overdue". */
+  type: z.string(),
+  /** Nomor dokumen bila ada. */
+  documentCode: z.string().nullable(),
+  /** Domain pemilik, mis. "Procurement" | "Quality" | "HSE". */
+  domain: z.string(),
+  /** Umur sejak dibuat (hari). */
+  ageDays: z.number(),
+  /** Batas SLA (hari). Null bila tidak ada tenggat. */
+  slaDays: z.number().nullable(),
+  /** true bila `ageDays` melewati `slaDays`. */
+  overdue: z.boolean(),
+  /** Deep-link yang benar-benar menyaring halaman tujuan. */
+  to: z.string(),
+});
+export type ControlTowerException = z.infer<typeof controlTowerExceptionSchema>;
+
+/** Satu proyek di portfolio map/ledger (join portfolio × EVM). */
+export const controlTowerProjectSchema = z.object({
+  projectId: z.string(),
+  projectCode: z.string(),
+  projectName: z.string(),
+  client: z.string(),
+  health: z.enum(['ON_TRACK', 'AT_RISK', 'CRITICAL', 'NO_BUDGET']),
+  contractValue: z.number(),
+  budget: z.number(),
+  actual: z.number(),
+  variance: z.number(),
+  revenue: z.number(),
+  utilization: z.number(),
+  progressPct: z.number(),
+  cpi: z.number().nullable(),
+  spi: z.number().nullable(),
+  hasEvm: z.boolean(),
+  riskScore: z.number().nullable(),
+});
+export type ControlTowerProject = z.infer<typeof controlTowerProjectSchema>;
+
+/** Pemblok operasional ringkas (procurement/HSE/quality/HCM). Semua angka, tanpa objek dalam. */
+export const controlTowerOperationsSchema = z.object({
+  procurement: z.object({
+    openPoValue: z.number(),
+    openPoCount: z.number(),
+    pendingPrCount: z.number(),
+    rfqDueCount: z.number(),
+    avgVendorScore: z.number().nullable(),
+    topVendorName: z.string().nullable(),
+    topVendorScore: z.number().nullable(),
+  }),
+  safety: z.object({
+    openIncidents: z.number(),
+    highSeverityOpen: z.number(),
+    openCorrectiveActions: z.number(),
+    overdueCorrectiveActions: z.number(),
+    trir: z.number(),
+    daysSinceLastIncident: z.number().nullable(),
+  }),
+  quality: z.object({
+    openNcrs: z.number(),
+    criticalNcrs: z.number(),
+    openPunchItems: z.number(),
+  }),
+  hcm: z.object({
+    activeEmployees: z.number(),
+    manpowerToday: z.number(),
+    pendingTimesheets: z.number(),
+    equipmentUtilizationPct: z.number().nullable(),
+    openBreakdowns: z.number(),
+  }),
+});
+export type ControlTowerOperations = z.infer<typeof controlTowerOperationsSchema>;
+
+export const controlTowerGovernanceSchema = z.object({
+  openRisks: z.number(),
+  highRisks: z.number(),
+  overdueAuditFindings: z.number(),
+  openLegalCases: z.number(),
+  /** Matriks risiko 5×5: jumlah risk per (likelihood, impact). */
+  riskMatrix: z.array(z.object({ likelihood: z.number(), impact: z.number(), count: z.number() })),
+});
+export type ControlTowerGovernance = z.infer<typeof controlTowerGovernanceSchema>;
+
+export const controlTowerCommercialSchema = z.object({
+  pipelineValue: z.number(),
+  openOpportunities: z.number(),
+  wonValue: z.number(),
+  lostValue: z.number(),
+  winRatePct: z.number().nullable(),
+  tendersDue: z.number(),
+  approvedVariationValue: z.number(),
+  /** Funnel per stage, urut LEAD→WON. */
+  funnel: z.array(z.object({ stage: z.string(), count: z.number(), value: z.number() })),
+});
+export type ControlTowerCommercial = z.infer<typeof controlTowerCommercialSchema>;
+
+export const controlTowerTreasurySchema = z.object({
+  cashOnHand: z.number(),
+  fxExposureValue: z.number(),
+  fxExposureByCurrency: z.array(z.object({ currency: z.string(), amount: z.number(), rate: z.number() })),
+  bgExpiringCount: z.number(),
+  bgExpiringValue: z.number(),
+  bgUtilisationPct: z.number().nullable(),
+  periodCloseStatus: z.string().nullable(),
+  periodCloseProgressPct: z.number().nullable(),
+});
+export type ControlTowerTreasury = z.infer<typeof controlTowerTreasurySchema>;
+
+export const controlTowerSchema = z.object({
+  kpis: z.array(controlTowerKpiSchema),
+  exceptions: z.object({
+    bySeverity: z.object({ HIGH: z.number(), MEDIUM: z.number(), LOW: z.number() }),
+    items: z.array(controlTowerExceptionSchema),
+    total: z.number(),
+  }),
+  projects: z.array(controlTowerProjectSchema),
+  projectTotals: z.object({
+    count: z.number(),
+    contractValue: z.number(),
+    budget: z.number(),
+    actual: z.number(),
+    variance: z.number(),
+  }),
+  operations: controlTowerOperationsSchema,
+  governance: controlTowerGovernanceSchema,
+  commercial: controlTowerCommercialSchema,
+  treasury: controlTowerTreasurySchema,
+  generatedAt: z.string(),
+});
+export type ControlTower = z.infer<typeof controlTowerSchema>;
