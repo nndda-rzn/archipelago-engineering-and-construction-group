@@ -22,6 +22,7 @@ Audit 2026-10-05. Temuan diurutkan berdasarkan tingkat keparahan. Setiap temuan 
 | F12 | **Rendah** | Lokalisasi | Komentar kode masih campur ID/EN; hanya string user-facing yang sudah diseragamkan ke Inggris. |
 | F13 | **Info** | Infra | Migrasi Prisma dijalankan dari `apps/api/prisma`, bukan `infrastructure/database` (folder infra hanya `.gitkeep`). |
 | F14 | **Info** | Test | E2E "Jest did not exit" (open handle Redis) — suite lulus, tapi proses tak keluar bersih. |
+| F15 | ~~**Tinggi**~~ **Selesai** | A11y | ~~Drill-through tabel & chart mouse-only~~ → **selesai** (2026-10-10): baris `DataGrid` kini fokusable (`tabIndex` + Enter/Space) dan scatter punya padanan tombol keyboard. Detail: `docs/quality/DASHBOARD-UIUX-AUDIT.md` CON-2. |
 
 ---
 
@@ -95,6 +96,11 @@ Audit 2026-10-05. Temuan diurutkan berdasarkan tingkat keparahan. Setiap temuan 
 - **Bukti:** Menjalankan `concurrency.e2e-spec.ts` → suite lulus, lalu pesan "Jest did not exit one second after the test run has completed" (open handle, kemungkinan koneksi Redis `QueueService`/`CacheService`).
 - **Dampak:** `--forceExit` dipakai di script; bukan kegagalan test.
 - **Rekomendasi:** Pastikan `onModuleDestroy` menutup Redis, atau andalkan `--forceExit`.
+
+### F15 — ~~Drill-through tabel & chart mouse-only~~ (SELESAI 2026-10-10)
+- **Bukti sebelum:** `packages/ui/src/enterprise/data-grid.tsx` — `<tr onClick>` tanpa `tabIndex`/`onKeyDown`; `apps/web/src/widgets/portfolio-canvas/portfolio-canvas.tsx` (`<Scatter onClick>`) juga tidak fokusable.
+- **Perbaikan:** baris `DataGrid` dengan `onRowClick` kini `tabIndex={0}` + handler Enter/Space + focus ring; scatter mendapat daftar tombol proyek fokusable sebagai padanan keyboard. Dikirim sebagai PR terpisah (menyentuh `packages/ui`), sesuai rekomendasi.
+- **Verifikasi:** `apps/web/src/shared/ui/data-grid-keyboard.test.tsx` (4 test: fokusable, Enter, Space, no-op tanpa handler). Rujukan: `docs/quality/DASHBOARD-UIUX-AUDIT.md` §B (CON-2).
 
 ---
 

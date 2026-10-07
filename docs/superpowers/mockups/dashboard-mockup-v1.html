@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AEC ERP — Control Tower (Mockup)</title>
+<style>
+  /* ============================================================
+     AEC ERP — Control Tower mockup
+     Token disalin dari packages/config/tailwind/tailwind.preset.cjs
+     Self-contained: tanpa CDN. Font fallback ke system.
+     ============================================================ */
+  :root {
+    --neutral-0:#fff;   --neutral-50:#fafafa; --neutral-100:#f4f4f5;
+    --neutral-200:#e4e4e7; --neutral-300:#d4d4d8; --neutral-400:#a1a1aa;
+    --neutral-500:#71717a; --neutral-600:#52525b; --neutral-700:#3f3f46;
+    --neutral-800:#27272a; --neutral-900:#18181b; --neutral-950:#09090b;
+
+    /* ---- LAPIS 2 · BRAND — HANYA aksi (tombol/link/focus). Bukan makna data. ---- */
+    --brand-600:#dc2626; --brand-700:#b91c1c; --brand-50:#fef2f2;
+
+    /* ---- LAPIS 3 · SEMANTIC — makna data. Shade 600/700 agar >= 3:1 di putih. ---- */
+    /* positif / on-track / aman */
+    --pos-mark:#15803d;  --pos-fill:#22c55e;  --pos-50:#f0fdf4;
+    /* perhatian / at-risk / menua */
+    --warn-mark:#b45309; --warn-fill:#f59e0b; --warn-50:#fffbeb;
+    /* kritis / negatif */
+    --crit-mark:#b91c1c; --crit-fill:#ef4444; --crit-50:#fef2f2;
+    /* info / netral-informatif */
+    --info-mark:#1d4ed8; --info-fill:#3b82f6; --info-50:#eff6ff;
+    /* tanpa data / netral */
+    --neut-mark:#71717a;
+
+    /* ---- LAPIS 4 · CATEGORICAL — seri tanpa makna peringatan. Aman buta warna. ---- */
+    --cat-1:#2563eb; --cat-2:#d97706; --cat-3:#0891b2; --cat-4:#7c3aed; --cat-5:#71717a; --cat-6:#be185d;
+
+    /* ---- RAMP AGING — monoton hijau -> kuning -> merah (makin tua makin panas) ---- */
+    --aging-1:#16a34a; --aging-2:#65a30d; --aging-3:#ca8a04; --aging-4:#ea580c; --aging-5:#b91c1c;
+    /* Surface layering (usulan baru) */
+    --surface-canvas:#f4f4f5;
+    --surface-raised:#ffffff;
+    --surface-sunken:#fafafa;
+    --border-subtle:#e4e4e7;
+    --border-strong:#d4d4d8;
+    --radius:6px; --radius-lg:8px;
+    --font-sans:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    --font-mono:'IBM Plex Mono','JetBrains Mono',ui-monospace,Menlo,monospace;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; padding:0; }
+  body {
+    background:var(--surface-canvas);
+    color:var(--neutral-900);
+    font-family:var(--font-sans);
+    font-size:13px; line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono { font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+  .up { color:var(--pos-mark); } .down { color:var(--crit-mark); } .flat { color:var(--neutral-500); }
+  .muted { color:var(--neutral-500); } .dim { color:var(--neutral-400); }
+  .overline { font-size:10px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:var(--neutral-500); }
+
+  /* ---------- Layout shell ---------- */
+  .app { display:flex; min-height:100vh; }
+  .sidebar { width:216px; flex:0 0 216px; background:var(--neutral-0); border-right:1px solid var(--border-subtle); display:flex; flex-direction:column; }
+  .brand { height:48px; display:flex; align-items:center; gap:10px; padding:0 16px; border-bottom:1px solid var(--border-subtle); }
+  .brand .mark { width:26px; height:26px; border-radius:6px; background:linear-gradient(135deg,var(--brand-600),var(--brand-700)); display:grid; place-items:center; color:#fff; font-weight:700; font-size:12px; }
+  .brand b { font-size:15px; letter-spacing:-.01em; }
+  .nav { padding:8px; overflow:auto; flex:1; }
+  .nav .grp { font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--neutral-400); padding:10px 10px 4px; }
+  .nav a { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:6px; color:var(--neutral-700); text-decoration:none; font-size:13px; }
+  .nav a:hover { background:var(--neutral-50); color:var(--neutral-900); }
+  .nav a.active { background:var(--neutral-100); color:var(--neutral-900); font-weight:500; }
+  .nav a .dot { width:6px; height:6px; border-radius:50%; background:var(--neutral-300); }
+  .nav a.active .dot { background:var(--brand-600); }
+  .nav .foot { padding:10px 16px; border-top:1px solid var(--border-subtle); color:var(--neutral-400); font-size:11px; }
+
+  .main { flex:1; min-width:0; display:flex; flex-direction:column; }
+  /* T0 shell bar */
+  .shellbar { height:48px; flex:0 0 48px; background:var(--neutral-0); border-bottom:1px solid var(--border-subtle); display:flex; align-items:center; gap:12px; padding:0 16px; position:sticky; top:0; z-index:20; }
+  .crumb { display:flex; align-items:center; gap:6px; font-size:13px; min-width:0; }
+  .crumb .sep { color:var(--neutral-300); }
+  .crumb .cur { font-weight:600; color:var(--neutral-900); }
+  .crumb .parent { color:var(--neutral-500); }
+  .spacer { flex:1; }
+  .pill { display:inline-flex; align-items:center; gap:6px; height:24px; padding:0 9px; border-radius:999px; font-size:11px; font-weight:500; border:1px solid var(--border-strong); color:var(--neutral-600); background:var(--neutral-0); }
+  .pill.env { background:var(--warn-50); border-color:var(--warn-mark); color:var(--warn-mark); font-weight:600; letter-spacing:.04em; }
+  .pill.scope { font-family:var(--font-mono); }
+  .iconbtn { width:30px; height:30px; border-radius:6px; border:1px solid transparent; background:transparent; display:grid; place-items:center; color:var(--neutral-500); cursor:pointer; position:relative; }
+  .iconbtn:hover { background:var(--neutral-100); color:var(--neutral-800); }
+  .badge-n { position:absolute; top:-4px; right:-4px; min-width:16px; height:16px; padding:0 4px; border-radius:999px; background:var(--brand-600); color:#fff; font-size:10px; font-weight:600; display:grid; place-items:center; }
+  .avatar { width:28px; height:28px; border-radius:50%; background:var(--neutral-800); color:#fff; display:grid; place-items:center; font-size:11px; font-weight:600; }
+  .live { display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:600; color:var(--pos-mark); }
+  .live .beat { width:7px; height:7px; border-radius:50%; background:var(--pos-fill); box-shadow:0 0 0 0 rgba(34,197,94,.5); animation:beat 1.8s infinite; }
+  @keyframes beat { 0%{box-shadow:0 0 0 0 rgba(34,197,94,.45)} 70%{box-shadow:0 0 0 7px rgba(34,197,94,0)} 100%{box-shadow:0 0 0 0 rgba(34,197,94,0)} }
+
+  /* content */
+  .content { padding:16px 20px 40px; max-width:1680px; width:100%; margin:0 auto; }
+  /* T1 page header */
+  .pagehead { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; padding-bottom:12px; }
+  .pagehead h1 { margin:0; font-size:22px; font-weight:600; letter-spacing:-.01em; }
+  .pagehead .sub { margin:2px 0 0; font-size:12px; color:var(--neutral-500); }
+  .headtools { display:flex; align-items:center; gap:8px; }
+  .seg { display:inline-flex; background:var(--neutral-100); border:1px solid var(--border-subtle); border-radius:6px; padding:2px; }
+  .seg button { border:0; background:transparent; font:inherit; font-size:12px; padding:4px 10px; border-radius:4px; color:var(--neutral-600); cursor:pointer; }
+  .seg button[aria-pressed="true"] { background:var(--neutral-800); color:#fff; font-weight:500; }
+  .btn { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px; border-radius:6px; border:1px solid var(--border-strong); background:var(--neutral-0); color:var(--neutral-700); font:inherit; font-size:12px; cursor:pointer; }
+  .btn:hover { background:var(--neutral-50); }
+  .btn.ghost { border-color:transparent; }
+
+  /* timeline scrubber */
+  .timeline { display:flex; align-items:center; gap:10px; margin:0 0 14px; }
+  .timeline .track { position:relative; flex:1; height:26px; background:var(--surface-raised); border:1px solid var(--border-subtle); border-radius:6px; display:flex; align-items:center; padding:0 10px; gap:2px; }
+  .timeline .tick { flex:1; text-align:center; font-size:10px; color:var(--neutral-400); position:relative; }
+  .timeline .tick.on { color:var(--neutral-800); font-weight:600; }
+  .timeline .tick.on::after { content:""; position:absolute; left:50%; bottom:-7px; transform:translateX(-50%); width:6px; height:6px; border-radius:50%; background:var(--brand-600); }
+  .timeline .brush { position:absolute; left:20%; right:26%; top:3px; bottom:3px; border-radius:4px; background:rgba(220,38,38,.10); border:1px solid rgba(220,38,38,.35); pointer-events:none; }
+  .timeline .label { font-size:11px; color:var(--neutral-500); }
+
+  /* tiers */
+  .tier { margin-bottom:22px; }
+  .tier-head { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .tier-head .overline { white-space:nowrap; }
+  .tier-head .rule { flex:1; height:1px; background:var(--border-subtle); }
+  .tier-head .right { font-size:11px; color:var(--neutral-500); display:flex; gap:10px; align-items:center; }
+
+  .grid { display:grid; gap:14px; }
+  .g12 { grid-template-columns:repeat(12,1fr); }
+  .g4 { grid-template-columns:repeat(4,1fr); }
+  .g3 { grid-template-columns:repeat(3,1fr); }
+  .span3{grid-column:span 3} .span4{grid-column:span 4} .span5{grid-column:span 5}
+  .span6{grid-column:span 6} .span7{grid-column:span 7} .span12{grid-column:span 12}
+
+  .cell { background:var(--surface-raised); border:1px solid var(--border-subtle); border-radius:var(--radius); padding:12px; display:flex; flex-direction:column; }
+  .cell.hero { border-color:var(--border-strong); box-shadow:0 1px 2px rgba(0,0,0,.05); }
+  .cell.flat { background:transparent; border:0; padding:0; }
+  .cell .ch { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+  .cell .ch .t { font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--neutral-500); }
+
+  .big { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:26px; font-weight:600; letter-spacing:-.02em; line-height:1.1; }
+  .mid { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:19px; font-weight:600; }
+  .sm  { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:13px; }
+
+  .rowline { display:flex; align-items:baseline; justify-content:space-between; gap:8px; font-size:12px; }
+  .kv { display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding:3px 0; font-size:12px; border-bottom:1px dashed var(--neutral-100); }
+  .kv:last-child { border-bottom:0; }
+  .kv .k { color:var(--neutral-500); }
+  .kv .v { font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--neutral-900); }
+
+  /* delta pill */
+  .delta { display:inline-flex; align-items:center; gap:3px; font-family:var(--font-mono); font-size:11px; padding:1px 6px; border-radius:999px; }
+  .delta.pos { color:var(--pos-mark); background:var(--pos-50); }
+  .delta.neg { color:var(--crit-mark); background:var(--crit-50); }
+  .delta.zero{ color:var(--neutral-500); background:var(--neutral-100); }
+
+  /* bullet / attainment bar */
+  .track { height:8px; border-radius:999px; background:var(--neutral-100); overflow:hidden; position:relative; }
+  .track > i { display:block; height:100%; border-radius:999px; background:var(--neutral-800); }
+  .track .tgt { position:absolute; top:-2px; bottom:-2px; width:2px; background:var(--neutral-900); }
+  .track.sm { height:6px; }
+
+  /* severity */
+  .sev { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; }
+  .dot { width:8px; height:8px; border-radius:50%; flex:0 0 8px; }
+  .dot.high{background:var(--crit-mark)} .dot.med{background:var(--warn-mark)} .dot.low{background:var(--info-mark)}
+  .dot.ok{background:var(--pos-mark)} .dot.off{background:var(--neut-mark)}
+  .sevbar { display:flex; height:10px; border-radius:999px; overflow:hidden; background:var(--neutral-100); }
+  .sevbar i { display:block; height:100%; }
+
+  /* exception rows */
+  .exc { display:grid; grid-template-columns:64px 1fr 92px 46px; gap:10px; align-items:center; padding:6px 4px; border-bottom:1px solid var(--neutral-100); }
+  .exc:last-child { border-bottom:0; }
+  .exc:hover { background:var(--neutral-50); }
+  .exc .lbl { font-size:12px; color:var(--neutral-800); }
+  .exc .doc { font-family:var(--font-mono); font-size:11px; color:var(--neutral-500); }
+  .sla { height:6px; border-radius:999px; background:var(--neutral-100); overflow:hidden; }
+  .sla > i { display:block; height:100%; }
+
+  /* ledger table */
+  table.ledger { width:100%; border-collapse:collapse; font-size:12px; }
+  table.ledger th { text-align:left; font-size:10px; letter-spacing:.05em; text-transform:uppercase; color:var(--neutral-500); font-weight:500; padding:6px 8px; border-bottom:1px solid var(--border-subtle); white-space:nowrap; }
+  table.ledger td { padding:6px 8px; border-bottom:1px solid var(--neutral-100); white-space:nowrap; }
+  table.ledger tr:hover td { background:var(--neutral-50); }
+  table.ledger tfoot td { border-top:1px solid var(--border-subtle); font-weight:600; color:var(--neutral-800); background:var(--surface-sunken); }
+  .healthpill { display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:1px 7px; border-radius:999px; }
+  .healthpill.crit{background:var(--crit-50); color:var(--crit-mark)} .healthpill.risk{background:var(--warn-50); color:var(--warn-mark)}
+  .healthpill.track{background:var(--pos-50); color:var(--pos-mark)} .healthpill.nob{background:var(--neutral-100); color:var(--neutral-600)}
+  .minibar { display:flex; height:8px; width:104px; border-radius:3px; overflow:hidden; background:var(--neutral-100); }
+  .minibar i { display:block; height:100%; }
+  .ratio { display:inline-flex; gap:1px; }
+  .ratio i { width:5px; height:12px; border-radius:1px; background:var(--neutral-200); }
+  .ratio i.f { background:var(--pos-mark); } .ratio i.f.bad { background:var(--crit-mark); }
+  .risk { display:inline-flex; align-items:center; gap:4px; font-size:11px; }
+  .risk b { width:16px; height:16px; border-radius:3px; display:grid; place-items:center; color:#fff; font-size:9px; }
+
+  /* heatmap */
+  .heat { display:grid; grid-template-columns:repeat(5,1fr); gap:3px; }
+  .heat i { aspect-ratio:1; border-radius:3px; display:block; }
+
+  /* funnel */
+  .funnel { display:flex; flex-direction:column; gap:4px; }
+  .funnel .step { display:flex; align-items:center; gap:8px; font-size:11px; }
+  .funnel .bar { height:16px; border-radius:3px; background:var(--neutral-800); }
+  .funnel .nm { width:74px; color:var(--neutral-500); }
+  .funnel .vv { font-family:var(--font-mono); font-size:11px; color:var(--neutral-600); width:56px; text-align:right; }
+
+  .legend { display:flex; flex-wrap:wrap; gap:10px; font-size:11px; color:var(--neutral-600); }
+  .legend span { display:inline-flex; align-items:center; gap:5px; }
+
+  svg { display:block; }
+  .foot-note { font-size:11px; color:var(--neutral-500); margin-top:6px; }
+  .pillrow { display:flex; flex-wrap:wrap; gap:6px; }
+  .tag { display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--border-strong); color:var(--neutral-600); }
+  .tag .dot { width:7px; height:7px; }
+  .hr { height:1px; background:var(--border-subtle); margin:8px 0; }
+  .micro { display:flex; align-items:center; gap:8px; }
+  .micro .lbl { font-size:11px; color:var(--neutral-500); width:64px; }
+  .micro .val { font-family:var(--font-mono); font-size:12px; width:56px; text-align:right; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ SIDEBAR (existing, tidak diubah) ============ -->
+  <aside class="sidebar">
+    <div class="brand"><span class="mark">AEC</span><b>AEC</b></div>
+    <nav class="nav">
+      <div class="grp">Main</div>
+      <a class="active" href="#"><span class="dot"></span>Dashboard</a>
+      <a href="#"><span class="dot"></span>Executive Analytics</a>
+      <a href="#"><span class="dot"></span>Advanced Reporting</a>
+      <a href="#"><span class="dot"></span>Approval <span class="pill" style="margin-left:auto;height:18px;padding:0 6px;background:var(--warn-50);border-color:var(--warn-mark);color:var(--warn-mark)">12</span></a>
+      <a href="#"><span class="dot"></span>Workflow</a>
+      <div class="grp">Project &amp; Engineering</div>
+      <a href="#"><span class="dot"></span>Projects</a>
+      <a href="#"><span class="dot"></span>WBS</a>
+      <a href="#"><span class="dot"></span>Budget</a>
+      <a href="#"><span class="dot"></span>Project Health</a>
+      <div class="grp">Finance &amp; Treasury</div>
+      <a href="#"><span class="dot"></span>Client Invoice</a>
+      <a href="#"><span class="dot"></span>Vendor Invoice</a>
+      <a href="#"><span class="dot"></span>Treasury</a>
+      <div class="grp">Governance</div>
+      <a href="#"><span class="dot"></span>HSE</a>
+      <a href="#"><span class="dot"></span>Quality</a>
+      <a href="#"><span class="dot"></span>Governance</a>
+    </nav>
+    <div class="foot">AEC ERP v0.1.0</div>
+  </aside>
+
+  <div class="main">
+
+    <!-- ============ T0 — SHELL BAR ============ -->
+    <div class="shellbar">
+      <button class="iconbtn" title="Menu" aria-label="Open menu">☰</button>
+      <nav class="crumb" aria-label="Breadcrumb">
+        <span class="parent">Main</span><span class="sep">›</span><span class="cur">Dashboard</span>
+      </nav>
+      <span class="pill env">DEMO</span>
+      <span class="pill scope">AEC Group</span>
+      <span class="pill scope">FY2026 · Q1</span>
+      <span class="spacer"></span>
+      <span class="live"><span class="beat"></span>LIVE</span>
+      <button class="iconbtn" title="Notifications" aria-label="Notifications">🔔<span class="badge-n">12</span></button>
+      <button class="iconbtn" title="Command palette (⌘K)" aria-label="Command palette"><span class="mono" style="font-size:11px">⌘K</span></button>
+      <button class="iconbtn" title="Help" aria-label="Help">?</button>
+      <span class="avatar" title="Ari R.">AR</span>
+    </div>
+
+    <div class="content">
+
+      <!-- ============ T1 — PAGE HEADER + TIMELINE ============ -->
+      <div class="pagehead">
+        <div>
+          <h1>Dashboard · Control Tower</h1>
+          <p class="sub">Portfolio command center · cost, cash, delivery &amp; risk · 12 projects · 3 legal entities</p>
+        </div>
+        <div class="headtools">
+          <div class="seg" role="group" aria-label="Period">
+            <button aria-pressed="false">MTD</button>
+            <button aria-pressed="false">QTD</button>
+            <button aria-pressed="true">YTD</button>
+            <button aria-pressed="false">12M</button>
+          </div>
+          <button class="btn">All entities ▾</button>
+          <button class="btn ghost" title="Reload" aria-label="Reload">⟳</button>
+          <button class="btn">⤓ Export</button>
+          <button class="btn">▦ Views ▾</button>
+        </div>
+      </div>
+
+      <div class="timeline">
+        <span class="label">◀</span>
+        <div class="track">
+          <div class="brush"></div>
+          <span class="tick">Jan</span><span class="tick">Feb</span><span class="tick">Mar</span>
+          <span class="tick on">Apr</span><span class="tick on">May</span><span class="tick on">Jun</span>
+          <span class="tick">Jul</span><span class="tick">Aug</span><span class="tick">Sep</span>
+          <span class="tick">Oct</span><span class="tick">Nov</span><span class="tick">Dec</span>
+        </div>
+        <span class="label">▶</span>
+        <span class="label">Updated 2 min ago</span>
+      </div>
+
+      <!-- ============ T2 — BENTO HERO (3 sel dominan) ============ -->
+      <div class="tier">
+        <div class="grid g12">
+
+          <!-- CASH — donut ring vs minimum -->
+          <div class="cell hero span4">
+            <div class="ch"><span class="t">Cash on hand · bank balances</span><span class="delta pos">▲ +12.4%</span></div>
+            <div style="display:flex; align-items:center; gap:14px;">
+              <svg id="ring-cash" width="78" height="78" viewBox="0 0 78 78" aria-label="Cash attainment 91% of minimum"></svg>
+              <div style="min-width:0">
+                <div class="big up">Rp 18.240.500.000</div>
+                <div class="muted" style="font-size:11px; margin-top:3px;">minimum Rp 15,0B · 12 bulan runway</div>
+              </div>
+            </div>
+            <div style="margin-top:auto; padding-top:10px;">
+              <svg id="spark-cash" width="100%" height="30" viewBox="0 0 300 30" preserveAspectRatio="none" aria-label="Cash trend"></svg>
+              <div class="rowline muted" style="font-size:11px; margin-top:4px;"><span>Feb</span><span>Apr</span><span>Jun</span><span>Aug</span><span>Oct</span><span>Dec</span></div>
+            </div>
+          </div>
+
+          <!-- NET CASH FLOW -->
+          <div class="cell hero span4">
+            <div class="ch"><span class="t">Net cash flow · period</span><span class="delta pos">▲ +8.1%</span></div>
+            <div class="big up">+ Rp 420.000.000</div>
+            <div class="muted" style="font-size:11px; margin-top:3px;">in Rp 5,2B − out Rp 4,8B</div>
+            <div style="margin-top:10px;">
+              <div class="rowline" style="margin-bottom:4px;"><span class="muted" style="font-size:11px">vs target Rp 500M</span><span class="mono" style="font-size:11px">84%</span></div>
+              <div class="track"><i style="width:84%; background:var(--pos-mark)"></i><span class="tgt" style="left:100%"></span></div>
+            </div>
+            <div style="margin-top:auto; padding-top:10px;">
+              <svg id="spark-net" width="100%" height="30" viewBox="0 0 300 30" preserveAspectRatio="none" aria-label="Net cash trend"></svg>
+            </div>
+          </div>
+
+          <!-- BACKLOG -->
+          <div class="cell hero span4">
+            <div class="ch"><span class="t">Contract backlog</span><span class="delta neg">▼ −2.1%</span></div>
+            <div class="big down">Rp 31.400.000.000</div>
+            <div class="muted" style="font-size:11px; margin-top:3px;">12 proyek · 8 klien · avg Rp 2,6B</div>
+            <div style="margin-top:10px;">
+              <div class="rowline" style="margin-bottom:4px;"><span class="muted" style="font-size:11px">vs target Rp 35,0B</span><span class="mono" style="font-size:11px">89%</span></div>
+              <div class="track"><i style="width:89%; background:var(--warn-mark)"></i></div>
+            </div>
+            <div style="margin-top:auto; padding-top:10px;">
+              <svg id="spark-backlog" width="100%" height="30" viewBox="0 0 300 30" preserveAspectRatio="none" aria-label="Backlog trend"></svg>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ============ T3 — CASH FLOW KANVAS ‖ EXCEPTION QUEUE ============ -->
+      <div class="tier">
+        <div class="tier-head"><span class="overline">Attention</span><span class="rule"></span>
+          <span class="right"><span>12 open</span><span class="sev"><i class="dot high"></i>2 high</span><span class="sev"><i class="dot med"></i>6 med</span><span class="sev"><i class="dot low"></i>4 low</span></span>
+        </div>
+        <div class="grid g12">
+
+          <!-- CASH FLOW — full-bleed chart, tanpa border kartu -->
+          <div class="cell flat span7">
+            <div class="ch" style="padding:0 2px;">
+              <span class="t">Cash flow · 12 months</span>
+              <span class="legend"><span><i class="dot" style="background:var(--pos-mark)"></i>In</span><span><i class="dot" style="background:var(--crit-mark)"></i>Out</span><span><i class="dot" style="background:var(--neutral-300)"></i>Forecast</span><span><i class="dot" style="background:var(--neutral-900)"></i>Target</span></span>
+            </div>
+            <div style="background:var(--surface-raised); border:1px solid var(--border-subtle); border-radius:6px; padding:10px 12px 6px;">
+              <svg id="cashflow" width="100%" height="212" viewBox="0 0 640 212" preserveAspectRatio="none" aria-label="Cash in and out per month"></svg>
+              <div class="hr"></div>
+              <div class="rowline" style="font-size:11px;">
+                <span class="muted">Total in <b class="mono up">Rp 5,2B</b></span>
+                <span class="muted">Total out <b class="mono down">Rp 4,8B</b></span>
+                <span class="muted">Net <b class="mono up">+Rp 420M</b></span>
+                <span class="muted">Avg <b class="mono">+34M/mo</b></span>
+                <span class="muted">Peak Apr <b class="mono up">+112M</b></span>
+              </div>
+            </div>
+            <div class="foot-note">Drag to zoom · hover a month to sync every chart · dashed line = zero</div>
+          </div>
+
+          <!-- EXCEPTION QUEUE -->
+          <div class="cell span5">
+            <div class="ch"><span class="t">Exception queue · 12 open</span><span class="mono" style="font-size:11px;color:var(--neutral-500)">oldest 34d</span></div>
+            <div class="sevbar" style="margin-bottom:10px;">
+              <i style="width:17%;background:var(--crit-mark)"></i>
+              <i style="width:50%;background:var(--warn-mark)"></i>
+              <i style="width:33%;background:var(--info-mark)"></i>
+            </div>
+            <div id="exceptions"></div>
+            <div class="foot-note">Click a row to open a slide-over · SLA bar = age vs limit</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ============ T4 — BENTO GRID (4 sel) ============ -->
+      <div class="tier">
+        <div class="tier-head"><span class="overline">Operational pulse</span><span class="rule"></span>
+          <span class="right">Portfolio · Liquidity · Safety/Quality · Procurement</span>
+        </div>
+        <div class="grid g12">
+
+          <!-- PORTFOLIO MAP — scatter bubble -->
+          <div class="cell span3">
+            <div class="ch"><span class="t">Portfolio map</span><span class="dim" style="font-size:10px">CPI × SPI</span></div>
+            <svg id="scatter" width="100%" height="150" viewBox="0 0 240 150" aria-label="Project scatter CPI vs SPI"></svg>
+            <div class="legend" style="margin-top:8px;">
+              <span><i class="dot ok"></i>On track</span><span><i class="dot med"></i>At risk</span><span><i class="dot high"></i>Critical</span>
+            </div>
+            <div class="foot-note">bubble size = contract · quadrant at 1.0</div>
+          </div>
+
+          <!-- WORKING CAPITAL — diverging + aging -->
+          <div class="cell span3">
+            <div class="ch"><span class="t">Working capital</span></div>
+            <div class="grid g3" style="gap:8px; margin-bottom:10px;">
+              <div><div class="overline">DSO</div><div class="mid">54<span style="font-size:11px" class="muted"> d</span></div></div>
+              <div><div class="overline">DPO</div><div class="mid">38<span style="font-size:11px" class="muted"> d</span></div></div>
+              <div><div class="overline">Cycle</div><div class="mid" style="color:var(--warn-mark)">22<span style="font-size:11px" class="muted"> d</span></div></div>
+            </div>
+            <!-- diverging AR/AP -->
+            <div style="display:flex; align-items:center; gap:8px; font-size:11px;">
+              <span class="mono" style="width:34px;text-align:right;color:var(--info-mark)">4,7B</span>
+              <div style="flex:1; display:flex; height:12px; gap:2px;">
+                <div style="flex:1; display:flex; justify-content:flex-end;"><i style="width:62%;background:var(--info-fill);border-radius:3px 0 0 3px;display:block"></i></div>
+                <div style="width:1px;background:var(--neutral-300)"></div>
+                <div style="flex:1;"><i style="width:100%;background:var(--pos-fill);border-radius:0 3px 3px 0;display:block"></i></div>
+              </div>
+              <span class="mono" style="width:34px;color:var(--pos-mark)">9,1B</span>
+            </div>
+            <div class="rowline muted" style="font-size:10px; margin:2px 0 10px;"><span>◀ AP</span><span>AR ▶</span></div>
+            <!-- aging stacked 5 bucket -->
+            <div class="overline" style="margin-bottom:4px;">Aging AR</div>
+            <div class="minibar" style="width:100%; height:10px;">
+              <i style="width:46%;background:var(--aging-1)"></i>
+              <i style="width:20%;background:var(--aging-2)"></i>
+              <i style="width:13%;background:var(--aging-3)"></i>
+              <i style="width:12%;background:var(--aging-4)"></i>
+              <i style="width:9%;background:var(--aging-5)"></i>
+            </div>
+            <div class="legend" style="margin-top:6px; gap:8px; font-size:10px;">
+              <span><i class="dot" style="width:6px;height:6px;background:var(--aging-1)"></i>Cur 4,2</span>
+              <span><i class="dot" style="width:6px;height:6px;background:var(--aging-3)"></i>31-60 1,2</span>
+              <span><i class="dot" style="width:6px;height:6px;background:var(--aging-4)"></i>61-90 1,1</span>
+              <span><i class="dot" style="width:6px;height:6px;background:var(--aging-5)"></i>90+ 0,8</span>
+            </div>
+          </div>
+
+          <!-- SAFETY & QUALITY -->
+          <div class="cell span3">
+            <div class="ch"><span class="t">Safety · Quality</span><span class="sev"><i class="dot ok"></i>LTI-free 42d</span></div>
+            <div class="micro" style="margin-bottom:6px;"><span class="lbl">TRIR</span><span class="val">0,8</span>
+              <div class="track" style="flex:1"><i style="width:53%;background:var(--pos-mark)"></i><span class="tgt" style="left:62%"></span></div>
+              <span class="dim" style="font-size:10px">tgt ≤1,5</span></div>
+            <div class="kv"><span class="k">Incidents open</span><span class="v"><span class="sev"><i class="dot high"></i></span>4</span></div>
+            <div class="kv"><span class="k">NCR open</span><span class="v"><span class="sev"><i class="dot med"></i></span>11</span></div>
+            <div class="kv"><span class="k">Punch open</span><span class="v">23</span></div>
+            <div style="margin-top:8px;">
+              <div class="overline" style="margin-bottom:4px;">Incidents · 6 mo</div>
+              <svg id="spark-safety" width="100%" height="26" viewBox="0 0 300 26" preserveAspectRatio="none" aria-label="Incident trend"></svg>
+            </div>
+          </div>
+
+          <!-- PROCUREMENT -->
+          <div class="cell span3">
+            <div class="ch"><span class="t">Procurement</span><span class="mono" style="font-size:11px">Open PO 12,4B</span></div>
+            <div class="kv"><span class="k">PR pending</span><span class="v">7</span></div>
+            <div class="kv"><span class="k">RFQ due</span><span class="v">3</span></div>
+            <div class="kv"><span class="k">Vendor score</span><span class="v">3,8 / 5</span></div>
+            <div class="micro" style="margin:8px 0 4px;"><span class="lbl" style="width:88px">Top vendor</span><span class="val" style="width:auto">PT Karya 92%</span></div>
+            <div class="track sm"><i style="width:92%;background:var(--pos-mark)"></i></div>
+            <div style="margin-top:10px;">
+              <div class="overline" style="margin-bottom:4px;">PO value · 6 mo</div>
+              <svg id="spark-proc" width="100%" height="26" viewBox="0 0 300 26" preserveAspectRatio="none" aria-label="PO trend"></svg>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ============ T5 — PORTFOLIO LEDGER ============ -->
+      <div class="tier">
+        <div class="tier-head"><span class="overline">Portfolio ledger · 12 projects</span><span class="rule"></span>
+          <span class="right"><span class="seg"><button aria-pressed="true">Table</button><button aria-pressed="false">Canvas</button><button aria-pressed="false">Treemap</button></span></span>
+        </div>
+        <div class="cell" style="padding:0; overflow:hidden;">
+          <table class="ledger">
+            <thead>
+              <tr>
+                <th>Code</th><th>Project</th><th>Health</th><th>Progress</th>
+                <th>Budget / Actual</th><th style="text-align:right">Variance</th>
+                <th>CPI / SPI</th><th>Risk</th><th>Client</th>
+              </tr>
+            </thead>
+            <tbody id="ledger-body"></tbody>
+            <tfoot>
+              <tr>
+                <td colspan="4">Σ 12 projects</td>
+                <td>Σ budget 61,0B · actual 44,1B</td>
+                <td style="text-align:right" class="down">−Rp 6,7B</td>
+                <td colspan="3" class="muted">CPI 0,93 · SPI 0,97</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============ T6 — GOVERNANCE · COMMERCIAL · TREASURY ============ -->
+      <div class="tier">
+        <div class="tier-head"><span class="overline">Governance · Commercial · Treasury</span><span class="rule"></span></div>
+        <div class="grid g12">
+
+          <!-- GOVERNANCE — risk heatmap -->
+          <div class="cell span4">
+            <div class="ch"><span class="t">Governance</span><span class="mono" style="font-size:11px">14 open risk</span></div>
+            <div style="display:flex; gap:14px; align-items:flex-start;">
+              <div style="flex:0 0 128px;">
+                <div class="overline" style="margin-bottom:5px;">Risk matrix · L×I</div>
+                <div class="heat" id="heat"></div>
+                <div class="legend" style="margin-top:6px; font-size:10px; gap:6px;">
+                  <span><i class="dot" style="width:6px;height:6px;background:var(--pos-mark)"></i>low</span>
+                  <span><i class="dot" style="width:6px;height:6px;background:var(--warn-mark)"></i>med</span>
+                  <span><i class="dot" style="width:6px;height:6px;background:var(--crit-mark)"></i>high</span>
+                </div>
+              </div>
+              <div style="flex:1">
+                <div class="kv"><span class="k">High risk</span><span class="v"><span class="sev"><i class="dot high"></i></span>3</span></div>
+                <div class="kv"><span class="k">Audit overdue</span><span class="v">2</span></div>
+                <div class="kv"><span class="k">Legal open</span><span class="v">5</span></div>
+                <div class="kv"><span class="k">Access review</span><span class="v">FY26-Q1</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- COMMERCIAL — funnel -->
+          <div class="cell span4">
+            <div class="ch"><span class="t">Commercial pipeline</span><span class="mono" style="font-size:11px">58,2B</span></div>
+            <div class="funnel" id="funnel"></div>
+            <div class="hr"></div>
+            <div class="rowline" style="font-size:11px;">
+              <span class="muted">Win rate <b class="mono">38%</b></span>
+              <span class="muted">Tender due <b class="mono">2</b></span>
+              <span class="muted">Variations <b class="mono up">+1,2B</b></span>
+            </div>
+          </div>
+
+          <!-- TREASURY — radial gauges -->
+          <div class="cell span4">
+            <div class="ch"><span class="t">Treasury</span><span class="mono" style="font-size:11px">USD 2,1M @16.240</span></div>
+            <div style="display:flex; gap:12px; align-items:center;">
+              <svg id="ring-bg" width="66" height="66" viewBox="0 0 66 66" aria-label="Bank guarantee utilization"></svg>
+              <div style="flex:1">
+                <div class="kv"><span class="k">BG expiring</span><span class="v">3 · Rp 4,2B</span></div>
+                <div class="kv"><span class="k">FX exposure</span><span class="v">USD 2,1M</span></div>
+                <div class="kv"><span class="k">Period close</span><span class="v"><span class="sev"><i class="dot med"></i></span>OPEN 34/40</span></div>
+              </div>
+            </div>
+            <div style="margin-top:8px;">
+              <div class="overline" style="margin-bottom:4px;">Cash forecast · 6 mo</div>
+              <svg id="spark-treasury" width="100%" height="26" viewBox="0 0 300 26" preserveAspectRatio="none" aria-label="Cash forecast trend"></svg>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ============ T7 — ANOMALY TRIAGE ============ -->
+      <div class="tier">
+        <div class="tier-head"><span class="overline">Anomaly triage</span><span class="rule"></span>
+          <span class="right"><span class="pill" style="background:var(--warn-50);border-color:var(--warn-mark);color:var(--warn-mark)">4 anomalies</span></span>
+        </div>
+        <div class="cell">
+          <div id="anomalies"></div>
+        </div>
+      </div>
+
+      <p class="foot-note" style="text-align:center; margin-top:26px;">
+        Mockup statis · Light Command Canvas · semua visual dirender SVG/CSS tanpa library eksternal.
+        Data contoh realistis (bukan data produksi).
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   Render helpers — SVG murni (tanpa CDN)
+   ============================================================ */
+const C = {
+  grid:'#e4e4e7', axis:'#71717a', ink:'#18181b', faint:'#a1a1aa',
+  pos:'#15803d', neg:'#b91c1c', warn:'#b45309', info:'#1d4ed8',
+  posFill:'rgba(21,128,61,.14)', gridStrong:'#d4d4d8'
+};
+const NS='http://www.w3.org/2000/svg';
+const el=(n,a={})=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e;};
+const pct=(v,m)=>Math.max(0,Math.min(100,(v/m)*100));
+
+/* ---------- Ring gauge ---------- */
+function ring(id, value, max, color, center, sub) {
+  const s=document.getElementById(id); if(!s) return;
+  const cx=39, cy=39, r=30, sw=8, circ=2*Math.PI*r, frac=Math.min(1,value/max);
+  s.appendChild(el('circle',{cx,cy,r,fill:'none',stroke:'#f4f4f5','stroke-width':sw}));
+  const arc=el('circle',{cx,cy,r,fill:'none',stroke:color,'stroke-width':sw,'stroke-linecap':'round',
+    'stroke-dasharray':`${circ*frac} ${circ}`, transform:`rotate(-90 ${cx} ${cy})`});
+  s.appendChild(arc);
+  const t1=el('text',{x:cx,y:cy-1,'text-anchor':'middle','font-family':'IBM Plex Mono, monospace','font-size':'14','font-weight':'600',fill:'#18181b'}); t1.textContent=center; s.appendChild(t1);
+  const t2=el('text',{x:cx,y:cy+12,'text-anchor':'middle','font-size':'8',fill:'#71717a'}); t2.textContent=sub; s.appendChild(t2);
+}
+
+/* ---------- Sparkline ---------- */
+function spark(id, values, color, baseline) {
+  const s=document.getElementById(id); if(!s) return;
+  const w=300,h=Number(s.getAttribute('height'))||30, pad=3;
+  const min=Math.min(...values,baseline??Infinity), max=Math.max(...values,baseline??-Infinity);
+  const span=(max-min)||1;
+  const X=i=>values.length>1?(i/(values.length-1))*w:0;
+  const Y=v=>h-pad-((v-min)/span)*(h-2*pad);
+  if(baseline!=null){
+    s.appendChild(el('line',{x1:0,y1:Y(baseline),x2:w,y2:Y(baseline),stroke:'#d4d4d8','stroke-dasharray':'3 3','stroke-width':1}));
+  }
+  const pts=values.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+  // area
+  const gid='g_'+id;
+  const defs=el('defs'); const lg=el('linearGradient',{id:gid,x1:0,y1:0,x2:0,y2:1});
+  lg.appendChild(el('stop',{offset:'0%','stop-color':color,'stop-opacity':'.22'}));
+  lg.appendChild(el('stop',{offset:'100%','stop-color':color,'stop-opacity':'0'}));
+  defs.appendChild(lg); s.appendChild(defs);
+  s.appendChild(el('polygon',{points:`0,${h} ${pts} ${w},${h}`,fill:`url(#${gid})`}));
+  s.appendChild(el('polyline',{points:pts,fill:'none',stroke:color,'stroke-width':1.6,'stroke-linejoin':'round','stroke-linecap':'round'}));
+}
+
+/* ---------- Cash flow grouped bars + forecast band + target ---------- */
+function cashflow() {
+  const s=document.getElementById('cashflow'); if(!s) return;
+  const W=640,H=212, L=44,R=10,T=10,B=26;
+  const inV =[310,280,340,420,390,470,440,410,380,360,330,300];
+  const outV=[260,300,290,308,330,340,360,350,320,300,290,280];
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const max=520, y=v=>H-B-(v/max)*(H-T-B);
+  // grid
+  for(let g=0;g<=4;g++){const v=g*130; s.appendChild(el('line',{x1:L,y1:y(v),x2:W-R,y2:y(v),stroke:C.grid,'stroke-dasharray':'3 3'}));
+    const t=el('text',{x:L-6,y:y(v)+3,'text-anchor':'end','font-size':'9',fill:C.axis}); t.textContent=v+'jt'; s.appendChild(t);}
+  // zero line
+  s.appendChild(el('line',{x1:L,y1:y(0),x2:W-R,y2:y(0),stroke:C.gridStrong}));
+  // forecast band (last 3 months)
+  const fx0=L+((9)/12)*(W-L-R), fx1=W-R;
+  s.appendChild(el('rect',{x:fx0,y:T,width:fx1-fx0,height:H-T-B,fill:'rgba(161,161,170,.10)'}));
+  const ft=el('text',{x:(fx0+fx1)/2,y:T+10,'text-anchor':'middle','font-size':'8',fill:C.faint}); ft.textContent='forecast'; s.appendChild(ft);
+  // target line
+  s.appendChild(el('line',{x1:L,y1:y(330),x2:W-R,y2:y(330),stroke:C.ink,'stroke-width':1,'stroke-dasharray':'5 4','opacity':'.55'}));
+  // bars
+  const bw=(W-L-R)/12, barW=bw*0.34;
+  months.forEach((m,i)=>{
+    const cx=L+bw*i+bw/2;
+    const hi=el('rect',{x:cx-barW-1,y:y(inV[i]),width:barW,height:y(0)-y(inV[i]),fill:C.pos,rx:2}); s.appendChild(hi);
+    const ho=el('rect',{x:cx+1,y:y(outV[i]),width:barW,height:y(0)-y(outV[i]),fill:C.neg,rx:2}); s.appendChild(ho);
+    const t=el('text',{x:cx,y:H-8,'text-anchor':'middle','font-size':'9',fill:C.axis}); t.textContent=m; s.appendChild(t);
+  });
+  // peak marker
+  s.appendChild(el('circle',{cx:L+bw*3+bw/2,y:y(inV[3])-4,r:3,fill:C.pos}));
+}
+
+/* ---------- Scatter bubble ---------- */
+function scatter(){
+  const s=document.getElementById('scatter'); if(!s) return;
+  const W=240,H=150,pad=22,lo=.6,hi=1.4;
+  const X=v=>pad+((v-lo)/(hi-lo))*(W-2*pad), Y=v=>H-pad-((v-lo)/(hi-lo))*(H-2*pad);
+  for(let g=0;g<=4;g++){const v=lo+g*(hi-lo)/4;
+    s.appendChild(el('line',{x1:X(v),y1:pad,x2:X(v),y2:H-pad,stroke:C.grid,'stroke-dasharray':'2 3'}));
+    s.appendChild(el('line',{x1:pad,y1:Y(v),x2:W-pad,y2:Y(v),stroke:C.grid,'stroke-dasharray':'2 3'}));}
+  s.appendChild(el('line',{x1:X(1),y1:pad,x2:X(1),y2:H-pad,stroke:C.gridStrong}));
+  s.appendChild(el('line',{x1:pad,y1:Y(1),x2:W-pad,y2:Y(1),stroke:C.gridStrong}));
+  const pts=[[.82,.91,'neg',9],[.94,.97,'warn',7],[1.05,1.02,'pos',8],[.88,.95,'warn',6],[1.12,1.06,'pos',5],[.72,.80,'neg',7],[1.0,1.08,'pos',5],[.9,1.1,'pos',4]];
+  const col={neg:C.neg,warn:C.warn,pos:C.pos};
+  pts.forEach(([x,y,k,r])=>{ s.appendChild(el('circle',{cx:X(x),cy:Y(y),r,fill:col[k],'fill-opacity':'.75',stroke:'#fff','stroke-width':1})); });
+  const lx=el('text',{x:W-pad,y:H-6,'text-anchor':'end','font-size':'8',fill:C.faint}); lx.textContent='CPI →'; s.appendChild(lx);
+  const ly=el('text',{x:6,y:pad-6,'font-size':'8',fill:C.faint}); ly.textContent='↑ SPI'; s.appendChild(ly);
+}
+
+/* ---------- Exception rows ---------- */
+function exceptions(){
+  const host=document.getElementById('exceptions');
+  const rows=[
+    ['HIGH','Approval SLA','PO-2026-0184','Procurement',6,5,  'high'],
+    ['HIGH','NCR overdue','NCR-0042','Quality',34,14,'high'],
+    ['MED','BG expiring','BG-0017','Treasury',18,30,'med'],
+    ['MED','CA due','CA-0091','HSE',5,7,'med'],
+    ['MED','Budget overrun','PRJ-014','Project',2,1,'med'],
+    ['LOW','Claim DRAFT','PC-0311','Finance',9,30,'low'],
+    ['LOW','PM overdue','EQ-0021','HCM',12,14,'low'],
+    ['LOW','Punch item','PL-0233','Quality',7,30,'low'],
+  ];
+  const sevCol={high:C.neg,med:C.warn,low:C.info};
+  rows.forEach(([sev,label,doc,domain,age,limit,cls])=>{
+    const r=document.createElement('div'); r.className='exc';
+    const over=age>limit;
+    r.innerHTML=`
+      <span class="sev" style="color:${sevCol[cls]}"><i class="dot ${cls}"></i>${sev}</span>
+      <span class="lbl">${label} <span class="doc">${doc}</span> <span class="dim" style="font-size:10px">· ${domain}</span></span>
+      <span class="sla"><i style="width:${Math.min(100,(age/limit)*100)}%;background:${over?C.neg:C.warn}"></i></span>
+      <span class="mono" style="text-align:right;font-size:11px;color:${over?C.neg:C.axis}">${age}d</span>`;
+    host.appendChild(r);
+  });
+}
+
+/* ---------- Portfolio ledger ---------- */
+function ledger(){
+  const tb=document.getElementById('ledger-body');
+  const rows=[
+    ['PRJ-014','Ring Road','crit','Critical','▲ 62/78%',62,78,-3.2,.82,.91,'hi',16,'Pemprov'],
+    ['PRJ-007','Port Extension','risk','At Risk','▲ 88/85%',88,85,-1.8,.94,.97,'med',9,'Pelindo'],
+    ['PRJ-002','Toll A-3','track','On Track','▸ 71/70%',71,70,0.4,1.05,1.02,'lo',4,'Jasa Marga'],
+    ['PRJ-011','Bridge B2','risk','At Risk','▲ 55/61%',55,61,-0.9,.88,.95,'med',12,'Pemprov'],
+    ['PRJ-019','Warehouse W1','track','On Track','▸ 90/88%',90,88,0.2,1.01,1.0,'lo',5,'Swasta'],
+    ['PRJ-023','Water Treat','risk','At Risk','▲ 44/52%',44,52,-1.1,.9,.93,'med',10,'PDAM'],
+    ['PRJ-006','Jetty J2','track','On Track','▸ 80/79%',80,79,0.3,1.03,1.0,'lo',6,'Pelindo'],
+    ['PRJ-031','Plant P3','nob','No Budget','▸ 12/—%',12,0,0,0,0,'lo',3,'Swasta'],
+  ];
+  const hp={crit:'crit',risk:'risk',track:'track',nob:'nob'};
+  const hl={crit:'Critical',risk:'At Risk',track:'On Track',nob:'No Budget'};
+  const riskCol={hi:C.neg,med:C.warn,lo:C.pos};
+  rows.forEach(([code,name,hk,hlabel,prog,pb,pa,varv,cpi,spi,rk,rs,client])=>{
+    const tr=document.createElement('tr');
+    const varCls=varv<0?'down':(varv>0?'up':'flat');
+    const cpOk=cpi>=1, spOk=spi>=1;
+    const cpiBars=Array.from({length:5},(_,i)=>`<i class="${i<Math.round(cpi*4.5)?('f'+(cpOk?'':' bad')):''}"></i>`).join('');
+    tr.innerHTML=`
+      <td class="mono" style="color:var(--neutral-500)">${code}</td>
+      <td style="color:var(--neutral-800)">${name}</td>
+      <td><span class="healthpill ${hp[hk]}"><i class="dot ${hk==='crit'?'high':hk==='risk'?'med':hk==='track'?'ok':'off'}"></i>${hlabel}</span></td>
+      <td><span class="mono" style="font-size:11px">${prog}</span></td>
+      <td><div style="display:flex;align-items:center;gap:8px;">
+            <span class="minibar"><i style="width:${Math.min(100,pct(pa,Math.max(pb,pa)))}%;background:${pa>pb?C.neg:C.ink}"></i><i style="width:${Math.max(0,100-pct(pa,Math.max(pb,pa)))}%;background:var(--neutral-200)"></i></span>
+            <span class="mono" style="font-size:10px;color:var(--neutral-500)">${pb?pb+'/':'—/'}${pa}</span></div></td>
+      <td class="mono ${varCls}" style="text-align:right">${varv<0?'−':varv>0?'+':''}${Math.abs(varv).toFixed(1)}B</td>
+      <td>${cpi?`<span class="ratio" title="CPI ${cpi} / SPI ${spi}">${cpiBars}<span style="width:4px"></span>${Array.from({length:5},(_,i)=>`<i class="${i<Math.round(spi*4.5)?('f'+(spOk?'':' bad')):''}"></i>`).join('')}</span> <span class="mono" style="font-size:10px;color:var(--neutral-500)">${cpi}/${spi}</span>`:'<span class="dim">—</span>'}</td>
+      <td><span class="risk"><b style="background:${riskCol[rk]}">${rs}</b></span></td>
+      <td class="muted">${client}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* ---------- Risk heatmap 5x5 ---------- */
+function heat(){
+  const host=document.getElementById('heat');
+  const grid=[[2,3,4,5,5],[2,3,3,4,5],[1,2,3,3,4],[1,1,2,2,3],[1,1,1,2,2]]; // severity per cell
+  const col={1:'#15803d',2:'#65a30d',3:'#ca8a04',4:'#ea580c',5:'#b91c1c'};
+  for(let r=4;r>=0;r--) for(let c=0;c<5;c++){
+    const i=document.createElement('i'); i.style.background=col[grid[r][c]]; i.style.opacity=.35+.13*grid[r][c]; host.appendChild(i);
+  }
+}
+
+/* ---------- Funnel ---------- */
+function funnel(){
+  const host=document.getElementById('funnel');
+  const steps=[['Lead',58.2,100],['Qualified',41.0,70],['Proposal',28.4,49],['Negotiation',17.1,29],['Won',8.6,15]];
+  steps.forEach(([n,v,w])=>{
+    const d=document.createElement('div'); d.className='step';
+    d.innerHTML=`<span class="nm">${n}</span><div class="bar" style="width:${w*0.9}%"></div><span class="vv">${v.toFixed(1)}B</span>`;
+    host.appendChild(d);
+  });
+}
+
+/* ---------- Anomalies ---------- */
+function anomalies(){
+  const host=document.getElementById('anomalies');
+  const rows=[
+    ['HIGH','BUDGET_OVERRUN','PRJ-014','Budget 108% of contract (Rp 3,2B / Rp 3,0B)'],
+    ['HIGH','NCR_CRITICAL_OPEN','','2 CRITICAL NCR(s) not yet closed'],
+    ['MED','ALLOCATION_OVER_100','','3 employee(s) with active allocation >100%'],
+    ['LOW','CLAIMS_DRAFT_BACKLOG','','4 claim(s) still DRAFT — certification needed'],
+  ];
+  const col={HIGH:'high',MED:'med',LOW:'low'};
+  rows.forEach(([sev,type,code,msg])=>{
+    const r=document.createElement('div'); r.className='exc'; r.style.gridTemplateColumns='64px 168px 1fr';
+    r.innerHTML=`<span class="sev"><i class="dot ${col[sev]}"></i>${sev}</span>
+      <span class="doc">${type}${code?' <span class="dim">'+code+'</span>':''}</span>
+      <span class="lbl" style="color:var(--neutral-700)">${msg}</span>`;
+    host.appendChild(r);
+  });
+}
+
+/* ---------- init ---------- */
+ring('ring-cash',91,100,C.pos,'91%','of min');
+ring('ring-bg',72,100,C.warn,'72%','utilised');
+spark('spark-cash',[12,13.1,12.6,14.2,15.1,14.8,16.2,17.0,16.4,17.8,18.0,18.24],C.pos);
+spark('spark-net',[-40,20,60,10,-30,80,120,40,90,60,110,140],C.pos,0);
+spark('spark-backlog',[28,29,30,31.5,30.8,32,33,32.4,31.8,32.2,31.6,31.4],C.neg);
+spark('spark-safety',[7,6,6,5,5,4],C.neg);
+spark('spark-proc',[9,10.2,11,10.6,12,12.4],C.info);
+spark('spark-treasury',[8,9.2,8.6,10.1,9.8,10.4],C.info,0);
+cashflow(); scatter(); exceptions(); ledger(); heat(); funnel(); anomalies();
+</script>
+</body>
+</html>

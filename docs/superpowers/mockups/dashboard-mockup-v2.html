@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AEC ERP — Control Tower (Ledger Grid v2)</title>
+<style>
+  /* ============================================================
+     AEC ERP — Control Tower · "Ledger Grid" v2
+     Prinsip: grid 12 kolom · rule-based (bukan kartu) ·
+     hierarki via opacity (bukan hue) · skala spasi 4/8/12/16/24 ·
+     satu accent (racing-red) · rectilinear.
+     Token warna dari packages/config/tailwind/tailwind.preset.cjs
+     ============================================================ */
+  :root{
+    --n0:#fff; --n50:#fafafa; --n100:#f4f4f5; --n200:#e4e4e7; --n300:#d4d4d8;
+    --n400:#a1a1aa; --n500:#71717a; --n600:#52525b; --n700:#3f3f46; --n800:#27272a;
+    --n900:#18181b; --n950:#09090b;
+    /* brand — aksi saja */
+    --brand:#dc2626; --brand-h:#b91c1c; --brand-tint:#fef2f2;
+    /* semantic — makna data, >=3:1 */
+    --pos:#15803d; --pos-fill:#22c55e; --pos-tint:#f0fdf4;
+    --warn:#b45309; --warn-fill:#f59e0b; --warn-tint:#fffbeb;
+    --crit:#b91c1c; --crit-fill:#ef4444; --crit-tint:#fef2f2;
+    --info:#1d4ed8; --info-fill:#3b82f6; --info-tint:#eff6ff;
+    --neut:#71717a;
+    /* categorical — aman buta warna */
+    --cat1:#2563eb; --cat2:#d97706; --cat3:#0891b2; --cat4:#7c3aed; --cat5:#71717a; --cat6:#be185d;
+    /* aging ramp — monoton hijau→kuning→merah */
+    --ag1:#16a34a; --ag2:#65a30d; --ag3:#ca8a04; --ag4:#ea580c; --ag5:#b91c1c;
+    /* surface */
+    --canvas:#f4f4f5; --raised:#fff; --sunken:#fafafa;
+    --bd:#e4e4e7; --bd-strong:#d4d4d8;
+    /* ink + opacity hierarchy (swiss: opacity, bukan hue) */
+    --ink:#18181b; --ink-70:rgba(24,24,27,.70); --ink-50:rgba(24,24,27,.50); --ink-34:rgba(24,24,27,.34);
+    --radius:6px;
+    --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --mono:'IBM Plex Mono','JetBrains Mono',ui-monospace,Menlo,monospace;
+    /* spacing scale */
+    --sp1:4px; --sp2:8px; --sp3:12px; --sp4:16px; --sp6:24px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--canvas); color:var(--ink);
+    font-family:var(--sans); font-size:13px; line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:var(--mono); font-variant-numeric:tabular-nums;}
+  .pos{color:var(--pos);} .neg{color:var(--crit);} .flat{color:var(--ink-50);}
+  .i70{color:var(--ink-70);} .i50{color:var(--ink-50);} .i34{color:var(--ink-34);}
+  .lbl{font-size:11px; letter-spacing:.03em; text-transform:uppercase; color:var(--ink-50); font-weight:500;}
+
+  /* ---------- shell ---------- */
+  .app{display:flex; min-height:100vh;}
+  .side{width:224px; flex:0 0 224px; background:var(--raised); border-right:1px solid var(--bd); display:flex; flex-direction:column;}
+  .brand{height:48px; display:flex; align-items:center; gap:10px; padding:0 16px; border-bottom:1px solid var(--bd);}
+  .brand .mk{width:24px; height:24px; border-radius:4px; background:var(--ink); color:#fff; display:grid; place-items:center; font-size:10px; font-weight:600; letter-spacing:.02em;}
+  .brand b{font-size:14px; font-weight:600; letter-spacing:-.01em;}
+  .nav{padding:8px; flex:1; overflow:auto;}
+  .nav .g{padding:10px 10px 4px; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-34);}
+  .nav a{display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:4px; color:var(--ink-70); text-decoration:none; font-size:13px;}
+  .nav a:hover{background:var(--n50); color:var(--ink);}
+  .nav a.on{background:var(--n100); color:var(--ink); font-weight:500;}
+  .nav a .n{margin-left:auto; font-family:var(--mono); font-size:10px; color:var(--warn); background:var(--warn-tint); border-radius:3px; padding:0 5px;}
+  .nav .ft{padding:10px 16px; border-top:1px solid var(--bd); font-size:11px; color:var(--ink-34);}
+
+  .main{flex:1; min-width:0; display:flex; flex-direction:column;}
+  .bar{height:48px; flex:0 0 48px; background:var(--raised); border-bottom:1px solid var(--bd); display:flex; align-items:center; gap:12px; padding:0 16px; position:sticky; top:0; z-index:20;}
+  .crumb{display:flex; align-items:center; gap:6px; font-size:13px;}
+  .crumb .p{color:var(--ink-50);} .crumb .s{color:var(--ink-34);} .crumb .c{font-weight:600;}
+  .grow{flex:1;}
+  .chip{display:inline-flex; align-items:center; gap:6px; height:22px; padding:0 8px; border-radius:4px; font-size:11px; border:1px solid var(--bd-strong); color:var(--ink-70);}
+  .chip.env{border-color:var(--warn); color:var(--warn); font-weight:600; letter-spacing:.04em;}
+  .chip.k{font-family:var(--mono);}
+  .ico{width:30px; height:30px; border-radius:4px; border:0; background:transparent; display:grid; place-items:center; color:var(--ink-50); cursor:pointer; position:relative; font-size:12px;}
+  .ico:hover{background:var(--n100); color:var(--ink);}
+  .ico .nb{position:absolute; top:-3px; right:-3px; min-width:15px; height:15px; padding:0 4px; border-radius:8px; background:var(--brand); color:#fff; font-size:9px; font-weight:600; display:grid; place-items:center;}
+  .live{display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; color:var(--pos);}
+  .live .b{width:6px; height:6px; border-radius:50%; background:var(--pos-fill); animation:beat 1.8s infinite;}
+  @keyframes beat{0%{box-shadow:0 0 0 0 rgba(34,197,94,.45)}70%{box-shadow:0 0 0 6px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+  .av{width:26px; height:26px; border-radius:50%; background:var(--ink); color:#fff; display:grid; place-items:center; font-size:10px; font-weight:600;}
+
+  /* ---------- content ---------- */
+  .wrap{padding:16px 20px 48px; max-width:1680px; width:100%; margin:0 auto;}
+  .phead{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; padding-bottom:12px; border-bottom:1px solid var(--bd);}
+  .phead h1{margin:0; font-size:20px; font-weight:600; letter-spacing:-.01em;}
+  .phead .sub{margin:3px 0 0; font-size:12px; color:var(--ink-50);}
+  .tools{display:flex; align-items:center; gap:8px;}
+  .seg{display:inline-flex; border:1px solid var(--bd-strong); border-radius:4px; overflow:hidden;}
+  .seg button{border:0; background:var(--raised); font:inherit; font-size:12px; padding:4px 10px; color:var(--ink-70); cursor:pointer; border-left:1px solid var(--bd);}
+  .seg button:first-child{border-left:0;}
+  .seg button[aria-pressed="true"]{background:var(--ink); color:#fff; font-weight:500;}
+  .btn{display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px; border-radius:4px; border:1px solid var(--bd-strong); background:var(--raised); color:var(--ink-70); font:inherit; font-size:12px; cursor:pointer;}
+  .btn:hover{background:var(--n50); color:var(--ink);}
+
+  /* timeline scrubber */
+  .tl{display:flex; align-items:center; gap:10px; margin:12px 0 4px;}
+  .tl .tr{position:relative; flex:1; height:24px; background:var(--raised); border:1px solid var(--bd); border-radius:4px; display:flex; align-items:center; padding:0 8px;}
+  .tl .tk{flex:1; text-align:center; font-size:10px; color:var(--ink-34);}
+  .tl .tk.on{color:var(--ink); font-weight:600;}
+  .tl .br{position:absolute; left:20%; right:26%; top:2px; bottom:2px; border:1px solid rgba(220,38,38,.4); background:rgba(220,38,38,.07); border-radius:3px;}
+  .tl .cap{font-size:11px; color:var(--ink-50);}
+
+  /* ---------- section (rule-based, bukan kartu) ---------- */
+  .sec{margin-top:22px;}
+  .sec-h{display:flex; align-items:baseline; gap:12px; margin-bottom:10px;}
+  .sec-h .name{font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--ink);}
+  .sec-h .cnt{font-family:var(--mono); font-size:11px; color:var(--ink-50);}
+  .sec-h .rule{flex:1; height:1px; background:var(--bd);}
+  .sec-h .r{display:flex; gap:12px; align-items:center; font-size:11px; color:var(--ink-50);}
+
+  .grid{display:grid; grid-template-columns:repeat(12,1fr); gap:1px; background:var(--bd); border:1px solid var(--bd); border-radius:var(--radius); overflow:hidden;}
+  .grid.gap0{gap:0;}
+
+  /* metric band — satu pita utuh, dibagi hairline vertikal (bukan kotak-kotak).
+     Pakai 8 kolom sendiri, bukan grid-12, supaya tidak ada sel kosong. */
+  .band{display:grid; grid-template-columns:repeat(8,1fr); background:var(--raised); border:1px solid var(--bd); border-radius:var(--radius); overflow:hidden;}
+  .band .m{padding:12px; min-width:0; display:flex; flex-direction:column; border-left:1px solid var(--bd);}
+  .band .m:first-child{border-left:0;}
+  @media (max-width:1180px){ .band{grid-template-columns:repeat(4,1fr);}
+    .band .m:nth-child(4n+1){border-left:0;}
+    .band .m:nth-child(n+5){border-top:1px solid var(--bd);} }
+  @media (max-width:640px){ .band{grid-template-columns:repeat(2,1fr);}
+    .band .m:nth-child(2n+1){border-left:0;}
+    .band .m:nth-child(n+3){border-top:1px solid var(--bd);} }
+  .c{background:var(--raised); padding:12px; min-width:0; display:flex; flex-direction:column;}
+  .c.hero{background:var(--raised);}
+  .c.plain{background:var(--raised);}
+  .s2{grid-column:span 2} .s3{grid-column:span 3} .s4{grid-column:span 4}
+  .s5{grid-column:span 5} .s6{grid-column:span 6} .s7{grid-column:span 7} .s8{grid-column:span 8} .s12{grid-column:span 12}
+
+  .ct{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;}
+  .ct .t{font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-50);}
+
+  .big{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:24px; font-weight:600; letter-spacing:-.02em; line-height:1.1;}
+  .mid{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:18px; font-weight:600;}
+  .num{font-family:var(--mono); font-variant-numeric:tabular-nums;}
+
+  .kv{display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding:3px 0; font-size:12px; border-bottom:1px solid var(--n100);}
+  .kv:last-child{border-bottom:0;}
+  .kv .k{color:var(--ink-50);}
+  .kv .v{font-family:var(--mono); font-variant-numeric:tabular-nums; color:var(--ink);}
+
+  .dl{display:inline-flex; align-items:center; gap:3px; font-family:var(--mono); font-size:11px;}
+  .dl.p{color:var(--pos);} .dl.n{color:var(--crit);} .dl.f{color:var(--ink-50);}
+
+  .tr{height:8px; border-radius:2px; background:var(--n100); overflow:hidden; position:relative;}
+  .tr > i{display:block; height:100%; background:var(--ink);}
+  .tr .tg{position:absolute; top:-1px; bottom:-1px; width:2px; background:var(--ink);}
+  .tr.s{height:6px;}
+
+  .dot{width:8px; height:8px; border-radius:50%; flex:0 0 8px; display:inline-block;}
+  .dot.h{background:var(--crit);} .dot.m{background:var(--warn);} .dot.l{background:var(--info);}
+  .dot.ok{background:var(--pos);} .dot.off{background:var(--neut);}
+  .sev{display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600;}
+  .sev.h{color:var(--crit);} .sev.m{color:var(--warn);} .sev.l{color:var(--info);}
+  .sbar{display:flex; height:8px; border-radius:2px; overflow:hidden; background:var(--n100);}
+  .sbar i{display:block; height:100%;}
+
+  .exc{display:grid; grid-template-columns:58px 1fr 84px 40px; gap:10px; align-items:center; padding:6px 2px; border-bottom:1px solid var(--n100);}
+  .exc:last-child{border-bottom:0;}
+  .exc:hover{background:var(--n50);}
+  .exc .lb{font-size:12px; color:var(--ink);}
+  .exc .dc{font-family:var(--mono); font-size:11px; color:var(--ink-50);}
+  .sla{height:5px; border-radius:2px; background:var(--n100); overflow:hidden;}
+  .sla > i{display:block; height:100%;}
+
+  table.led{width:100%; border-collapse:collapse; font-size:12px;}
+  table.led th{text-align:left; font-size:10px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-50); font-weight:500; padding:7px 8px; border-bottom:1px solid var(--bd-strong); white-space:nowrap;}
+  table.led td{padding:6px 8px; border-bottom:1px solid var(--n100); white-space:nowrap;}
+  table.led tr:hover td{background:var(--n50);}
+  table.led tfoot td{border-top:1px solid var(--bd-strong); font-weight:600; background:var(--sunken); color:var(--ink-70);}
+  .hp{display:inline-flex; align-items:center; gap:5px; font-size:11px;}
+  .hp .dot{width:7px;height:7px;flex:0 0 7px;}
+  .mbar{display:flex; height:8px; width:96px; border-radius:2px; overflow:hidden; background:var(--n100);}
+  .mbar i{display:block; height:100%;}
+  .ratio{display:inline-flex; gap:1px;}
+  .ratio i{width:4px; height:11px; border-radius:1px; background:var(--n200);}
+  .ratio i.f{background:var(--pos);} .ratio i.f.bad{background:var(--crit);}
+  .riskb{display:inline-grid; place-items:center; width:16px; height:16px; border-radius:3px; color:#fff; font-size:9px; font-family:var(--mono);}
+
+  .heat{display:grid; grid-template-columns:repeat(5,1fr); gap:3px;}
+  .heat i{aspect-ratio:1; border-radius:2px; display:block;}
+  .funnel .st{display:flex; align-items:center; gap:8px; font-size:11px; margin-bottom:3px;}
+  .funnel .nm{width:76px; color:var(--ink-50);}
+  .funnel .br{height:14px; background:var(--ink); border-radius:2px;}
+  .funnel .vv{font-family:var(--mono); font-size:11px; color:var(--ink-70); width:52px; text-align:right;}
+
+  .leg{display:flex; flex-wrap:wrap; gap:10px; font-size:11px; color:var(--ink-50);}
+  .leg span{display:inline-flex; align-items:center; gap:5px;}
+  .foot{font-size:11px; color:var(--ink-34); margin-top:6px;}
+  .hr{height:1px; background:var(--bd); margin:8px 0;}
+  .micro{display:flex; align-items:center; gap:8px;}
+  .micro .lb{font-size:11px; color:var(--ink-50);}
+  svg{display:block;}
+
+  /* ---------- LIVE behaviour ---------- */
+  /* flash latar saat nilai berubah — hanya background (compositor-friendly) */
+  .fl-up{animation:flu .9s ease-out;}
+  .fl-dn{animation:fld .9s ease-out;}
+  @keyframes flu{0%{background:var(--pos-tint)}100%{background:transparent}}
+  @keyframes fld{0%{background:var(--crit-tint)}100%{background:transparent}}
+  .val{display:inline-block; padding:0 3px; margin:0 -3px; border-radius:3px;}
+  /* titik LIVE berdenyut */
+  .live .b{animation:beat 1.8s infinite;}
+  .live.paused{color:var(--ink-50);}
+  .live.paused .b{background:var(--neut); animation:none;}
+  /* badge "n baru" pada header zona */
+  .newbadge{display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:600;
+    color:var(--brand-h); background:var(--brand-tint); border-radius:3px; padding:1px 6px;
+    opacity:0; transition:opacity .2s ease;}
+  .newbadge.on{opacity:1;}
+  /* toast */
+  .toasts{position:fixed; right:16px; bottom:16px; display:flex; flex-direction:column; gap:8px; z-index:50;}
+  .toast{background:var(--raised); border:1px solid var(--bd-strong); border-left:3px solid var(--brand);
+    border-radius:4px; padding:9px 12px; font-size:12px; box-shadow:0 2px 8px rgba(0,0,0,.08); max-width:320px;}
+  .toast b{font-weight:600;}
+  /* kill-switch tombol live */
+  .btn.livebtn{border-color:var(--pos); color:var(--pos);}
+  .btn.livebtn.paused{border-color:var(--bd-strong); color:var(--ink-50);}
+  @media (prefers-reduced-motion: reduce){
+    .fl-up,.fl-dn{animation:none;}
+    .live .b{animation:none;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="mk">AEC</span><b>AEC</b></div>
+    <nav class="nav">
+      <div class="g">Main</div>
+      <a class="on" href="#">Dashboard</a>
+      <a href="#">Executive Analytics</a>
+      <a href="#">Advanced Reporting</a>
+      <a href="#">Approval <span class="n">12</span></a>
+      <a href="#">Workflow</a>
+      <div class="g">Project &amp; Engineering</div>
+      <a href="#">Projects</a><a href="#">WBS</a><a href="#">Budget</a><a href="#">Project Health</a>
+      <div class="g">Finance &amp; Treasury</div>
+      <a href="#">Client Invoice</a><a href="#">Vendor Invoice</a><a href="#">Treasury</a>
+      <div class="g">Governance</div>
+      <a href="#">HSE</a><a href="#">Quality</a><a href="#">Governance</a>
+    </nav>
+    <div class="ft">AEC ERP v0.1.0</div>
+  </aside>
+
+  <div class="main">
+    <div class="bar">
+      <button class="ico" aria-label="Open menu">☰</button>
+      <nav class="crumb"><span class="p">Main</span><span class="s">›</span><span class="c">Dashboard</span></nav>
+      <span class="chip env">DEMO</span>
+      <span class="chip k">AEC Group</span>
+      <span class="chip k">FY2026 · Q1</span>
+      <span class="grow"></span>
+      <span class="live" id="liveind"><span class="b"></span>LIVE</span>
+      <button class="ico" aria-label="Notifications">◔<span class="nb">12</span></button>
+      <button class="ico" aria-label="Command palette"><span class="mono" style="font-size:11px">⌘K</span></button>
+      <button class="ico" aria-label="Help">?</button>
+      <span class="av">AR</span>
+    </div>
+
+    <div class="wrap">
+      <div class="phead">
+        <div>
+          <h1>Dashboard · Control Tower</h1>
+          <p class="sub">Portfolio command center · cost, cash, delivery &amp; risk · 12 projects · 3 legal entities · <span id="updated">updated 2s ago</span></p>
+        </div>
+        <div class="tools">
+          <div class="seg" role="group" aria-label="Period">
+            <button aria-pressed="false">MTD</button><button aria-pressed="false">QTD</button>
+            <button aria-pressed="true">YTD</button><button aria-pressed="false">12M</button>
+          </div>
+          <button class="btn">All entities ▾</button>
+          <button class="btn" aria-label="Reload">⟳</button>
+          <button class="btn" id="livebtn" aria-pressed="true">● Live</button>
+          <button class="btn">⤓ Export</button>
+        </div>
+      </div>
+
+      <div class="tl">
+        <span class="cap">◀</span>
+        <div class="tr"><div class="br"></div>
+          <span class="tk">Jan</span><span class="tk">Feb</span><span class="tk">Mar</span>
+          <span class="tk on">Apr</span><span class="tk on">May</span><span class="tk on">Jun</span>
+          <span class="tk">Jul</span><span class="tk">Aug</span><span class="tk">Sep</span>
+          <span class="tk">Oct</span><span class="tk">Nov</span><span class="tk">Dec</span>
+        </div>
+        <span class="cap">▶</span>
+        <span class="cap">Updated 2 min ago</span>
+      </div>
+
+      <!-- ===== T2 · METRIC BAND (satu pita, hairline antar-sel) ===== -->
+      <div class="sec">
+        <div class="band" id="kpis"></div>
+      </div>
+
+      <!-- ===== T3 · ATTENTION ===== -->
+      <div class="sec">
+        <div class="sec-h">
+          <span class="name">Attention</span><span class="cnt" id="attn-cnt">12 open</span><span class="newbadge" id="attn-new">● baru</span><span class="rule"></span>
+          <span class="r"><span class="sev h"><i class="dot h"></i>2 high</span><span class="sev m"><i class="dot m"></i>6 med</span><span class="sev l"><i class="dot l"></i>4 low</span></span>
+        </div>
+        <div class="grid">
+          <div class="c s7 plain">
+            <div class="ct"><span class="t">Cash flow · 12 months</span>
+              <span class="leg"><span><i class="dot" style="background:var(--pos)"></i>In</span><span><i class="dot" style="background:var(--crit)"></i>Out</span><span><i class="dot" style="background:var(--n300)"></i>Forecast</span><span><i class="dot" style="background:var(--ink)"></i>Target</span></span>
+            </div>
+            <svg id="cashflow" width="100%" height="196" viewBox="0 0 640 196" preserveAspectRatio="none" aria-label="Cash in and out per month"></svg>
+            <div class="hr"></div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--ink-50);">
+              <span>In <b class="num pos">Rp 5,2B</b></span><span>Out <b class="num neg">Rp 4,8B</b></span>
+              <span>Net <b class="num pos">+Rp 420M</b></span><span>Avg <b class="num">+34M/mo</b></span><span>Peak Apr <b class="num pos">+112M</b></span>
+            </div>
+            <div class="foot">Drag to zoom · hover a month to sync all charts</div>
+          </div>
+          <div class="c s5 plain">
+            <div class="ct"><span class="t">Exception queue · 12 open</span><span class="num i50" style="font-size:11px">oldest 34d</span></div>
+            <div class="sbar" style="margin-bottom:10px;">
+              <i style="width:17%;background:var(--crit)"></i><i style="width:50%;background:var(--warn)"></i><i style="width:33%;background:var(--info)"></i>
+            </div>
+            <div id="exceptions"></div>
+            <div class="foot">Click a row for detail · SLA bar = age vs limit</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== T4 · OPERATIONAL PULSE ===== -->
+      <div class="sec">
+        <div class="sec-h"><span class="name">Operational pulse</span><span class="rule"></span>
+          <span class="r">Liquidity · Safety/Quality · Procurement</span></div>
+        <div class="grid">
+          <div class="c s3 plain">
+            <div class="ct"><span class="t">Portfolio map</span><span class="i34" style="font-size:10px">CPI × SPI</span></div>
+            <svg id="scatter" width="100%" height="146" viewBox="0 0 240 146" aria-label="Project scatter CPI vs SPI"></svg>
+            <div class="leg" style="margin-top:8px;"><span><i class="dot ok"></i>On track</span><span><i class="dot m"></i>At risk</span><span><i class="dot h"></i>Critical</span></div>
+          </div>
+          <div class="c s3 plain">
+            <div class="ct"><span class="t">Working capital</span></div>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:10px;">
+              <div><div class="lbl">DSO</div><div class="mid">54<span style="font-size:11px" class="i50"> d</span></div></div>
+              <div><div class="lbl">DPO</div><div class="mid">38<span style="font-size:11px" class="i50"> d</span></div></div>
+              <div><div class="lbl">Cycle</div><div class="mid" style="color:var(--warn)">22<span style="font-size:11px" class="i50"> d</span></div></div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; font-size:11px;">
+              <span class="num" style="width:32px;text-align:right;color:var(--info)">4,7B</span>
+              <div style="flex:1; display:flex; height:11px; gap:2px;">
+                <div style="flex:1; display:flex; justify-content:flex-end;"><i style="width:62%;background:var(--info-fill);border-radius:2px 0 0 2px;display:block"></i></div>
+                <div style="width:1px;background:var(--n300)"></div>
+                <div style="flex:1;"><i style="width:100%;background:var(--pos-fill);border-radius:0 2px 2px 0;display:block"></i></div>
+              </div>
+              <span class="num" style="width:32px;color:var(--pos)">9,1B</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--ink-34); margin:2px 0 10px;"><span>◀ AP</span><span>AR ▶</span></div>
+            <div class="lbl" style="margin-bottom:4px;">Aging AR</div>
+            <div class="mbar" style="width:100%; height:10px;">
+              <i style="width:46%;background:var(--ag1)"></i><i style="width:20%;background:var(--ag2)"></i>
+              <i style="width:13%;background:var(--ag3)"></i><i style="width:12%;background:var(--ag4)"></i><i style="width:9%;background:var(--ag5)"></i>
+            </div>
+            <div class="leg" style="margin-top:6px; gap:8px; font-size:10px;">
+              <span><i class="dot" style="width:6px;height:6px;background:var(--ag1)"></i>Cur 4,2</span>
+              <span><i class="dot" style="width:6px;height:6px;background:var(--ag4)"></i>61-90 1,1</span>
+              <span><i class="dot" style="width:6px;height:6px;background:var(--ag5)"></i>90+ 0,8</span>
+            </div>
+          </div>
+          <div class="c s3 plain">
+            <div class="ct"><span class="t">Safety · Quality</span><span class="sev" style="color:var(--pos)"><i class="dot ok"></i>LTI-free 42d</span></div>
+            <div class="micro" style="margin-bottom:6px;"><span class="lb">TRIR</span><span class="num">0,8</span>
+              <div class="tr" style="flex:1"><i style="width:53%;background:var(--pos)"></i><span class="tg" style="left:62%"></span></div>
+              <span class="i34" style="font-size:10px">tgt ≤1,5</span></div>
+            <div class="kv"><span class="k">Incidents open</span><span class="v"><span class="dot h"></span> 4</span></div>
+            <div class="kv"><span class="k">NCR open</span><span class="v"><span class="dot m"></span> 11</span></div>
+            <div class="kv"><span class="k">Punch open</span><span class="v">23</span></div>
+            <div style="margin-top:8px;"><div class="lbl" style="margin-bottom:4px;">Incidents · 6 mo</div>
+              <svg id="sp-safety" width="100%" height="26" viewBox="0 0 300 26" preserveAspectRatio="none" aria-label="Incident trend"></svg></div>
+          </div>
+          <div class="c s3 plain">
+            <div class="ct"><span class="t">Procurement</span><span class="num i70" style="font-size:11px">Open PO 12,4B</span></div>
+            <div class="kv"><span class="k">PR pending</span><span class="v">7</span></div>
+            <div class="kv"><span class="k">RFQ due</span><span class="v">3</span></div>
+            <div class="kv"><span class="k">Vendor score</span><span class="v">3,8 / 5</span></div>
+            <div class="micro" style="margin:8px 0 4px;"><span class="lb" style="width:84px">Top vendor</span><span class="num" style="font-size:11px">PT Karya 92%</span></div>
+            <div class="tr s"><i style="width:92%;background:var(--pos)"></i></div>
+            <div style="margin-top:10px;"><div class="lbl" style="margin-bottom:4px;">PO value · 6 mo</div>
+              <svg id="sp-proc" width="100%" height="26" viewBox="0 0 300 26" preserveAspectRatio="none" aria-label="PO trend"></svg></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== T5 · PORTFOLIO LEDGER ===== -->
+      <div class="sec">
+        <div class="sec-h"><span class="name">Portfolio ledger</span><span class="cnt">12 projects</span><span class="rule"></span>
+          <span class="r"><span class="seg"><button aria-pressed="true">Table</button><button aria-pressed="false">Canvas</button><button aria-pressed="false">Treemap</button></span></span></div>
+        <div class="grid"><div class="c s12 plain" style="padding:0; overflow:hidden;">
+          <table class="led">
+            <thead><tr><th>Code</th><th>Project</th><th>Health</th><th>Progress</th><th>Budget / Actual</th><th style="text-align:right">Variance</th><th>CPI / SPI</th><th>Risk</th><th>Client</th></tr></thead>
+            <tbody id="ledger"></tbody>
+            <tfoot><tr><td colspan="4">Σ 12 projects</td><td>Σ budget 61,0B · actual 44,1B</td><td style="text-align:right" class="neg">−Rp 6,7B</td><td colspan="3" class="i50">CPI 0,93 · SPI 0,97</td></tr></tfoot>
+          </table>
+        </div></div>
+      </div>
+
+      <!-- ===== T6 · GOVERNANCE · COMMERCIAL · TREASURY ===== -->
+      <div class="sec">
+        <div class="sec-h"><span class="name">Governance · Commercial · Treasury</span><span class="rule"></span></div>
+        <div class="grid">
+          <div class="c s4 plain">
+            <div class="ct"><span class="t">Governance</span><span class="num i70" style="font-size:11px">14 open risk</span></div>
+            <div style="display:flex; gap:14px; align-items:flex-start;">
+              <div style="flex:0 0 122px;">
+                <div class="lbl" style="margin-bottom:5px;">Risk matrix · L×I</div>
+                <div class="heat" id="heat"></div>
+                <div class="leg" style="margin-top:6px; font-size:10px; gap:6px;">
+                  <span><i class="dot" style="width:6px;height:6px;background:var(--pos)"></i>low</span>
+                  <span><i class="dot" style="width:6px;height:6px;background:var(--warn)"></i>med</span>
+                  <span><i class="dot" style="width:6px;height:6px;background:var(--crit)"></i>high</span>
+                </div>
+              </div>
+              <div style="flex:1;">
+                <div class="kv"><span class="k">High risk</span><span class="v"><span class="dot h"></span> 3</span></div>
+                <div class="kv"><span class="k">Audit overdue</span><span class="v">2</span></div>
+                <div class="kv"><span class="k">Legal open</span><span class="v">5</span></div>
+                <div class="kv"><span class="k">Access review</span><span class="v">FY26-Q1</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="c s4 plain">
+            <div class="ct"><span class="t">Commercial pipeline</span><span class="num i70" style="font-size:11px">58,2B</span></div>
+            <div class="funnel" id="funnel"></div>
+            <div class="hr"></div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--ink-50);">
+              <span>Win rate <b class="num" style="color:var(--ink)">38%</b></span>
+              <span>Tender due <b class="num" style="color:var(--ink)">2</b></span>
+              <span>Variations <b class="num pos">+1,2B</b></span>
+            </div>
+          </div>
+          <div class="c s4 plain">
+            <div class="ct"><span class="t">Treasury</span><span class="num i70" style="font-size:11px">USD 2,1M @16.240</span></div>
+            <div style="display:flex; gap:12px; align-items:center;">
+              <svg id="ring-bg" width="62" height="62" viewBox="0 0 62 62" aria-label="Bank guarantee utilisation"></svg>
+              <div style="flex:1;">
+                <div class="kv"><span class="k">BG expiring</span><span class="v">3 · Rp 4,2B</span></div>
+                <div class="kv"><span class="k">FX exposure</span><span class="v">USD 2,1M</span></div>
+                <div class="kv"><span class="k">Period close</span><span class="v"><span class="dot m"></span> OPEN 34/40</span></div>
+              </div>
+            </div>
+            <div style="margin-top:8px;"><div class="lbl" style="margin-bottom:4px;">Cash forecast · 6 mo</div>
+              <svg id="sp-treasury" width="100%" height="26" viewBox="0 0 300 26" preserveAspectRatio="none" aria-label="Cash forecast trend"></svg></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== T7 · ANOMALY ===== -->
+      <div class="sec">
+        <div class="sec-h"><span class="name">Anomaly triage</span><span class="rule"></span>
+          <span class="r"><span class="chip" style="border-color:var(--warn);color:var(--warn)">4 anomalies</span></span></div>
+        <div class="grid"><div class="c s12 plain"><div id="anomalies"></div></div></div>
+      </div>
+
+      <p class="foot" style="text-align:center; margin-top:26px;">Mockup v2 · Ledger Grid · rule-based sections · opacity hierarchy · satu accent. Data contoh realistis.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const C={grid:'#e4e4e7',axis:'#71717a',ink:'#18181b',faint:'#a1a1aa',
+  pos:'#15803d',neg:'#b91c1c',warn:'#b45309',info:'#1d4ed8',strong:'#d4d4d8'};
+const NS='http://www.w3.org/2000/svg';
+const el=(n,a={})=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e;};
+
+/* metric band — 8 metrik dalam satu pita, dibagi hairline vertikal.
+   dk = arah *makna*: 'p' = membaik (hijau, panah sesuai arah angka),
+   'n' = memburuk (merah), 'f' = datar. Arah panah mengikuti tanda delta,
+   bukan disamakan dengan makna. */
+function kpis(){
+  const host=document.getElementById('kpis');
+  const rows=[
+    ['Cash on hand','Rp 18.240.500.000','12.4',1,'p','91% of Rp 20B min',91],
+    ['Net cash flow','+Rp 420.000.000','8.1',1,'p','84% of Rp 500M tgt',84],
+    ['Contract backlog','Rp 31.400.000.000','−2.1',-1,'n','89% of Rp 35B tgt',89],
+    ['Budget utilisation','68%','3.2',1,'n','of Rp 61,0B baseline',68],
+    ['AR overdue 61+','Rp 3.100.000.000','−4.2',-1,'p','target ≤ Rp 2,5B',81],
+    ['DSO','54 d','6',1,'n','target ≤ 45 d',83],
+    ['Safety · LTI-free','42 d',null,0,'f','TRIR 0,8 · target ≤1,5',53],
+    ['Manpower today','1.240','3.2',1,'p','peak 1.310 · 6 sites',95],
+  ];
+  rows.forEach(([label,val,mag,sign,dk,ctx,pc])=>{
+    const d=document.createElement('div'); d.className='m';
+    const arrow = sign>0?'▲':sign<0?'▼':'→';
+    const dcls = dk==='p'?'p':dk==='n'?'n':'f';
+    const deltaText = mag==null ? '—' : `${sign<0?'−':''}${mag}%`;
+    const viz = dk==='p' && label==='Cash on hand'
+      ? `<svg class="kring" data-pc="${pc}" width="46" height="46" viewBox="0 0 46 46" aria-label="${label} attainment ${pc}%"></svg>`
+      : '';
+    d.innerHTML=`
+      <div style="display:flex; align-items:baseline; justify-content:space-between; gap:6px;">
+        <span style="font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-50)">${label}</span>
+        <span class="dl ${dcls}">${arrow} ${deltaText}</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px; margin-top:4px;">
+        ${viz}
+        <span class="big val ${dk==='n'?'neg':''}" data-kpi="${label}">${val}</span>
+      </div>
+      <div style="margin-top:auto; padding-top:8px;">
+        <div class="tr s"><i style="width:${pc}%;background:${dk==='n'?'var(--warn)':'var(--ink)'}"></i></div>
+        <div class="i34" style="font-size:10px; margin-top:3px;">${ctx}</div>
+      </div>`;
+    host.appendChild(d);
+  });
+  document.querySelectorAll('.kring').forEach(s=>{
+    const pc=Number(s.dataset.pc), cx=23,cy=23,r=18,sw=5,circ=2*Math.PI*r;
+    s.appendChild(el('circle',{cx,cy,r,fill:'none',stroke:'#f4f4f5','stroke-width':sw}));
+    s.appendChild(el('circle',{cx,cy,r,fill:'none',stroke:'#15803d','stroke-width':sw,'stroke-linecap':'round','stroke-dasharray':`${circ*pc/100} ${circ}`,transform:`rotate(-90 ${cx} ${cy})`}));
+    const t=el('text',{x:cx,y:cy+4,'text-anchor':'middle','font-size':'10','font-family':'IBM Plex Mono, monospace','font-weight':'600',fill:'#18181b'}); t.textContent=pc+'%'; s.appendChild(t);
+  });
+}
+
+function spark(id,values,color,baseline){
+  const s=document.getElementById(id); if(!s) return;
+  const w=300,h=Number(s.getAttribute('height'))||26,pad=3;
+  const min=Math.min(...values,baseline??Infinity),max=Math.max(...values,baseline??-Infinity),span=(max-min)||1;
+  const X=i=>values.length>1?(i/(values.length-1))*w:0, Y=v=>h-pad-((v-min)/span)*(h-2*pad);
+  if(baseline!=null) s.appendChild(el('line',{x1:0,y1:Y(baseline),x2:w,y2:Y(baseline),stroke:'#d4d4d8','stroke-dasharray':'3 3'}));
+  const pts=values.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+  s.appendChild(el('polyline',{points:pts,fill:'none',stroke:color,'stroke-width':1.5,'stroke-linejoin':'round','stroke-linecap':'round'}));
+}
+
+function cashflow(){
+  const s=document.getElementById('cashflow'); if(!s) return;
+  const W=640,H=196,L=42,R=10,T=10,B=24;
+  const iv=[310,280,340,420,390,470,440,410,380,360,330,300];
+  const ov=[260,300,290,308,330,340,360,350,320,300,290,280];
+  const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const max=520, y=v=>H-B-(v/max)*(H-T-B);
+  for(let g=0;g<=4;g++){const v=g*130;s.appendChild(el('line',{x1:L,y1:y(v),x2:W-R,y2:y(v),stroke:C.grid,'stroke-dasharray':'3 3'}));
+    const t=el('text',{x:L-6,y:y(v)+3,'text-anchor':'end','font-size':'9',fill:C.axis});t.textContent=v+'jt';s.appendChild(t);}
+  s.appendChild(el('line',{x1:L,y1:y(0),x2:W-R,y2:y(0),stroke:C.strong}));
+  const fx0=L+(9/12)*(W-L-R);
+  s.appendChild(el('rect',{x:fx0,y:T,width:W-R-fx0,height:H-T-B,fill:'rgba(161,161,170,.10)'}));
+  const ft=el('text',{x:(fx0+W-R)/2,y:T+10,'text-anchor':'middle','font-size':'8',fill:C.faint});ft.textContent='forecast';s.appendChild(ft);
+  s.appendChild(el('line',{x1:L,y1:y(330),x2:W-R,y2:y(330),stroke:C.ink,'stroke-width':1,'stroke-dasharray':'5 4','opacity':'.5'}));
+  const bw=(W-L-R)/12, barW=bw*0.34;
+  mo.forEach((m,i)=>{const cx=L+bw*i+bw/2;
+    s.appendChild(el('rect',{x:cx-barW-1,y:y(iv[i]),width:barW,height:y(0)-y(iv[i]),fill:C.pos,rx:2}));
+    s.appendChild(el('rect',{x:cx+1,y:y(ov[i]),width:barW,height:y(0)-y(ov[i]),fill:C.neg,rx:2}));
+    const t=el('text',{x:cx,y:H-8,'text-anchor':'middle','font-size':'9',fill:C.axis});t.textContent=m;s.appendChild(t);});
+}
+
+function scatter(){
+  const s=document.getElementById('scatter'); if(!s) return;
+  const W=240,H=146,pad=20,lo=.6,hi=1.4;
+  const X=v=>pad+((v-lo)/(hi-lo))*(W-2*pad), Y=v=>H-pad-((v-lo)/(hi-lo))*(H-2*pad);
+  for(let g=0;g<=4;g++){const v=lo+g*(hi-lo)/4;
+    s.appendChild(el('line',{x1:X(v),y1:pad,x2:X(v),y2:H-pad,stroke:C.grid,'stroke-dasharray':'2 3'}));
+    s.appendChild(el('line',{x1:pad,y1:Y(v),x2:W-pad,y2:Y(v),stroke:C.grid,'stroke-dasharray':'2 3'}));}
+  s.appendChild(el('line',{x1:X(1),y1:pad,x2:X(1),y2:H-pad,stroke:C.strong}));
+  s.appendChild(el('line',{x1:pad,y1:Y(1),x2:W-pad,y2:Y(1),stroke:C.strong}));
+  const pts=[[.82,.91,'neg',9],[.94,.97,'warn',7],[1.05,1.02,'pos',8],[.88,.95,'warn',6],[1.12,1.06,'pos',5],[.72,.80,'neg',7],[1.0,1.08,'pos',5],[.9,1.1,'pos',4]];
+  const col={neg:C.neg,warn:C.warn,pos:C.pos};
+  pts.forEach(([x,y,k,r])=>s.appendChild(el('circle',{cx:X(x),cy:Y(y),r,fill:col[k],'fill-opacity':'.8',stroke:'#fff','stroke-width':1})));
+  const lx=el('text',{x:W-pad,y:H-5,'text-anchor':'end','font-size':'8',fill:C.faint});lx.textContent='CPI →';s.appendChild(lx);
+  const ly=el('text',{x:6,y:pad-5,'font-size':'8',fill:C.faint});ly.textContent='↑ SPI';s.appendChild(ly);
+}
+
+function exceptions(){
+  const host=document.getElementById('exceptions');
+  const rows=[
+    ['HIGH','Approval SLA','PO-2026-0184','Procurement',6,5,'h'],
+    ['HIGH','NCR overdue','NCR-0042','Quality',34,14,'h'],
+    ['MED','BG expiring','BG-0017','Treasury',18,30,'m'],
+    ['MED','Corrective action','CA-0091','HSE',5,7,'m'],
+    ['MED','Budget overrun','PRJ-014','Project',2,1,'m'],
+    ['LOW','Claim DRAFT','PC-0311','Finance',9,30,'l'],
+    ['LOW','PM overdue','EQ-0021','HCM',12,14,'l'],
+    ['LOW','Punch item','PL-0233','Quality',7,30,'l'],
+  ];
+  const col={h:C.neg,m:C.warn,l:C.info};
+  rows.forEach(([sev,label,doc,dom,age,lim,cls])=>{
+    const over=age>lim, r=document.createElement('div'); r.className='exc';
+    r.innerHTML=`<span class="sev ${cls}"><i class="dot ${cls}"></i>${sev}</span>
+      <span class="lb">${label} <span class="dc">${doc}</span> <span class="i34" style="font-size:10px">· ${dom}</span></span>
+      <span class="sla"><i style="width:${Math.min(100,(age/lim)*100)}%;background:${over?C.neg:C.warn}"></i></span>
+      <span class="num" style="text-align:right;font-size:11px;color:${over?C.neg:'var(--ink-50)'}">${age}d</span>`;
+    host.appendChild(r);
+  });
+}
+
+function ledger(){
+  const tb=document.getElementById('ledger');
+  const rows=[
+    ['PRJ-014','Ring Road','crit','Critical','▲ 62/78%',62,78,-3.2,.82,.91,'h',16,'Pemprov'],
+    ['PRJ-007','Port Extension','risk','At Risk','▲ 88/85%',88,85,-1.8,.94,.97,'m',9,'Pelindo'],
+    ['PRJ-002','Toll A-3','track','On Track','▸ 71/70%',71,70,0.4,1.05,1.02,'l',4,'Jasa Marga'],
+    ['PRJ-011','Bridge B2','risk','At Risk','▲ 55/61%',55,61,-0.9,.88,.95,'m',12,'Pemprov'],
+    ['PRJ-019','Warehouse W1','track','On Track','▸ 90/88%',90,88,0.2,1.01,1.0,'l',5,'Swasta'],
+    ['PRJ-023','Water Treatment','risk','At Risk','▲ 44/52%',44,52,-1.1,.9,.93,'m',10,'PDAM'],
+    ['PRJ-006','Jetty J2','track','On Track','▸ 80/79%',80,79,0.3,1.03,1.0,'l',6,'Pelindo'],
+    ['PRJ-031','Plant P3','nob','No Budget','▸ 12/—%',12,0,0,0,0,'l',3,'Swasta'],
+  ];
+  const dotc={crit:'h',risk:'m',track:'ok',nob:'off'};
+  const rc={h:C.neg,m:C.warn,l:C.pos};
+  rows.forEach(([code,name,hk,hl,prog,pb,pa,vv,cpi,spi,rk,rs,client])=>{
+    const tr=document.createElement('tr');
+    const vc=vv<0?'neg':vv>0?'pos':'flat';
+    const cb=Array.from({length:5},(_,i)=>`<i class="${i<Math.round(cpi*4.5)?('f'+(cpi>=1?'':' bad')):''}"></i>`).join('');
+    const sb=Array.from({length:5},(_,i)=>`<i class="${i<Math.round(spi*4.5)?('f'+(spi>=1?'':' bad')):''}"></i>`).join('');
+    const mx=Math.max(pb,pa)||1;
+    tr.innerHTML=`
+      <td class="num i50">${code}</td>
+      <td style="color:var(--ink)">${name}</td>
+      <td><span class="hp"><i class="dot ${dotc[hk]}"></i>${hl}</span></td>
+      <td class="num" style="font-size:11px">${prog}</td>
+      <td><div style="display:flex;align-items:center;gap:8px;">
+        <span class="mbar"><i style="width:${Math.min(100,pa/mx*100)}%;background:${pa>pb?C.neg:C.ink}"></i><i style="width:${Math.max(0,100-Math.min(100,pa/mx*100))}%;background:var(--n200)"></i></span>
+        <span class="num" style="font-size:10px;color:var(--ink-50)">${pb?pb+'/':'—/'}${pa}</span></div></td>
+      <td class="num ${vc}" style="text-align:right">${vv<0?'−':vv>0?'+':''}${Math.abs(vv).toFixed(1)}B</td>
+      <td>${cpi?`<span class="ratio" title="CPI ${cpi} / SPI ${spi}">${cb}<span style="width:4px"></span>${sb}</span> <span class="num" style="font-size:10px;color:var(--ink-50)">${cpi}/${spi}</span>`:'<span class="i34">—</span>'}</td>
+      <td><span class="riskb" style="background:${rc[rk]}">${rs}</span></td>
+      <td class="i50">${client}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function heat(){
+  const host=document.getElementById('heat');
+  const g=[[2,3,4,5,5],[2,3,3,4,5],[1,2,3,3,4],[1,1,2,2,3],[1,1,1,2,2]];
+  const col={1:'#15803d',2:'#65a30d',3:'#ca8a04',4:'#ea580c',5:'#b91c1c'};
+  for(let r=4;r>=0;r--)for(let c=0;c<5;c++){const i=document.createElement('i');i.style.background=col[g[r][c]];i.style.opacity=.4+.12*g[r][c];host.appendChild(i);}
+}
+
+function funnel(){
+  const host=document.getElementById('funnel');
+  [['Lead',58.2,100],['Qualified',41.0,70],['Proposal',28.4,49],['Negotiation',17.1,29],['Won',8.6,15]].forEach(([n,v,w])=>{
+    const d=document.createElement('div');d.className='st';
+    d.innerHTML=`<span class="nm">${n}</span><div class="br" style="width:${w*0.86}%"></div><span class="vv">${v.toFixed(1)}B</span>`;
+    host.appendChild(d);
+  });
+}
+
+function anomalies(){
+  const host=document.getElementById('anomalies');
+  [['HIGH','BUDGET_OVERRUN','PRJ-014','Budget 108% of contract (Rp 3,2B / Rp 3,0B)'],
+   ['HIGH','NCR_CRITICAL_OPEN','','2 CRITICAL NCR(s) not yet closed'],
+   ['MED','ALLOCATION_OVER_100','','3 employee(s) with active allocation >100%'],
+   ['LOW','CLAIMS_DRAFT_BACKLOG','','4 claim(s) still DRAFT — certification needed']].forEach(([sev,type,code,msg])=>{
+    const cls={HIGH:'h',MED:'m',LOW:'l'}[sev];
+    const r=document.createElement('div');r.className='exc';r.style.gridTemplateColumns='58px 176px 1fr';
+    r.innerHTML=`<span class="sev ${cls}"><i class="dot ${cls}"></i>${sev}</span>
+      <span class="dc">${type}${code?' <span class="i34">'+code+'</span>':''}</span>
+      <span class="lb i70">${msg}</span>`;
+    host.appendChild(r);
+  });
+}
+
+function ringBG(){
+  const s=document.getElementById('ring-bg'); if(!s) return;
+  const cx=31,cy=31,r=24,sw=6,circ=2*Math.PI*r,pc=72;
+  s.appendChild(el('circle',{cx,cy,r,fill:'none',stroke:'#f4f4f5','stroke-width':sw}));
+  s.appendChild(el('circle',{cx,cy,r,fill:'none',stroke:'#b45309','stroke-width':sw,'stroke-linecap':'round','stroke-dasharray':`${circ*pc/100} ${circ}`,transform:`rotate(-90 ${cx} ${cy})`}));
+  const t=el('text',{x:cx,y:cy+4,'text-anchor':'middle','font-size':'11','font-family':'IBM Plex Mono, monospace','font-weight':'600',fill:'#18181b'});t.textContent=pc+'%';s.appendChild(t);
+}
+
+kpis(); spark('sp-safety',[7,6,6,5,5,4],C.neg); spark('sp-proc',[9,10.2,11,10.6,12,12.4],C.info); spark('sp-treasury',[8,9.2,8.6,10.1,9.8,10.4],C.info,0);
+cashflow(); scatter(); exceptions(); ledger(); heat(); funnel(); anomalies(); ringBG();
+
+/* ============================================================
+   SIMULASI LIVE — di produksi, ini datang dari SSE change-feed:
+     GET /analytics/stream (text/event-stream, auth Bearer via fetch+ReadableStream)
+     event: {topic, at} → queryClient.invalidateQueries(['analytics-*']) → refetch
+   Di mockup ini kita tiru dengan timer + nilai acak realistis.
+   ============================================================ */
+(function liveSim(){
+  const toasts=document.createElement('div'); toasts.className='toasts'; document.body.appendChild(toasts);
+  let on=true, since=2;
+  const upd=document.getElementById('updated');
+  const ind=document.getElementById('liveind');
+  const btn=document.getElementById('livebtn');
+
+  // nilai dasar tiap KPI + rentang goyangannya
+  const base={
+    'Cash on hand':{v:18240500000,step:120000000,fmt:v=>'Rp '+Math.round(v).toLocaleString('id-ID')},
+    'Net cash flow':{v:420000000,step:8000000,fmt:v=>'+Rp '+Math.round(v).toLocaleString('id-ID')},
+    'Contract backlog':{v:31400000000,step:90000000,fmt:v=>'Rp '+Math.round(v).toLocaleString('id-ID')},
+    'Budget utilisation':{v:68,step:.4,fmt:v=>v.toFixed(0)+'%'},
+    'AR overdue 61+':{v:3100000000,step:-40000000,fmt:v=>'Rp '+Math.round(v).toLocaleString('id-ID')},
+    'DSO':{v:54,step:.3,fmt:v=>v.toFixed(0)+' d'},
+    'Safety · LTI-free':{v:42,step:0,fmt:v=>v.toFixed(0)+' d'},
+    'Manpower today':{v:1240,step:6,fmt:v=>Math.round(v).toLocaleString('id-ID')},
+  };
+
+  function flash(node, up){
+    node.classList.remove('fl-up','fl-dn'); void node.offsetWidth;
+    node.classList.add(up?'fl-up':'fl-dn');
+  }
+  function countUp(node, from, to, fmt){
+    const t0=performance.now(), dur=520;
+    (function step(t){
+      const k=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-k,3);
+      node.textContent=fmt(from+(to-from)*e);
+      if(k<1) requestAnimationFrame(step);
+    })(t0);
+  }
+  function toast(msg){
+    const t=document.createElement('div'); t.className='toast'; t.innerHTML=msg;
+    toasts.appendChild(t); setTimeout(()=>t.remove(), 5200);
+  }
+
+  function tick(){
+    if(!on) return;
+    // pilih 1–2 KPI acak untuk berubah
+    const keys=Object.keys(base);
+    const n=1+Math.floor(Math.random()*2);
+    for(let i=0;i<n;i++){
+      const k=keys[Math.floor(Math.random()*keys.length)];
+      const b=base[k];
+      const node=document.querySelector(`[data-kpi="${k}"]`);
+      if(!node) continue;
+      const from=b.v;
+      b.v += b.step*(Math.random()*1.6-0.5);
+      const to=b.v;
+      const up=to>=from;
+      flash(node, up);
+      countUp(node, from, to, b.fmt);
+    }
+    // kadang: exception baru
+    if(Math.random()<0.4){
+      const cnt=document.getElementById('attn-cnt');
+      const nb=document.getElementById('attn-new');
+      const cur=parseInt(cnt.textContent)||12;
+      cnt.textContent=(cur+1)+' open';
+      nb.textContent='● '+((Math.random()<.5)?'1 baru':'2 baru');
+      nb.classList.add('on');
+      setTimeout(()=>nb.classList.remove('on'), 3000);
+      toast('<b>1 exception baru</b><br>NCR-0051 · Quality · PRJ-011');
+    }
+    since=0;
+  }
+
+  setInterval(()=>{ if(on){ since++; upd.textContent='updated '+since+'s ago'; } }, 1000);
+  setInterval(tick, 3600);
+  setTimeout(tick, 1400);
+
+  btn.addEventListener('click',()=>{
+    on=!on;
+    btn.setAttribute('aria-pressed', String(on));
+    btn.textContent=on?'● Live':'○ Paused';
+    btn.classList.toggle('paused', !on);
+    ind.classList.toggle('paused', !on);
+    ind.lastChild.textContent=on?'LIVE':'PAUSED';
+  });
+  // hemat resource saat tab tersembunyi (di produksi: putus SSE)
+  document.addEventListener('visibilitychange',()=>{
+    if(!on) return;
+    ind.classList.toggle('paused', document.hidden);
+  });
+})();
+</script>
+</body>
+</html>
