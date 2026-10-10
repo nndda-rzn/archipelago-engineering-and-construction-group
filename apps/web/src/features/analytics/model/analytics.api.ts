@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { executiveDashboardSchema, anomalyListSchema, cashFlowSchema, agingSchema, projectCostSummarySchema, pendingApprovalCountSchema, signalListSchema, costCompositionSchema, arConcentrationSchema, forecastVsActualSchema, controlTowerSchema } from '@aec/api-contracts';
+import { executiveDashboardSchema, anomalyListSchema, cashFlowSchema, agingSchema, projectCostSummarySchema, pendingApprovalCountSchema, signalListSchema, costCompositionSchema, arConcentrationSchema, forecastVsActualSchema, controlTowerSchema, trendSeriesSchema, decompositionSchema } from '@aec/api-contracts';
 import { getJson, downloadFile } from '@/shared/lib/http';
 import type { DashboardFilter } from '@/shared/lib/dashboard-period';
 
@@ -12,6 +12,10 @@ export const analyticsKeys = {
   aging: (filter: DashboardFilter = {}) => ['analytics-aging', filter] as const,
   costSummary: ['analytics-cost-summary'] as const,
   pendingApprovals: ['approvals', 'pending-count'] as const,
+  trendSeries: (params: { metric: string; bucket: 'month' | 'quarter' }, filter: DashboardFilter = {}) =>
+    ['analytics-trend-series', params, filter] as const,
+  decomposition: (params: { metric: string; dimension: string; limit?: number }, filter: DashboardFilter = {}) =>
+    ['analytics-decomposition', params, filter] as const,
 };
 
 /** Bangun query string dari filter (entity + rentang tanggal), mengabaikan nilai kosong. */
@@ -124,6 +128,48 @@ export function useControlTower(filter: DashboardFilter = {}) {
     queryKey: ['analytics-control-tower', filter] as const,
     queryFn: async () => controlTowerSchema.parse(await getJson<unknown>(`/analytics/control-tower${filterQuery(filter)}`)),
     refetchInterval: 60_000,
+  });
+}
+
+/** Seri tren satu metrik + overlay periode pembanding (workspace analitis). */
+export function useTrendSeries(
+  params: { metric: string; bucket?: 'month' | 'quarter'; compare?: 'previous' },
+  filter: DashboardFilter = {},
+) {
+  const bucket = params.bucket ?? 'month';
+  return useQuery({
+    queryKey: analyticsKeys.trendSeries({ metric: params.metric, bucket }, filter),
+    queryFn: async () =>
+      trendSeriesSchema.parse(
+        await getJson<unknown>(
+          `/analytics/trend-series${filterQuery(filter, {
+            metric: params.metric,
+            bucket,
+            ...(params.compare ? { compare: params.compare } : {}),
+          })}`,
+        ),
+      ),
+  });
+}
+
+/** Dekomposisi kontribusi satu metrik per dimensi (workspace analitis). */
+export function useDecomposition(
+  params: { metric: string; dimension: string; limit?: number; compare?: 'previous' },
+  filter: DashboardFilter = {},
+) {
+  return useQuery({
+    queryKey: analyticsKeys.decomposition({ metric: params.metric, dimension: params.dimension, limit: params.limit }, filter),
+    queryFn: async () =>
+      decompositionSchema.parse(
+        await getJson<unknown>(
+          `/analytics/decomposition${filterQuery(filter, {
+            metric: params.metric,
+            dimension: params.dimension,
+            ...(params.limit ? { limit: String(params.limit) } : {}),
+            ...(params.compare ? { compare: params.compare } : {}),
+          })}`,
+        ),
+      ),
   });
 }
 

@@ -343,3 +343,60 @@ export const controlTowerSchema = z.object({
   generatedAt: z.string(),
 });
 export type ControlTower = z.infer<typeof controlTowerSchema>;
+
+/* ============================================================================
+   Analytical workspace — seri tren & dekomposisi (FR-ANL-001).
+   Melengkapi Control Tower: `/` menjawab "sekarang", ini menjawab
+   "kenapa berubah & bagaimana trennya". Aditif.
+   ============================================================================ */
+
+export const trendSeriesPointSchema = z.object({ period: z.string(), value: z.number() });
+export type TrendSeriesPoint = z.infer<typeof trendSeriesPointSchema>;
+
+export const trendSeriesSchema = z.object({
+  metric: z.string(),
+  unit: z.string(),
+  bucket: z.enum(['month', 'quarter']),
+  points: z.array(trendSeriesPointSchema),
+  comparePoints: z.array(trendSeriesPointSchema).optional(),
+  total: z.number(),
+  compareTotal: z.number().optional(),
+  delta: z
+    .object({
+      current: z.number(),
+      previous: z.number(),
+      pctChange: z.number().nullable(),
+      direction: z.enum(['up', 'down', 'flat']),
+    })
+    .optional(),
+  generatedAt: z.string(),
+});
+export type TrendSeries = z.infer<typeof trendSeriesSchema>;
+
+export const decompositionItemSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  value: z.number(),
+  share: z.number(),
+  previousValue: z.number().optional(),
+  delta: z
+    .object({
+      current: z.number(),
+      previous: z.number(),
+      pctChange: z.number().nullable(),
+      direction: z.enum(['up', 'down', 'flat']),
+    })
+    .optional(),
+});
+export type DecompositionItem = z.infer<typeof decompositionItemSchema>;
+
+export const decompositionSchema = z.object({
+  metric: z.string(),
+  dimension: z.string(),
+  items: z.array(decompositionItemSchema),
+  total: z.number(),
+  previousTotal: z.number().optional(),
+  others: z.object({ value: z.number(), previousValue: z.number().optional() }),
+  generatedAt: z.string(),
+});
+export type Decomposition = z.infer<typeof decompositionSchema>;
