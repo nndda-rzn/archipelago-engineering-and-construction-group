@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsDateString, IsEnum, IsInt, IsNumber, IsOptional, IsString, Length, Max, MaxLength, Min } from 'class-validator';
+import { PartialType } from '@nestjs/mapped-types';
 
 export class CreateOrganizationDto {
   @IsString()
@@ -23,6 +24,13 @@ export class CreateOrganizationDto {
   @IsOptional()
   @IsDateString()
   effectiveTo?: string;
+}
+
+export class UpdateOrganizationDto extends PartialType(CreateOrganizationDto) {}
+
+export class SetStatusDto {
+  @IsEnum(['ACTIVE', 'INACTIVE'])
+  status!: 'ACTIVE' | 'INACTIVE';
 }
 
 export class CreateDoaRuleDto {
