@@ -43,16 +43,20 @@ export class LegalEntityService {
     const sortBy = query.sortBy;
     const sortDir = query.sortDir ?? 'asc';
     const search = query.search;
+    const status = query.status;
 
-    const where: Prisma.LegalEntityWhereInput = search
-      ? {
-          OR: [
-            { code: { contains: search, mode: 'insensitive' } },
-            { legalName: { contains: search, mode: 'insensitive' } },
-            { taxIdentifier: { contains: search, mode: 'insensitive' } },
-          ],
-        }
-      : {};
+    const where: Prisma.LegalEntityWhereInput = {
+      ...(status ? { status } : {}),
+      ...(search
+        ? {
+            OR: [
+              { code: { contains: search, mode: 'insensitive' } },
+              { legalName: { contains: search, mode: 'insensitive' } },
+              { taxIdentifier: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
 
     const [items, total] = await this.prisma.$transaction([
       this.prisma.legalEntity.findMany({
@@ -64,13 +68,55 @@ export class LegalEntityService {
       this.prisma.legalEntity.count({ where }),
     ]);
 
+    const metrics = await this.metricsFor(items.map((e) => e.id));
+
     return {
-      items,
+      items: items.map((e) => ({ ...e, metrics: metrics.get(e.id) })),
       total,
       page,
       pageSize,
       totalPages: Math.ceil(total / pageSize),
     };
+  }
+
+  /**
+   * Metrik per entity untuk register — satu `groupBy` per relasi untuk SELURUH
+   * halaman sekaligus (bukan per baris). Entity tanpa record tetap dapat nol.
+   */
+  private async metricsFor(ids: string[]): Promise<Map<string, LegalEntityUsage>> {
+    const empty = (): LegalEntityUsage => ({ projects: 0, users: 0, organizations: 0, chartOfAccounts: 0, bankAccounts: 0, periodCloses: 0, employees: 0, equipment: 0, generatedAt: new Date().toISOString() });
+    if (ids.length === 0) return new Map();
+    const where = { legalEntityId: { in: ids } };
+    const orderBy = { legalEntityId: 'asc' as const };
+    const [projects, users, organizations, chartOfAccounts, bankAccounts, periodCloses, employees, equipment] =
+      await this.prisma.$transaction([
+        this.prisma.project.groupBy({ by: ['legalEntityId'], where, orderBy, _count: { _all: true } }),
+        this.prisma.user.groupBy({ by: ['legalEntityId'], where, orderBy, _count: { _all: true } }),
+        this.prisma.organization.groupBy({ by: ['legalEntityId'], where, orderBy, _count: { _all: true } }),
+        this.prisma.chartOfAccount.groupBy({ by: ['legalEntityId'], where, orderBy, _count: { _all: true } }),
+        this.prisma.bankAccount.groupBy({ by: ['legalEntityId'], where, orderBy, _count: { _all: true } }),
+        this.prisma.periodClose.groupBy({ by: ['legalEntityId'], where, orderBy, _count: { _all: true } }),
+        this.prisma.employee.groupBy({ by: ['legalEntityId'], where, orderBy, _count: { _all: true } }),
+        this.prisma.equipment.groupBy({ by: ['legalEntityId'], where, orderBy, _count: { _all: true } }),
+      ]);
+    const map = new Map<string, LegalEntityUsage>(ids.map((id) => [id, empty()]));
+    const apply = (rows: ReadonlyArray<{ legalEntityId: string | null; _count?: { _all?: number | null } | true }>, key: keyof LegalEntityUsage) => {
+      for (const row of rows) {
+        if (!row.legalEntityId) continue;
+        const entry = map.get(row.legalEntityId);
+        const count = row._count && row._count !== true ? (row._count._all ?? 0) : 0;
+        if (entry) (entry[key] as number) = count;
+      }
+    };
+    apply(projects, 'projects');
+    apply(users, 'users');
+    apply(organizations, 'organizations');
+    apply(chartOfAccounts, 'chartOfAccounts');
+    apply(bankAccounts, 'bankAccounts');
+    apply(periodCloses, 'periodCloses');
+    apply(employees, 'employees');
+    apply(equipment, 'equipment');
+    return map;
   }
 
   async findOne(id: string) {

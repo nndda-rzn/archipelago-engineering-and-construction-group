@@ -92,3 +92,28 @@ describe('LegalEntityService lifecycle', () => {
     );
   });
 });
+
+describe('LegalEntityService.findAll', () => {
+  it('filters by status and attaches per-entity metrics without N+1', async () => {
+    const projectGroupBy = jest.fn().mockResolvedValue([{ legalEntityId: 'le1', _count: { _all: 4 } }]);
+    const prisma = {
+      legalEntity: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'le1', code: 'AEC-CON', status: 'ACTIVE' }]),
+        count: jest.fn().mockResolvedValue(1),
+      },
+      project: { groupBy: projectGroupBy },
+      user: { groupBy: jest.fn().mockResolvedValue([]) },
+      organization: { groupBy: jest.fn().mockResolvedValue([]) },
+      chartOfAccount: { groupBy: jest.fn().mockResolvedValue([]) },
+      bankAccount: { groupBy: jest.fn().mockResolvedValue([]) },
+      periodClose: { groupBy: jest.fn().mockResolvedValue([]) },
+      employee: { groupBy: jest.fn().mockResolvedValue([]) },
+      equipment: { groupBy: jest.fn().mockResolvedValue([]) },
+      $transaction: jest.fn((ops: unknown[]) => Promise.all(ops)),
+    } as never;
+    const svc = new LegalEntityService(prisma, { record: jest.fn() } as never);
+    const result = await svc.findAll({ status: 'ACTIVE' } as never);
+    expect(result.items[0]?.metrics?.projects).toBe(4);
+    expect(projectGroupBy).toHaveBeenCalledTimes(1);
+  });
+});

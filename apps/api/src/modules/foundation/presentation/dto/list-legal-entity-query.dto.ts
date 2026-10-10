@@ -27,4 +27,8 @@ export class ListLegalEntityQueryDto {
   @IsString()
   @MaxLength(100)
   search?: string;
+
+  @IsOptional()
+  @IsEnum(['DRAFT', 'PENDING_REVIEW', 'ACTIVE', 'BLOCKED', 'INACTIVE', 'ARCHIVED'])
+  status?: 'DRAFT' | 'PENDING_REVIEW' | 'ACTIVE' | 'BLOCKED' | 'INACTIVE' | 'ARCHIVED';
 }
