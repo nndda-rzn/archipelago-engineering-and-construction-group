@@ -124,7 +124,7 @@ export function ReportingPage() {
               key={side}
               ariaLabel={`Aging ${side}`}
               title={`Aging ${side}`}
-              subtitle={`${side === 'AR' ? 'Receivable' : 'Payable'} · basis ${aging.data?.basisDate ?? 'invoice date'} · total ${formatIdr(total)}`}
+              subtitle={`${side === 'AR' ? 'Receivable' : 'Payable'} · basis ${aging.data?.basisDate ?? 'invoice date'} · total ${formatIdrCompact(total)}`}
               onExport={() => exportAnalytics.aging(filter)}
             >
               <PanelState

@@ -1,6 +1,7 @@
 import { cn } from '@aec/ui';
 import type { AgingBucket } from '@aec/api-contracts';
 import { formatIdr } from '@/shared/lib/format';
+import { Money } from '@/shared/ui/money';
 
 /** Urgensi naik dari CURRENT ke 90+ — warna mengikuti token, teks tetap sinyal utama. */
 const BUCKET_TONE: Record<string, string> = {
@@ -11,6 +12,9 @@ const BUCKET_TONE: Record<string, string> = {
   '90+': 'bg-destructive-600',
 };
 
+/** Lebar minimum bar (persen) agar bucket kecil tetap terlihat saat ada outlier. */
+const MIN_BAR_PCT = 2;
+
 export interface AgingBucketBarsProps {
   buckets: AgingBucket[];
   /** Bucket yang sedang dipilih (untuk drill-down). */
@@ -20,17 +24,20 @@ export interface AgingBucketBarsProps {
 }
 
 /**
- * Baris horizontal per bucket aging — **ranking** umur (bukan pie): panjang relatif
- * terhadap bucket terbesar, jadi "seberapa telat" langsung terbaca. Setiap baris
- * adalah tombol yang membuka daftar invoice di baliknya.
+ * Baris horizontal per bucket aging. Panjang bar = **porsi dari total** (semua bar
+ * berjumlah 100%), bukan relatif ke bucket terbesar — supaya satu invoice outlier
+ * raksasa tidak menghancurkan skala bucket lain. Bucket kecil tetap diberi lebar
+ * minimum agar terbaca. Angka ditampilkan **ringkas** (`Rp 6,25 T`) dengan nominal
+ * penuh di `title`/`aria-label`; sebelumnya `formatIdr` penuh meluap keluar kartu.
  */
 export function AgingBucketBars({ buckets, selected, onSelect, label }: AgingBucketBarsProps) {
-  const max = Math.max(...buckets.map((b) => b.amount), 0);
+  const total = buckets.reduce((s, b) => s + b.amount, 0);
 
   return (
     <ul className="space-y-1">
       {buckets.map((b) => {
-        const pct = max > 0 ? (b.amount / max) * 100 : 0;
+        const share = total > 0 ? (b.amount / total) * 100 : 0;
+        const width = b.amount > 0 ? Math.max(MIN_BAR_PCT, share) : 0;
         const isSelected = selected === b.bucket;
         return (
           <li key={b.bucket}>
@@ -53,11 +60,17 @@ export function AgingBucketBars({ buckets, selected, onSelect, label }: AgingBuc
                 <span
                   data-slot="aging-bucket-fill"
                   className={cn('block h-full rounded-full', BUCKET_TONE[b.bucket] ?? 'bg-neutral-400')}
-                  style={{ width: `${pct}%` }}
+                  style={{ width: `${width}%` }}
                 />
               </span>
-              <span className={cn('w-32 shrink-0 text-right font-mono text-caption tabular-nums', b.amount > 0 ? 'text-neutral-800' : 'text-neutral-400')}>
-                {formatIdr(b.amount)}
+              <span className="flex shrink-0 items-baseline gap-2 whitespace-nowrap">
+                <span className="w-10 text-right font-mono text-caption tabular-nums text-neutral-400">
+                  {b.amount > 0 ? `${share < 10 ? share.toFixed(1) : Math.round(share)}%` : ''}
+                </span>
+                <Money
+                  value={b.amount}
+                  className={cn('text-right font-mono text-caption tabular-nums', b.amount > 0 ? 'text-neutral-800' : 'text-neutral-400')}
+                />
               </span>
             </button>
           </li>

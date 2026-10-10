@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, EmptyState } from '@aec/ui';
 import type { AgingBucket } from '@aec/api-contracts';
-import { formatDate, formatIdr } from '@/shared/lib/format';
+import { formatDate } from '@/shared/lib/format';
+import { Money } from '@/shared/ui/money';
 
 export interface AgingDetailDialogProps {
   open: boolean;
@@ -42,7 +43,7 @@ export function AgingDetailDialog({ open, bucket, buckets, side, onOpenChange }:
           <>
             <p className="mb-2 text-caption text-neutral-500">
               {rows.length} invoice{rows.length === 1 ? '' : 's'} · total{' '}
-              <span className="font-mono tabular-nums text-neutral-700">{formatIdr(total)}</span>
+              <Money value={total} className="font-mono tabular-nums text-neutral-700" />
             </p>
             <div className="max-h-[60vh] overflow-auto">
               <table className="w-full border-collapse text-left text-body-sm">
@@ -65,7 +66,9 @@ export function AgingDetailDialog({ open, bucket, buckets, side, onOpenChange }:
                       <td className="px-2 py-2 font-mono text-caption text-neutral-500">{r.projectCode ?? '—'}</td>
                       <td className="px-2 py-2 text-neutral-600">{formatDate(r.date)}</td>
                       <td className="px-2 py-2 text-right font-mono tabular-nums text-neutral-600">{r.ageDays}d</td>
-                      <td className="px-2 py-2 text-right font-mono tabular-nums text-neutral-900">{formatIdr(r.outstanding)}</td>
+                      <td className="px-2 py-2 text-right font-mono tabular-nums text-neutral-900">
+                        <Money value={r.outstanding} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
