@@ -1,3 +1,4 @@
+export { HardeningTabs, type HardeningTabsProps, type HardeningTab } from './hardening-tabs';
 export { OrgForm, type OrgFormProps } from './org-form';
 export { OrgOutline, type OrgOutlineProps } from './org-outline';
 export { OrgTimeline, type OrgTimelineProps } from './org-timeline';
