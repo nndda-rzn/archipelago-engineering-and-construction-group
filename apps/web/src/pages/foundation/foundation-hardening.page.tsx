@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  useCurrencies, useDoaRules, useExchangeRates, useOrganizations,
+  useCurrencies, useDoaAnalysis, useDoaRules, useExchangeRates, useOrganizations, useSetDoaRuleStatus,
 } from '@/features/foundation-hardening';
 import { useLegalEntities } from '@/entities/legal-entity';
 import { OrgForm, DoaForm, ResolveForm, CurrencyForm } from '@/features/foundation-hardening/ui';
@@ -12,10 +12,15 @@ export function FoundationHardeningPage() {
   const [tab, setTab] = useState<Tab>('org');
   const [entityId, setEntityId] = useState('');
   const [asOf, setAsOf] = useState('');
+  const [doaType, setDoaType] = useState('PurchaseOrder');
+  const [doaEditId, setDoaEditId] = useState<string | null>(null);
+  const [resolvedMarker, setResolvedMarker] = useState<number | null>(null);
 
   const entities = useLegalEntities({ page: 1, pageSize: 100 });
   const orgs = useOrganizations(entityId, asOf || undefined);
   const rules = useDoaRules();
+  const analysis = useDoaAnalysis(doaType);
+  const setRuleStatus = useSetDoaRuleStatus();
   const currencies = useCurrencies();
   const rates = useExchangeRates();
 
@@ -23,6 +28,7 @@ export function FoundationHardeningPage() {
   const currencyItems = (currencies.data?.items ?? []).map((c) => ({ id: c.id, code: c.code, name: c.name, isActive: c.isActive }));
   const rateItems = (rates.data?.items ?? []).map((r) => ({ id: r.id, fromCurrency: r.fromCurrency, toCurrency: r.toCurrency, rateType: r.rateType, rate: r.rate }));
   const ruleItems = rules.data?.items ?? [];
+  const editingRule = ruleItems.find((r) => r.id === doaEditId) ?? null;
 
   return (
     <div>
@@ -46,23 +52,33 @@ export function FoundationHardeningPage() {
       </div>
 
       {tab === 'org' && (
-        <>
-          <OrgSection
-            entityId={entityId}
-            setEntityId={setEntityId}
-            asOf={asOf}
-            setAsOf={setAsOf}
-            entities={entityOptions}
-            orgs={{ isLoading: orgs.isLoading, isError: orgs.isError, onRetry: () => orgs.refetch(), data: orgs.data ?? null }}
-          />
-        </>
+        <OrgSection
+          entityId={entityId}
+          setEntityId={setEntityId}
+          asOf={asOf}
+          setAsOf={setAsOf}
+          entities={entityOptions}
+          orgs={{ isLoading: orgs.isLoading, isError: orgs.isError, onRetry: () => orgs.refetch(), data: orgs.data ?? null }}
+        />
       )}
 
       {tab === 'doa' && (
         <>
-          <DoaForm />
-          <ResolveForm />
-          <DoaSection rules={{ isLoading: rules.isLoading, data: ruleItems }} />
+          <div className="mb-4">
+            <DoaForm editing={editingRule} onDone={() => setDoaEditId(null)} />
+          </div>
+          <div className="mb-4">
+            <ResolveForm onResolved={setResolvedMarker} />
+          </div>
+          <DoaSection
+            transactionType={doaType}
+            setTransactionType={setDoaType}
+            rules={{ isLoading: rules.isLoading, isError: rules.isError, onRetry: () => rules.refetch(), data: ruleItems }}
+            analysis={{ isLoading: analysis.isLoading, data: analysis.data }}
+            resolvedMarker={resolvedMarker}
+            onEditRule={(r) => setDoaEditId(r.id)}
+            onToggleStatus={(r) => setRuleStatus.mutate({ id: r.id, status: r.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}
+          />
         </>
       )}
 
