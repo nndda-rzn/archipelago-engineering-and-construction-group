@@ -30,7 +30,7 @@ export class ProjectAnalyticsService {
       const projectWhere = filter.legalEntityId ? { legalEntityId: filter.legalEntityId } : {};
       const projects = await this.prisma.project.findMany({ where: projectWhere, select: { id: true, code: true, name: true, contractValue: true } });
       const [budgetAgg, vendorInvoiceAgg, clientInvoiceAgg] = await Promise.all([
-        this.prisma.budgetItem.groupBy({ by: ['projectId'], _sum: { amount: true } }),
+        this.prisma.budgetItem.groupBy({ by: ['projectId'], where: { status: 'PUBLISHED' }, _sum: { amount: true } }),
         this.prisma.vendorInvoice.groupBy({ by: ['projectId'], where: { status: 'POSTED' }, _sum: { totalAmount: true } }),
         this.prisma.clientInvoice.groupBy({ by: ['projectId'], where: { status: 'POSTED' }, _sum: { totalAmount: true } }),
       ]);

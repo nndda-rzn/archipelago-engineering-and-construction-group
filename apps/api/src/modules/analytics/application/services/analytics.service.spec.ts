@@ -301,3 +301,23 @@ describe('AnalyticsService trend/decomposition delegation', () => {
   });
 });
 
+describe('AnalyticsService.projectCostSummary budget scope', () => {
+  it('aggregates only PUBLISHED budget items', async () => {
+    const budgetGroupBy = jest.fn().mockResolvedValue([]);
+    const prisma = {
+      project: { findMany: jest.fn().mockResolvedValue([]) },
+      budgetItem: { groupBy: budgetGroupBy },
+      vendorInvoice: { groupBy: jest.fn().mockResolvedValue([]) },
+      clientInvoice: { groupBy: jest.fn().mockResolvedValue([]) },
+    } as never;
+    const cache = { wrap: (_k: string, _t: number, fn: () => Promise<unknown>) => fn() } as never;
+    const svc = makeService(prisma, cache);
+
+    await svc.projectCostSummary({});
+
+    expect(budgetGroupBy).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ status: 'PUBLISHED' }) }),
+    );
+  });
+});
+
