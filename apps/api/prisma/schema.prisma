@@ -22,6 +22,12 @@ enum LegalEntityStatus {
   ARCHIVED
 }
 
+/// Siklus hidup aturan Delegation of Authority (FR-FND-007).
+enum DoaRuleStatus {
+  ACTIVE
+  INACTIVE
+}
+
 // FR-FND-001: Multi-Legal Entity
 model LegalEntity {
   id                 String   @id @default(cuid())
@@ -85,6 +91,7 @@ model Organization {
   users User[]
 
   @@index([legalEntityId])
+  @@index([legalEntityId, effectiveFrom, effectiveTo])
 }
 
 // FR-FND-003: User (employee mapping disederhanakan untuk baseline)
@@ -2403,12 +2410,13 @@ model DoaRule {
   priority         Int          @default(0) // tie-breaker kekhususan
   effectiveFrom    DateTime     @default(now())
   effectiveTo      DateTime?
-  status           String       @default("ACTIVE") // ACTIVE | INACTIVE
+  status           DoaRuleStatus @default(ACTIVE)
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
   @@index([transactionType])
   @@index([status])
+  @@index([transactionType, status])
 }
 
 // FR-FND-011: Currency — transaction/functional/reporting + rate type + historical rate
@@ -2444,6 +2452,7 @@ model ExchangeRate {
   @@index([fromCurrencyId])
   @@index([toCurrencyId])
   @@index([effectiveDate])
+  @@index([fromCurrencyId, toCurrencyId, effectiveDate])
 }
 
 // FR-FND-008: Audit Trail (PRD §28) - immutable audit record
