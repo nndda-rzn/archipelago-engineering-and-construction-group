@@ -33,8 +33,7 @@ export class SetStatusDto {
   status!: 'ACTIVE' | 'INACTIVE';
 }
 
-export class CreateDoaRuleDto {
-  @IsString()
+export class CreateDoaRuleDto {  @IsString()
   @Length(1, 100)
   transactionType!: string;
 
@@ -86,6 +85,8 @@ export class CreateDoaRuleDto {
   @IsInt()
   priority?: number;
 }
+
+export class UpdateDoaRuleDto extends PartialType(CreateDoaRuleDto) {}
 
 export class ResolveDoaDto {
   @IsString()

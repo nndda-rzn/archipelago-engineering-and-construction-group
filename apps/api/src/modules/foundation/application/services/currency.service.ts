@@ -50,6 +50,30 @@ export class CurrencyService {
     return { items, total: items.length };
   }
 
+  /** Riwayat kurs satu pasangan (untuk sparkline tren) — urut naik. */
+  async rateHistory(fromCurrencyId: string, toCurrencyId: string, rateType = 'SPOT') {
+    const rows = await this.prisma.exchangeRate.findMany({
+      where: { fromCurrencyId, toCurrencyId, rateType },
+      orderBy: { effectiveDate: 'asc' },
+      select: { effectiveDate: true, rate: true },
+    });
+    const points = rows
+      .map((r) => ({ effectiveDate: r.effectiveDate.toISOString(), rate: Number(r.rate) }))
+      .sort((a, b) => a.effectiveDate.localeCompare(b.effectiveDate));
+    return { fromCurrencyId, toCurrencyId, rateType, points, generatedAt: new Date().toISOString() };
+  }
+
+  /** Aktif/nonaktif mata uang — compare-and-set, transisi no-op ditolak. */
+  async setCurrencyStatus(id: string, status: 'ACTIVE' | 'INACTIVE', actorId: string) {
+    const currency = await this.prisma.currency.findUnique({ where: { id } });
+    if (!currency) throw new NotFoundException({ code: 'CURRENCY_NOT_FOUND', message: 'Currency not found' });
+    const isActive = status === 'ACTIVE';
+    const { count } = await this.prisma.currency.updateMany({ where: { id, isActive: { not: isActive } }, data: { isActive } });
+    if (count === 0) throw new ConflictException({ code: 'INVALID_STATUS_TRANSITION', message: `Currency is already ${status}` });
+    await this.audit.record({ userId: actorId, action: 'Currency.STATUS', resource: 'Currency', resourceId: id, oldValue: { isActive: currency.isActive }, newValue: { isActive }, source: 'api' });
+    return this.prisma.currency.findUnique({ where: { id } });
+  }
+
   async revalue(amount: number, fromCurrencyCode: string, toCurrencyCode: string, asOf?: string) {
     const asOfDate = asOf ? new Date(asOf) : new Date();
     const from = await this.prisma.currency.findUnique({ where: { code: fromCurrencyCode } });

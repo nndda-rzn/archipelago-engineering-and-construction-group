@@ -1,7 +1,7 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/shared/database/prisma.service';
 import { AuditService } from '@/modules/foundation/application/services/audit.service';
-import type { CreateDoaRuleDto, ResolveDoaDto } from '../../presentation/dto/foundation-hardening.dto';
+import type { CreateDoaRuleDto, ResolveDoaDto, UpdateDoaRuleDto } from '../../presentation/dto/foundation-hardening.dto';
 
 /** Satu aturan sebagai interval nominal. `to` = Infinity bila tak dibatasi. */
 interface Interval {
@@ -110,5 +110,48 @@ export class DoaService {
       resolved: resolved ? { ruleId: resolved.id, approverLevel: resolved.approverLevel, approverRoleCode: resolved.approverRoleCode, approvalMode: resolved.approvalMode, priority: resolved.priority } : null,
       generatedAt: new Date().toISOString(),
     };
+  }
+
+  async findOne(id: string) {
+    const rule = await this.prisma.doaRule.findUnique({ where: { id } });
+    if (!rule) throw new NotFoundException({ code: 'DOA_RULE_NOT_FOUND', message: 'DoA rule not found' });
+    return rule;
+  }
+
+  async updateDoaRule(id: string, dto: UpdateDoaRuleDto, actorId: string) {
+    const before = await this.findOne(id);
+    const rule = await this.prisma.doaRule.update({
+      where: { id },
+      data: {
+        ...(dto.transactionType !== undefined ? { transactionType: dto.transactionType } : {}),
+        ...(dto.legalEntityId !== undefined ? { legalEntityId: dto.legalEntityId || null } : {}),
+        ...(dto.businessUnit !== undefined ? { businessUnit: dto.businessUnit || null } : {}),
+        ...(dto.projectId !== undefined ? { projectId: dto.projectId || null } : {}),
+        ...(dto.currencyCode !== undefined ? { currencyCode: dto.currencyCode || null } : {}),
+        ...(dto.amountFrom !== undefined ? { amountFrom: dto.amountFrom } : {}),
+        ...(dto.amountTo !== undefined ? { amountTo: dto.amountTo } : {}),
+        ...(dto.riskLevel !== undefined ? { riskLevel: dto.riskLevel || null } : {}),
+        ...(dto.approverLevel !== undefined ? { approverLevel: dto.approverLevel } : {}),
+        ...(dto.approverRoleCode !== undefined ? { approverRoleCode: dto.approverRoleCode || null } : {}),
+        ...(dto.approvalMode !== undefined ? { approvalMode: dto.approvalMode } : {}),
+        ...(dto.priority !== undefined ? { priority: dto.priority } : {}),
+      },
+    });
+    await this.audit.record({
+      userId: actorId, action: 'DoaRule.UPDATE', resource: 'DoaRule', resourceId: id,
+      oldValue: { approverLevel: before.approverLevel, amountFrom: before.amountFrom, amountTo: before.amountTo },
+      newValue: { approverLevel: rule.approverLevel, amountFrom: rule.amountFrom, amountTo: rule.amountTo },
+      source: 'api',
+    });
+    return rule;
+  }
+
+  /** Aktif/nonaktif aturan DoA — compare-and-set, transisi no-op ditolak. */
+  async setStatus(id: string, status: 'ACTIVE' | 'INACTIVE', actorId: string) {
+    const before = await this.findOne(id);
+    const { count } = await this.prisma.doaRule.updateMany({ where: { id, status: { not: status } }, data: { status } });
+    if (count === 0) throw new ConflictException({ code: 'INVALID_STATUS_TRANSITION', message: `Rule is already ${status}` });
+    await this.audit.record({ userId: actorId, action: 'DoaRule.STATUS', resource: 'DoaRule', resourceId: id, oldValue: { status: before.status }, newValue: { status }, source: 'api' });
+    return this.findOne(id);
   }
 }
