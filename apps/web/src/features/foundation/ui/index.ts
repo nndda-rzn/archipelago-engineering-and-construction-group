@@ -1,4 +1,6 @@
-export { userColumns } from './user-grid';
+export { UserList } from './user-list';
+export { UserDetailPanel } from './user-detail-panel';
+export { PermissionMatrix } from './permission-matrix';
 export { UserForm } from './user-form';
 export { LegalEntityForm } from './legal-entity-form';
 export { LegalEntityListToolbar, LegalEntityListToolbarView, useLegalEntityListFilters } from './legal-entity-list-toolbar';
