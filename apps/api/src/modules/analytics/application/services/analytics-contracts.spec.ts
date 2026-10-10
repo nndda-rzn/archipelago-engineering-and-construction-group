@@ -1,4 +1,4 @@
-import { trendSeriesSchema, decompositionSchema } from '@aec/api-contracts';
+import { trendSeriesSchema, decompositionSchema, cashFlowSchema, agingSchema } from '@aec/api-contracts';
 
 /**
  * Kontrak trend-series & decomposition diparse di sini karena
@@ -30,5 +30,44 @@ describe('analytics contracts', () => {
       generatedAt: new Date().toISOString(),
     });
     expect(parsed.others.value).toBe(15);
+  });
+
+  it('parses cash flow with an optional period delta', () => {
+    const base = {
+      series: [{ month: '2026-01', cashIn: 100, cashOut: 40, net: 60 }],
+      totalCashIn: 100,
+      totalCashOut: 40,
+      netCash: 60,
+      generatedAt: new Date().toISOString(),
+    };
+    const delta = { current: 100, previous: 80, pctChange: 25, direction: 'up' as const };
+    const withDelta = cashFlowSchema.parse({
+      ...base,
+      delta: { totalCashIn: delta, totalCashOut: delta, netCash: delta },
+    });
+    expect(withDelta.delta?.netCash.pctChange).toBe(25);
+    // Tanpa delta tetap valid (klien lama).
+    expect(cashFlowSchema.parse(base).delta).toBeUndefined();
+  });
+
+  it('parses aging with overdue totals and a period delta', () => {
+    const bucket = (b: string) => ({ bucket: b, amount: 0, detail: [] });
+    const parsed = agingSchema.parse({
+      ar: [bucket('CURRENT')],
+      ap: [bucket('CURRENT')],
+      arOverdue: 500,
+      apOverdue: 200,
+      delta: {
+        ar: { current: 500, previous: 400, pctChange: 25, direction: 'up' },
+        ap: { current: 200, previous: 200, pctChange: 0, direction: 'flat' },
+        arOverdue: { current: 500, previous: 400, pctChange: 25, direction: 'up' },
+        apOverdue: { current: 200, previous: 200, pctChange: 0, direction: 'flat' },
+      },
+      asOf: new Date().toISOString(),
+      basisDate: 'invoiceDate',
+      generatedAt: new Date().toISOString(),
+    });
+    expect(parsed.arOverdue).toBe(500);
+    expect(parsed.delta?.ap.direction).toBe('flat');
   });
 });

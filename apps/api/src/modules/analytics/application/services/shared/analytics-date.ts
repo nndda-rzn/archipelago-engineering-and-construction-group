@@ -1,4 +1,28 @@
 import { monthKeyUtc } from '@/shared/utils/month-key';
+import { resolveDateRange } from '@/shared/utils/date-range';
+
+/**
+ * Batas periode pembanding ("sebelumnya"). Bila filter punya rentang eksplisit,
+ * geser mundur sepanjang rentang itu; tanpa rentang → bulan kalender sebelumnya.
+ * Satu sumber agar executive, cash flow, dan aging membandingkan dengan periode
+ * yang sama persis.
+ */
+export function previousPeriodBounds(
+  filter: { from?: string; to?: string },
+  now: Date = new Date(),
+): { from: Date; to: Date } {
+  const { from, to } = resolveDateRange(filter.from, filter.to);
+  if (from && to) {
+    const spanMs = to.getTime() - from.getTime();
+    const prevTo = new Date(from.getTime() - 1);
+    const prevFrom = new Date(prevTo.getTime() - spanMs);
+    return { from: prevFrom, to: prevTo };
+  }
+  const base = to ?? now;
+  const prevTo = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), 0));
+  const prevFrom = new Date(Date.UTC(prevTo.getUTCFullYear(), prevTo.getUTCMonth(), 1));
+  return { from: prevFrom, to: prevTo };
+}
 
 /** N bulan terakhir (termasuk bulan berjalan), urut lama → baru. */
 export function lastNMonthsUtc(n: number, now = new Date()): string[] {

@@ -17,6 +17,19 @@ export const executiveTrendSchema = z.object({
 });
 export type ExecutiveTrend = z.infer<typeof executiveTrendSchema>;
 
+/**
+ * Delta satu metrik periode ini vs periode sebelumnya. `pctChange` null bila
+ * pembanding 0 (tidak ada dasar persentase). Satu bentuk dipakai lintas laporan
+ * (executive, cash flow, aging) agar badge tren di UI konsisten.
+ */
+export const metricDeltaSchema = z.object({
+  current: z.number(),
+  previous: z.number(),
+  pctChange: z.number().nullable(),
+  direction: z.enum(['up', 'down', 'flat']),
+});
+export type MetricDelta = z.infer<typeof metricDeltaSchema>;
+
 export const executiveDashboardSchema = z.object({
   projects: z.object({
     total: z.number(),
@@ -40,12 +53,7 @@ export const executiveDashboardSchema = z.object({
   }),
   /** Seri 6 bulan per metrik — untuk sparkline. Aditif & opsional (klien lama tetap valid). */
   trend: executiveTrendSchema.optional(),
-  delta: z.record(z.string(), z.object({
-    current: z.number(),
-    previous: z.number(),
-    pctChange: z.number().nullable(),
-    direction: z.enum(['up', 'down', 'flat']),
-  })).optional(),
+  delta: z.record(z.string(), metricDeltaSchema).optional(),
   generatedAt: z.string(),
 });
 export type ExecutiveDashboard = z.infer<typeof executiveDashboardSchema>;
@@ -78,6 +86,14 @@ export const cashFlowSchema = z.object({
   totalCashIn: z.number(),
   totalCashOut: z.number(),
   netCash: z.number(),
+  /** Perbandingan periode sebelumnya (aditif & opsional — klien lama tetap valid). */
+  delta: z
+    .object({
+      totalCashIn: metricDeltaSchema,
+      totalCashOut: metricDeltaSchema,
+      netCash: metricDeltaSchema,
+    })
+    .optional(),
   generatedAt: z.string(),
 });
 export type CashFlow = z.infer<typeof cashFlowSchema>;
@@ -104,6 +120,18 @@ export type AgingBucket = z.infer<typeof agingBucketSchema>;
 export const agingSchema = z.object({
   ar: z.array(agingBucketSchema),
   ap: z.array(agingBucketSchema),
+  /** Total AR/AP yang lewat jatuh tempo (bucket selain CURRENT). Aditif & opsional. */
+  arOverdue: z.number().optional(),
+  apOverdue: z.number().optional(),
+  /** Perbandingan periode sebelumnya (aditif & opsional — klien lama tetap valid). */
+  delta: z
+    .object({
+      ar: metricDeltaSchema,
+      ap: metricDeltaSchema,
+      arOverdue: metricDeltaSchema,
+      apOverdue: metricDeltaSchema,
+    })
+    .optional(),
   /** Tanggal acuan perhitungan umur. */
   asOf: z.string(),
   /** Field yang dipakai sebagai basis umur (sama untuk AR & AP). */

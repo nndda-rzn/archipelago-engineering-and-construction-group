@@ -1,13 +1,23 @@
 import { useState } from 'react';
 import { Download } from 'lucide-react';
-import { Button, EmptyState, ErrorState, Skeleton } from '@aec/ui';
+import { Button, DeltaBadge, EmptyState, ErrorState, Skeleton } from '@aec/ui';
 
 /** Angka besar tanpa bingkai — satu nilai = angka, bukan chart (`ux-designer/18`). */
-export function Headline({ label, value, tone, context }: { label: string; value: string; tone?: string; context?: string }) {
+export function Headline({ label, value, tone, context, delta }: {
+  label: string;
+  value: string;
+  tone?: string;
+  context?: string;
+  /** Perbandingan periode sebelumnya (opsional). Ditampilkan sebagai badge tren. */
+  delta?: { pctChange: number | null; direction: 'up' | 'down' | 'flat' };
+}) {
   return (
     <div>
       <p className="text-overline uppercase text-neutral-500">{label}</p>
-      <p className={`mt-0.5 font-mono tabular-nums text-h1 ${tone ?? 'text-neutral-950'}`}>{value}</p>
+      <div className="mt-0.5 flex items-baseline gap-2">
+        <p className={`font-mono tabular-nums text-h1 ${tone ?? 'text-neutral-950'}`}>{value}</p>
+        {delta && <DeltaBadge pct={delta.pctChange} direction={delta.direction} />}
+      </div>
       {context && <p className="text-caption text-neutral-500">{context}</p>}
     </div>
   );

@@ -58,22 +58,24 @@ export function useAnomalies() {
   });
 }
 
-export function useCashFlow(filter: DashboardFilter = {}) {
+export function useCashFlow(filter: DashboardFilter = {}, opts?: { compare?: 'previous' }) {
+  const compare = opts?.compare;
   return useQuery({
-    queryKey: analyticsKeys.cashFlow(filter),
+    queryKey: [...analyticsKeys.cashFlow(filter), compare ?? null] as const,
     queryFn: async () => {
-      const data = await getJson<unknown>(`/analytics/cash-flow${filterQuery(filter)}`);
+      const data = await getJson<unknown>(`/analytics/cash-flow${filterQuery(filter, compare ? { compare } : undefined)}`);
       return cashFlowSchema.parse(data);
     },
   });
 }
 
-export function useAging(filter: DashboardFilter = {}) {
+export function useAging(filter: DashboardFilter = {}, opts?: { compare?: 'previous' }) {
+  const compare = opts?.compare;
   return useQuery({
-    queryKey: analyticsKeys.aging(filter),
+    queryKey: [...analyticsKeys.aging(filter), compare ?? null] as const,
     queryFn: async () => {
       // Aging menghormati entity DAN rentang tanggal (basis `invoiceDate`).
-      const data = await getJson<unknown>(`/analytics/aging${filterQuery(filter)}`);
+      const data = await getJson<unknown>(`/analytics/aging${filterQuery(filter, compare ? { compare } : undefined)}`);
       return agingSchema.parse(data);
     },
   });

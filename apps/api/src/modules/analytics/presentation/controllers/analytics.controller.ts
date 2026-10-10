@@ -36,14 +36,14 @@ export class AnalyticsController {
 
   @Get('cash-flow')
   @Permissions(Permission.AnalyticsView)
-  cashFlow(@Query() query: AnalyticsFilterParams) {
-    return this.analytics.cashFlow(query);
+  cashFlow(@Query() query: AnalyticsFilterParams, @Query('compare') compare?: string) {
+    return this.analytics.cashFlow(query, compare === 'previous' ? 'previous' : undefined);
   }
 
   @Get('aging')
   @Permissions(Permission.AnalyticsView)
-  aging(@Query() query: AnalyticsFilterParams) {
-    return this.analytics.aging(query);
+  aging(@Query() query: AnalyticsFilterParams, @Query('compare') compare?: string) {
+    return this.analytics.aging(query, compare === 'previous' ? 'previous' : undefined);
   }
 
   @Get('project-cost-summary')
