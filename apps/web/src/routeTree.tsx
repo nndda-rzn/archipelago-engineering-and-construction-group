@@ -46,6 +46,13 @@ const legalEntitiesRoute = createRoute({
   component: lazyRouteComponent(() => import('./pages/foundation/legal-entity-list.page'), 'LegalEntityListPage'),
 });
 
+const legalEntityDetailRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: '/foundation/legal-entities/$entityId',
+  beforeLoad: requirePermission(Permission.LegalEntityView),
+  component: lazyRouteComponent(() => import('./pages/foundation/legal-entity-detail.page'), 'LegalEntityDetailPage'),
+});
+
 const foundationHardeningRoute = createRoute({
   getParentRoute: () => appRoute,
   path: '/foundation/hardening',
@@ -413,5 +420,5 @@ const forbiddenRoute = createRoute({
 
 export const routeTree = rootRoute.addChildren([
   loginRoute,
-  appRoute.addChildren([forbiddenRoute, indexRoute, legalEntitiesRoute, foundationHardeningRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, projectDetailRoute, wbsRoute, budgetRoute, projectHealthRoute, projectControlsRoute, prRoute, poRoute, rfqRoute, procurementHardeningRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, workflowRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, financeClosureRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute, variationRoute, subcontractRoute, workPackagesRoute, dailyReportsRoute, commissioningRoute, handoverRoute, employeesRoute, timesheetsRoute, equipmentRoute, payrollRoute, hseRoute, qualityRoute, governanceRoute, analyticsRoute, reportingRoute, commercialRoute, tenderRoute, engineeringRoute, masterDataRoute, treasuryRoute]),
+  appRoute.addChildren([forbiddenRoute, indexRoute, legalEntitiesRoute, legalEntityDetailRoute, foundationHardeningRoute, usersRoute, rolesRoute, auditRoute, projectsRoute, projectDetailRoute, wbsRoute, budgetRoute, projectHealthRoute, projectControlsRoute, prRoute, poRoute, rfqRoute, procurementHardeningRoute, grRoute, stockLedgerRoute, materialIssueRoute, stockAdjustmentRoute, stockOpnameRoute, stockTransferRoute, approvalRoute, workflowRoute, vendorInvoiceRoute, paymentRoute, chartOfAccountRoute, journalRoute, trialBalanceRoute, financeClosureRoute, progressClaimRoute, clientInvoiceRoute, collectionRoute, variationRoute, subcontractRoute, workPackagesRoute, dailyReportsRoute, commissioningRoute, handoverRoute, employeesRoute, timesheetsRoute, equipmentRoute, payrollRoute, hseRoute, qualityRoute, governanceRoute, analyticsRoute, reportingRoute, commercialRoute, tenderRoute, engineeringRoute, masterDataRoute, treasuryRoute]),
 ]);
