@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { SignalChip, BulletBar, MiniStackedBar, StackedBar } from '@aec/ui';
+import { SignalChip, BulletBar, MiniStackedBar, StackedBar, ScaleBar } from '@aec/ui';
 
 describe('SignalChip', () => {
   it('renders count, label and context with a hidden severity dot', () => {
@@ -63,5 +63,44 @@ describe('MiniStackedBar', () => {
   it('exposes both segments in the accessible label', () => {
     render(<MiniStackedBar primary={80} secondary={20} label="Budget vs Actual" />);
     expect(screen.getByRole('img', { name: /Budget vs Actual: 80 \/ 20/ })).toBeTruthy();
+  });
+});
+
+describe('ScaleBar', () => {
+  it('exposes an accessible label with the percentage', () => {
+    render(<ScaleBar value={68} max={100} label="Contribution" />);
+    expect(screen.getByRole('img', { name: /Contribution: 68%/ })).toBeTruthy();
+  });
+
+  it('clamps the fill to 100% when value exceeds max', () => {
+    render(<ScaleBar value={150} max={100} label="Usage" />);
+    expect(screen.getByRole('img', { name: /Usage: 100%/ })).toBeTruthy();
+  });
+
+  it('treats a zero max as an empty bar (no division by zero)', () => {
+    render(<ScaleBar value={10} max={0} label="Empty" />);
+    expect(screen.getByRole('img', { name: /Empty: 0%/ })).toBeTruthy();
+  });
+
+  it('renders the fill as a gradient (a scale, not a flat colour)', () => {
+    const { container } = render(<ScaleBar value={50} max={100} label="Gradient" />);
+    const fill = container.querySelector('[data-slot="scale-fill"]') as HTMLElement;
+    expect(fill.style.background).toContain('gradient');
+  });
+
+  it('changes the gradient stops by sign tone', () => {
+    const { container: pos } = render(<ScaleBar value={80} max={100} label="Up" tone="positive" />);
+    const { container: neg } = render(<ScaleBar value={80} max={100} label="Down" tone="negative" />);
+    const posFill = pos.querySelector('[data-slot="scale-fill"]') as HTMLElement;
+    const negFill = neg.querySelector('[data-slot="scale-fill"]') as HTMLElement;
+    expect(posFill.style.background).not.toBe(negFill.style.background);
+    expect(posFill.style.background).toContain('success');
+    expect(negFill.style.background).toContain('destructive');
+  });
+
+  it('defaults to a neutral gradient', () => {
+    const { container } = render(<ScaleBar value={50} max={100} label="Neutral" />);
+    const fill = container.querySelector('[data-slot="scale-fill"]') as HTMLElement;
+    expect(fill.style.background).toContain('neutral');
   });
 });

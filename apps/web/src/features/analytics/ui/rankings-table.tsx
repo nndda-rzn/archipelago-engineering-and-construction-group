@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { DataGrid, EmptyState, ErrorState, TableSkeleton } from '@aec/ui';
 import type { Decomposition } from '@aec/api-contracts';
-import { formatIdr } from '@/shared/lib/format';
+import { Money } from '@/shared/ui/money';
 import { useDecomposition } from '../model/analytics.api';
 import type { DashboardFilter } from '@/shared/lib/dashboard-period';
 
@@ -73,7 +73,7 @@ export function RankingsTableView({ title, dimension, data, isLoading, isError, 
       size: 160,
       meta: { align: 'right' as const, nowrap: true },
       cell: ({ row }: { row: { original: Decomposition['items'][number] } }) => (
-        <span className="font-mono tabular-nums text-neutral-700">{formatIdr(row.original.value)}</span>
+        <Money value={row.original.value} className="font-mono tabular-nums text-neutral-700" />
       ),
     },
     {
