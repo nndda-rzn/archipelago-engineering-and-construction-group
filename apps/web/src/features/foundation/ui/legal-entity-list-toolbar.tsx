@@ -58,10 +58,15 @@ export function useLegalEntityListFilters(): {
 export function LegalEntityListToolbar({ onAdd }: { onAdd: () => void }) {
   const { search, status, setSearch, setStatus } = useLegalEntityListFilters();
   const [local, setLocal] = useState(search);
+  const [lastUrlSearch, setLastUrlSearch] = useState(search);
 
-  useEffect(() => {
+  // Sinkronkan input ketika URL berubah dari luar (back/forward) — pola
+  // "adjust state during render" dari React, bukan effect (menghindari
+  // cascading render).
+  if (search !== lastUrlSearch) {
+    setLastUrlSearch(search);
     setLocal(search);
-  }, [search]);
+  }
 
   useEffect(() => {
     if (local === search) return;

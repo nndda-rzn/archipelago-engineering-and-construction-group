@@ -24,7 +24,8 @@ export type StatusKey =
   | 'FUTURE' | 'CLOSED'
   | 'POTENTIAL' | 'MATCHED'
   | 'HIGH' | 'MEDIUM' | 'LOW'
-  | 'PAID';
+  | 'PAID'
+  | 'BLOCKED';
 
 interface StatusMeta {
   label?: string;
@@ -45,6 +46,7 @@ export const statusMeta: Record<StatusKey, StatusMeta> = {
   PENDING: { label: 'Pending', variant: 'warning', icon: Clock },
   ACTIVE: { label: 'Active', variant: 'success', icon: CheckCircle2 },
   INACTIVE: { label: 'Inactive', variant: 'muted', icon: CircleDashed },
+  BLOCKED: { label: 'Blocked', variant: 'warning', icon: Ban },
   PLANNING: { label: 'Planning', variant: 'info', icon: Clock },
   ON_HOLD: { label: 'On Hold', variant: 'warning', icon: Clock },
   ARCHIVED: { label: 'Archived', variant: 'muted', icon: Ban },
