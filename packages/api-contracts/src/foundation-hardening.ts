@@ -22,6 +22,18 @@ export const createOrganizationSchema = z.object({
 });
 export type CreateOrganization = z.infer<typeof createOrganizationSchema>;
 
+export const updateOrganizationSchema = createOrganizationSchema.partial();
+export type UpdateOrganization = z.infer<typeof updateOrganizationSchema>;
+
+/** Node pohon organisasi — rekursif (bentuk yang dikembalikan `buildTree`). */
+export type OrganizationNode = { item: Organization; children: OrganizationNode[] };
+export const organizationNodeSchema: z.ZodType<OrganizationNode> = z.lazy(() =>
+  z.object({ item: organizationSchema, children: z.array(organizationNodeSchema) }),
+);
+
+export const setStatusSchema = z.object({ status: z.enum(['ACTIVE', 'INACTIVE']) });
+export type SetStatus = z.infer<typeof setStatusSchema>;
+
 export const doaRuleSchema = z.object({
   id: z.string(),
   transactionType: z.string(),
@@ -82,6 +94,33 @@ export const resolveDoaInputSchema = z.object({
 });
 export type ResolveDoaInput = z.infer<typeof resolveDoaInputSchema>;
 
+export const updateDoaRuleSchema = createDoaRuleSchema.partial();
+export type UpdateDoaRule = z.infer<typeof updateDoaRuleSchema>;
+
+/** Sepasang aturan yang rentang nominalnya saling menimpa. `to` null = tak terbatas. */
+export const doaOverlapSchema = z.object({
+  aId: z.string(),
+  bId: z.string(),
+  from: z.number(),
+  to: z.number().nullable(),
+});
+export type DoaOverlap = z.infer<typeof doaOverlapSchema>;
+
+/** Celah nominal yang tidak ditutup aturan mana pun. `to` null = tak terbatas. */
+export const doaGapSchema = z.object({
+  from: z.number(),
+  to: z.number().nullable(),
+});
+export type DoaGap = z.infer<typeof doaGapSchema>;
+
+export const doaAnalysisSchema = z.object({
+  transactionType: z.string(),
+  overlaps: z.array(doaOverlapSchema),
+  gaps: z.array(doaGapSchema),
+  generatedAt: z.string(),
+});
+export type DoaAnalysis = z.infer<typeof doaAnalysisSchema>;
+
 export const currencySchema = z.object({
   id: z.string(),
   code: z.string(),
@@ -120,6 +159,18 @@ export const createExchangeRateSchema = z.object({
   effectiveDate: z.string().optional(),
 });
 export type CreateExchangeRate = z.infer<typeof createExchangeRateSchema>;
+
+export const rateHistoryPointSchema = z.object({ effectiveDate: z.string(), rate: z.number() });
+export type RateHistoryPoint = z.infer<typeof rateHistoryPointSchema>;
+
+export const rateHistorySchema = z.object({
+  fromCurrencyId: z.string(),
+  toCurrencyId: z.string(),
+  rateType: z.string(),
+  points: z.array(rateHistoryPointSchema),
+  generatedAt: z.string(),
+});
+export type RateHistory = z.infer<typeof rateHistorySchema>;
 
 export const revalueSchema = z.object({
   from: z.string(),

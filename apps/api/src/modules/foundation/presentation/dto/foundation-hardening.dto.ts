@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsDateString, IsEnum, IsInt, IsNumber, IsOptional, IsString, Length, Max, MaxLength, Min } from 'class-validator';
+import { PartialType } from '@nestjs/mapped-types';
 
 export class CreateOrganizationDto {
   @IsString()
@@ -25,8 +26,14 @@ export class CreateOrganizationDto {
   effectiveTo?: string;
 }
 
-export class CreateDoaRuleDto {
-  @IsString()
+export class UpdateOrganizationDto extends PartialType(CreateOrganizationDto) {}
+
+export class SetStatusDto {
+  @IsEnum(['ACTIVE', 'INACTIVE'])
+  status!: 'ACTIVE' | 'INACTIVE';
+}
+
+export class CreateDoaRuleDto {  @IsString()
   @Length(1, 100)
   transactionType!: string;
 
@@ -78,6 +85,8 @@ export class CreateDoaRuleDto {
   @IsInt()
   priority?: number;
 }
+
+export class UpdateDoaRuleDto extends PartialType(CreateDoaRuleDto) {}
 
 export class ResolveDoaDto {
   @IsString()
