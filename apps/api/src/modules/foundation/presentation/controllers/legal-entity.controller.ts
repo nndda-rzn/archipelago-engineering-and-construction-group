@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
@@ -25,21 +25,33 @@ export class LegalEntityController {
     return this.service.findOne(id);
   }
 
+  @Get(':id/usage')
+  @Permissions(Permission.LegalEntityView)
+  usage(@Param('id') id: string) {
+    return this.service.usage(id);
+  }
+
   @Post()
   @Permissions(Permission.LegalEntityCreate)
-  create(@Body() dto: CreateLegalEntityDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreateLegalEntityDto, @Req() request: { user?: { sub?: string } }) {
+    return this.service.create(dto, request.user?.sub ?? 'system');
   }
 
   @Patch(':id')
   @Permissions(Permission.LegalEntityEdit)
-  update(@Param('id') id: string, @Body() dto: UpdateLegalEntityDto) {
-    return this.service.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateLegalEntityDto, @Req() request: { user?: { sub?: string } }) {
+    return this.service.update(id, dto, request.user?.sub ?? 'system');
   }
 
   @Post(':id/block')
   @Permissions(Permission.LegalEntityBlock)
-  block(@Param('id') id: string) {
-    return this.service.block(id);
+  block(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
+    return this.service.block(id, request.user?.sub ?? 'system');
+  }
+
+  @Post(':id/unblock')
+  @Permissions(Permission.LegalEntityBlock)
+  unblock(@Param('id') id: string, @Req() request: { user?: { sub?: string } }) {
+    return this.service.unblock(id, request.user?.sub ?? 'system');
   }
 }

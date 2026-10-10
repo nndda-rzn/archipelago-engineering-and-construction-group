@@ -79,9 +79,14 @@ export class LegalEntityService {
     return entity;
   }
 
-  async create(dto: CreateLegalEntityDto) {
+  async create(dto: CreateLegalEntityDto, actorId: string) {
     try {
-      return await this.prisma.legalEntity.create({ data: dto });
+      const entity = await this.prisma.legalEntity.create({ data: dto });
+      await this.audit.record({
+        userId: actorId, action: 'LEGAL_ENTITY.CREATE', resource: 'LegalEntity', resourceId: entity.id,
+        newValue: { code: entity.code, legalName: entity.legalName }, source: 'api',
+      });
+      return entity;
     } catch (error) {
       if (this.isUniqueError(error)) {
         throw new ConflictException({ code: 'LEGAL_ENTITY_EXISTS', message: 'Code or tax identifier is already in use' });
@@ -90,10 +95,17 @@ export class LegalEntityService {
     }
   }
 
-  async update(id: string, dto: UpdateLegalEntityDto) {
-    await this.findOne(id);
+  async update(id: string, dto: UpdateLegalEntityDto, actorId: string) {
+    const before = await this.findOne(id);
     try {
-      return await this.prisma.legalEntity.update({ where: { id }, data: dto });
+      const entity = await this.prisma.legalEntity.update({ where: { id }, data: dto });
+      await this.audit.record({
+        userId: actorId, action: 'LEGAL_ENTITY.UPDATE', resource: 'LegalEntity', resourceId: id,
+        oldValue: { legalName: before.legalName, functionalCurrency: before.functionalCurrency, reportingCurrency: before.reportingCurrency, fiscalCalendar: before.fiscalCalendar },
+        newValue: { legalName: entity.legalName, functionalCurrency: entity.functionalCurrency, reportingCurrency: entity.reportingCurrency, fiscalCalendar: entity.fiscalCalendar },
+        source: 'api',
+      });
+      return entity;
     } catch (error) {
       if (this.isUniqueError(error)) {
         throw new ConflictException({ code: 'LEGAL_ENTITY_EXISTS', message: 'Code or tax identifier is already in use' });
@@ -102,9 +114,45 @@ export class LegalEntityService {
     }
   }
 
-  async block(id: string) {
-    await this.findOne(id);
-    return this.prisma.legalEntity.update({ where: { id }, data: { status: 'BLOCKED' } });
+  /**
+   * Blokir entity — compare-and-set. Klik ganda tidak menghasilkan transisi
+   * kedua (count 0) sehingga tidak ada audit ganda. Respons menyertakan `usage`
+   * supaya UI bisa menunjukkan dampaknya.
+   */
+  async block(id: string, actorId: string) {
+    const before = await this.findOne(id);
+    const { count } = await this.prisma.legalEntity.updateMany({
+      where: { id, status: { not: 'BLOCKED' } },
+      data: { status: 'BLOCKED' },
+    });
+    if (count > 0) {
+      await this.audit.record({
+        userId: actorId, action: 'LEGAL_ENTITY.BLOCK', resource: 'LegalEntity', resourceId: id,
+        oldValue: { status: before.status }, newValue: { status: 'BLOCKED' }, source: 'api',
+      });
+    }
+    const entity = await this.prisma.legalEntity.findFirst({ where: { id } });
+    return { ...entity, usage: await this.usage(id) };
+  }
+
+  /** Aktifkan kembali entity yang sedang BLOCKED — compare-and-set simetris. */
+  async unblock(id: string, actorId: string) {
+    const before = await this.findOne(id);
+    if (before.status !== 'BLOCKED') {
+      throw new ConflictException({ code: 'INVALID_STATUS_TRANSITION', message: 'Only a BLOCKED entity can be activated' });
+    }
+    const { count } = await this.prisma.legalEntity.updateMany({
+      where: { id, status: 'BLOCKED' },
+      data: { status: 'ACTIVE' },
+    });
+    if (count > 0) {
+      await this.audit.record({
+        userId: actorId, action: 'LEGAL_ENTITY.UNBLOCK', resource: 'LegalEntity', resourceId: id,
+        oldValue: { status: 'BLOCKED' }, newValue: { status: 'ACTIVE' }, source: 'api',
+      });
+    }
+    const entity = await this.prisma.legalEntity.findFirst({ where: { id } });
+    return { ...entity, usage: await this.usage(id) };
   }
 
   private isUniqueError(error: unknown): error is { code: string } {
