@@ -38,8 +38,25 @@ describe('OrganizationService.updateOrganization', () => {
   });
 });
 
-describe('OrganizationService.setStatus', () => {
-  it('rejects a no-op transition with 409 INVALID_STATUS_TRANSITION', async () => {
+describe('OrganizationService.listOrganizations', () => {
+  it('surfaces a unit whose parent was filtered out by asOf as a root (never vanishes)', async () => {
+    const prisma = {
+      organization: {
+        // BE hanya mengembalikan unit yang efektif pada `asOf`; di sini child
+        // (parentId menunjuk unit yang TIDAK ada di hasil) harus jadi root.
+        findMany: jest.fn().mockResolvedValue([
+          { id: 'o2', legalEntityId: 'le1', name: 'BU', parentId: 'o1', effectiveFrom: new Date('2026-01-01'), effectiveTo: null, status: 'ACTIVE' },
+        ]),
+      },
+    } as never;
+    const svc = makeService(prisma);
+    const out = await svc.listOrganizations('le1', '2026-06-01');
+    expect(out.roots).toHaveLength(1);
+    expect(out.roots[0]?.item.id).toBe('o2');
+  });
+});
+
+describe('OrganizationService.setStatus', () => {  it('rejects a no-op transition with 409 INVALID_STATUS_TRANSITION', async () => {
     const prisma = {
       organization: {
         findUnique: jest.fn().mockResolvedValue({ id: 'o1', status: 'INACTIVE' }),

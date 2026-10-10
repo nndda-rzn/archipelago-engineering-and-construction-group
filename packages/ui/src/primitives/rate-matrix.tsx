@@ -56,7 +56,7 @@ export function RateMatrix({ rows, cols, value, format, className }: RateMatrixP
                       <span
                         aria-hidden="true"
                         data-slot="rate-cell-bg"
-                        className="absolute inset-0 -z-10 bg-neutral-800"
+                        className="absolute inset-0 bg-neutral-800"
                         style={{ opacity: bg }}
                       />
                     )}
