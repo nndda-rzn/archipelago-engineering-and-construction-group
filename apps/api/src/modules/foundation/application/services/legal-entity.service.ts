@@ -1,13 +1,40 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
+import type { LegalEntityUsage } from '@aec/api-contracts';
 import { PrismaService } from '@/shared/database/prisma.service';
+import { AuditService } from './audit.service';
 import type { CreateLegalEntityDto } from '../../presentation/dto/create-legal-entity.dto';
 import type { UpdateLegalEntityDto } from '../../presentation/dto/update-legal-entity.dto';
 import type { ListLegalEntityQueryDto } from '../../presentation/dto/list-legal-entity-query.dto';
 
 @Injectable()
 export class LegalEntityService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(AuditService) private readonly audit: AuditService,
+  ) {}
+
+  /**
+   * Ringkasan penggunaan lintas domain: berapa banyak record yang menunjuk ke
+   * entity ini. Satu `$transaction` paralel (bukan N+1) supaya mahal tidak
+   * tumbuh seiring jumlah relasi. Nol berarti "tidak dipakai" — dilaporkan
+   * apa adanya, bukan disembunyikan.
+   */
+  async usage(id: string): Promise<LegalEntityUsage> {
+    await this.findOne(id);
+    const [projects, users, organizations, chartOfAccounts, bankAccounts, periodCloses, employees, equipment] =
+      await this.prisma.$transaction([
+        this.prisma.project.count({ where: { legalEntityId: id } }),
+        this.prisma.user.count({ where: { legalEntityId: id } }),
+        this.prisma.organization.count({ where: { legalEntityId: id } }),
+        this.prisma.chartOfAccount.count({ where: { legalEntityId: id } }),
+        this.prisma.bankAccount.count({ where: { legalEntityId: id } }),
+        this.prisma.periodClose.count({ where: { legalEntityId: id } }),
+        this.prisma.employee.count({ where: { legalEntityId: id } }),
+        this.prisma.equipment.count({ where: { legalEntityId: id } }),
+      ]);
+    return { projects, users, organizations, chartOfAccounts, bankAccounts, periodCloses, employees, equipment, generatedAt: new Date().toISOString() };
+  }
 
   async findAll(query: ListLegalEntityQueryDto) {
 
