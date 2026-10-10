@@ -7,12 +7,13 @@ import {
 } from '@/features/analytics';
 import { Headline, Panel, PanelState } from '@/features/analytics/ui/report-panel';
 import { ProjectCostTable } from '@/features/analytics/ui/project-cost-table';
+import { AgingDetailDialog } from '@/features/analytics/ui/aging-detail-dialog';
 import { DashboardFilterBar, useDashboardFilter } from '@/widgets/dashboard-filter-bar';
 import {
-  AgingBucketBars, AgingDetailTable, AgingStackedBar, BudgetUsageBars, CashFlowArea,
+  AgingBucketBars, CashFlowArea,
   ConcentrationBars, CostCompositionChart, ForecastVsActualChart,
 } from '@/widgets/dashboard-charts';
-import { formatIdr } from '@/shared/lib/format';
+import { formatIdr, formatIdrCompact } from '@/shared/lib/format';
 
 const TOTAL = (rows: { amount: number }[]) => rows.reduce((s, r) => s + r.amount, 0);
 
@@ -51,25 +52,34 @@ export function ReportingPage() {
 
       <DashboardFilterBar queryKey={cashFlow.isFetching ? ['reporting', 'loading'] : undefined} />
 
-      {/* ZONA 1 — posisi ringkas */}
+      {/* ZONA 1 — posisi ringkas. Total netral; merah hanya pada bagian overdue. */}
       <section aria-label="Summary" className="grid grid-cols-2 gap-x-8 gap-y-4 border-b border-neutral-200 pb-5 sm:grid-cols-4">
         <Headline
           label="AR outstanding"
-          value={formatIdr(arTotal)}
-          context={overdueAr > 0 ? `${formatIdr(overdueAr)} overdue` : 'nothing overdue'}
-          tone={overdueAr > 0 ? 'text-destructive-600' : undefined}
+          value={formatIdrCompact(arTotal)}
+          valueTitle={formatIdr(arTotal)}
+          context={
+            overdueAr > 0
+              ? <span className="text-destructive-600">{formatIdrCompact(overdueAr)} overdue</span>
+              : 'nothing overdue'
+          }
           delta={aging.data?.delta?.ar}
         />
         <Headline
           label="AP outstanding"
-          value={formatIdr(apTotal)}
-          context={overdueAp > 0 ? `${formatIdr(overdueAp)} overdue` : 'nothing overdue'}
-          tone={overdueAp > 0 ? 'text-destructive-600' : undefined}
+          value={formatIdrCompact(apTotal)}
+          valueTitle={formatIdr(apTotal)}
+          context={
+            overdueAp > 0
+              ? <span className="text-destructive-600">{formatIdrCompact(overdueAp)} overdue</span>
+              : 'nothing overdue'
+          }
           delta={aging.data?.delta?.ap}
         />
         <Headline
           label="Net cash"
-          value={cashFlow.data ? formatIdr(cashFlow.data.netCash) : '—'}
+          value={cashFlow.data ? formatIdrCompact(cashFlow.data.netCash) : '—'}
+          valueTitle={cashFlow.data ? formatIdr(cashFlow.data.netCash) : undefined}
           tone={cashFlow.data && cashFlow.data.netCash < 0 ? 'text-destructive-600' : undefined}
           context="collections − payments"
           delta={cashFlow.data?.delta?.netCash}
@@ -99,13 +109,16 @@ export function ReportingPage() {
         </PanelState>
       </Panel>
 
-      {/* ZONA 3 — aging AR & AP */}
+      {/* ZONA 3 — aging AR & AP. Satu encoding saja (bar per bucket); stacked bar
+          dihapus karena menduplikasi angka yang sama. Klik bucket membuka modal
+          detail, jadi tidak ada lagi blok kosong besar di tengah halaman. */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         {(['AR', 'AP'] as const).map((side) => {
           const buckets = (side === 'AR' ? aging.data?.ar : aging.data?.ap) ?? [];
           const selected = side === 'AR' ? arBucket : apBucket;
           const setSelected = side === 'AR' ? setArBucket : setApBucket;
           const total = TOTAL(buckets);
+          const overdue = side === 'AR' ? aging.data?.arOverdue : aging.data?.apOverdue;
           return (
             <Panel
               key={side}
@@ -121,32 +134,31 @@ export function ReportingPage() {
                 empty={total <= 0}
                 emptyNode={<EmptyState title={`No outstanding ${side === 'AR' ? 'receivables' : 'payables'}`} description="Everything is settled for this filter." />}
               >
-                <AgingStackedBar buckets={buckets} label={side} />
-                <div className="mt-3">
-                  <AgingBucketBars buckets={buckets} selected={selected} onSelect={setSelected} label={`Aging ${side}`} />
-                </div>
+                {overdue != null && overdue > 0 && (
+                  <p className="mb-2 text-caption text-destructive-600">
+                    <span className="font-mono tabular-nums">{formatIdrCompact(overdue)}</span> overdue · click a bucket to see the invoices
+                  </p>
+                )}
+                <AgingBucketBars buckets={buckets} selected={selected} onSelect={setSelected} label={`Aging ${side}`} />
               </PanelState>
             </Panel>
           );
         })}
       </div>
 
-      {/* ZONA 4 — detail aging (drill-down). Selalu tampil: sebelum dipilih ia
-          menjelaskan bahwa bucket bisa diklik, bukan menghilang tanpa jejak. */}
-      <Panel
-        ariaLabel="Aging detail"
-        title={arBucket || apBucket ? `Aging detail · ${arBucket || apBucket}` : 'Aging detail'}
-        subtitle="Invoices behind the selected bucket, largest outstanding first"
-        onExport={arBucket || apBucket ? () => exportAnalytics.aging(filter) : undefined}
-      >
-        {arBucket ? (
-          <AgingDetailTable buckets={aging.data?.ar ?? []} selectedBucket={arBucket} side="AR" />
-        ) : apBucket ? (
-          <AgingDetailTable buckets={aging.data?.ap ?? []} selectedBucket={apBucket} side="AP" />
-        ) : (
-          <AgingDetailTable buckets={[]} selectedBucket="" side="AR" />
-        )}
-      </Panel>
+      {/* ZONA 4 — detail aging kini modal (hanya muncul saat bucket diklik). */}
+      <AgingDetailDialog
+        open={!!(arBucket || apBucket)}
+        bucket={arBucket || apBucket}
+        buckets={arBucket ? aging.data?.ar ?? [] : aging.data?.ap ?? []}
+        side={arBucket ? 'AR' : 'AP'}
+        onOpenChange={(o) => {
+          if (!o) {
+            setArBucket('');
+            setApBucket('');
+          }
+        }}
+      />
 
       {/* ZONA 5 & 7 — konsentrasi + komposisi biaya */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
@@ -181,13 +193,9 @@ export function ReportingPage() {
           isError={costSummary.isError}
           onRetry={() => costSummary.refetch()}
           empty={(costSummary.data?.items.length ?? 0) === 0}
+          skeleton="table"
         >
-          {costSummary.data && (
-            <>
-              <BudgetUsageBars items={costSummary.data.items} />
-              <ProjectCostTable items={costSummary.data.items} />
-            </>
-          )}
+          {costSummary.data && <ProjectCostTable items={costSummary.data.items} />}
         </PanelState>
       </Panel>
 

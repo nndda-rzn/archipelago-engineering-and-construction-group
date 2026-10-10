@@ -3,11 +3,13 @@ import { Download } from 'lucide-react';
 import { Button, DeltaBadge, EmptyState, ErrorState, Skeleton } from '@aec/ui';
 
 /** Angka besar tanpa bingkai — satu nilai = angka, bukan chart (`ux-designer/18`). */
-export function Headline({ label, value, tone, context, delta }: {
+export function Headline({ label, value, tone, context, valueTitle, delta }: {
   label: string;
   value: string;
   tone?: string;
-  context?: string;
+  context?: React.ReactNode;
+  /** Nominal presisi penuh untuk tooltip (nilai tampil boleh ringkas). */
+  valueTitle?: string;
   /** Perbandingan periode sebelumnya (opsional). Ditampilkan sebagai badge tren. */
   delta?: { pctChange: number | null; direction: 'up' | 'down' | 'flat' };
 }) {
@@ -15,7 +17,7 @@ export function Headline({ label, value, tone, context, delta }: {
     <div>
       <p className="text-overline uppercase text-neutral-500">{label}</p>
       <div className="mt-0.5 flex items-baseline gap-2">
-        <p className={`font-mono tabular-nums text-h1 ${tone ?? 'text-neutral-950'}`}>{value}</p>
+        <p className={`font-mono tabular-nums text-h1 ${tone ?? 'text-neutral-950'}`} title={valueTitle}>{value}</p>
         {delta && <DeltaBadge pct={delta.pctChange} direction={delta.direction} />}
       </div>
       {context && <p className="text-caption text-neutral-500">{context}</p>}
@@ -55,10 +57,30 @@ export function Panel({ title, subtitle, onExport, children, ariaLabel, headingL
   );
 }
 
-export function PanelState({ isLoading, isError, onRetry, empty, emptyNode, children }: {
+export function PanelState({ isLoading, isError, onRetry, empty, emptyNode, children, skeleton = 'chart' }: {
   isLoading: boolean; isError: boolean; onRetry: () => void; empty: boolean; emptyNode?: React.ReactNode; children: React.ReactNode;
+  /** Bentuk skeleton saat memuat: 'chart' (grafik) atau 'table' (daftar baris). */
+  skeleton?: 'chart' | 'table';
 }) {
-  if (isLoading) return <div aria-label="Loading report"><Skeleton className="h-32 w-full" /></div>;
+  if (isLoading) {
+    return (
+      <div aria-label="Loading report" className="space-y-3">
+        {skeleton === 'table' ? (
+          <>
+            <Skeleton className="h-8 w-64" />
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-6 w-full" />
+            ))}
+          </>
+        ) : (
+          <>
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-44 w-full" />
+          </>
+        )}
+      </div>
+    );
+  }
   if (isError) return <ErrorState message="Could not load this report." onRetry={onRetry} />;
   if (empty) return <>{emptyNode ?? <EmptyState title="No data" description="Nothing to report for this filter." />}</>;
   return <>{children}</>;
