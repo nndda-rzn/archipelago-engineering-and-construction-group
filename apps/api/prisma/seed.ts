@@ -207,8 +207,7 @@ async function seedFinance(entityId: string) {
   console.log(`[finance] Seeded ${coaBaseline.length} COA baseline (PSAK)`);
 }
 
-async function seedWorkflows() {
-  type WorkflowStep = {
+async function seedWorkflows() {  type WorkflowStep = {
     stepOrder: number;
     name: string;
     approverRoleCode: string;
@@ -281,14 +280,140 @@ async function seedWorkflows() {
   }
 }
 
+/**
+ * Foundation Hardening (FR-FND-002/007/011): mata uang lengkap, struktur
+ * organisasi effective-dated, aturan DoA (sengaja punya tumpang tindih & celah
+ * agar analisis bermakna), dan riwayat kurs. Idempoten — aman dijalankan ulang.
+ */
+async function seedHardening(entityId: string) {
+  const year = new Date().getFullYear();
+  const d = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
+
+  // ── A. Mata uang (IDR/USD/EUR) — dipakai FK LegalEntity & riwayat kurs ──
+  const currencies = [
+    { code: 'IDR', name: 'Indonesian Rupiah', symbol: 'Rp', decimals: 2 },
+    { code: 'USD', name: 'US Dollar', symbol: '$', decimals: 2 },
+    { code: 'EUR', name: 'Euro', symbol: '€', decimals: 2 },
+  ];
+  const currencyByCode = new Map<string, string>();
+  for (const c of currencies) {
+    const row = await prisma.currency.upsert({ where: { code: c.code }, update: { name: c.name, symbol: c.symbol, decimals: c.decimals }, create: c });
+    currencyByCode.set(c.code, row.id);
+  }
+  console.log(`[hardening] Currency: ${currencies.map((c) => c.code).join(', ')}`);
+
+  // ── B. Struktur organisasi (hierarki, effective-dated) ──
+  // Sengaja: sebagian unit punya `effectiveTo` (berakhir) agar scrubber "as of"
+  // memperlihatkan perubahan struktur pada tanggal berbeda.
+  const orgSeed: Array<{ name: string; orgType: string; parent?: string; from: string; to?: string; status?: string }> = [
+    { name: 'AEC Group', orgType: 'GROUP', from: `${year - 2}-01-01` },
+    { name: 'Construction Division', orgType: 'BUSINESS_UNIT', parent: 'AEC Group', from: `${year - 2}-01-01` },
+    { name: 'Procurement Division', orgType: 'BUSINESS_UNIT', parent: 'AEC Group', from: `${year - 2}-01-01` },
+    { name: 'Finance Division', orgType: 'BUSINESS_UNIT', parent: 'AEC Group', from: `${year - 2}-01-01` },
+    { name: 'Java Region', orgType: 'REGION', parent: 'Construction Division', from: `${year - 2}-01-01` },
+    { name: 'Kalimantan Region', orgType: 'REGION', parent: 'Construction Division', from: `${year - 1}-01-01` },
+    { name: 'Site Karawang', orgType: 'BRANCH', parent: 'Java Region', from: `${year - 1}-06-01` },
+    { name: 'Legacy Marine Unit', orgType: 'DIVISION', parent: 'Construction Division', from: `${year - 2}-01-01`, to: `${year}-01-01`, status: 'INACTIVE' },
+    { name: 'Structural Works', orgType: 'DEPARTMENT', parent: 'Site Karawang', from: `${year - 1}-06-01` },
+    { name: 'MEP Works', orgType: 'DEPARTMENT', parent: 'Site Karawang', from: `${year}-01-01` },
+  ];
+  const orgByName = new Map<string, string>();
+  for (const o of orgSeed) {
+    const existing = await prisma.organization.findFirst({ where: { legalEntityId: entityId, name: o.name } });
+    const parentId = o.parent ? (orgByName.get(o.parent) ?? (await prisma.organization.findFirst({ where: { legalEntityId: entityId, name: o.parent } }))?.id ?? null) : null;
+    if (!existing) {
+      const row = await prisma.organization.create({
+        data: {
+          legalEntityId: entityId,
+          name: o.name,
+          orgType: o.orgType,
+          parentId,
+          effectiveFrom: d(o.from),
+          effectiveTo: o.to ? d(o.to) : null,
+          status: o.status ?? 'ACTIVE',
+        },
+      });
+      orgByName.set(o.name, row.id);
+    } else {
+      orgByName.set(o.name, existing.id);
+      if (existing.parentId !== parentId) {
+        await prisma.organization.update({ where: { id: existing.id }, data: { parentId } });
+      }
+    }
+  }
+  console.log(`[hardening] Organization: ${orgSeed.length} unit (effective-dated)`);
+
+  // ── C. Aturan Delegation of Authority ──
+  // Rentang sengaja tumpang tindih (PO 500jt–1.000jt ditutup dua aturan) dan
+  // menyisakan celah (PO > 5.000jt, Payment > 500jt) supaya analisis bermakna.
+  const doaSeed: Array<{ tx: string; from: number; to: number | null; level: string; role: string; risk?: string; status?: 'ACTIVE' | 'INACTIVE' }> = [
+    { tx: 'PurchaseOrder', from: 0, to: 100_000_000, level: 'L1', role: 'BUYER' },
+    { tx: 'PurchaseOrder', from: 100_000_000, to: 1_000_000_000, level: 'L2', role: 'PROCUREMENT_MANAGER' },
+    { tx: 'PurchaseOrder', from: 500_000_000, to: 3_000_000_000, level: 'L3', role: 'SUPER_ADMIN' }, // overlap 500jt–1.000jt dengan L2
+    { tx: 'PurchaseOrder', from: 5_000_000_000, to: null, level: 'L4', role: 'SUPER_ADMIN' }, // gap 3.000jt–5.000jt
+    { tx: 'Payment', from: 0, to: 50_000_000, level: 'L1', role: 'FINANCE_MANAGER' },
+    { tx: 'Payment', from: 50_000_000, to: 500_000_000, level: 'L2', role: 'FINANCE_MANAGER' },
+    { tx: 'PurchaseRequisition', from: 0, to: 200_000_000, level: 'L1', role: 'PROCUREMENT_MANAGER' },
+    { tx: 'PurchaseRequisition', from: 200_000_000, to: 2_000_000_000, level: 'L2', role: 'PROCUREMENT_MANAGER', risk: 'HIGH' },
+    // Aturan nonaktif (menguji filter status di UI) — tidak dihitung analisis.
+    { tx: 'Journal', from: 0, to: null, level: 'L5', role: 'SUPER_ADMIN', status: 'INACTIVE' },
+  ];
+  let doaCreated = 0;
+  for (const r of doaSeed) {
+    const existing = await prisma.doaRule.findFirst({
+      where: { transactionType: r.tx, legalEntityId: entityId, approverLevel: r.level, amountFrom: r.from },
+    });
+    if (!existing) {
+      await prisma.doaRule.create({
+        data: {
+          transactionType: r.tx,
+          legalEntityId: entityId,
+          amountFrom: r.from,
+          amountTo: r.to,
+          riskLevel: r.risk ?? null,
+          approverLevel: r.level,
+          approverRoleCode: r.role,
+          status: r.status ?? 'ACTIVE',
+        },
+      });
+      doaCreated += 1;
+    }
+  }
+  console.log(`[hardening] DoaRule: +${doaCreated} (overlap & gap sengaja)`);
+
+  // ── D. Riwayat kurs (sparkline + matriks) ──
+  const rateSeed: Array<{ from: string; to: string; type: string; rate: number; date: string }> = [
+    { from: 'USD', to: 'IDR', type: 'SPOT', rate: 15_000, date: `${year}-01-01` },
+    { from: 'USD', to: 'IDR', type: 'SPOT', rate: 15_450, date: `${year}-03-01` },
+    { from: 'USD', to: 'IDR', type: 'SPOT', rate: 15_800, date: `${year}-06-01` },
+    { from: 'USD', to: 'IDR', type: 'SPOT', rate: 16_050, date: `${year}-09-01` },
+    { from: 'EUR', to: 'IDR', type: 'SPOT', rate: 16_500, date: `${year}-01-01` },
+    { from: 'EUR', to: 'IDR', type: 'SPOT', rate: 17_100, date: `${year}-06-01` },
+    { from: 'IDR', to: 'USD', type: 'SPOT', rate: 0.0000625, date: `${year}-06-01` },
+    { from: 'USD', to: 'IDR', type: 'PERIOD_END', rate: 16_100, date: `${year}-09-30` },
+  ];
+  let rateCreated = 0;
+  for (const r of rateSeed) {
+    const fromId = currencyByCode.get(r.from);
+    const toId = currencyByCode.get(r.to);
+    if (!fromId || !toId) continue;
+    const existing = await prisma.exchangeRate.findFirst({ where: { fromCurrencyId: fromId, toCurrencyId: toId, rateType: r.type, effectiveDate: d(r.date) } });
+    if (!existing) {
+      await prisma.exchangeRate.create({ data: { fromCurrencyId: fromId, toCurrencyId: toId, rateType: r.type, rate: r.rate, effectiveDate: d(r.date) } });
+      rateCreated += 1;
+    }
+  }
+  console.log(`[hardening] ExchangeRate: +${rateCreated} (riwayat multi-titik)`);
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-async function main() {
-  const { entity } = await seedFoundation();
+async function main() {  const { entity } = await seedFoundation();
   const { } = await seedUsers(entity.id);
   await seedDemoData(entity.id);
   await seedFinance(entity.id);
   await seedWorkflows();
+  await seedHardening(entity.id);
   console.log('[seed] Selesai.');
 }
 
