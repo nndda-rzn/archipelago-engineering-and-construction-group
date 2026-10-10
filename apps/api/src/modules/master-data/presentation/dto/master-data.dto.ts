@@ -1,5 +1,10 @@
 import { Type } from 'class-transformer';
-import { IsDateString, IsEmail, IsIn, IsInt, IsNumber, IsOptional, IsString, Length, Max, MaxLength, Min } from 'class-validator';
+import { IsDateString, IsEmail, IsEnum, IsInt, IsNumber, IsOptional, IsString, Length, Max, MaxLength, Min } from 'class-validator';
+import { FiscalPeriodStatus, NumberSequenceStatus, VendorCategory, VendorStatus } from '@prisma/client';
+
+export const VENDOR_CATEGORIES = ['MATERIAL', 'SUBCONTRACTOR', 'SERVICE', 'EQUIPMENT', 'OTHER'] as const;
+export const VENDOR_STATUSES = ['ACTIVE', 'INACTIVE'] as const;
+export const FISCAL_PERIOD_STATUSES = ['FUTURE', 'OPEN', 'SOFT_CLOSED', 'CLOSED', 'LOCKED'] as const;
 
 export class CreateVendorDto {
   @IsString()
@@ -12,8 +17,8 @@ export class CreateVendorDto {
   taxId?: string;
 
   @IsOptional()
-  @IsIn(['MATERIAL', 'SUBCONTRACTOR', 'SERVICE', 'EQUIPMENT', 'OTHER'])
-  category?: string;
+  @IsEnum(VendorCategory)
+  category?: VendorCategory;
 
   @IsOptional()
   @IsString()
@@ -35,6 +40,47 @@ export class CreateVendorDto {
   address?: string;
 }
 
+/** Update parsial — semua field opsional; hanya field yang dikirim yang berubah. */
+export class UpdateVendorDto {
+  @IsOptional()
+  @IsString()
+  @Length(2, 200)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  taxId?: string;
+
+  @IsOptional()
+  @IsEnum(VendorCategory)
+  category?: VendorCategory;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  contactPerson?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  address?: string;
+}
+
+export class SetVendorStatusDto {
+  @IsEnum(VendorStatus)
+  status!: VendorStatus;
+}
+
 export class ListVendorQueryDto {
   @IsOptional()
   @Type(() => Number)
@@ -48,13 +94,19 @@ export class ListVendorQueryDto {
   @Min(1)
   pageSize?: number;
 
+  /** Cari pada nama, kode, atau NPWP. */
   @IsOptional()
   @IsString()
-  category?: string;
+  @MaxLength(100)
+  search?: string;
 
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsEnum(VendorCategory)
+  category?: VendorCategory;
+
+  @IsOptional()
+  @IsEnum(VendorStatus)
+  status?: VendorStatus;
 }
 
 export class CreateFiscalPeriodDto {
@@ -82,8 +134,8 @@ export class CreateFiscalPeriodDto {
 }
 
 export class UpdateFiscalPeriodStatusDto {
-  @IsIn(['FUTURE', 'OPEN', 'SOFT_CLOSED', 'CLOSED', 'LOCKED'])
-  status!: string;
+  @IsEnum(FiscalPeriodStatus)
+  status!: FiscalPeriodStatus;
 }
 
 export class ListFiscalPeriodQueryDto {
@@ -100,6 +152,19 @@ export class ListFiscalPeriodQueryDto {
   pageSize?: number;
 
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsEnum(FiscalPeriodStatus)
+  status?: FiscalPeriodStatus;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(2000)
+  @Max(2100)
+  periodYear?: number;
+}
+
+export class ListNumberSequenceQueryDto {
+  @IsOptional()
+  @IsEnum(NumberSequenceStatus)
+  status?: NumberSequenceStatus;
 }
