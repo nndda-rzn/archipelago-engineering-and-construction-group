@@ -14,13 +14,14 @@ export function Headline({ label, value, tone, context }: { label: string; value
 }
 
 /** Panel laporan: judul + aksi export opsional. State loading/empty ditangani isinya. */
-export function Panel({ title, subtitle, onExport, children, ariaLabel }: { title: string; subtitle?: string; onExport?: () => Promise<void>; children: React.ReactNode; ariaLabel?: string }) {
+export function Panel({ title, subtitle, onExport, children, ariaLabel, headingLevel = 2 }: { title: string; subtitle?: string; onExport?: () => Promise<void>; children: React.ReactNode; ariaLabel?: string; headingLevel?: 2 | 3 }) {
   const [busy, setBusy] = useState(false);
+  const Heading = headingLevel === 3 ? 'h3' : 'h2';
   return (
     <section aria-label={ariaLabel} className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-h2 text-neutral-950">{title}</h2>
+          <Heading className="text-h2 text-neutral-950">{title}</Heading>
           {subtitle && <p className="mt-0.5 text-caption text-neutral-500">{subtitle}</p>}
         </div>
         {onExport && (
