@@ -58,6 +58,44 @@ enum NumberSequenceStatus {
   INACTIVE
 }
 
+/// Siklus hidup akun pengguna (FR-FND-003).
+enum UserStatus {
+  INVITED
+  ACTIVE
+  INACTIVE
+  BLOCKED
+  SUSPENDED
+}
+
+/// Status role (FR-FND-004).
+enum RoleStatus {
+  ACTIVE
+  INACTIVE
+}
+
+/// Status sesi login pengguna.
+enum UserSessionStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+/// Jenis kejadian login.
+enum LoginEventType {
+  SUCCESS
+  FAILED_PASSWORD
+  FAILED_STATUS
+  FAILED_UNKNOWN
+}
+
+/// Status undangan pengguna baru.
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
 // FR-FND-001: Multi-Legal Entity
 model LegalEntity {
   id                 String   @id @default(cuid())
@@ -135,29 +173,64 @@ model User {
   legalEntity    LegalEntity?  @relation(fields: [legalEntityId], references: [id])
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id])
-  status         String        @default("ACTIVE")
+  status         UserStatus    @default(ACTIVE)
   lastLoginAt    DateTime?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  userRoles UserRole[]
-  employee  Employee?
+  // Identitas kerja (agar "ini siapa" tak bergantung pada Employee opsional).
+  jobTitle    String?
+  department  String?
+  phone       String?
+  managerId   String?
+  manager     User?   @relation("UserHierarchy", fields: [managerId], references: [id], onDelete: SetNull)
+  reports     User[]  @relation("UserHierarchy")
+
+  // Preferensi (di-copy ke UserSetting saat dibuat, agar cepat dibaca).
+  locale   String? @default("id-ID")
+  timezone String? @default("Asia/Jakarta")
+
+  // Siklus hidup & keamanan.
+  passwordChangedAt  DateTime?
+  blockedAt          DateTime?
+  blockedReason      String?
+  failedLoginCount   Int       @default(0)
+  lastFailedLoginAt  DateTime?
+  createdById        String?
+  updatedById        String?
+
+  userRoles   UserRole[]
+  employee    Employee?
+  sessions    UserSession[]
+  loginEvents LoginEvent[]
+  resetTokens PasswordResetToken[]
+  settings    UserSetting?
+  activity    UserActivity[]
+  accessReviews AccessReviewItem[]
+  invitationsSent UserInvitation[] @relation("InvitedBy")
 
   @@index([legalEntityId])
+  @@index([organizationId])
+  @@index([managerId])
+  @@index([status])
 }
 
 // FR-FND-004: Role-Based Access Control — Resource + Action + Scope
 model Role {
-  id          String   @id @default(cuid())
-  code        String   @unique // mis. "BUYER", "PROCUREMENT_MANAGER"
+  id          String     @id @default(cuid())
+  code        String     @unique // mis. "BUYER", "PROCUREMENT_MANAGER"
   name        String
   description String?
-  status      String   @default("ACTIVE")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status      RoleStatus @default(ACTIVE)
+  /** Role bawaan sistem — tidak boleh dihapus/diubah kodenya. */
+  isSystem    Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   permissions RolePermission[]
   userRoles   UserRole[]
+
+  @@index([status])
 }
 
 model Permission {
@@ -187,11 +260,113 @@ model UserRole {
   roleId        String
   effectiveFrom DateTime  @default(now())
   effectiveTo   DateTime?
+  /** Siapa yang memberi role ini (jejak audit). */
+  assignedById  String?
+  /** Alasan pemberian (mis. "promosi", "pengganti cuti"). */
+  reason        String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId, effectiveFrom])
+  @@index([userId])
+  @@index([roleId])
+}
+
+/// Sesi login nyata — memungkinkan pencabutan (block = putus sesi berjalan).
+model UserSession {
+  id         String            @id @default(cuid())
+  userId     String
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /** `jti` JWT — kunci pencocokan token ↔ sesi. */
+  tokenId    String            @unique
+  status     UserSessionStatus @default(ACTIVE)
+  userAgent  String?
+  ipAddress  String?
+  createdAt  DateTime          @default(now())
+  lastSeenAt DateTime          @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  revokedById String?
+
+  @@index([userId])
+  @@index([status])
+}
+
+/// Riwayat login (berhasil & gagal) — untuk "kapan terakhir masuk, dari mana".
+model LoginEvent {
+  id        String         @id @default(cuid())
+  userId    String?
+  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email     String
+  type      LoginEventType
+  ipAddress String?
+  userAgent String?
+  reason    String?
+  at        DateTime       @default(now())
+
+  @@index([userId])
+  @@index([email])
+  @@index([at])
+}
+
+/// Token reset password (hash saja — token mentah tak pernah disimpan).
+model PasswordResetToken {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash     String
+  expiresAt     DateTime
+  usedAt        DateTime?
+  requestedById String?
+  createdAt     DateTime  @default(now())
+
+  @@index([userId])
+}
+
+/// Undangan pengguna baru (alur INVITED → ACTIVE).
+model UserInvitation {
+  id         String           @id @default(cuid())
+  email      String
+  username   String?
+  status     InvitationStatus @default(PENDING)
+  tokenHash  String
+  roleCodes  String[]         @default([])
+  invitedById String?
+  invitedBy  User?            @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+  legalEntityId String?
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime         @default(now())
+
+  @@index([email])
+  @@index([status])
+}
+
+/// Preferensi tampilan & notifikasi per pengguna.
+model UserSetting {
+  userId             String   @id
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme              String   @default("system") // light | dark | system
+  density            String   @default("comfortable") // compact | comfortable
+  emailNotifications Boolean  @default(true)
+  inAppNotifications Boolean  @default(true)
+  updatedAt          DateTime @updatedAt
+}
+
+/// Log aktivitas user-facing (bukan audit teknis) — feed "apa yang terjadi".
+model UserActivity {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actorId  String?
+  action   String // mis. "ROLE_ASSIGNED", "PROFILE_UPDATED"
+  summary  String
+  metadata Json?
+  at       DateTime @default(now())
+
+  @@index([userId])
+  @@index([at])
 }
 
 // ─── Project domain ───────────────────────────────────────────────────────────
@@ -1693,7 +1868,26 @@ model AccessReview {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
+  items AccessReviewItem[]
+
   @@index([status])
+}
+
+/// Item per-pengguna di dalam sebuah access review (keputusan KEEP/REVOKE).
+model AccessReviewItem {
+  id         String    @id @default(cuid())
+  reviewId   String
+  review     AccessReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  decision   String    @default("PENDING") // PENDING | KEEP | REVOKE
+  reviewerId String?
+  notes      String?
+  decidedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@unique([reviewId, userId])
+  @@index([userId])
 }
 
 // FR-COM-001: Client — master pelanggan (input golden flow)

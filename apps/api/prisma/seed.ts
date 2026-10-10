@@ -74,20 +74,20 @@ async function seedPermissions(roleId: string) {
 async function seedUsers(entityId: string) {
   const superAdminRole = await prisma.role.upsert({
     where: { code: 'SUPER_ADMIN' },
-    update: {},
-    create: { code: 'SUPER_ADMIN', name: 'Super Administrator' },
+    update: { isSystem: true },
+    create: { code: 'SUPER_ADMIN', name: 'Super Administrator', isSystem: true },
   });
 
   const buyerRole = await prisma.role.upsert({
     where: { code: 'BUYER' },
-    update: {},
-    create: { code: 'BUYER', name: 'Buyer', description: 'Membuat PR' },
+    update: { isSystem: true },
+    create: { code: 'BUYER', name: 'Buyer', description: 'Membuat PR', isSystem: true },
   });
 
   const procManagerRole = await prisma.role.upsert({
     where: { code: 'PROCUREMENT_MANAGER' },
-    update: {},
-    create: { code: 'PROCUREMENT_MANAGER', name: 'Procurement Manager', description: 'Menyetujui PR/PO' },
+    update: { isSystem: true },
+    create: { code: 'PROCUREMENT_MANAGER', name: 'Procurement Manager', description: 'Menyetujui PR/PO', isSystem: true },
   });
 
   // Seed permissions untuk SUPER_ADMIN
@@ -97,9 +97,10 @@ async function seedUsers(entityId: string) {
   const adminHash = await bcrypt.hash(adminPassword, 12);
   const admin = await prisma.user.upsert({
     where: { email: 'admin@aec.local' },
-    update: { passwordHash: adminHash, legalEntityId: entityId, status: 'ACTIVE' },
-    create: { username: 'admin', email: 'admin@aec.local', displayName: 'AEC Administrator', passwordHash: adminHash, legalEntityId: entityId },
+    update: { passwordHash: adminHash, legalEntityId: entityId, status: 'ACTIVE', jobTitle: 'System Administrator', department: 'IT' },
+    create: { username: 'admin', email: 'admin@aec.local', displayName: 'AEC Administrator', passwordHash: adminHash, legalEntityId: entityId, jobTitle: 'System Administrator', department: 'IT', phone: '+62 811 1000 000' },
   });
+  await prisma.userSetting.upsert({ where: { userId: admin.id }, update: {}, create: { userId: admin.id } });
 
   await prisma.userRole.upsert({
     where: { userId_roleId_effectiveFrom: { userId: admin.id, roleId: superAdminRole.id, effectiveFrom: new Date('2026-01-01T00:00:00.000Z') } },
@@ -117,9 +118,10 @@ async function seedUsers(entityId: string) {
   const buyerPassword = await bcrypt.hash('Buyer123!', 12);
   const buyer = await prisma.user.upsert({
     where: { email: 'buyer@aec.local' },
-    update: { passwordHash: buyerPassword, legalEntityId: entityId, status: 'ACTIVE' },
-    create: { username: 'buyer', email: 'buyer@aec.local', displayName: 'Buyer Demo', passwordHash: buyerPassword, legalEntityId: entityId },
+    update: { passwordHash: buyerPassword, legalEntityId: entityId, status: 'ACTIVE', jobTitle: 'Procurement Officer', department: 'Procurement' },
+    create: { username: 'buyer', email: 'buyer@aec.local', displayName: 'Buyer Demo', passwordHash: buyerPassword, legalEntityId: entityId, jobTitle: 'Procurement Officer', department: 'Procurement', phone: '+62 811 1000 010' },
   });
+  await prisma.userSetting.upsert({ where: { userId: buyer.id }, update: {}, create: { userId: buyer.id } });
 
   await prisma.userRole.upsert({
     where: { userId_roleId_effectiveFrom: { userId: buyer.id, roleId: buyerRole.id, effectiveFrom: new Date('2026-01-01T00:00:00.000Z') } },
