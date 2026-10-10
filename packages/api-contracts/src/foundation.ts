@@ -1,6 +1,31 @@
 import { z } from 'zod';
 import { paginatedResponseSchema } from './core';
 
+/** Siklus hidup master data (FR-FND-001) — cermin `MasterDataStatus`. */
+export const legalEntityStatusSchema = z.enum([
+  'DRAFT',
+  'PENDING_REVIEW',
+  'ACTIVE',
+  'BLOCKED',
+  'INACTIVE',
+  'ARCHIVED',
+]);
+export type LegalEntityStatus = z.infer<typeof legalEntityStatusSchema>;
+
+/** Ringkasan penggunaan lintas domain sebuah legal entity. */
+export const legalEntityUsageSchema = z.object({
+  projects: z.number(),
+  users: z.number(),
+  organizations: z.number(),
+  chartOfAccounts: z.number(),
+  bankAccounts: z.number(),
+  periodCloses: z.number(),
+  employees: z.number(),
+  equipment: z.number(),
+  generatedAt: z.string(),
+});
+export type LegalEntityUsage = z.infer<typeof legalEntityUsageSchema>;
+
 export const legalEntitySchema = z.object({
   id: z.string(),
   code: z.string(),
@@ -9,8 +34,10 @@ export const legalEntitySchema = z.object({
   country: z.string(),
   functionalCurrency: z.string(),
   reportingCurrency: z.string(),
+  functionalCurrencyId: z.string().nullable(),
+  reportingCurrencyId: z.string().nullable(),
   fiscalCalendar: z.string(),
-  status: z.string(),
+  status: legalEntityStatusSchema,
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -26,16 +53,22 @@ export const createLegalEntitySchema = z.object({
 });
 export type CreateLegalEntity = z.infer<typeof createLegalEntitySchema>;
 
+export const updateLegalEntitySchema = createLegalEntitySchema.partial();
+export type UpdateLegalEntity = z.infer<typeof updateLegalEntitySchema>;
+
 export const legalEntityListParamsSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(200).default(50),
   sortBy: z.enum(['code', 'legalName', 'status', 'country', 'functionalCurrency']).optional(),
   sortDir: z.enum(['asc', 'desc']).optional(),
   search: z.string().max(100).optional(),
+  status: legalEntityStatusSchema.optional(),
 });
 export type LegalEntityListParams = z.infer<typeof legalEntityListParamsSchema>;
 
-export const legalEntityListResponseSchema = paginatedResponseSchema(legalEntitySchema);
+export const legalEntityListResponseSchema = paginatedResponseSchema(
+  legalEntitySchema.extend({ metrics: legalEntityUsageSchema.optional() }),
+);
 export type LegalEntityListResponse = z.infer<typeof legalEntityListResponseSchema>;
 
 export const userSchema = z.object({
