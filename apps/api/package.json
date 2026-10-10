@@ -11,6 +11,8 @@
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:demo": "tsx prisma/seed-demo.ts",
+    "db:reset": "prisma migrate reset --force && tsx prisma/seed.ts && tsx prisma/seed-demo.ts",
     "test:e2e": "jest --config ./test/jest-e2e.json --forceExit",
     "test:unit": "jest --config ./test/jest-unit.json",
     "test": "pnpm test:unit && pnpm test:e2e"

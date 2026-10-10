@@ -427,14 +427,26 @@ async function seedPortfolio() {
     { code: 'AEC-MAR', legalName: 'AEC Marine Works', taxIdentifier: '01.234.567.8-901.000', country: 'ID', functionalCurrency: 'IDR' },
     { code: 'AEC-PWR', legalName: 'AEC Power Systems', taxIdentifier: '01.234.567.8-902.000', country: 'ID', functionalCurrency: 'USD' },
   ];
+  // Pastikan master Currency ada agar FK `functionalCurrencyId` terisi (bukan NULL).
+  const currencyByCode = new Map<string, string>();
+  for (const c of [
+    { code: 'IDR', name: 'Indonesian Rupiah', symbol: 'Rp', decimals: 2 },
+    { code: 'USD', name: 'US Dollar', symbol: '$', decimals: 2 },
+    { code: 'EUR', name: 'Euro', symbol: '€', decimals: 2 },
+  ]) {
+    const row = await prisma.currency.upsert({ where: { code: c.code }, update: {}, create: c });
+    currencyByCode.set(c.code, row.id);
+  }
   const entityByCode = new Map<string, string>();
   const con = await prisma.legalEntity.findUnique({ where: { code: 'AEC-CON' } });
   if (con) entityByCode.set('AEC-CON', con.id);
   for (const e of entities) {
+    const ccyId = currencyByCode.get(e.functionalCurrency) ?? currencyByCode.get('IDR') ?? null;
+    const idrId = currencyByCode.get('IDR') ?? null;
     const row = await prisma.legalEntity.upsert({
       where: { code: e.code },
-      update: { legalName: e.legalName },
-      create: { code: e.code, legalName: e.legalName, taxIdentifier: e.taxIdentifier, country: e.country, functionalCurrency: e.functionalCurrency, reportingCurrency: 'IDR' },
+      update: { legalName: e.legalName, functionalCurrencyId: ccyId, reportingCurrencyId: idrId },
+      create: { code: e.code, legalName: e.legalName, taxIdentifier: e.taxIdentifier, country: e.country, functionalCurrency: e.functionalCurrency, reportingCurrency: 'IDR', functionalCurrencyId: ccyId, reportingCurrencyId: idrId },
     });
     entityByCode.set(e.code, row.id);
   }
