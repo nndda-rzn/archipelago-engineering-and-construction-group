@@ -87,8 +87,9 @@ describe('ReportingPage — struktur & identitas', () => {
     expect(within(summary).getByText('AR outstanding')).toBeTruthy();
     expect(within(summary).getByText('AP outstanding')).toBeTruthy();
     expect(within(summary).getByText('Net cash')).toBeTruthy();
-    // Total AR = 88M + 18M
-    expect(within(summary).getByText(/Rp\s?106\.000\.000\.000/)).toBeTruthy();
+    // Total AR = 88M + 18M ditampilkan ringkas, dengan nominal penuh di title.
+    const ar = within(summary).getByText('Rp 106 M');
+    expect(ar.getAttribute('title')).toMatch(/Rp\s?106\.000\.000\.000/);
   });
 
   it('shows period-over-period trend badges on the summary cards', () => {
@@ -104,23 +105,24 @@ describe('ReportingPage — aging & drill-down', () => {
   it('renders every aging bucket including zero ones (honest, not hidden)', () => {
     renderWithProviders(<ReportingPage />);
     const ar = screen.getByLabelText('Aging AR');
-    // Nama bucket muncul di legend stacked bar DAN baris bucket — keduanya wajar.
+    // Satu encoding saja (bar per bucket): setiap bucket muncul sebagai baris.
     expect(within(ar).getAllByText('CURRENT').length).toBeGreaterThanOrEqual(1);
     expect(within(ar).getAllByText('31-60').length).toBeGreaterThanOrEqual(1);
     expect(within(ar).getAllByText('90+').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('reveals the invoices behind a bucket when it is clicked', () => {
+  it('opens the invoices behind a bucket in a modal, not an always-present block', () => {
     renderWithProviders(<ReportingPage />);
-    // Sebelum memilih: panduan, bukan tabel kosong.
-    expect(screen.getByText(/Select an aging bucket/i)).toBeTruthy();
+    // Tidak ada blok detail permanen sebelum bucket dipilih.
+    expect(screen.queryByText(/Select an aging bucket/i)).toBeNull();
+    expect(screen.queryByLabelText('Aging detail')).toBeNull();
 
     fireEvent.click(screen.getByLabelText('Aging AR 31-60: Rp 18.000.000.000'));
 
-    const detail = screen.getByLabelText('Aging detail');
-    expect(within(detail).getByText('CINV-900111')).toBeTruthy();
-    expect(within(detail).getByText('PT Klien Utama')).toBeTruthy();
-    expect(screen.queryByText(/Select an aging bucket/i)).toBeNull();
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText(/Aging detail · 31-60/)).toBeTruthy();
+    expect(within(dialog).getByText('CINV-900111')).toBeTruthy();
+    expect(within(dialog).getByText('PT Klien Utama')).toBeTruthy();
   });
 });
 
@@ -138,32 +140,16 @@ describe('ReportingPage — blok lain', () => {
     expect(screen.getByText(/margin = revenue − cost/i)).toBeTruthy();
   });
 
+  it('shows the project table with a search box and in-cell budget bar (no separate bar list)', () => {
+    const { container } = renderWithProviders(<ReportingPage />);
+    expect(screen.getByLabelText('Search projects')).toBeTruthy();
+    expect(container.querySelector('[data-slot="budget-usage-fill"]')).toBeTruthy();
+  });
+
   it('shows forecast vs actual and cost composition', () => {
     renderWithProviders(<ReportingPage />);
     expect(screen.getByText('Forecast vs actual')).toBeTruthy();
     expect(screen.getByText('Cost composition')).toBeTruthy();
-  });
-
-  it('anchors the scrollable cost table so its sr-only caption cannot escape', () => {
-    const { container } = renderWithProviders(<ReportingPage />);
-    const caption = container.querySelector('caption.sr-only')!;
-    expect(caption).toBeTruthy();
-    const wrapper = caption.closest('div')!;
-    // `<caption className="sr-only">` memakai `position: absolute`. Tanpa leluhur
-    // ber-position, containing block-nya jatuh ke <body>, sehingga caption lolos
-    // dari `overflow-y: auto` milik <main> dan menambah ~1260px ruang kosong di
-    // bawah halaman. `relative` mengurungnya kembali.
-    expect(wrapper.className).toContain('relative');
-    expect(wrapper.className).toContain('overflow-x-auto');
-  });
-
-  it('keeps the caption inside the scroll container rather than directly under the page', () => {
-    const { container } = renderWithProviders(<ReportingPage />);
-    const caption = container.querySelector('caption.sr-only')!;
-    expect(caption.tagName).toBe('CAPTION');
-    const wrapper = container.querySelector('div.relative.overflow-x-auto');
-    expect(wrapper).toBeTruthy();
-    expect(wrapper!.contains(caption)).toBe(true);
   });
 });
 

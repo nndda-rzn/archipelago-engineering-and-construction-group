@@ -16,7 +16,7 @@ export function ForecastVsActualChart({ periods }: { periods: ForecastVsActual['
 
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={periods} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+      <BarChart data={periods} margin={{ top: 8, right: 8, left: 8, bottom: 0 }} barCategoryGap="35%" barGap={6}>
         <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} vertical={false} />
         <XAxis dataKey="period" tick={{ fontSize: 11, fill: CHART.axis }} axisLine={{ stroke: CHART.grid }} tickLine={false} />
         <YAxis

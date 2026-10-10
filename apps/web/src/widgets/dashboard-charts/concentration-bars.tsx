@@ -22,7 +22,7 @@ export function ConcentrationBars({ data }: { data: ArConcentration }) {
             <span className="h-2 flex-1 overflow-hidden rounded-full bg-neutral-100">
               <span
                 data-slot="concentration-fill"
-                className="block h-full rounded-full bg-neutral-800"
+                className="block h-full rounded-full bg-info-600/70"
                 style={{ width: `${max > 0 ? (i.amount / max) * 100 : 0}%` }}
               />
             </span>

@@ -20,6 +20,15 @@ export function formatNumber(n: number) {
  * "jt" tanpa konteks dan berbeda unit dari tooltip (yang memakai formatIdr penuh).
  */
 export function formatIdrAxis(n: number): string {
+  return formatIdrCompact(n);
+}
+
+/**
+ * Angka uang ringkas untuk tampilan padat (KPI, tabel): `Rp 6,25 T`, `Rp 40,15 M`.
+ * Nominal presisi penuh tetap tersedia lewat `formatIdr` (dipakai sebagai `title`
+ * tooltip) — lihat komponen `Money`.
+ */
+export function formatIdrCompact(n: number): string {
   const abs = Math.abs(n);
   const sign = n < 0 ? '−' : '';
   if (abs >= 1e12) return `${sign}Rp ${trimZero(abs / 1e12)} T`;

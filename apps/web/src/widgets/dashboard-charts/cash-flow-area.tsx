@@ -1,4 +1,4 @@
-import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, CartesianGrid, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { EmptyState } from '@aec/ui';
 import { formatIdr, formatIdrAxis } from '@/shared/lib/format';
 import { CHART } from './chart-colors';
@@ -19,6 +19,17 @@ export function toAreaSeries(series: CashFlowSeriesPoint[]): { month: string; ne
   });
 }
 
+/**
+ * Buang bulan **nol di awal** saja (leading zero run) supaya grafik tidak melebar
+ * dengan setengah tahun kosong. Bulan nol di tengah/akhir sengaja dipertahankan —
+ * menghilangkannya akan menyembunyikan bulan tanpa aktivitas (integritas data).
+ */
+export function trimLeadingZeros<T extends { net: number }>(series: T[]): T[] {
+  const first = series.findIndex((p) => p.net !== 0);
+  if (first <= 0) return series;
+  return series.slice(first);
+}
+
 const tooltipStyle = {
   borderRadius: 6,
   border: `1px solid ${CHART.grid}`,
@@ -31,10 +42,10 @@ export function CashFlowArea({ series }: { series: CashFlowSeriesPoint[] }) {
     return <EmptyState title="No cash movement" description="No collections or payments in this period." />;
   }
 
-  const data = toAreaSeries(series);
+  const data = trimLeadingZeros(toAreaSeries(series));
 
   return (
-    <ResponsiveContainer width="100%" height={200}>
+    <ResponsiveContainer width="100%" height={220}>
       <AreaChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
         <defs>
           <linearGradient id="cashNetFill" x1="0" y1="0" x2="0" y2="1">
@@ -49,6 +60,13 @@ export function CashFlowArea({ series }: { series: CashFlowSeriesPoint[] }) {
           contentStyle={tooltipStyle}
           formatter={(value, name) => [formatIdr(Number(value)), name === 'cumulative' ? 'Cumulative net' : 'Monthly net']}
           cursor={{ fill: CHART.cursor }}
+        />
+        {/* Legend langsung di atas grafik: pembaca tidak perlu menebak arti garis. */}
+        <Legend
+          verticalAlign="top"
+          height={24}
+          wrapperStyle={{ fontSize: 12 }}
+          formatter={(value) => (value === 'cumulative' ? 'Cumulative net' : 'Monthly net')}
         />
         <Area type="monotone" dataKey="cumulative" stroke={CHART.positive} strokeWidth={2} fill="url(#cashNetFill)" name="cumulative" />
         <Line type="monotone" dataKey="net" stroke={CHART.axis} strokeWidth={1} dot={false} name="net" />

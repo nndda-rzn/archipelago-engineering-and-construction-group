@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatIdrAxis } from './format';
+import { formatIdrAxis, formatIdrCompact } from './format';
 
 describe('formatIdrAxis', () => {
   it('formats millions with an explicit "jt" unit', () => {
@@ -24,5 +24,19 @@ describe('formatIdrAxis', () => {
 
   it('drops trailing zeros (1.0 -> "1")', () => {
     expect(formatIdrAxis(1_000_000_000)).toBe('Rp 1 M');
+  });
+});
+
+describe('formatIdrCompact', () => {
+  it('keeps two decimals for large magnitudes (trillions)', () => {
+    expect(formatIdrCompact(6_246_138_966_310)).toBe('Rp 6,25 T');
+  });
+
+  it('keeps two decimals for billions', () => {
+    expect(formatIdrCompact(40_150_000_000)).toBe('Rp 40,15 M');
+  });
+
+  it('matches formatIdrAxis (one shared formatter)', () => {
+    expect(formatIdrCompact(12_000_000)).toBe(formatIdrAxis(12_000_000));
   });
 });
