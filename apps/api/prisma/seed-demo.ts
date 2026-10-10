@@ -1201,21 +1201,54 @@ async function main() {
   console.log(`KpiTarget: ${kpiTargets.length} metrik x ${fyPeriod}/${qPeriod}`);
 
   // ── 13. Demo user roles ──
+  // Identitas kerja lengkap (jabatan/departemen/telepon) + role yang BENAR-BENAR
+  // ter-assign + preferensi + riwayat login, supaya halaman User Management
+  // menjawab "ini siapa, sebagai apa" dengan data nyata (bukan kosong).
   const demoUsers = [
-    { email: 'ceo@aec.local', name: 'CEO Demo', role: 'SUPER_ADMIN' },
-    { email: 'cfo@aec.local', name: 'CFO Demo', role: 'SUPER_ADMIN' },
-    { email: 'pm@aec.local', name: 'Project Manager Demo', role: 'SUPER_ADMIN' },
+    { email: 'ceo@aec.local', name: 'Budi Raharjo', jobTitle: 'Chief Executive Officer', department: 'Executive', phone: '+62 811 1000 001', role: 'SUPER_ADMIN' },
+    { email: 'cfo@aec.local', name: 'Sari Wulandari', jobTitle: 'Chief Financial Officer', department: 'Finance', phone: '+62 811 1000 002', role: 'SUPER_ADMIN' },
+    { email: 'pm@aec.local', name: 'Andi Pratama', jobTitle: 'Project Manager', department: 'Construction', phone: '+62 811 1000 003', role: 'PROCUREMENT_MANAGER' },
   ];
   for (const u of demoUsers) {
-    const existing = await prisma.user.findUnique({ where: { email: u.email } });
-    if (!existing) {
-      const hash = await bcrypt.hash('Demo123!', 12);
-      await prisma.user.create({
-        data: { username: u.email.split('@')[0], email: u.email, displayName: u.name, passwordHash: hash, legalEntityId: entity.id, status: 'ACTIVE' },
+    const hash = await bcrypt.hash('Demo123!', 12);
+    const user = await prisma.user.upsert({
+      where: { email: u.email },
+      update: { displayName: u.name, jobTitle: u.jobTitle, department: u.department, phone: u.phone, legalEntityId: entity.id },
+      create: {
+        username: u.email.split('@')[0], email: u.email, displayName: u.name, passwordHash: hash,
+        legalEntityId: entity.id, status: 'ACTIVE',
+        jobTitle: u.jobTitle, department: u.department, phone: u.phone,
+      },
+    });
+    // Preferensi default.
+    await prisma.userSetting.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: { userId: user.id },
+    });
+    // Role benar-benar di-assign (idempoten).
+    const role = await prisma.role.findUnique({ where: { code: u.role } });
+    if (role) {
+      const assigned = await prisma.userRole.findFirst({ where: { userId: user.id, roleId: role.id, effectiveTo: null } });
+      if (!assigned) {
+        await prisma.userRole.create({
+          data: { userId: user.id, roleId: role.id, effectiveFrom: new Date(Date.UTC(now.getUTCFullYear(), 0, 1)), assignedById: 'seed', reason: 'Demo seed' },
+        });
+      }
+    }
+    // Riwayat login demo (SUCCESS + satu gagal) agar timeline punya isi.
+    const loginCount = await prisma.loginEvent.count({ where: { userId: user.id } });
+    if (loginCount === 0) {
+      await prisma.loginEvent.createMany({
+        data: [
+          { userId: user.id, email: u.email, type: 'SUCCESS', ipAddress: '10.0.0.12', userAgent: 'Mozilla/5.0 (demo)', at: new Date(now.getTime() - 3 * 86400000) },
+          { userId: user.id, email: u.email, type: 'SUCCESS', ipAddress: '10.0.0.12', userAgent: 'Mozilla/5.0 (demo)', at: new Date(now.getTime() - 1 * 86400000) },
+          { userId: user.id, email: u.email, type: 'FAILED_PASSWORD', ipAddress: '10.0.0.12', userAgent: 'Mozilla/5.0 (demo)', reason: 'Incorrect password', at: new Date(now.getTime() - 1 * 86400000 + 3600000) },
+        ],
       });
     }
   }
-  console.log('Demo users: ceo/cfo/pm @aec.local / Demo123!');
+  console.log('Demo users: ceo/cfo/pm @aec.local / Demo123! (identitas + role + login history)');
 
   // ── 13b. Portfolio multi-entitas (proyek, EVM baseline, inventory, funnel) ──
   await seedPortfolio();
