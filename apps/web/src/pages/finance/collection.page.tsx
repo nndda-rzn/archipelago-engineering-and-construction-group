@@ -14,7 +14,7 @@ export function CollectionPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Collection</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Receive client payments · reduce AR (FR-FIN-010)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Receive client payments · reduce AR</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>
           {showForm ? 'Close' : '+ Create Collection'}

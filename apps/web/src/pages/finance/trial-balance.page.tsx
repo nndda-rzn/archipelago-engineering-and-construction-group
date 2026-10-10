@@ -30,7 +30,7 @@ export function TrialBalancePage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Trial Balance</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Neraca saldo dari journal ter-posting (FR-FIN-001)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Neraca saldo dari journal ter-posting</p>
         </div>
       </div>
 

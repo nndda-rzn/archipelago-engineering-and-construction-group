@@ -14,7 +14,7 @@ export function StockTransferPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Stock Transfer</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Move stock between warehouses (FR-INV-005)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Move stock between warehouses</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Close' : '+ Transfer Stock'}</Button>
       </div>

@@ -48,7 +48,7 @@ export class PurchaseRequisitionService {
         if (!check.within) {
           throw new ConflictException({
             code: 'BUDGET_EXCEEDED',
-            message: `PR estimate ${estimatedTotal.toLocaleString('id-ID')} exceeds the remaining budget ${check.remaining.toLocaleString('id-ID')} (FR-PRO-002)`,
+            message: `PR estimate ${estimatedTotal.toLocaleString('id-ID')} exceeds the remaining budget ${check.remaining.toLocaleString('id-ID')}`,
           });
         }
 

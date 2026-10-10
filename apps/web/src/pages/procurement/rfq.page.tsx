@@ -63,7 +63,7 @@ export function RfqPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <div><h1 className="text-h1 text-neutral-950">RFQ</h1><p className="mt-1 text-body-sm text-neutral-500">Request for Quotation + vendor evaluation (FR-PRO-003/004)</p></div>
+        <div><h1 className="text-h1 text-neutral-950">RFQ</h1><p className="mt-1 text-body-sm text-neutral-500">Request for Quotation + vendor evaluation</p></div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Close' : '+ Create RFQ'}</Button>
       </div>
       {showForm && <RfqForm onDone={() => setShowForm(false)} />}

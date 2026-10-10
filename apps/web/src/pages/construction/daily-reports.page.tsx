@@ -17,7 +17,7 @@ export function DailyReportsPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Daily Report</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Daily construction site report (FR-CON-003)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Daily construction site report</p>
         </div>
         <div className="flex items-center gap-2">
           <EntitySelect

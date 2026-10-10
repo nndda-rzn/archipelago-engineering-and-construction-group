@@ -18,7 +18,7 @@ export function WbsPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-h1 text-neutral-950">Work Breakdown Structure</h1>
-        <p className="mt-1 text-body-sm text-neutral-500">Hierarchical WBS per project (FR-PRJ-002)</p>
+        <p className="mt-1 text-body-sm text-neutral-500">Hierarchical WBS per project</p>
       </div>
 
       <div className="mb-4 w-72">

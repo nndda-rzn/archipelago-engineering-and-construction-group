@@ -106,7 +106,7 @@ export class WorkPackageService {
       if (ifcCount === 0) {
         // Guard murni: tidak menulis apa pun saat gagal. Status BLOCKED/READY pada WP
         // dipersist oleh endpoint readiness() (GET .../readiness), bukan oleh start() yang gagal.
-        throw new ConflictException({ code: 'READINESS_GATE_BLOCKED', message: 'Work package requires current IFC - not yet available (FR-CON-002)' });
+        throw new ConflictException({ code: 'READINESS_GATE_BLOCKED', message: 'Work package requires current IFC - not yet available' });
       }
     }
 
@@ -138,7 +138,7 @@ export class WorkPackageService {
       where: { id },
       data: {
         readyStatus: ready ? 'READY' : 'BLOCKED',
-        readyNote: ready ? 'Prerequisites met' : 'Current IFC not yet available (FR-CON-002)',
+        readyNote: ready ? 'Prerequisites met' : 'Current IFC not yet available',
       },
     });
 

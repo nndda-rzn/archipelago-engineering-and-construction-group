@@ -89,7 +89,7 @@ export function JournalPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">GL Journal</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Double-entry journal · debit = credit (FR-FIN-003/004)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Double-entry journal · debit = credit</p>
         </div>
         <div className="flex items-center gap-3">
           <Select value={defaultEntityId} onValueChange={setEntityId}>

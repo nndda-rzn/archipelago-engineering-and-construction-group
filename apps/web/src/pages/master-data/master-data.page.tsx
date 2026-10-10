@@ -66,7 +66,7 @@ export function MasterDataPage() {
         <div>
           <h1 className="text-h1 text-neutral-950">Master Data</h1>
           <p className="mt-1 text-body-sm text-neutral-500">
-            Vendor master, fiscal periods &amp; document numbering (FR-PRO-010, FR-FND-010)
+            Vendor master, fiscal periods &amp; document numbering
           </p>
         </div>
         <Button size="sm" onClick={() => (showForm ? closeForm() : setShowForm(true))}>

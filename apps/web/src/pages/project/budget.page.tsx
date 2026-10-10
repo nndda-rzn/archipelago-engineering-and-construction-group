@@ -20,7 +20,7 @@ export function BudgetPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Budget Baseline</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Budget per WBS (FR-PRJ-005/006)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Budget per WBS</p>
         </div>
         {data && <BudgetStatusBadge published={published} publishPending={publish.isPending} onPublish={() => publish.mutate()} />}
       </div>

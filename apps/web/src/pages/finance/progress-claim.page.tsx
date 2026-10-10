@@ -18,7 +18,7 @@ export function ProgressClaimPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Progress Claim</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Progress claim to client · types PROGRESS/COST/TIME/EOT/CONTRACTUAL (FR-CMR-007)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Progress claim to client · types PROGRESS/COST/TIME/EOT/CONTRACTUAL</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={claimTypeFilter} onValueChange={setClaimTypeFilter}>

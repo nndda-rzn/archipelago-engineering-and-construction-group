@@ -15,7 +15,7 @@ export function CommissioningPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Commissioning</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Hierarchy Plant → System → Subsystem → Equipment (FR-CON-005)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Hierarchy Plant → System → Subsystem → Equipment</p>
         </div>
         <div className="flex items-center gap-2">
           <EntitySelect

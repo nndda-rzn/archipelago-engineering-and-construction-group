@@ -134,7 +134,7 @@ export class RfqService {
     if (technicalRejected.length > 0) {
       throw new ConflictException({
         code: 'TECHNICAL_REJECTED',
-        message: `Quote vendor ${technicalRejected.map((q) => q.vendor).join(', ')} ditolak teknis — evaluasi teknis dulu (FR-PRO-005)`,
+        message: `Quote vendor ${technicalRejected.map((q) => q.vendor).join(', ')} ditolak teknis — evaluasi teknis dulu`,
       });
     }
 

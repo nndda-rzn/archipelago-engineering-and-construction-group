@@ -14,7 +14,7 @@ export function StockOpnamePage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Stock Opname</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Count sheet + reconciliation (FR-INV-007)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Count sheet + reconciliation</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Close' : '+ Start Opname'}</Button>
       </div>

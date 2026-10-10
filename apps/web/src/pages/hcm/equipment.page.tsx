@@ -24,7 +24,7 @@ export function EquipmentPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Equipment</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Aset alat berat, PM, breakdown, utilization (FR-HCM-005..009)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Aset alat berat, PM, breakdown, utilization</p>
         </div>
         <div className="flex items-center gap-2">
           <Select aria-label="Filter status" value={statusFilter} onValueChange={setStatusFilter}>

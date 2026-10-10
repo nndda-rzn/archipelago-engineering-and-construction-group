@@ -49,7 +49,7 @@ export function BudgetImpact({ budget, amount }: { budget: NonNullable<ApprovalD
         <div><dt className="text-neutral-500">Open PRs</dt><dd className="font-mono tabular-nums text-neutral-800">{formatIdr(budget.existingPr)}</dd></div>
         <div><dt className="text-neutral-500">Remaining</dt><dd className={`font-mono tabular-nums ${budget.remaining >= 0 ? 'text-neutral-800' : 'text-destructive-600'}`}>{formatIdr(budget.remaining)}</dd></div>
       </dl>
-      <p className="mt-2 text-caption text-neutral-400">FR-PRO-002 · same calculation used when a PR is created.</p>
+      <p className="mt-2 text-caption text-neutral-400">Same calculation used when a PR is created.</p>
     </section>
   );
 }

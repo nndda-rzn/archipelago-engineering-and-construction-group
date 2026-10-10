@@ -31,7 +31,7 @@ export class ProjectAssignmentService {
     if (currentTotal + allocation > 100 && !dto.exceptionApproved) {
       throw new ConflictException({
         code: 'ALLOCATION_EXCEEDS',
-        message: `Total allocation ${currentTotal + allocation}% > 100% - exception approval required (FR-HCM-003)`,
+        message: `Total allocation ${currentTotal + allocation}% > 100% - exception approval required`,
       });
     }
 

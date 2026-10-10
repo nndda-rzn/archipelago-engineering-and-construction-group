@@ -34,7 +34,7 @@ export function HsePage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">HSE</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Safety observation, incident, permit to work, corrective action (FR-HSE-001..005)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Safety observation, incident, permit to work, corrective action</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>
           {showForm ? 'Close' : '+ Create New'}
