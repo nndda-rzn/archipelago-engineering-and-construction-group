@@ -18,7 +18,7 @@ export class EstimateService {
 
     const bid = await this.prisma.bidDecision.findUnique({ where: { opportunityId } });
     if (!bid || bid.decision !== 'BID') {
-      throw new ConflictException({ code: 'BID_NOT_APPROVED', message: 'Bid/No-Bid must be BID before bid preparation (FR-COM-002)' });
+      throw new ConflictException({ code: 'BID_NOT_APPROVED', message: 'Bid/No-Bid must be BID before bid preparation' });
     }
 
     const last = await this.prisma.estimate.findFirst({ where: { opportunityId }, orderBy: { version: 'desc' } });

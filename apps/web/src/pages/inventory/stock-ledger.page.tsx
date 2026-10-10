@@ -31,7 +31,7 @@ export function StockLedgerPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Stock Ledger</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">All stock changes come from movements (FR-INV-001)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">All stock changes come from movements</p>
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="secondary" onClick={handleExport} disabled={exporting}>

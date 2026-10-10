@@ -18,7 +18,7 @@ export function HandoverPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Handover</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Handover & closeout · check mandatory documents (FR-CON-006)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Handover & closeout · check mandatory documents</p>
         </div>
         <div className="flex items-center gap-2">
           <EntitySelect

@@ -38,7 +38,7 @@ export function QualityPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Quality</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">ITP, inspection, NCR, punch list (FR-QA-001..004)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">ITP, inspection, NCR, punch list</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>
           {showForm ? 'Close' : '+ Create New'}

@@ -20,7 +20,7 @@ export function SubcontractPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Subcontract</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Subcontractor payments based on verified progress (FR-CMR-008)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Subcontractor payments based on verified progress</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPagination({ pageIndex: 0, pageSize: PAGE_SIZE }); }}>

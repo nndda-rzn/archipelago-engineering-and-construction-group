@@ -57,7 +57,7 @@ export function BudgetCheckSection() {
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-caption text-neutral-500">FR-PRO-002 - a new PR is rejected when its estimate exceeds the remaining budget (409 BUDGET_EXCEEDED).</p>
+            <p className="mt-3 text-caption text-neutral-500">A new PR is rejected when its estimate exceeds the remaining budget (409 BUDGET_EXCEEDED).</p>
           </>
         )}
       </div>

@@ -14,7 +14,7 @@ export function GoodsReceiptPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Goods Receipt</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Receive goods from PO → update stock ledger (FR-PRO-009, FR-INV-001)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Receive goods from PO → update stock ledger</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Close' : '+ Receive Goods'}</Button>
       </div>

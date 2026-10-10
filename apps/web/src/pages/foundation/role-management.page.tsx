@@ -34,7 +34,7 @@ export function RoleManagementPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Role Management</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Role &amp; permission assignment (FR-FND-004)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Role &amp; permission assignment</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>
           {showForm ? 'Close' : '+ Add Role'}

@@ -17,7 +17,7 @@ export function ChartOfAccountPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Chart of Accounts</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">GL chart of accounts (FR-FIN-002)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">GL chart of accounts</p>
         </div>
         <div className="flex items-center gap-3">
           <EntitySelect

@@ -111,7 +111,7 @@ export function ClientInvoicePage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Client Invoice</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">AR invoice to client from a CERTIFIED claim (FR-FIN-009)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">AR invoice to client from a CERTIFIED claim</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>
           {showForm ? 'Close' : '+ Create Invoice'}

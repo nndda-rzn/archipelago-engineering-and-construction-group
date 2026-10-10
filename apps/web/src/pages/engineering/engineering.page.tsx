@@ -38,7 +38,7 @@ export function EngineeringPage() {
         <div>
           <h1 className="text-h1 text-neutral-950">Engineering</h1>
           <p className="text-body text-neutral-500">
-            Manage deliverables, drawings, RFI, submittals, transmittals (FR-ENG-001..005)
+            Manage deliverables, drawings, RFI, submittals, transmittals
           </p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>

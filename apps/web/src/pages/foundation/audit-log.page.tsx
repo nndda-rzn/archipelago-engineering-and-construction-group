@@ -47,7 +47,7 @@ export function AuditLogPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-h1 text-neutral-950">Audit Trail</h1>
-        <p className="mt-1 text-body-sm text-neutral-500">History of critical actions (FR-FND-008)</p>
+        <p className="mt-1 text-body-sm text-neutral-500">History of critical actions</p>
       </div>
 
       <div className="rounded-md border border-neutral-200 bg-white shadow-xs">

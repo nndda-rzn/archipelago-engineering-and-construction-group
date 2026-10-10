@@ -49,7 +49,7 @@ export function MaterialIssuePage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Material Issue</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Issue material → reduce stock + project consumption (FR-INV-004)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Issue material → reduce stock + project consumption</p>
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>
           {showForm ? 'Close' : '+ Issue Material'}

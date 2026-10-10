@@ -16,7 +16,7 @@ export function TimesheetsPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-h1 text-neutral-950">Timesheet</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Employee work hours to project/WBS (FR-HCM-004)</p>
+          <p className="mt-1 text-body-sm text-neutral-500">Employee work hours to project/WBS</p>
         </div>
         <div className="flex items-center gap-2">
           <Select aria-label="Filter status" value={statusFilter} onValueChange={setStatusFilter}>
