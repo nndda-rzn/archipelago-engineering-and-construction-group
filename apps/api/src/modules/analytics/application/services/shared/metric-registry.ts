@@ -67,12 +67,12 @@ async function loadProjectMeta(prisma: PrismaService, ids: string[]): Promise<Ma
   if (unique.length === 0) return new Map();
   const rows = await prisma.project.findMany({
     where: { id: { in: unique } },
-    select: { id: true, code: true, name: true, legalEntity: { select: { code: true, name: true } } },
+    select: { id: true, code: true, name: true, legalEntity: { select: { code: true, legalName: true } } },
   });
   return new Map(
     rows.map((p) => [
       p.id,
-      { code: p.code, name: p.name, entityCode: p.legalEntity?.code ?? null, entityName: p.legalEntity?.name ?? null },
+      { code: p.code, name: p.name, entityCode: p.legalEntity?.code ?? null, entityName: p.legalEntity?.legalName ?? null },
     ]),
   );
 }
@@ -162,10 +162,10 @@ async function contractValueRows(prisma: PrismaService, filter: ResolvedFilter, 
   const dw = dateWhere(filter);
   const rows = await prisma.project.findMany({
     where: { ...(filter.legalEntityId ? { legalEntityId: filter.legalEntityId } : {}), ...(dw ? { createdAt: dw } : {}) },
-    select: { id: true, code: true, name: true, client: true, contractValue: true, createdAt: true, legalEntity: { select: { code: true, name: true } } },
+    select: { id: true, code: true, name: true, client: true, contractValue: true, createdAt: true, legalEntity: { select: { code: true, legalName: true } } },
   });
   const meta = new Map(
-    rows.map((p) => [p.id, { code: p.code, name: p.name, entityCode: p.legalEntity?.code ?? null, entityName: p.legalEntity?.name ?? null }]),
+    rows.map((p) => [p.id, { code: p.code, name: p.name, entityCode: p.legalEntity?.code ?? null, entityName: p.legalEntity?.legalName ?? null }]),
   );
   const raw = rows.map((p) => ({ projectId: p.id, label: p.client, date: new Date(p.createdAt), amount: Number(p.contractValue ?? 0) }));
   return toMetricRows(raw, dimension, meta, 1);
