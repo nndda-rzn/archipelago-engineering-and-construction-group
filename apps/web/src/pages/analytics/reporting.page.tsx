@@ -21,8 +21,8 @@ export function ReportingPage() {
   const [arBucket, setArBucket] = useState('');
   const [apBucket, setApBucket] = useState('');
 
-  const cashFlow = useCashFlow(filter);
-  const aging = useAging(filter);
+  const cashFlow = useCashFlow(filter, { compare: 'previous' });
+  const aging = useAging(filter, { compare: 'previous' });
   const costSummary = useProjectCostSummary(filter);
   const composition = useCostComposition(filter);
   const concentration = useArConcentration(filter);
@@ -58,14 +58,22 @@ export function ReportingPage() {
           value={formatIdr(arTotal)}
           context={overdueAr > 0 ? `${formatIdr(overdueAr)} overdue` : 'nothing overdue'}
           tone={overdueAr > 0 ? 'text-destructive-600' : undefined}
+          delta={aging.data?.delta?.ar}
         />
         <Headline
           label="AP outstanding"
           value={formatIdr(apTotal)}
           context={overdueAp > 0 ? `${formatIdr(overdueAp)} overdue` : 'nothing overdue'}
           tone={overdueAp > 0 ? 'text-destructive-600' : undefined}
+          delta={aging.data?.delta?.ap}
         />
-        <Headline label="Net cash" value={cashFlow.data ? formatIdr(cashFlow.data.netCash) : '—'} tone={cashFlow.data && cashFlow.data.netCash < 0 ? 'text-destructive-600' : undefined} context="collections − payments" />
+        <Headline
+          label="Net cash"
+          value={cashFlow.data ? formatIdr(cashFlow.data.netCash) : '—'}
+          tone={cashFlow.data && cashFlow.data.netCash < 0 ? 'text-destructive-600' : undefined}
+          context="collections − payments"
+          delta={cashFlow.data?.delta?.netCash}
+        />
         <Headline label="Projects" value={costSummary.data ? String(costSummary.data.items.length) : '—'} context="in scope" />
       </section>
 

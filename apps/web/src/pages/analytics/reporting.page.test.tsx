@@ -53,8 +53,8 @@ vi.mock('@/features/analytics', async () => {
   const actual = await vi.importActual<typeof import('@/features/analytics')>('@/features/analytics');
   return {
     ...actual,
-    useCashFlow: vi.fn(() => ({ data: { series: [{ month: '2026-10', cashIn: 100, cashOut: 40, net: 60 }], totalCashIn: 100, totalCashOut: 40, netCash: 60, generatedAt: '2026-10-06T00:00:00.000Z' }, isLoading: false, isError: false, isFetching: false, refetch: vi.fn() })),
-    useAging: vi.fn(() => ({ data: { ...aging, asOf: '2026-10-06T00:00:00.000Z', basisDate: 'invoiceDate', generatedAt: '2026-10-06T00:00:00.000Z' }, isLoading: false, isError: false, refetch: vi.fn() })),
+    useCashFlow: vi.fn(() => ({ data: { series: [{ month: '2026-10', cashIn: 100, cashOut: 40, net: 60 }], totalCashIn: 100, totalCashOut: 40, netCash: 60, delta: { totalCashIn: { current: 100, previous: 80, pctChange: 25, direction: 'up' }, totalCashOut: { current: 40, previous: 40, pctChange: 0, direction: 'flat' }, netCash: { current: 60, previous: 40, pctChange: 50, direction: 'up' } }, generatedAt: '2026-10-06T00:00:00.000Z' }, isLoading: false, isError: false, isFetching: false, refetch: vi.fn() })),
+    useAging: vi.fn(() => ({ data: { ...aging, arOverdue: 18_000_000_000, apOverdue: 0, delta: { ar: { current: 106_000_000_000, previous: 90_000_000_000, pctChange: 17.8, direction: 'up' }, ap: { current: 82_000_000_000, previous: 82_000_000_000, pctChange: 0, direction: 'flat' }, arOverdue: { current: 18_000_000_000, previous: 10_000_000_000, pctChange: 80, direction: 'up' }, apOverdue: { current: 0, previous: 0, pctChange: null, direction: 'flat' } }, asOf: '2026-10-06T00:00:00.000Z', basisDate: 'invoiceDate', generatedAt: '2026-10-06T00:00:00.000Z' }, isLoading: false, isError: false, refetch: vi.fn() })),
     useProjectCostSummary: vi.fn(() => ({ data: { items: [{ projectCode: 'PRJ-1', projectName: 'Tower', contractValue: 100, budget: 100, cost: 96, revenue: 10, margin: -86, budgetUsagePct: 96 }], generatedAt: 'x' }, isLoading: false, isError: false, refetch: vi.fn() })),
     useCostComposition: vi.fn(() => ({ data: { items: [{ costType: 'MATERIAL', amount: 300 }], total: 300, generatedAt: 'x' }, isLoading: false, isError: false, refetch: vi.fn() })),
     useArConcentration: vi.fn(() => ({ data: { items: [{ client: 'PT Klien Utama', amount: 148, pct: 62.8 }, { client: 'PT Nusantara Energi', amount: 88, pct: 37.2 }], total: 236, generatedAt: 'x' }, isLoading: false, isError: false, refetch: vi.fn() })),
@@ -89,6 +89,14 @@ describe('ReportingPage — struktur & identitas', () => {
     expect(within(summary).getByText('Net cash')).toBeTruthy();
     // Total AR = 88M + 18M
     expect(within(summary).getByText(/Rp\s?106\.000\.000\.000/)).toBeTruthy();
+  });
+
+  it('shows period-over-period trend badges on the summary cards', () => {
+    renderWithProviders(<ReportingPage />);
+    const summary = screen.getByLabelText('Summary');
+    // AR naik 17,8% vs periode sebelumnya; Net cash naik 50%.
+    expect(within(summary).getByText('+17.8%')).toBeTruthy();
+    expect(within(summary).getByText('+50%')).toBeTruthy();
   });
 });
 

@@ -65,12 +65,12 @@ export class AnalyticsService {
     return this.executiveSvc.anomalies();
   }
 
-  cashFlow(filter: AnalyticsFilterParams = {}) {
-    return this.financial.cashFlow(filter);
+  cashFlow(filter: AnalyticsFilterParams = {}, compare?: 'previous') {
+    return this.financial.cashFlow(filter, compare);
   }
 
-  aging(filter: AnalyticsFilterParams = {}) {
-    return this.financial.aging(filter);
+  aging(filter: AnalyticsFilterParams = {}, compare?: 'previous') {
+    return this.financial.aging(filter, compare);
   }
 
   arConcentration(filter: AnalyticsFilterParams = {}) {
