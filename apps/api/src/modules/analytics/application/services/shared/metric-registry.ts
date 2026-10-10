@@ -186,7 +186,7 @@ export const METRICS: Record<MetricKey, MetricDefinition> = {
   revenue: definition('Revenue', ['entity', 'project', 'client'], (p, f, d) => simpleRows(p, SIMPLE.revenue, f, d)),
   budget: definition('Budget (published)', ['entity', 'project', 'costType'], (p, f, d) => simpleRows(p, SIMPLE.budget, f, d)),
   contractValue: definition('Contract value', ['entity', 'project', 'client'], (p, f, d) => contractValueRows(p, f, d)),
-  netCash: definition('Net cash flow', ['entity', 'project', 'client'], async (p, f, d) => [
+  netCash: definition('Net cash flow', ['entity', 'project'], async (p, f, d) => [
     ...(await simpleRows(p, SIMPLE.cashIn, f, d)),
     ...(await simpleRows(p, { ...SIMPLE.cashOut, sign: -1 }, f, d)),
   ]),

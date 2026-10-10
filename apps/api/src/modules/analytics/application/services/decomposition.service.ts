@@ -36,7 +36,7 @@ export class DecompositionService {
 
   async decomposition(input: DecompositionInput): Promise<Decomposition> {
     const limit = input.limit && input.limit > 0 ? input.limit : DEFAULT_LIMIT;
-    const key = analyticsCacheKey(`analytics:decomposition:${input.metric}:${input.dimension}:${limit}`, input);
+    const key = analyticsCacheKey(`analytics:decomposition:${input.metric}:${input.dimension}:${limit}:${input.compare ?? 'none'}`, input);
     return this.cache.wrap(key, 60, async () => {
       const { from, to } = resolveDateRange(input.from, input.to);
       const rows = await this.registry.resolveRows(input.metric, input.dimension, this.prisma, { legalEntityId: input.legalEntityId, from, to });

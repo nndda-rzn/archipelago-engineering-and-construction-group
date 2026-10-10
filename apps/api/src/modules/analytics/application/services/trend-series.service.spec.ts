@@ -28,4 +28,16 @@ describe('TrendSeriesService', () => {
     expect(out.comparePoints).toHaveLength(out.points.length);
     expect(out.comparePoints!.every((p: { value: number }) => p.value === 0)).toBe(true);
   });
+
+  it('uses a different cache key when compare=previous, so the overlay is not masked by a cached plain response', async () => {
+    const keys: string[] = [];
+    const cache = { wrap: (k: string, _t: number, fn: () => Promise<unknown>) => { keys.push(k); return fn(); } } as never;
+    const registry = { resolveRows: async () => [] } as never;
+    const s = new TrendSeriesService({} as never, cache, registry);
+
+    await s.series({ metric: 'cashIn', from: '2026-01-01', to: '2026-03-31' });
+    await s.series({ metric: 'cashIn', from: '2026-01-01', to: '2026-03-31', compare: 'previous' });
+
+    expect(keys[0]).not.toBe(keys[1]);
+  });
 });

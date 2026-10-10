@@ -31,4 +31,16 @@ describe('DecompositionService', () => {
     expect(out.total).toBe(0);
     expect(out.others.value).toBe(0);
   });
+
+  it('uses a different cache key when compare=previous', async () => {
+    const keys: string[] = [];
+    const cache = { wrap: (k: string, _t: number, fn: () => Promise<unknown>) => { keys.push(k); return fn(); } } as never;
+    const registry = { resolveRows: async () => [] } as never;
+    const s = new DecompositionService({} as never, cache, registry);
+
+    await s.decomposition({ metric: 'cashIn', dimension: 'client' });
+    await s.decomposition({ metric: 'cashIn', dimension: 'client', compare: 'previous' });
+
+    expect(keys[0]).not.toBe(keys[1]);
+  });
 });

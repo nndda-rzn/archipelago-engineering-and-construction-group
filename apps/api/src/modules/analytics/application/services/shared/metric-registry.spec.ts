@@ -33,4 +33,11 @@ describe('metric-registry', () => {
     const rows = await resolveRows('netCash', 'project', prisma, {});
     expect(rows.map((r) => r.value).sort((a, b) => a - b)).toEqual([-40, 100]);
   });
+
+  it('netCash does not offer the client dimension (cashIn keys by client, cashOut by vendor — different namespaces)', async () => {
+    expect(METRICS.netCash.allowedDimensions).toEqual(['entity', 'project']);
+    const err = await resolveRows('netCash', 'client', {} as never, {}).catch((e) => e);
+    expect(err).toBeInstanceOf(BadRequestException);
+    expect((err as BadRequestException).getResponse()).toEqual(expect.objectContaining({ code: 'UNSUPPORTED_DECOMPOSITION' }));
+  });
 });

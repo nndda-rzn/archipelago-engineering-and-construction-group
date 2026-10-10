@@ -10,7 +10,7 @@ import type { DashboardFilter } from '@/shared/lib/dashboard-period';
 export const ALLOWED_DIMENSIONS: Record<string, string[]> = {
   cashIn: ['entity', 'project', 'client'],
   cashOut: ['entity', 'project', 'client'],
-  netCash: ['entity', 'project', 'client'],
+  netCash: ['entity', 'project'],
   cost: ['entity', 'project', 'client'],
   revenue: ['entity', 'project', 'client'],
   budget: ['entity', 'project', 'costType'],

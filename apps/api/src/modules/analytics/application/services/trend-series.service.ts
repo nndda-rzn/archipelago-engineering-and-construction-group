@@ -34,7 +34,7 @@ export class TrendSeriesService {
 
   async series(input: TrendSeriesInput): Promise<TrendSeries> {
     const bucket: PeriodBucket = input.bucket ?? 'month';
-    const key = analyticsCacheKey(`analytics:trend-series:${input.metric}:${bucket}`, input);
+    const key = analyticsCacheKey(`analytics:trend-series:${input.metric}:${bucket}:${input.compare ?? 'none'}`, input);
     return this.cache.wrap(key, 60, async () => {
       const { from, to } = this.resolveRange(input);
       const metric = METRICS[input.metric];
