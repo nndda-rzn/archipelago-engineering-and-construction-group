@@ -48,3 +48,6 @@ export { StatusBadge, statusMeta } from './enterprise/status-badge';
 export { EntitySelect, type EntitySelectOption } from './enterprise/entity-select';
 export { ConfirmActionButton, type ConfirmActionButtonProps } from './enterprise/confirm-action-button';
 export { DataGrid, type DataGridProps } from './enterprise/data-grid';
+export { SegmentRuler, type SegmentRulerProps, type SegmentRulerSegment, type SegmentRulerMarker } from './primitives/segment-ruler';
+export { TimeBand, type TimeBandProps, type TimeBandRow } from './primitives/time-band';
+export { RateMatrix, type RateMatrixProps } from './primitives/rate-matrix';

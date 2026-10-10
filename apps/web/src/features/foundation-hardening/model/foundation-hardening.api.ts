@@ -1,21 +1,29 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createCurrencySchema, createDoaRuleSchema, createExchangeRateSchema, createOrganizationSchema,
-  currencySchema, doaRuleSchema, exchangeRateSchema, ifcListSchema, organizationSchema,
-  readinessSchema, resolveDoaSchema,
-  type Currency, type DoaRule, type ExchangeRate, type Organization, type ResolveDoa,
+  currencySchema, doaAnalysisSchema, doaRuleSchema, exchangeRateSchema, organizationNodeSchema,
+  rateHistorySchema, resolveDoaInputSchema,
+  type Currency, type DoaRule, type ExchangeRate, type Organization, type OrganizationNode, type ResolveDoaInput,
 } from '@aec/api-contracts';
-import { getJson, postJson } from '@/shared/lib/http';
+import { getJson, patchJson, postJson } from '@/shared/lib/http';
 
 export const hardeningKeys = {
   all: ['foundation-hardening'] as const,
   organizations: (entityId: string, asOf?: string) => [...hardeningKeys.all, 'org', entityId, asOf] as const,
   doaRules: () => [...hardeningKeys.all, 'doa-rules'] as const,
+  doaAnalysis: (transactionType: string) => [...hardeningKeys.all, 'doa-analysis', transactionType] as const,
   currencies: () => [...hardeningKeys.all, 'currencies'] as const,
   rates: () => [...hardeningKeys.all, 'rates'] as const,
-  ifc: (projectId: string) => [...hardeningKeys.all, 'ifc', projectId] as const,
+  rateHistory: (fromId: string, toId: string, rateType: string) => [...hardeningKeys.all, 'rate-history', fromId, toId, rateType] as const,
 };
 
+/* ── Organization ─────────────────────────────────────────────────────────── */
+
+/**
+ * Struktur organisasi sebagai **tree** (`{ item, children }`) — bentuk yang
+ * dikembalikan `buildTree` di BE. Sebelumnya diparse sebagai array datar,
+ * sehingga Zod selalu gagal dan section tampil kosong tanpa error.
+ */
 export function useOrganizations(entityId: string, asOf?: string) {
   return useQuery({
     queryKey: hardeningKeys.organizations(entityId, asOf),
@@ -23,7 +31,7 @@ export function useOrganizations(entityId: string, asOf?: string) {
       const qs = new URLSearchParams();
       if (asOf) qs.set('asOf', asOf);
       const data = await getJson<{ roots: unknown }>(`/legal-entities/${entityId}/organizations?${qs}`);
-      return organizationSchema.array().parse((data as { roots: Organization[] }).roots);
+      return organizationNodeSchema.array().parse((data as { roots: OrganizationNode[] }).roots);
     },
     enabled: !!entityId,
   });
@@ -32,13 +40,33 @@ export function useOrganizations(entityId: string, asOf?: string) {
 export function useCreateOrganization() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { legalEntityId: string; name: string; orgType: string; parentId?: string }) => {
+    mutationFn: (input: { legalEntityId: string; name: string; orgType: string; parentId?: string; effectiveFrom?: string; effectiveTo?: string }) => {
       const parsed = createOrganizationSchema.parse(input);
       return postJson<unknown>('/organizations', parsed);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: hardeningKeys.all }),
   });
 }
+
+export function useUpdateOrganization() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...input }: { id: string; name?: string; orgType?: string; parentId?: string; effectiveFrom?: string; effectiveTo?: string }) =>
+      patchJson<unknown>(`/organizations/${id}`, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: hardeningKeys.all }),
+  });
+}
+
+export function useSetOrganizationStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'ACTIVE' | 'INACTIVE' }) =>
+      postJson<unknown>(`/organizations/${id}/status`, { status }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: hardeningKeys.all }),
+  });
+}
+
+/* ── Delegation of Authority ──────────────────────────────────────────────── */
 
 export function useDoaRules() {
   return useQuery({
@@ -47,6 +75,15 @@ export function useDoaRules() {
       const data = await getJson<{ items: unknown }>('/doa-rules');
       return { items: doaRuleSchema.array().parse(data.items) };
     },
+  });
+}
+
+export function useDoaAnalysis(transactionType: string) {
+  return useQuery({
+    queryKey: hardeningKeys.doaAnalysis(transactionType),
+    queryFn: async () =>
+      doaAnalysisSchema.parse(await getJson<unknown>(`/doa-rules/analysis?transactionType=${encodeURIComponent(transactionType)}`)),
+    enabled: !!transactionType,
   });
 }
 
@@ -61,15 +98,34 @@ export function useCreateDoaRule() {
   });
 }
 
+export function useUpdateDoaRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...input }: { id: string; transactionType?: string; approverLevel?: string; amountFrom?: number; amountTo?: number; riskLevel?: string; approverRoleCode?: string; priority?: number }) =>
+      patchJson<unknown>(`/doa-rules/${id}`, input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: hardeningKeys.all }),
+  });
+}
+
+export function useSetDoaRuleStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'ACTIVE' | 'INACTIVE' }) =>
+      postJson<unknown>(`/doa-rules/${id}/status`, { status }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: hardeningKeys.all }),
+  });
+}
+
 export function useResolveDoa() {
   return useMutation({
-    mutationFn: (input: { transactionType: string; amount?: number; projectId?: string; riskLevel?: string }) => {
-      const parsed = resolveDoaSchema.parse;
-      void parsed;
-      return postJson<unknown>('/doa/resolve', input);
+    mutationFn: (input: ResolveDoaInput) => {
+      const parsed = resolveDoaInputSchema.parse(input);
+      return postJson<unknown>('/doa/resolve', parsed);
     },
   });
 }
+
+/* ── Currency & Exchange Rate ─────────────────────────────────────────────── */
 
 export function useCurrencies() {
   return useQuery({
@@ -84,10 +140,19 @@ export function useCurrencies() {
 export function useCreateCurrency() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { code: string; name: string; symbol?: string }) => {
+    mutationFn: (input: { code: string; name: string; symbol?: string; decimals?: number }) => {
       const parsed = createCurrencySchema.parse(input);
       return postJson<unknown>('/currencies', parsed);
     },
+    onSuccess: () => qc.invalidateQueries({ queryKey: hardeningKeys.all }),
+  });
+}
+
+export function useSetCurrencyStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'ACTIVE' | 'INACTIVE' }) =>
+      postJson<unknown>(`/currencies/${id}/status`, { status }),
     onSuccess: () => qc.invalidateQueries({ queryKey: hardeningKeys.all }),
   });
 }
@@ -105,7 +170,7 @@ export function useExchangeRates() {
 export function useCreateExchangeRate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { fromCurrencyId: string; toCurrencyId: string; rateType: string; rate: number }) => {
+    mutationFn: (input: { fromCurrencyId: string; toCurrencyId: string; rateType: string; rate: number; effectiveDate?: string }) => {
       const parsed = createExchangeRateSchema.parse(input);
       return postJson<unknown>('/exchange-rates', parsed);
     },
@@ -113,26 +178,15 @@ export function useCreateExchangeRate() {
   });
 }
 
-export function useIfc(projectId: string) {
+export function useRateHistory(fromCurrencyId: string, toCurrencyId: string, rateType = 'SPOT') {
   return useQuery({
-    queryKey: hardeningKeys.ifc(projectId),
-    queryFn: async () => {
-      const data = await getJson<unknown>(`/engineering/drawings/ifc?projectId=${projectId}`);
-      return ifcListSchema.parse(data);
-    },
-    enabled: !!projectId,
+    queryKey: hardeningKeys.rateHistory(fromCurrencyId, toCurrencyId, rateType),
+    queryFn: async () =>
+      rateHistorySchema.parse(
+        await getJson<unknown>(`/exchange-rates/history?fromCurrencyId=${fromCurrencyId}&toCurrencyId=${toCurrencyId}&rateType=${rateType}`),
+      ),
+    enabled: !!fromCurrencyId && !!toCurrencyId,
   });
 }
 
-export function useReadiness(projectId: string, wpId: string) {
-  return useQuery({
-    queryKey: [...hardeningKeys.all, 'readiness', wpId],
-    queryFn: async () => {
-      const data = await getJson<unknown>(`/projects/${projectId}/work-packages/${wpId}/readiness`);
-      return readinessSchema.parse(data);
-    },
-    enabled: !!projectId && !!wpId,
-  });
-}
-
-export type { Currency, DoaRule, ExchangeRate, Organization, ResolveDoa };
+export type { Currency, DoaRule, ExchangeRate, Organization, OrganizationNode };
