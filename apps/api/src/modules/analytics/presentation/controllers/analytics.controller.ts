@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, Query, Res, StreamableFile, UseGuards } from '@nestjs/common';
+import { Controller, Get, Inject, Query, Res, StreamableFile, UseGuards, BadRequestException } from '@nestjs/common';
 import type { Response } from 'express';
 import type { AnalyticsFilterParams } from '@aec/api-contracts';
 import { AuthGuard } from '@/shared/guards/auth.guard';
@@ -7,6 +7,7 @@ import { PermissionsGuard } from '@/shared/guards/permissions.guard';
 import { Permission } from '@/shared/permissions/permissions';
 import { contentDisposition } from '@/shared/export/csv';
 import { AnalyticsService } from '../../application/services/analytics.service';
+import { isDimensionKey, isMetricKey } from '../../application/services/shared/metric-registry';
 
 @Controller('analytics')
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -73,6 +74,50 @@ export class AnalyticsController {
   @Permissions(Permission.AnalyticsView)
   controlTower(@Query() query: AnalyticsFilterParams) {
     return this.analytics.controlTower(query);
+  }
+
+  @Get('trend-series')
+  @Permissions(Permission.AnalyticsView)
+  trendSeries(
+    @Query() query: AnalyticsFilterParams,
+    @Query('metric') metric?: string,
+    @Query('bucket') bucket?: string,
+    @Query('compare') compare?: string,
+  ) {
+    if (!isMetricKey(metric)) {
+      throw new BadRequestException({ code: 'UNSUPPORTED_METRIC', message: `Unknown metric: ${metric ?? '(none)'}` });
+    }
+    return this.analytics.trendSeries({
+      ...query,
+      metric,
+      bucket: bucket === 'quarter' ? 'quarter' : 'month',
+      compare: compare === 'previous' ? 'previous' : undefined,
+    });
+  }
+
+  @Get('decomposition')
+  @Permissions(Permission.AnalyticsView)
+  decomposition(
+    @Query() query: AnalyticsFilterParams,
+    @Query('metric') metric?: string,
+    @Query('dimension') dimension?: string,
+    @Query('limit') limit?: string,
+    @Query('compare') compare?: string,
+  ) {
+    if (!isMetricKey(metric)) {
+      throw new BadRequestException({ code: 'UNSUPPORTED_METRIC', message: `Unknown metric: ${metric ?? '(none)'}` });
+    }
+    if (!isDimensionKey(dimension)) {
+      throw new BadRequestException({ code: 'UNSUPPORTED_DECOMPOSITION', message: `Unknown dimension: ${dimension ?? '(none)'}` });
+    }
+    const parsedLimit = Number(limit);
+    return this.analytics.decomposition({
+      ...query,
+      metric,
+      dimension,
+      limit: Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : undefined,
+      compare: compare === 'previous' ? 'previous' : undefined,
+    });
   }
 
   @Get('aging/export.csv')

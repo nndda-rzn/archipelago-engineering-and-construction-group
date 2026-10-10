@@ -17,7 +17,9 @@ function makeService(prisma: unknown, cache: unknown): AnalyticsService {
   const project = new ProjectAnalyticsService(prisma as never, cache as never);
   const exporter = new AnalyticsExportService(financial, project);
   const controlTower = new ControlTowerService(prisma as never, cache as never, executive, financial, { computeBatch: async () => new Map(), computeTotals: () => ({ bac: 0, ev: 0, pv: 0, ac: 0, cpi: null, spi: null, eac: 0, vac: 0 }) } as never);
-  return new AnalyticsService(executive, financial, project, exporter, controlTower);
+  const trend = { series: async () => ({ points: [] }) } as never;
+  const decomposition = { decomposition: async () => ({ items: [] }) } as never;
+  return new AnalyticsService(executive, financial, project, exporter, controlTower, trend, decomposition);
 }
 
 describe('analyticsCacheKey', () => {
@@ -282,6 +284,20 @@ describe('AnalyticsService.monthlySeries', () => {
     const series = svc.monthlySeries([], new Date('2026-10-15T00:00:00.000Z'));
     expect(series).toHaveLength(6);
     expect(series.every((p) => p.value === 0)).toBe(true);
+  });
+});
+
+describe('AnalyticsService trend/decomposition delegation', () => {
+  it('delegates trendSeries and decomposition to their services', async () => {
+    const trend = { series: jest.fn().mockResolvedValue({ points: [] }) } as never;
+    const decomposition = { decomposition: jest.fn().mockResolvedValue({ items: [] }) } as never;
+    const facade = new AnalyticsService({} as never, {} as never, {} as never, {} as never, {} as never, trend, decomposition);
+
+    await facade.trendSeries({ metric: 'cashIn' });
+    await facade.decomposition({ metric: 'cashIn', dimension: 'client' });
+
+    expect((trend as { series: jest.Mock }).series).toHaveBeenCalledTimes(1);
+    expect((decomposition as { decomposition: jest.Mock }).decomposition).toHaveBeenCalledTimes(1);
   });
 });
 
