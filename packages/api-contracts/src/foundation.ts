@@ -150,10 +150,35 @@ export const userActivitySchema = z.object({
 });
 export type UserActivity = z.infer<typeof userActivitySchema>;
 
+/** Bentuk user "mentah" dari GET /users/:id (berbeda dari bentuk daftar). */
+export const userDetailUserSchema = z.object({
+  id: z.string(),
+  username: z.string(),
+  email: z.string(),
+  displayName: z.string(),
+  status: z.string(),
+  lastLoginAt: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  jobTitle: z.string().nullable(),
+  department: z.string().nullable(),
+  phone: z.string().nullable(),
+  managerId: z.string().nullable(),
+  legalEntityId: z.string().nullable(),
+  organizationId: z.string().nullable(),
+  blockedAt: z.string().nullable(),
+  blockedReason: z.string().nullable(),
+  passwordChangedAt: z.string().nullable(),
+  failedLoginCount: z.number(),
+  lastFailedLoginAt: z.string().nullable(),
+  legalEntity: z.object({ code: z.string(), legalName: z.string() }).nullable(),
+  organization: z.object({ name: z.string() }).nullable(),
+  employee: z.object({ employeeNumber: z.string(), position: z.string(), department: z.string().nullable(), grade: z.string().nullable() }).nullable().optional(),
+});
+export type UserDetailUser = z.infer<typeof userDetailUserSchema>;
+
 export const userDetailSchema = z.object({
-  user: userSchema.extend({
-    employee: z.object({ employeeNumber: z.string(), position: z.string(), department: z.string().nullable(), grade: z.string().nullable() }).nullable().optional(),
-  }),
+  user: userDetailUserSchema,
   roles: z.array(z.object({ code: z.string(), name: z.string(), status: z.string(), effectiveFrom: z.string(), effectiveTo: z.string().nullable() })),
   permissions: z.array(z.object({ code: z.string(), resource: z.string(), action: z.string() })),
   sessions: z.array(userSessionSchema),
