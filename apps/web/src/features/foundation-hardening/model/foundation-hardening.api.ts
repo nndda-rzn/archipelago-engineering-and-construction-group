@@ -1,5 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';import {
   createCurrencySchema, createDoaRuleSchema, createExchangeRateSchema, createOrganizationSchema,
   currencySchema, doaAnalysisSchema, doaRuleSchema, exchangeRateSchema, organizationNodeSchema,
   rateHistorySchema, resolveDoaInputSchema,
@@ -186,6 +185,17 @@ export function useRateHistory(fromCurrencyId: string, toCurrencyId: string, rat
         await getJson<unknown>(`/exchange-rates/history?fromCurrencyId=${fromCurrencyId}&toCurrencyId=${toCurrencyId}&rateType=${rateType}`),
       ),
     enabled: !!fromCurrencyId && !!toCurrencyId,
+  });
+}
+
+/** Konversi nominal pada tanggal tertentu (memakai kurs historis). */
+export function useRevalue() {
+  return useMutation({
+    mutationFn: (input: { amount: number; fromCurrencyCode: string; toCurrencyCode: string; asOf?: string }) =>
+      postJson<{ from: string; to: string; amount: number; rate: number | null; converted: number | null; note?: string; asOf: string }>(
+        '/currencies/revalue',
+        input,
+      ),
   });
 }
 

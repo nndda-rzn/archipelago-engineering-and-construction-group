@@ -25,8 +25,8 @@ export function FoundationHardeningPage() {
   const rates = useExchangeRates();
 
   const entityOptions = (entities.data?.items ?? []).map((e) => ({ id: e.id, code: e.code }));
-  const currencyItems = (currencies.data?.items ?? []).map((c) => ({ id: c.id, code: c.code, name: c.name, isActive: c.isActive }));
-  const rateItems = (rates.data?.items ?? []).map((r) => ({ id: r.id, fromCurrency: r.fromCurrency, toCurrency: r.toCurrency, rateType: r.rateType, rate: r.rate }));
+  const currencyItems = currencies.data?.items ?? [];
+  const rateItems = rates.data?.items ?? [];
   const ruleItems = rules.data?.items ?? [];
   const editingRule = ruleItems.find((r) => r.id === doaEditId) ?? null;
 

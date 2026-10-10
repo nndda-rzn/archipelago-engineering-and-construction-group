@@ -1,12 +1,16 @@
 import { useState } from 'react';
-import { DataGrid, EmptyCell, EmptyState, EntitySelect, ErrorState, Input, Label, SegmentedControl, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton, StatusBadge } from '@aec/ui';
-import type { ColumnDef } from '@tanstack/react-table';
-import type { DoaAnalysis, OrganizationNode } from '@aec/api-contracts';
+import { EmptyCell, EmptyState, EntitySelect, ErrorState, Input, Label, SegmentedControl, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton, StatusBadge } from '@aec/ui';
+import type { Currency, DoaAnalysis, ExchangeRate, OrganizationNode } from '@aec/api-contracts';
 import { OrgForm } from './org-form';
 import { OrgOutline } from './org-outline';
 import { OrgTimeline } from './org-timeline';
 import { DoaLadder } from './doa-ladder';
 import { DoaAnalysisPanel } from './doa-analysis';
+import { CurrencyRegister } from './currency-register';
+import { RateMatrixPanel } from './rate-matrix-panel';
+import { RateHistoryView } from './rate-history';
+import { RevaluePanel } from './revalue-panel';
+import { useRateHistory } from '../model/foundation-hardening.api';
 
 export type DoaRuleItem = { id: string; transactionType: string; amountFrom?: number | null; amountTo?: number | null; riskLevel?: string | null; approverLevel: string; approverRoleCode?: string | null; status: string };
 export type CurrencyItem = { id: string; code: string; name: string; isActive: boolean };
@@ -15,34 +19,6 @@ export type ExchangeRateItem = { id: string; fromCurrency?: { code?: string } | 
 /** Ratakan pohon untuk opsi pemilih parent. */
 function flatten(nodes: OrganizationNode[]): OrganizationNode[] {
   return nodes.flatMap((n) => [n, ...flatten(n.children)]);
-}
-
-export function DoaRulesTable({ rules }: { rules: DoaRuleItem[] }) {
-  return (
-    <div className="rounded-md border border-neutral-200 bg-white shadow-xs overflow-x-auto">
-      <table className="w-full text-left text-body">
-        <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500"><tr><th className="px-4 py-2">Transaction</th><th className="px-4 py-2 text-right">From</th><th className="px-4 py-2 text-right">To</th><th className="px-4 py-2">Risk</th><th className="px-4 py-2">Level</th><th className="px-4 py-2">Role</th></tr></thead>
-        <tbody>{rules.map((r) => <tr key={r.id} className="border-t border-neutral-100 hover:bg-neutral-50"><td className="px-4 py-2 font-mono text-neutral-800">{r.transactionType}</td><td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-700">{r.amountFrom != null ? r.amountFrom.toLocaleString('id-ID') : <EmptyCell />}</td><td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-700">{r.amountTo != null ? r.amountTo.toLocaleString('id-ID') : <EmptyCell />}</td><td className="px-4 py-2">{r.riskLevel ? <span className="rounded-sm bg-neutral-100 px-1.5 py-0.5 text-caption">{r.riskLevel}</span> : <EmptyCell />}</td><td className="px-4 py-2"><span className="rounded-sm bg-info-50 px-1.5 py-0.5 text-caption text-info-700">{r.approverLevel}</span></td><td className="px-4 py-2 font-mono text-neutral-600">{r.approverRoleCode ?? <EmptyCell />}</td></tr>)}</tbody>
-      </table>
-    </div>
-  );
-}
-
-export const CurrencyGrid: ColumnDef<CurrencyItem, unknown>[] = [
-  { id: 'code', header: 'Code', accessorKey: 'code', cell: (i) => <span className="font-mono text-neutral-800">{String(i.getValue())}</span> },
-  { id: 'name', header: 'Name', accessorKey: 'name', cell: (i) => <span className="text-neutral-700">{String(i.getValue())}</span> },
-  { id: 'type', header: 'Type', accessorKey: 'isActive', cell: (i) => <span className={i.getValue() ? 'text-success-700' : 'text-neutral-500'}>{i.getValue() ? 'ACTIVE' : 'INACTIVE'}</span> },
-];
-
-export function RatesTable({ rates }: { rates: ExchangeRateItem[] }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-body">
-        <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500"><tr><th className="px-4 py-2">From</th><th className="px-4 py-2">To</th><th className="px-4 py-2">Type</th><th className="px-4 py-2 text-right">Rate</th></tr></thead>
-        <tbody>{rates.map((r) => <tr key={r.id} className="border-t border-neutral-100 hover:bg-neutral-50"><td className="px-4 py-2 font-mono text-neutral-800">{r.fromCurrency?.code ?? <EmptyCell />}</td><td className="px-4 py-2 font-mono text-neutral-700">{r.toCurrency?.code ?? <EmptyCell />}</td><td className="px-4 py-2 text-caption text-neutral-600">{r.rateType}</td><td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-800">{r.rate}</td></tr>)}{rates.length === 0 && <tr><td colSpan={4} className="px-4 py-4 text-caption text-neutral-500">No exchange rates yet.</td></tr>}</tbody>
-      </table>
-    </div>
-  );
 }
 
 export function OrgSection({
@@ -194,11 +170,74 @@ export function DoaSection({
   );
 }
 
-export function CurrencyRateSection({ currencies, rates }: { currencies: CurrencyItem[]; rates: { isLoading: boolean; data: ExchangeRateItem[] | null } }) {
+export function CurrencyRateSection({
+  currencies,
+  rates,
+}: {
+  currencies: Currency[];
+  rates: { isLoading: boolean; isError?: boolean; onRetry?: () => void; data: ExchangeRate[] | null };
+}) {
+  const [fromId, setFromId] = useState('');
+  const [toId, setToId] = useState('');
+  const [rateType, setRateType] = useState('SPOT');
+  const history = useRateHistory(fromId, toId, rateType);
+
+  const rateList = rates.data ?? [];
   return (
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-      <div className="rounded-md border border-neutral-200 bg-white shadow-xs"><div className="border-b border-neutral-200 px-4 py-2 text-h3 text-neutral-800">Currency</div><DataGrid columns={CurrencyGrid} data={currencies} emptyMessage="No currencies yet" hideToolbar /></div>
-      <div className="rounded-md border border-neutral-200 bg-white shadow-xs"><div className="border-b border-neutral-200 px-4 py-2 text-h3 text-neutral-800">Exchange Rates</div>{rates.isLoading ? <p className="p-4 text-body-sm text-neutral-500">Loading exchange rates…</p> : rates.data && <RatesTable rates={rates.data} />}</div>
+    <div className="flex flex-col gap-4">
+      <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+        <h3 className="mb-2 text-h3 text-neutral-950">Currency register</h3>
+        <CurrencyRegister currencies={currencies} />
+      </div>
+
+      <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+        <h3 className="mb-2 text-h3 text-neutral-950">Latest rates matrix</h3>
+        {rates.isLoading ? (
+          <Skeleton className="h-24 w-full" />
+        ) : rates.isError ? (
+          <div role="alert"><ErrorState message="Exchange rates could not be loaded." onRetry={() => rates.onRetry?.()} /></div>
+        ) : (
+          <RateMatrixPanel rates={rateList} />
+        )}
+      </div>
+
+      <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+        <h3 className="mb-2 text-h3 text-neutral-950">Rate history</h3>
+        <div className="mb-3 flex flex-wrap items-end gap-3">
+          <div className="w-40">
+            <Label htmlFor="hist-from">From</Label>
+            <Select value={fromId} onValueChange={setFromId}>
+              <SelectTrigger id="hist-from"><SelectValue placeholder="Select…" /></SelectTrigger>
+              <SelectContent>{currencies.map((c) => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="w-40">
+            <Label htmlFor="hist-to">To</Label>
+            <Select value={toId} onValueChange={setToId}>
+              <SelectTrigger id="hist-to"><SelectValue placeholder="Select…" /></SelectTrigger>
+              <SelectContent>{currencies.map((c) => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="w-36">
+            <Label htmlFor="hist-type">Type</Label>
+            <Select value={rateType} onValueChange={setRateType}>
+              <SelectTrigger id="hist-type"><SelectValue /></SelectTrigger>
+              <SelectContent>{['SPOT', 'MONTHLY', 'PERIOD_END'].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+        </div>
+        {!fromId || !toId ? (
+          <p className="text-body-sm text-neutral-500">Pick a currency pair to see its rate trend.</p>
+        ) : history.isLoading ? (
+          <Skeleton className="h-16 w-full" />
+        ) : history.isError || !history.data ? (
+          <div role="alert"><ErrorState message="Rate history could not be loaded." onRetry={() => history.refetch()} /></div>
+        ) : (
+          <RateHistoryView data={history.data} />
+        )}
+      </div>
+
+      <RevaluePanel currencies={currencies} />
     </div>
   );
 }
