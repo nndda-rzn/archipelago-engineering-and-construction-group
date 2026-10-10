@@ -23,14 +23,25 @@ const permissions = Object.values(Permission).map((code) => {
 // ─── Seed functions ───────────────────────────────────────────────────────────
 
 async function seedFoundation() {
+  // Pastikan master Currency ada lebih dulu — kolom FK di LegalEntity menunjuk
+  // ke sini, jadi entity hasil seed harus tertaut (bukan NULL).
+  await prisma.currency.upsert({
+    where: { code: 'IDR' },
+    update: {},
+    create: { code: 'IDR', name: 'Indonesian Rupiah', symbol: 'Rp', decimals: 2 },
+  });
+  const idr = await prisma.currency.findUnique({ where: { code: 'IDR' } });
+
   const entity = await prisma.legalEntity.upsert({
     where: { code: 'AEC-CON' },
-    update: {},
+    update: { functionalCurrencyId: idr?.id ?? null, reportingCurrencyId: idr?.id ?? null },
     create: {
       code: 'AEC-CON',
       legalName: 'PT AEC Construction',
       taxIdentifier: '00.000.000.0-000.000',
       country: 'ID',
+      functionalCurrencyId: idr?.id ?? null,
+      reportingCurrencyId: idr?.id ?? null,
     },
   });
   console.log(`[foundation] Seeded legal entity: ${entity.code}`);

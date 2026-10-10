@@ -12,6 +12,16 @@ datasource db {
 
 // ─── Foundation domain ────────────────────────────────────────────────────────
 
+/// Master data lifecycle (FR-FND-001) — cermin `MasterDataStatus` di @aec/shared-types.
+enum LegalEntityStatus {
+  DRAFT
+  PENDING_REVIEW
+  ACTIVE
+  BLOCKED
+  INACTIVE
+  ARCHIVED
+}
+
 // FR-FND-001: Multi-Legal Entity
 model LegalEntity {
   id                 String   @id @default(cuid())
@@ -22,9 +32,18 @@ model LegalEntity {
   functionalCurrency String   @default("IDR")
   reportingCurrency  String   @default("IDR")
   fiscalCalendar     String   @default("STANDARD")
-  status             String   @default("ACTIVE") // MasterDataStatus
+  status             LegalEntityStatus @default(ACTIVE)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+
+  // FK currency (aditif) — kolom string di atas dipertahankan untuk kompatibilitas
+  // baca; id ini yang menegakkan integritas ke master Currency.
+  functionalCurrencyId String?
+  functionalCurrencyRef Currency? @relation("FunctionalCurrency", fields: [functionalCurrencyId], references: [id], onDelete: Restrict)
+  reportingCurrencyId  String?
+  reportingCurrencyRef Currency? @relation("ReportingCurrency", fields: [reportingCurrencyId], references: [id], onDelete: Restrict)
+
+  @@index([status])
 
   organizations    Organization[]
   users            User[]
@@ -64,6 +83,8 @@ model Organization {
   updatedAt     DateTime       @updatedAt
 
   users User[]
+
+  @@index([legalEntityId])
 }
 
 // FR-FND-003: User (employee mapping disederhanakan untuk baseline)
@@ -84,6 +105,8 @@ model User {
 
   userRoles UserRole[]
   employee  Employee?
+
+  @@index([legalEntityId])
 }
 
 // FR-FND-004: Role-Based Access Control — Resource + Action + Scope
@@ -1251,6 +1274,7 @@ model Equipment {
 
   @@index([category])
   @@index([status])
+  @@index([legalEntityId])
 }
 
 // FR-EQP-002: Assignment effective-dated ke project
@@ -2400,6 +2424,9 @@ model Currency {
 
   ratesFrom ExchangeRate[] @relation("RateFrom")
   ratesTo   ExchangeRate[] @relation("RateTo")
+
+  functionalFor LegalEntity[] @relation("FunctionalCurrency")
+  reportingFor  LegalEntity[] @relation("ReportingCurrency")
 }
 
 // FR-FND-011: Exchange rate — historical, rate type (SPOT | MONTHLY | PERIOD_END)
