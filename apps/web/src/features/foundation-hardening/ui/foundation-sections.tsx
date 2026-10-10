@@ -1,21 +1,18 @@
-import { Badge, DataGrid, EmptyCell, EntitySelect, Input, Label } from '@aec/ui';
+import { useState } from 'react';
+import { DataGrid, EmptyCell, EmptyState, EntitySelect, ErrorState, Input, Label, SegmentedControl, Skeleton } from '@aec/ui';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { OrganizationNode } from '@aec/api-contracts';
+import { OrgForm } from './org-form';
+import { OrgOutline } from './org-outline';
+import { OrgTimeline } from './org-timeline';
 
-export type OrganizationNode = { id: string; name: string; orgType: string; code?: string | null; level?: number | null; status: string };
 export type DoaRuleItem = { id: string; transactionType: string; amountFrom?: number | null; amountTo?: number | null; riskLevel?: string | null; approverLevel: string; approverRoleCode?: string | null };
 export type CurrencyItem = { id: string; code: string; name: string; isActive: boolean };
 export type ExchangeRateItem = { id: string; fromCurrency?: { code?: string } | null; toCurrency?: { code?: string } | null; rateType: string; rate: number };
-export type IfcSummary = { total: number; released: number };
 
-export function OrgStructureTable({ nodes }: { nodes: OrganizationNode[] }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="mt-2 w-full text-left text-body">
-        <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500"><tr><th className="px-4 py-2">Unit</th><th className="px-4 py-2">Type</th><th className="px-4 py-2">Code</th><th className="px-4 py-2">Level</th><th className="px-4 py-2">Status</th></tr></thead>
-        <tbody>{nodes.map((o) => <tr key={o.id} className="border-t border-neutral-100 hover:bg-neutral-50"><td className="px-4 py-2 text-neutral-800">{o.name}</td><td className="px-4 py-2"><Badge variant="default">{o.orgType}</Badge></td><td className="px-4 py-2 font-mono text-neutral-600">{o.code ?? <EmptyCell />}</td><td className="px-4 py-2 font-mono tabular-nums text-neutral-600">{o.level ?? <EmptyCell />}</td><td className="px-4 py-2"><Badge variant={o.status === 'ACTIVE' ? 'success' : 'muted'}>{o.status}</Badge></td></tr>)}</tbody>
-      </table>
-    </div>
-  );
+/** Ratakan pohon untuk opsi pemilih parent. */
+function flatten(nodes: OrganizationNode[]): OrganizationNode[] {
+  return nodes.flatMap((n) => [n, ...flatten(n.children)]);
 }
 
 export function DoaRulesTable({ rules }: { rules: DoaRuleItem[] }) {
@@ -23,7 +20,7 @@ export function DoaRulesTable({ rules }: { rules: DoaRuleItem[] }) {
     <div className="rounded-md border border-neutral-200 bg-white shadow-xs overflow-x-auto">
       <table className="w-full text-left text-body">
         <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500"><tr><th className="px-4 py-2">Transaction</th><th className="px-4 py-2 text-right">From</th><th className="px-4 py-2 text-right">To</th><th className="px-4 py-2">Risk</th><th className="px-4 py-2">Level</th><th className="px-4 py-2">Role</th></tr></thead>
-        <tbody>{rules.map((r) => <tr key={r.id} className="border-t border-neutral-100 hover:bg-neutral-50"><td className="px-4 py-2 font-mono text-neutral-800">{r.transactionType}</td><td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-700">{r.amountFrom != null ? r.amountFrom.toLocaleString('id-ID') : <EmptyCell />}</td><td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-700">{r.amountTo != null ? r.amountTo.toLocaleString('id-ID') : <EmptyCell />}</td><td className="px-4 py-2">{r.riskLevel ? <Badge variant="default">{r.riskLevel}</Badge> : <EmptyCell />}</td><td className="px-4 py-2"><Badge variant="info">{r.approverLevel}</Badge></td><td className="px-4 py-2 font-mono text-neutral-600">{r.approverRoleCode ?? <EmptyCell />}</td></tr>)}</tbody>
+        <tbody>{rules.map((r) => <tr key={r.id} className="border-t border-neutral-100 hover:bg-neutral-50"><td className="px-4 py-2 font-mono text-neutral-800">{r.transactionType}</td><td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-700">{r.amountFrom != null ? r.amountFrom.toLocaleString('id-ID') : <EmptyCell />}</td><td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-700">{r.amountTo != null ? r.amountTo.toLocaleString('id-ID') : <EmptyCell />}</td><td className="px-4 py-2">{r.riskLevel ? <span className="rounded-sm bg-neutral-100 px-1.5 py-0.5 text-caption">{r.riskLevel}</span> : <EmptyCell />}</td><td className="px-4 py-2"><span className="rounded-sm bg-info-50 px-1.5 py-0.5 text-caption text-info-700">{r.approverLevel}</span></td><td className="px-4 py-2 font-mono text-neutral-600">{r.approverRoleCode ?? <EmptyCell />}</td></tr>)}</tbody>
       </table>
     </div>
   );
@@ -32,7 +29,7 @@ export function DoaRulesTable({ rules }: { rules: DoaRuleItem[] }) {
 export const CurrencyGrid: ColumnDef<CurrencyItem, unknown>[] = [
   { id: 'code', header: 'Code', accessorKey: 'code', cell: (i) => <span className="font-mono text-neutral-800">{String(i.getValue())}</span> },
   { id: 'name', header: 'Name', accessorKey: 'name', cell: (i) => <span className="text-neutral-700">{String(i.getValue())}</span> },
-  { id: 'type', header: 'Type', accessorKey: 'isActive', cell: (i) => (i.getValue() ? <Badge variant="success">ACTIVE</Badge> : <Badge variant="default">INACTIVE</Badge>) },
+  { id: 'type', header: 'Type', accessorKey: 'isActive', cell: (i) => <span className={i.getValue() ? 'text-success-700' : 'text-neutral-500'}>{i.getValue() ? 'ACTIVE' : 'INACTIVE'}</span> },
 ];
 
 export function RatesTable({ rates }: { rates: ExchangeRateItem[] }) {
@@ -40,7 +37,7 @@ export function RatesTable({ rates }: { rates: ExchangeRateItem[] }) {
     <div className="overflow-x-auto">
       <table className="w-full text-left text-body">
         <thead className="bg-neutral-50 text-caption uppercase tracking-wide text-neutral-500"><tr><th className="px-4 py-2">From</th><th className="px-4 py-2">To</th><th className="px-4 py-2">Type</th><th className="px-4 py-2 text-right">Rate</th></tr></thead>
-        <tbody>{rates.map((r) => <tr key={r.id} className="border-t border-neutral-100 hover:bg-neutral-50"><td className="px-4 py-2 font-mono text-neutral-800">{r.fromCurrency?.code ?? <EmptyCell />}</td><td className="px-4 py-2 font-mono text-neutral-700">{r.toCurrency?.code ?? <EmptyCell />}</td><td className="px-4 py-2"><Badge variant="default">{r.rateType}</Badge></td><td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-800">{r.rate}</td></tr>)}{rates.length === 0 && <tr><td colSpan={4} className="px-4 py-4 text-caption text-neutral-500">No exchange rates yet.</td></tr>}</tbody>
+        <tbody>{rates.map((r) => <tr key={r.id} className="border-t border-neutral-100 hover:bg-neutral-50"><td className="px-4 py-2 font-mono text-neutral-800">{r.fromCurrency?.code ?? <EmptyCell />}</td><td className="px-4 py-2 font-mono text-neutral-700">{r.toCurrency?.code ?? <EmptyCell />}</td><td className="px-4 py-2 text-caption text-neutral-600">{r.rateType}</td><td className="px-4 py-2 text-right font-mono tabular-nums text-neutral-800">{r.rate}</td></tr>)}{rates.length === 0 && <tr><td colSpan={4} className="px-4 py-4 text-caption text-neutral-500">No exchange rates yet.</td></tr>}</tbody>
       </table>
     </div>
   );
@@ -59,37 +56,56 @@ export function OrgSection({
   asOf: string;
   setAsOf: (v: string) => void;
   entities: Array<{ id: string; code: string }>;
-  orgs: { isLoading: boolean; data: OrganizationNode[] | null };
+  orgs: { isLoading: boolean; isError?: boolean; onRetry?: () => void; data: OrganizationNode[] | null };
 }) {
-  return (
-    <div className="space-y-4">
-      <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-        <div className="flex items-end gap-3">
-          <div className="w-72"><Label htmlFor="foundation-entity">Legal Entity</Label><EntitySelect id="foundation-entity" value={entityId} onValueChange={setEntityId} options={entities.map((e) => ({ value: e.id, label: e.code }))} placeholder="Select entity…" searchPlaceholder="Search entity…" /></div>
-          <div><Label htmlFor="org-asof">As Of</Label><Input id="org-asof" type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} /></div>
-        </div>
-        {entityId && <div className="mt-4">{orgs.isLoading ? <p className="text-body-sm text-neutral-500">Loading org structure…</p> : orgs.data && <OrgStructureTable nodes={orgs.data} />}</div>}
-      </div>
-    </div>
-  );
-}
+  const [view, setView] = useState<'structure' | 'timeline'>('structure');
+  const [editing, setEditing] = useState<OrganizationNode | null>(null);
+  const flat = orgs.data ? flatten(orgs.data) : [];
+  const parentOptions = flat.map((n) => ({ id: n.item.id, name: n.item.name }));
 
-export function IfcSection({
-  projectId,
-  setProjectId,
-  projects,
-  ifc,
-}: {
-  projectId: string;
-  setProjectId: (v: string) => void;
-  projects: Array<{ id: string; code: string }>;
-  ifc: { data: IfcSummary | null };
-}) {
   return (
-    <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-      <h2 className="mb-3 text-h2 text-neutral-950">IFC Control</h2>
-      <div className="w-72"><Label htmlFor="foundation-project">Project</Label><EntitySelect id="foundation-project" value={projectId} onValueChange={setProjectId} options={projects.map((p) => ({ value: p.id, label: p.code }))} placeholder="Select project…" searchPlaceholder="Search project…" /></div>
-      {projectId && ifc.data && <div className="mt-3 flex gap-4 text-body-sm"><span>IFC total: <span className="font-mono font-medium">{ifc.data.total}</span></span><span>Released: <span className="font-mono font-medium">{ifc.data.released}</span></span></div>}
+    <div className="flex flex-col gap-4">
+      <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="w-72">
+            <Label htmlFor="foundation-entity">Legal Entity</Label>
+            <EntitySelect id="foundation-entity" value={entityId} onValueChange={setEntityId} options={entities.map((e) => ({ value: e.id, label: e.code }))} placeholder="Select entity…" searchPlaceholder="Search entity…" />
+          </div>
+          <div>
+            <Label htmlFor="org-asof">As of</Label>
+            <Input id="org-asof" type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
+          </div>
+          <div className="ml-auto">
+            <SegmentedControl aria-label="Organization view" value={view} onValueChange={(v) => setView(v as 'structure' | 'timeline')} options={[{ value: 'structure', label: 'Structure' }, { value: 'timeline', label: 'Timeline' }]} />
+          </div>
+        </div>
+      </div>
+
+      {!entityId ? (
+        <p className="text-body-sm text-neutral-500">Select a legal entity to see its organization structure.</p>
+      ) : editing ? (
+        <OrgForm editing={editing.item} parentOptions={parentOptions} onDone={() => setEditing(null)} />
+      ) : (
+        <OrgForm parentOptions={parentOptions} />
+      )}
+
+      {entityId && (
+        <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+          {orgs.isLoading ? (
+            <div aria-label="Loading org structure" className="flex flex-col gap-2">
+              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
+            </div>
+          ) : orgs.isError ? (
+            <div role="alert"><ErrorState message="The organization structure could not be loaded." onRetry={() => orgs.onRetry?.()} /></div>
+          ) : !orgs.data || orgs.data.length === 0 ? (
+            <EmptyState title="No organization units yet" description="Add the first unit to build the structure." />
+          ) : view === 'structure' ? (
+            <OrgOutline nodes={orgs.data} onEdit={(n) => setEditing(n)} />
+          ) : (
+            <OrgTimeline nodes={orgs.data} asOf={asOf} onAsOfChange={setAsOf} />
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -106,3 +122,4 @@ export function CurrencyRateSection({ currencies, rates }: { currencies: Currenc
     </div>
   );
 }
+
