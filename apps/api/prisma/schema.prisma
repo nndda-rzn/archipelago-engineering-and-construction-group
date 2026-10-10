@@ -28,6 +28,36 @@ enum DoaRuleStatus {
   INACTIVE
 }
 
+/// Kategori vendor (FR-PRO-010) — enum agar nilai tak bisa "liar".
+enum VendorCategory {
+  MATERIAL
+  SUBCONTRACTOR
+  SERVICE
+  EQUIPMENT
+  OTHER
+}
+
+/// Siklus hidup vendor (FR-PRO-010).
+enum VendorStatus {
+  ACTIVE
+  INACTIVE
+}
+
+/// Status periode fiskal (FR-FND-010) — maju bertahap: FUTURE → OPEN → SOFT_CLOSED → CLOSED → LOCKED.
+enum FiscalPeriodStatus {
+  FUTURE
+  OPEN
+  SOFT_CLOSED
+  CLOSED
+  LOCKED
+}
+
+/// Status register nomor dokumen (FR-FND-010).
+enum NumberSequenceStatus {
+  ACTIVE
+  INACTIVE
+}
+
 // FR-FND-001: Multi-Legal Entity
 model LegalEntity {
   id                 String   @id @default(cuid())
@@ -1972,12 +2002,12 @@ model Vendor {
   vendorCode    String   @unique // mis. "VND-2027-000001"
   name          String
   taxId         String? // NPWP
-  category      String   @default("MATERIAL") // MATERIAL | SUBCONTRACTOR | SERVICE | EQUIPMENT | OTHER
+  category      VendorCategory @default(MATERIAL) // MATERIAL | SUBCONTRACTOR | SERVICE | EQUIPMENT | OTHER
   contactPerson String?
   email         String?
   phone         String?
   address       String?
-  status        String   @default("ACTIVE") // ACTIVE | INACTIVE
+  status        VendorStatus @default(ACTIVE) // ACTIVE | INACTIVE
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -1985,6 +2015,7 @@ model Vendor {
 
   @@index([category])
   @@index([status])
+  @@index([name])
 }
 
 // FR-PRO-010: Vendor performance rating — delivery/quality/commercial/HSE/responsiveness
@@ -2014,11 +2045,12 @@ model FiscalPeriod {
   periodMonth Int
   startDate   DateTime
   endDate     DateTime
-  status      String   @default("FUTURE") // FUTURE | OPEN | SOFT_CLOSED | CLOSED | LOCKED
+  status      FiscalPeriodStatus @default(FUTURE) // FUTURE | OPEN | SOFT_CLOSED | CLOSED | LOCKED
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([status])
+  @@index([periodYear])
 }
 
 // ─── Procurement: RFQ + Vendor Evaluation (FR-PRO-003/004) ───────────────────
@@ -2253,7 +2285,7 @@ model NumberSequence {
   prefix     String // mis. "PR-2027-EPC-"
   nextNumber Int      @default(1)
   padding    Int      @default(6)
-  status     String   @default("ACTIVE")
+  status     NumberSequenceStatus @default(ACTIVE)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }

@@ -406,6 +406,80 @@ async function seedHardening(entityId: string) {
   console.log(`[hardening] ExchangeRate: +${rateCreated} (riwayat multi-titik)`);
 }
 
+/**
+ * Master Data (FR-PRO-010, FR-FND-010): register vendor beragam (kategori +
+ * status) dan setahun penuh periode fiskal dengan status bervariasi, supaya tab
+ * Master Data bermakna (bukan kosong). Idempoten — aman dijalankan ulang.
+ */
+async function seedMasterData() {
+  const year = new Date().getFullYear();
+
+  // ── A. Vendor lintas kategori & status ──
+  type VCat = 'MATERIAL' | 'SUBCONTRACTOR' | 'SERVICE' | 'EQUIPMENT' | 'OTHER';
+  const vendors: Array<{ name: string; category: VCat; status?: 'ACTIVE' | 'INACTIVE'; taxId: string; contactPerson: string; email: string; phone: string; address: string }> = [
+    { name: 'PT Baja Utama', category: 'MATERIAL', taxId: '01.234.567.8-901.000', contactPerson: 'Rudi Hartono', email: 'sales@bajautama.co.id', phone: '+62 21 5550 1001', address: 'Kawasan Industri Pulogadung, Jakarta' },
+    { name: 'PT Semen Nasional', category: 'MATERIAL', taxId: '02.345.678.9-012.000', contactPerson: 'Siti Aminah', email: 'order@semen-nasional.co.id', phone: '+62 31 8840 2200', address: 'Gresik, Jawa Timur' },
+    { name: 'CV Karya Konstruksi Mandiri', category: 'SUBCONTRACTOR', taxId: '03.456.789.0-123.000', contactPerson: 'Budi Santoso', email: 'budi@kkm.co.id', phone: '+62 812 3456 7788', address: 'Bekasi, Jawa Barat' },
+    { name: 'PT Elektrik Sejahtera', category: 'SUBCONTRACTOR', taxId: '04.567.890.1-234.000', contactPerson: 'Andi Wijaya', email: 'andi@elektriksejahtera.co.id', phone: '+62 21 7788 9900', address: 'Tangerang, Banten' },
+    { name: 'PT Mekanik Jaya', category: 'SERVICE', taxId: '05.678.901.2-345.000', contactPerson: 'Dewi Lestari', email: 'dewi@mekanikjaya.co.id', phone: '+62 21 3344 5566', address: 'Cikarang, Jawa Barat' },
+    { name: 'PT Logistik Prima', category: 'SERVICE', taxId: '06.789.012.3-456.000', contactPerson: 'Hendra Gunawan', email: 'ops@logistikprima.co.id', phone: '+62 21 9988 7766', address: 'Cibitung, Jawa Barat' },
+    { name: 'PT Alat Berat Nusantara', category: 'EQUIPMENT', taxId: '07.890.123.4-567.000', contactPerson: 'Rina Marlina', email: 'rental@alatberatnusantara.co.id', phone: '+62 31 6677 8899', address: 'Surabaya, Jawa Timur' },
+    { name: 'PT Konsultan Teknik Utama', category: 'OTHER', taxId: '08.901.234.5-678.000', contactPerson: 'Fajar Nugroho', email: 'info@konsultanteknik.co.id', phone: '+62 22 4455 6677', address: 'Bandung, Jawa Barat' },
+    // Vendor lama yang sudah dinonaktifkan (menguji filter status & aksi activate).
+    { name: 'PT Supplier Lama (Nonaktif)', category: 'MATERIAL', status: 'INACTIVE', taxId: '09.012.345.6-789.000', contactPerson: '—', email: 'inactive@lama.co.id', phone: '+62 21 1111 2222', address: 'Jakarta' },
+  ];
+  let vCreated = 0;
+  // Rekonsiliasi counter: vendor bisa dibuat di seed lain (seed-demo). Hitung dari
+  // kode tertinggi yang ada agar tidak menabrak unique `vendorCode`.
+  const existingVendors = await prisma.vendor.findMany({ select: { vendorCode: true } });
+  const maxSeq = existingVendors.reduce((max, v) => {
+    const n = Number(v.vendorCode.split('-').pop());
+    return Number.isFinite(n) && n > max ? n : max;
+  }, 0);
+  const prefix = `VND-${year}-`;
+  await prisma.numberSequence.upsert({
+    where: { code: 'VND' },
+    update: { nextNumber: Math.max(maxSeq + 1, 1) },
+    create: { code: 'VND', prefix, nextNumber: maxSeq + 1 },
+  });
+  let vSeq = await prisma.numberSequence.findUniqueOrThrow({ where: { code: 'VND' } });
+  for (const v of vendors) {
+    const existing = await prisma.vendor.findFirst({ where: { name: v.name } });
+    if (existing) continue;
+    const seq = `${vSeq.prefix}${String(vSeq.nextNumber).padStart(6, '0')}`;
+    await prisma.vendor.create({
+      data: { vendorCode: seq, name: v.name, taxId: v.taxId, category: v.category, status: v.status ?? 'ACTIVE', contactPerson: v.contactPerson, email: v.email, phone: v.phone, address: v.address },
+    });
+    vSeq = await prisma.numberSequence.update({ where: { code: 'VND' }, data: { nextNumber: { increment: 1 } } });
+    vCreated += 1;
+  }
+  console.log(`[master-data] Vendor: +${vCreated} (kategori & status beragam)`);
+
+  // ── B. Periode fiskal setahun penuh, status bervariasi ──
+  // Bulan lampau → CLOSED/LOCKED, bulan berjalan → OPEN, bulan depan → SOFT_CLOSED, sisanya FUTURE.
+  const nowMonth = new Date().getUTCMonth() + 1;
+  const statusFor = (m: number): 'FUTURE' | 'OPEN' | 'SOFT_CLOSED' | 'CLOSED' | 'LOCKED' => {
+    if (m < nowMonth - 2) return 'LOCKED';
+    if (m < nowMonth) return 'CLOSED';
+    if (m === nowMonth) return 'OPEN';
+    if (m === nowMonth + 1) return 'SOFT_CLOSED';
+    return 'FUTURE';
+  };
+  let pCreated = 0;
+  for (let m = 1; m <= 12; m++) {
+    const periodCode = `${year}-${String(m).padStart(2, '0')}`;
+    const start = new Date(Date.UTC(year, m - 1, 1));
+    const end = new Date(Date.UTC(year, m, 0, 23, 59, 59, 999));
+    const existing = await prisma.fiscalPeriod.findUnique({ where: { periodCode } });
+    if (existing) continue;
+    await prisma.fiscalPeriod.create({
+      data: { periodCode, periodYear: year, periodMonth: m, startDate: start, endDate: end, status: statusFor(m) },
+    });
+    pCreated += 1;
+  }
+  console.log(`[master-data] FiscalPeriod: +${pCreated} (${year}, status bervariasi)`);
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {  const { entity } = await seedFoundation();
@@ -414,6 +488,7 @@ async function main() {  const { entity } = await seedFoundation();
   await seedFinance(entity.id);
   await seedWorkflows();
   await seedHardening(entity.id);
+  await seedMasterData();
   console.log('[seed] Selesai.');
 }
 
