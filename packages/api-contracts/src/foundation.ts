@@ -71,6 +71,17 @@ export const legalEntityListResponseSchema = paginatedResponseSchema(
 );
 export type LegalEntityListResponse = z.infer<typeof legalEntityListResponseSchema>;
 
+export const userStatusSchema = z.enum(['INVITED', 'ACTIVE', 'INACTIVE', 'BLOCKED', 'SUSPENDED']);
+export type UserStatus = z.infer<typeof userStatusSchema>;
+
+export const roleAssignmentSchema = z.object({
+  code: z.string(),
+  name: z.string(),
+  effectiveFrom: z.string(),
+  effectiveTo: z.string().nullable(),
+});
+export type RoleAssignment = z.infer<typeof roleAssignmentSchema>;
+
 export const userSchema = z.object({
   id: z.string(),
   username: z.string(),
@@ -79,9 +90,86 @@ export const userSchema = z.object({
   status: z.string(),
   lastLoginAt: z.string().nullable(),
   createdAt: z.string(),
+  jobTitle: z.string().nullable(),
+  department: z.string().nullable(),
+  phone: z.string().nullable(),
+  managerId: z.string().nullable(),
+  legalEntityId: z.string().nullable(),
+  organizationId: z.string().nullable(),
+  blockedAt: z.string().nullable(),
+  blockedReason: z.string().nullable(),
+  legalEntityCode: z.string().nullable(),
+  legalEntityName: z.string().nullable(),
+  organizationName: z.string().nullable(),
   roles: z.array(z.string()),
+  roleDetails: z.array(roleAssignmentSchema),
+  activeSessions: z.number(),
 });
 export type User = z.infer<typeof userSchema>;
+
+export const userStatsSchema = z.object({
+  total: z.number(),
+  active: z.number(),
+  blocked: z.number(),
+  noRole: z.number(),
+  activeSessions: z.number(),
+  byRole: z.array(z.object({ code: z.string(), name: z.string(), count: z.number() })),
+});
+export type UserStats = z.infer<typeof userStatsSchema>;
+
+export const userSessionSchema = z.object({
+  id: z.string(),
+  tokenId: z.string(),
+  status: z.string(),
+  userAgent: z.string().nullable(),
+  ipAddress: z.string().nullable(),
+  createdAt: z.string(),
+  lastSeenAt: z.string(),
+  expiresAt: z.string(),
+  revokedAt: z.string().nullable(),
+});
+export type UserSession = z.infer<typeof userSessionSchema>;
+
+export const loginEventSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  email: z.string(),
+  ipAddress: z.string().nullable(),
+  userAgent: z.string().nullable(),
+  reason: z.string().nullable(),
+  at: z.string(),
+});
+export type LoginEvent = z.infer<typeof loginEventSchema>;
+
+export const userActivitySchema = z.object({
+  id: z.string(),
+  action: z.string(),
+  summary: z.string(),
+  actorId: z.string().nullable(),
+  at: z.string(),
+});
+export type UserActivity = z.infer<typeof userActivitySchema>;
+
+export const userDetailSchema = z.object({
+  user: userSchema.extend({
+    employee: z.object({ employeeNumber: z.string(), position: z.string(), department: z.string().nullable(), grade: z.string().nullable() }).nullable().optional(),
+  }),
+  roles: z.array(z.object({ code: z.string(), name: z.string(), status: z.string(), effectiveFrom: z.string(), effectiveTo: z.string().nullable() })),
+  permissions: z.array(z.object({ code: z.string(), resource: z.string(), action: z.string() })),
+  sessions: z.array(userSessionSchema),
+  recentLogins: z.array(loginEventSchema),
+  activity: z.array(userActivitySchema),
+});
+export type UserDetail = z.infer<typeof userDetailSchema>;
+
+export const userSettingsSchema = z.object({
+  userId: z.string(),
+  theme: z.string(),
+  density: z.string(),
+  emailNotifications: z.boolean(),
+  inAppNotifications: z.boolean(),
+});
+export type UserSettings = z.infer<typeof userSettingsSchema>;
 
 export const createUserSchema = z.object({
   username: z.string().min(3).max(50),
@@ -89,9 +177,17 @@ export const createUserSchema = z.object({
   displayName: z.string().min(2).max(100),
   password: z.string().min(8).max(100),
   legalEntityId: z.string().optional(),
+  organizationId: z.string().optional(),
   roleCode: z.string().optional(),
+  jobTitle: z.string().max(100).optional(),
+  department: z.string().max(100).optional(),
+  phone: z.string().max(50).optional(),
+  managerId: z.string().optional(),
 });
 export type CreateUser = z.infer<typeof createUserSchema>;
+
+export const updateUserSchema = createUserSchema.omit({ username: true, password: true }).partial();
+export type UpdateUser = z.infer<typeof updateUserSchema>;
 
 export const userListResponseSchema = paginatedResponseSchema(userSchema);
 export type UserListResponse = z.infer<typeof userListResponseSchema>;
