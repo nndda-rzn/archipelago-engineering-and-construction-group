@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { createLegalEntitySchema, type LegalEntity } from '@aec/api-contracts';
 import { z } from 'zod';
-import { Button, Input, Label } from '@aec/ui';
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@aec/ui';
 import { useCreateLegalEntity, useUpdateLegalEntity } from '@/entities/legal-entity';
 import { useCurrencies } from '@/features/foundation-hardening';
 
@@ -24,16 +24,18 @@ export interface LegalEntityFormProps {
 }
 
 /**
- * Form tambah/edit legal entity. Semua field ditampilkan — termasuk mata uang
- * dan kalender fiskal yang sebelumnya hilang dari JSX. Validasi `onBlur` lalu
- * `onChange` setelah error (mengurangi gangguan saat mengetik).
+ * Form tambah/edit legal entity. Mata uang (functional/reporting) dipilih lewat
+ * dropdown `Select` yang diisi master Currency — bukan lagi input teks +
+ * `datalist` yang hanya autocomplete dan tidak bisa dipilih. Nilai yang dikirim
+ * tetap KODE mata uang (mis. `IDR`), cocok dengan `resolveCurrencyIds` di BE.
+ * Validasi `onBlur` lalu `onChange` setelah error (mengurangi gangguan).
  */
 export function LegalEntityForm({ mode, entity, onDone }: LegalEntityFormProps) {
   const create = useCreateLegalEntity();
   const update = useUpdateLegalEntity(entity?.id ?? '');
   const currencies = useCurrencies();
 
-  const { register, handleSubmit, formState: { errors } } = useForm<LegalEntityFormValues>({
+  const { register, handleSubmit, control, getValues, setValue, formState: { errors } } = useForm<LegalEntityFormValues>({
     resolver: zodResolver(formSchema),
     mode: 'onBlur',
     reValidateMode: 'onChange',
@@ -57,6 +59,9 @@ export function LegalEntityForm({ mode, entity, onDone }: LegalEntityFormProps) 
   });
 
   const currencyOptions = currencies.data?.items ?? [];
+  const currenciesLoading = currencies.isLoading;
+  const currenciesEmpty = !currenciesLoading && currencyOptions.length === 0;
+  const currencyDisabled = currenciesLoading || currenciesEmpty;
 
   return (
     <form onSubmit={onSubmit} className="mb-6 rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
@@ -83,17 +88,56 @@ export function LegalEntityForm({ mode, entity, onDone }: LegalEntityFormProps) 
         </div>
         <div>
           <Label htmlFor="functionalCurrency">Functional currency</Label>
-          <Input id="functionalCurrency" list="currency-codes" placeholder="IDR" maxLength={3} error={!!errors.functionalCurrency} {...register('functionalCurrency')} />
-          <datalist id="currency-codes">
-            {currencyOptions.map((c) => (
-              <option key={c.code} value={c.code} />
-            ))}
-          </datalist>
+          <Controller
+            name="functionalCurrency"
+            control={control}
+            render={({ field }) => (
+              <Select
+                value={field.value}
+                disabled={currencyDisabled}
+                onValueChange={(value) => {
+                  const previous = getValues('functionalCurrency');
+                  field.onChange(value);
+                  // Reporting mengikuti functional selama belum diubah manual.
+                  if (getValues('reportingCurrency') === previous) setValue('reportingCurrency', value);
+                }}
+              >
+                <SelectTrigger id="functionalCurrency" aria-label="Functional currency" error={!!errors.functionalCurrency}>
+                  <SelectValue placeholder={currenciesLoading ? 'Loading…' : 'Select currency'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencyOptions.map((c) => (
+                    <SelectItem key={c.code} value={c.code}>
+                      {c.code} — {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {currenciesEmpty && <p className="mt-1 text-caption text-neutral-500">No currencies available — add one in Foundation Hardening.</p>}
           {errors.functionalCurrency && <p className="mt-1 text-caption text-destructive-600">{errors.functionalCurrency.message}</p>}
         </div>
         <div>
           <Label htmlFor="reportingCurrency">Reporting currency</Label>
-          <Input id="reportingCurrency" list="currency-codes" placeholder="IDR" maxLength={3} error={!!errors.reportingCurrency} {...register('reportingCurrency')} />
+          <Controller
+            name="reportingCurrency"
+            control={control}
+            render={({ field }) => (
+              <Select value={field.value} disabled={currencyDisabled} onValueChange={field.onChange}>
+                <SelectTrigger id="reportingCurrency" aria-label="Reporting currency" error={!!errors.reportingCurrency}>
+                  <SelectValue placeholder={currenciesLoading ? 'Loading…' : 'Select currency'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencyOptions.map((c) => (
+                    <SelectItem key={c.code} value={c.code}>
+                      {c.code} — {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
           {errors.reportingCurrency && <p className="mt-1 text-caption text-destructive-600">{errors.reportingCurrency.message}</p>}
         </div>
         <div>
