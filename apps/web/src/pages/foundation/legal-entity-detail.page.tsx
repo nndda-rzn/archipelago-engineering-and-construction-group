@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import { EntityAvatar, ErrorState, Skeleton, StatusBadge } from '@aec/ui';
 import { useLegalEntity, useLegalEntityUsage } from '@/entities/legal-entity';
-import { LegalEntityForm, LegalEntityLifecycle, LegalEntityProfile, LegalEntityUsage } from '@/features/foundation/ui';
+import { LegalEntityForm, LegalEntityLifecycle, LegalEntityProfile, LegalEntityReadiness, LegalEntityUsage } from '@/features/foundation/ui';
 
 /**
  * Detail legal entity: header (identitas + status + lifecycle), profil,
@@ -72,7 +72,10 @@ export function LegalEntityDetailPage() {
           <ErrorState message="Usage could not be loaded." onRetry={() => usage.refetch()} />
         </div>
       ) : (
-        <LegalEntityUsage usage={usage.data} />
+        <>
+          <LegalEntityUsage usage={usage.data} />
+          <LegalEntityReadiness entity={e} usage={usage.data} />
+        </>
       )}
     </div>
   );

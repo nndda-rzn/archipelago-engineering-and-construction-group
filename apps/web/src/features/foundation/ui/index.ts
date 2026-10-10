@@ -6,3 +6,4 @@ export { LegalEntityRegister, type LegalEntityWithMetrics } from './legal-entity
 export { LegalEntityProfile } from './legal-entity-profile';
 export { LegalEntityUsage } from './legal-entity-usage';
 export { LegalEntityLifecycle } from './legal-entity-lifecycle';
+export { LegalEntityReadiness } from './legal-entity-readiness';

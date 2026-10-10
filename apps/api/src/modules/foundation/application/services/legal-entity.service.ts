@@ -1,4 +1,4 @@
-import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import type { LegalEntityUsage } from '@aec/api-contracts';
 import { PrismaService } from '@/shared/database/prisma.service';
@@ -125,9 +125,26 @@ export class LegalEntityService {
     return entity;
   }
 
+  /**
+   * Terjemahkan kode mata uang (functional/reporting) menjadi id master
+   * `Currency` supaya kolom FK terisi dan integritas DB benar-benar berlaku.
+   * Kode tak dikenal → 400 `UNKNOWN_CURRENCY` (bukan diam-diam NULL).
+   */
+  private async resolveCurrencyIds(dto: { functionalCurrency?: string; reportingCurrency?: string }): Promise<{ functionalCurrencyId?: string; reportingCurrencyId?: string }> {
+    const out: { functionalCurrencyId?: string; reportingCurrencyId?: string } = {};
+    for (const [code, field] of [[dto.functionalCurrency, 'functionalCurrencyId'], [dto.reportingCurrency, 'reportingCurrencyId']] as const) {
+      if (!code) continue;
+      const currency = await this.prisma.currency.findUnique({ where: { code } });
+      if (!currency) throw new BadRequestException({ code: 'UNKNOWN_CURRENCY', message: `Unknown currency code: ${code}` });
+      out[field] = currency.id;
+    }
+    return out;
+  }
+
   async create(dto: CreateLegalEntityDto, actorId: string) {
     try {
-      const entity = await this.prisma.legalEntity.create({ data: dto });
+      const currencyIds = await this.resolveCurrencyIds(dto);
+      const entity = await this.prisma.legalEntity.create({ data: { ...dto, ...currencyIds } });
       await this.audit.record({
         userId: actorId, action: 'LEGAL_ENTITY.CREATE', resource: 'LegalEntity', resourceId: entity.id,
         newValue: { code: entity.code, legalName: entity.legalName }, source: 'api',
@@ -144,7 +161,8 @@ export class LegalEntityService {
   async update(id: string, dto: UpdateLegalEntityDto, actorId: string) {
     const before = await this.findOne(id);
     try {
-      const entity = await this.prisma.legalEntity.update({ where: { id }, data: dto });
+      const currencyIds = await this.resolveCurrencyIds(dto);
+      const entity = await this.prisma.legalEntity.update({ where: { id }, data: { ...dto, ...currencyIds } });
       await this.audit.record({
         userId: actorId, action: 'LEGAL_ENTITY.UPDATE', resource: 'LegalEntity', resourceId: id,
         oldValue: { legalName: before.legalName, functionalCurrency: before.functionalCurrency, reportingCurrency: before.reportingCurrency, fiscalCalendar: before.fiscalCalendar },

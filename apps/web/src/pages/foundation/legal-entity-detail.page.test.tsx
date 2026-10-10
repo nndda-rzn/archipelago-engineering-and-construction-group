@@ -29,4 +29,9 @@ describe('LegalEntityDetailPage', () => {
     expect(screen.getByRole('heading', { level: 1 })).toBeTruthy();
     expect(screen.getByText(/used in/i)).toBeTruthy();
   });
+
+  it('renders a readiness strip derived from the entity and its usage', () => {
+    render(<LegalEntityDetailPage />);
+    expect(screen.getByText(/readiness/i)).toBeTruthy();
+  });
 });

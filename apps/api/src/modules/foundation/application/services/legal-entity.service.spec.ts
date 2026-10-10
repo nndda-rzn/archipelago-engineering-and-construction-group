@@ -117,3 +117,31 @@ describe('LegalEntityService.findAll', () => {
     expect(projectGroupBy).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('LegalEntityService currency FK resolution', () => {
+  it('resolves currency codes to ids on create so the FK is populated', async () => {
+    const create = jest.fn().mockResolvedValue({ id: 'le2', code: 'AEC-X', legalName: 'X', functionalCurrency: 'IDR', reportingCurrency: 'USD' });
+    const prisma = {
+      currency: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce({ id: 'cur-idr' })
+          .mockResolvedValueOnce({ id: 'cur-usd' }),
+      },
+      legalEntity: { create },
+    } as never;
+    const svc = new LegalEntityService(prisma, { record: jest.fn() } as never);
+    await svc.create({ code: 'AEC-X', legalName: 'X', taxIdentifier: 't', country: 'ID', functionalCurrency: 'IDR', reportingCurrency: 'USD' } as never, 'u1');
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ functionalCurrencyId: 'cur-idr', reportingCurrencyId: 'cur-usd' }) }),
+    );
+  });
+
+  it('rejects an unknown currency code', async () => {
+    const prisma = { currency: { findUnique: jest.fn().mockResolvedValue(null) }, legalEntity: { create: jest.fn() } } as never;
+    const svc = new LegalEntityService(prisma, { record: jest.fn() } as never);
+    await expect(
+      svc.create({ code: 'AEC-X', legalName: 'X', taxIdentifier: 't', country: 'ID', functionalCurrency: 'XXX', reportingCurrency: 'XXX' } as never, 'u1'),
+    ).rejects.toMatchObject({ response: { code: 'UNKNOWN_CURRENCY' } });
+  });
+});
