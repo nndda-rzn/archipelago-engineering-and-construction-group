@@ -2,6 +2,7 @@ import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'rec
 import { DeltaBadge, EmptyState, ErrorState, SegmentedControl, ChartSkeleton } from '@aec/ui';
 import type { TrendSeries } from '@aec/api-contracts';
 import { formatIdr, formatIdrAxis } from '@/shared/lib/format';
+import { Money } from '@/shared/ui/money';
 import { CHART } from '@/widgets/dashboard-charts/chart-colors';
 import { useTrendSeries } from '../model/analytics.api';
 import type { DashboardFilter } from '@/shared/lib/dashboard-period';
@@ -58,12 +59,16 @@ export function TrendExplorerView({ metric, onMetricChange, data, isLoading, isE
         <EmptyState title="No trend data" description="No movement for this metric in the selected scope." />
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
-          <div className="flex flex-col gap-1 lg:col-span-1">
+          <div className="flex min-w-0 flex-col gap-1 lg:col-span-1">
             <p className="text-caption text-neutral-500">{label} · period total</p>
-            <p className="font-mono text-h1 tabular-nums text-neutral-950">{formatIdr(data.total)}</p>
+            <p className="font-mono text-h1 tabular-nums text-neutral-950" title={formatIdr(data.total)}>
+              {formatIdrAxis(data.total)}
+            </p>
             {data.delta && <DeltaBadge pct={data.delta.pctChange} direction={data.delta.direction} />}
             {data.compareTotal != null && (
-              <p className="text-caption text-neutral-500">Previous: {formatIdr(data.compareTotal)}</p>
+              <p className="text-caption text-neutral-500">
+                Previous: <Money value={data.compareTotal} className="font-mono tabular-nums" />
+              </p>
             )}
           </div>
 

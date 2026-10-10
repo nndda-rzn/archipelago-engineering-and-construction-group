@@ -23,7 +23,7 @@ export { SectionBand, type SectionBandProps } from './primitives/section-band';
 export { StatusPill, type StatusPillProps, type StatusTone } from './primitives/status-pill';
 export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } from './primitives/segmented-control';
 export { SignalChip, type SignalChipProps, type SignalSeverity } from './primitives/signal-chip';
-export { BulletBar, MiniStackedBar, type BulletBarProps, type MiniStackedBarProps, type BarTone } from './primitives/data-bar';
+export { BulletBar, MiniStackedBar, ScaleBar, type BulletBarProps, type MiniStackedBarProps, type BarTone, type ScaleBarProps, type ScaleTone } from './primitives/data-bar';
 export { Sparkline, type SparklineProps } from './primitives/sparkline';
 export { DivergingBar, type DivergingBarProps } from './primitives/diverging-bar';
 export { StackedBar, type StackedBarProps, type StackedSegment, type StackedBarTone } from './primitives/stacked-bar';

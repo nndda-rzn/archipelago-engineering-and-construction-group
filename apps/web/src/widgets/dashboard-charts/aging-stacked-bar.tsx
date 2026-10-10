@@ -1,5 +1,6 @@
 import { AGING_COLORS } from './chart-colors';
 import { formatIdr } from '@/shared/lib/format';
+import { Money } from '@/shared/ui/money';
 
 export interface AgingStackedBarProps {
   buckets: { bucket: string; amount: number }[];
@@ -32,7 +33,7 @@ export function AgingStackedBar({ buckets, label }: AgingStackedBarProps) {
           <li key={b.bucket} className="flex items-center gap-1.5 text-caption text-neutral-600">
             <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: AGING_COLORS[i] }} aria-hidden="true" />
             <span>{b.bucket}</span>
-            <span className="font-mono tabular-nums text-neutral-500">{formatIdr(b.amount)}</span>
+            <Money value={b.amount} className="font-mono tabular-nums text-neutral-500" />
           </li>
         ))}
       </ul>
