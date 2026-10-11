@@ -198,6 +198,15 @@ enum ProjectHealthStatus {
   COMPLETED
 }
 
+/// Tipe ketergantungan antar aktivitas jadwal (Gantt):
+/// FS = Finish-to-Start, SS = Start-to-Start, FF = Finish-to-Finish, SF = Start-to-Finish.
+enum DependencyType {
+  FS
+  SS
+  FF
+  SF
+}
+
 // FR-FND-001: Multi-Legal Entity
 model LegalEntity {
   id                 String   @id @default(cuid())
@@ -632,6 +641,9 @@ model WbsItem {
   sortOrder   Int       @default(0)
   /** Progress fisik (%) untuk item ini — dasar rollup progress proyek. */
   progressPercent Decimal @default(0) @db.Decimal(5, 2)
+  /** Jadwal rencana item WBS (dasar baris Gantt). */
+  plannedStart DateTime?
+  plannedEnd   DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -708,6 +720,19 @@ model ControlAccount {
   plannedValue       Decimal   @default(0) @db.Decimal(18, 2) // PV baseline (nilai pekerjaan dijadwalkan)
   scheduleStart      DateTime?
   scheduleEnd        DateTime?
+  /** Baseline rencana (dibekukan) — pembanding slippage terhadap jadwal terbaru. */
+  baselineStart      DateTime?
+  baselineEnd        DateTime?
+  /** Predecessor aktivitas (FS/SS/FF/SF) untuk garis dependensi di Gantt. */
+  predecessorId      String?
+  predecessor        ControlAccount? @relation("ControlAccountDependency", fields: [predecessorId], references: [id], onDelete: SetNull)
+  successors         ControlAccount[] @relation("ControlAccountDependency")
+  dependencyType     DependencyType @default(FS)
+  lagDays            Int       @default(0)
+  /** Aktivitas pada jalur kritis — keterlambatan di sini menunda proyek. */
+  isCriticalPath     Boolean   @default(false)
+  /** Progress fisik (%) untuk bar progress di dalam bar Gantt. */
+  progressPercent    Decimal   @default(0) @db.Decimal(5, 2)
   status             String    @default("ACTIVE") // ACTIVE | CLOSED
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -715,6 +740,7 @@ model ControlAccount {
   @@unique([projectId, code])
   @@index([projectId])
   @@index([wbsItemId])
+  @@index([predecessorId])
 }
 
 // FR-PRJ-010: Forecast — ETC, EAC, VAC, version
@@ -2641,6 +2667,17 @@ model ConstructionWorkPackage {
   unit        String    @default("EA")
   startDate   DateTime?
   endDate     DateTime?
+  /** Baseline rencana (dibekukan) — pembanding slippage. */
+  baselineStart DateTime?
+  baselineEnd   DateTime?
+  /** Predecessor aktivitas (FS/SS/FF/SF) untuk garis dependensi di Gantt. */
+  predecessorId String?
+  predecessor   ConstructionWorkPackage?  @relation("WorkPackageDependency", fields: [predecessorId], references: [id], onDelete: SetNull)
+  successors    ConstructionWorkPackage[] @relation("WorkPackageDependency")
+  dependencyType DependencyType @default(FS)
+  lagDays       Int       @default(0)
+  /** Aktivitas pada jalur kritis. */
+  isCriticalPath Boolean  @default(false)
   status      String    @default("DRAFT") // DRAFT | IN_PROGRESS | COMPLETED | CANCELLED
   requiresIFC Boolean   @default(false) // FR-CON-002: mandatory prerequisite (current IFC)
   readyStatus String    @default("PENDING") // PENDING | READY | BLOCKED (FR-CON-002)
@@ -2658,6 +2695,7 @@ model ConstructionWorkPackage {
   @@index([projectId])
   @@index([wbsItemId])
   @@index([status])
+  @@index([predecessorId])
 }
 
 // FR-CON-004: Progress fisik per work package dari defined measurement method

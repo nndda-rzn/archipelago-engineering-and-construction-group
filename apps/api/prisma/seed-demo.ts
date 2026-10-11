@@ -992,6 +992,107 @@ async function seedProjectLifecycle() {
   console.log(`[lifecycle] Calendar days: +${calCount}`);
 }
 
+/**
+ * Kedalaman jadwal (FR-PRJ-004): jadwal WBS, paket kerja (ControlAccount) dengan
+ * dependency FS berurutan + critical path + baseline, dan work package ber-jadwal.
+ * Idempoten — hanya mengisi yang belum ada.
+ *
+ * Tanpa ini, Gantt hanya punya baris fase & milestone; paket kerja & WP kosong
+ * (kolom tanggalnya ada tapi tak pernah diisi).
+ */
+async function seedProjectSchedule() {
+  const d = (dt: Date) => new Date(dt);
+  const addDays = (dt: Date, days: number) => new Date(dt.getTime() + days * 86_400_000);
+
+  const projects = await prisma.project.findMany({
+    select: { id: true, code: true, startDate: true, completionDate: true },
+    orderBy: { code: 'asc' },
+  });
+
+  // Tahap kerja standar EPC (relatif mulai proyek) — proporsi dari durasi proyek.
+  const STAGES = [
+    { code: 'ENG', name: 'Engineering & Design', frac: [0.0, 0.2] },
+    { code: 'PROC', name: 'Procurement & Delivery', frac: [0.15, 0.55] },
+    { code: 'CONS', name: 'Construction', frac: [0.4, 0.85] },
+    { code: 'COMM', name: 'Commissioning', frac: [0.8, 1.0] },
+  ];
+
+  let caCount = 0;
+  let wpCount = 0;
+  let wbsCount = 0;
+
+  for (const p of projects) {
+    const start = p.startDate ?? new Date();
+    const end = p.completionDate ?? addDays(start, 365);
+    const span = Math.max(end.getTime() - start.getTime(), 86_400_000);
+    const at = (frac: number) => new Date(start.getTime() + span * frac);
+
+    // ── A. Jadwal WBS (rencana) ──
+    const wbsItems = await prisma.wbsItem.findMany({ where: { projectId: p.id }, orderBy: { sortOrder: 'asc' } });
+    const wbsByCode = new Map(wbsItems.map((w) => [w.code, w]));
+    for (let i = 0; i < STAGES.length; i++) {
+      const stage = STAGES[i]!;
+      const wbs = wbsByCode.get(String(i + 1)) ?? wbsItems[i];
+      if (!wbs) continue;
+      if (wbs.plannedStart && wbs.plannedEnd) continue;
+      await prisma.wbsItem.update({ where: { id: wbs.id }, data: { plannedStart: at(stage.frac[0]!), plannedEnd: at(stage.frac[1]!) } });
+      wbsCount += 1;
+    }
+
+    // ── B. ControlAccount per tahap: jadwal + baseline + dependency + critical path ──
+    let predecessorId: string | null = null;
+    for (let i = 0; i < STAGES.length; i++) {
+      const stage = STAGES[i]!;
+      const wbs = wbsByCode.get(String(i + 1)) ?? wbsItems[i];
+      if (!wbs) continue;
+      const code = `CA-${p.code.slice(-3)}-${stage.code}`;
+      const plannedStart = at(stage.frac[0]!);
+      const plannedEnd = at(stage.frac[1]!);
+      // Sebagian tahap telat (slippage): Construction/Commissioning bergeser.
+      const slipDays = i >= 2 ? 21 : 0;
+      const baselineStart = addDays(plannedStart, -slipDays);
+      const baselineEnd = addDays(plannedEnd, -slipDays);
+      const existing = await prisma.controlAccount.findUnique({ where: { projectId_code: { projectId: p.id, code } } });
+      let caId: string;
+      if (existing) {
+        caId = existing.id;
+        await prisma.controlAccount.update({
+          where: { id: caId },
+          data: { scheduleStart: plannedStart, scheduleEnd: plannedEnd, baselineStart, baselineEnd, predecessorId, isCriticalPath: i < 3, progressPercent: i === 0 ? 100 : i === 1 ? 70 : i === 2 ? 35 : 0 },
+        });
+      } else {
+        const ca = await prisma.controlAccount.create({
+          data: {
+            projectId: p.id, wbsItemId: wbs.id, code, name: stage.name, responsibleManager: 'PM Demo',
+            budgetAmount: 0, plannedValue: 0, scheduleStart: plannedStart, scheduleEnd: plannedEnd,
+            baselineStart, baselineEnd, predecessorId, isCriticalPath: i < 3,
+            progressPercent: i === 0 ? 100 : i === 1 ? 70 : i === 2 ? 35 : 0, status: 'ACTIVE',
+          },
+        });
+        caId = ca.id;
+        caCount += 1;
+      }
+      predecessorId = caId;
+    }
+
+    // ── C. Work package ber-jadwal + baseline + progress ──
+    const wpNumber = `WP-${p.code.slice(-3)}`;
+    const wp = await prisma.constructionWorkPackage.findUnique({ where: { wpNumber } });
+    if (wp && (!wp.startDate || !wp.endDate)) {
+      const s = at(0.4);
+      const e = at(0.85);
+      const progress = await prisma.workPackageProgress.findFirst({ where: { workPackageId: wp.id }, orderBy: { progressDate: 'desc' } });
+      await prisma.constructionWorkPackage.update({
+        where: { id: wp.id },
+        data: { startDate: s, endDate: e, baselineStart: addDays(s, -21), baselineEnd: addDays(e, -21), isCriticalPath: true },
+      });
+      wpCount += 1;
+      void progress;
+    }
+  }
+  console.log(`[schedule] WBS dated: ${wbsCount}, ControlAccounts: +${caCount}, WorkPackages dated: ${wpCount}`);
+}
+
 async function main() {
   const entity = await prisma.legalEntity.findUnique({ where: { code: 'AEC-CON' } });
   if (!entity) throw new Error('Seed base dulu: pnpm --filter @aec/api db:seed');
@@ -1619,6 +1720,9 @@ async function main() {
 
   // ── 13d. Siklus hidup proyek (fase, milestone, gate, budget, stakeholder) ──
   await seedProjectLifecycle();
+
+  // ── 13e. Kedalaman jadwal (WBS, ControlAccount, dependency, baseline) ──
+  await seedProjectSchedule();
 
   // ── 14. Workflow demo: versi (DRAFT/ACTIVE/ARCHIVED) + task tersebar ──
   // Tanpa ini, halaman Workflow hanya punya 1 versi ACTIVE dan seluruh task
