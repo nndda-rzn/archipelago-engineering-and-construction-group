@@ -10,7 +10,9 @@ import { ProjectTeamBand } from '@/features/project/ui/project-team-band';
 import { PhaseRibbon } from '@/features/project/ui/phase-ribbon';
 import { GlanceStrip, MilestoneBand, CashChain } from '@/features/project/ui/project-command-center';
 import { DomainGroup, DomainSignals } from '@/features/project/ui/project-domains';
-import { MixBars, ProjectRiskHeatmap, SCurveCompare, BillingBar, IndexTrend } from '@/features/project/ui/project-tab-visuals';
+import { MixDonut, ProjectRiskHeatmap, HealthRadar, BillingFunnel, SCurveCompare, VendorTreemap, VendorRanking, ReportsCalendar } from '@/features/project/ui/project-tab-visuals';
+import { ProjectGanttView } from '@/features/project/ui/project-gantt-view';
+import { TreemapChart } from '@/shared/charts';
 import { healthLabel } from '@/features/project/ui/health-summary';
 import { formatIdr } from '@/shared/lib/format';
 
@@ -181,21 +183,16 @@ export function ProjectDetailPage() {
         {tab === 'overview' && (
           <div className="grid gap-6 xl:grid-cols-2">
             <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-              <h2 className="mb-3 text-overline uppercase text-neutral-500">Billing position</h2>
-              {s ? <BillingBar billing={s.analytics.billing} contractValue={s.cost.contractValue} /> : <Skeleton className="h-24 w-full" />}
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Project health profile</h2>
+              {s ? <HealthRadar summary={s} /> : <Skeleton className="h-56 w-full" />}
+            </section>
+            <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Billing flow</h2>
+              {s ? <BillingFunnel summary={s} /> : <Skeleton className="h-56 w-full" />}
             </section>
             <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
               <h2 className="mb-3 text-overline uppercase text-neutral-500">Cash chain</h2>
               {cashFlow.data ? <CashChain cashFlow={cashFlow.data} /> : <Skeleton className="h-32 w-full" />}
-            </section>
-            <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-              <h2 className="mb-3 text-overline uppercase text-neutral-500">Cost position</h2>
-              <Waterfall contract={h.contractValue} budget={h.totalBudget} actual={h.totalActual} format={formatIdr} />
-              <p className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-body-sm text-neutral-600">
-                <span>Variance <span className={`font-mono tabular-nums ${h.variance >= 0 ? 'text-financial-positive-600' : 'text-financial-negative-600'}`}>{formatIdr(h.variance)}</span></span>
-                <span>Budget used <span className="font-mono tabular-nums text-neutral-800">{h.utilization != null ? `${Math.round(h.utilization)}%` : '—'}</span></span>
-                <span>Revenue <span className="font-mono tabular-nums text-neutral-800">{formatIdr(h.revenue)}</span></span>
-              </p>
             </section>
             <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
               <h2 className="mb-3 text-overline uppercase text-neutral-500">Risk profile</h2>
@@ -206,6 +203,10 @@ export function ProjectDetailPage() {
 
         {tab === 'schedule' && (
           <div className="flex flex-col gap-6">
+            <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Schedule (Gantt)</h2>
+              <ProjectGanttView projectId={projectId} />
+            </section>
             <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
               <h2 className="mb-3 text-overline uppercase text-neutral-500">Progress — planned vs actual</h2>
               {schedule.data ? <SCurveCompare schedule={schedule.data} /> : <Skeleton className="h-40 w-full" />}
@@ -248,8 +249,8 @@ export function ProjectDetailPage() {
         {tab === 'commercial' && s && (
           <div className="flex flex-col gap-6">
             <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-              <h2 className="mb-3 text-overline uppercase text-neutral-500">Billing position</h2>
-              <BillingBar billing={s.analytics.billing} contractValue={s.cost.contractValue} />
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Billing flow</h2>
+              <BillingFunnel summary={s} />
             </section>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <DomainTile label="Contracts" value={s.domains.commercial.contract} href="/commercial" />
@@ -279,6 +280,10 @@ export function ProjectDetailPage() {
                 <p className="text-body-sm text-neutral-500">No commitments recorded.</p>
               )}
             </section>
+            <div className="grid gap-6 lg:grid-cols-2">
+              {domains.data && <VendorTreemap data={vendorSpend(domains.data)} />}
+              {domains.data && <VendorRanking data={vendorSpend(domains.data)} />}
+            </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <DomainTile label="Purchase requisitions" value={s.domains.procurement.pr} href="/procurement/pr" />
               <DomainTile label="Purchase orders" value={s.domains.procurement.po} href="/procurement/po" />
@@ -299,6 +304,15 @@ export function ProjectDetailPage() {
         {tab === 'execution' && domains.data && (
           <div className="flex flex-col gap-6">
             {s && <DomainSignals summary={s} />}
+            <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Field schedule (Gantt)</h2>
+              <ProjectGanttView projectId={projectId} defaultGroup="field" />
+            </section>
+            {domains.data.execution.dailyReports.length > 0 && (
+              <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+                <ReportsCalendar days={dailyReportDays(domains.data.execution.dailyReports)} />
+              </section>
+            )}
             <div className="grid gap-6 lg:grid-cols-2">
               <DomainGroup title="Work packages (progress %)" items={domains.data.execution.workPackages} />
               <DomainGroup title="Daily reports" items={domains.data.execution.dailyReports} />
@@ -311,8 +325,8 @@ export function ProjectDetailPage() {
             {s && <DomainSignals summary={s} />}
             {s && (
               <div className="grid gap-6 lg:grid-cols-2">
-                <MixBars title="NCR by severity" data={s.analytics.qualityMix} />
-                <MixBars title="HSE incidents by severity" data={s.analytics.hseMix} />
+                <MixDonut title="NCR by severity" data={s.analytics.qualityMix} />
+                <MixDonut title="HSE incidents by severity" data={s.analytics.hseMix} />
               </div>
             )}
             <div className="grid gap-6 lg:grid-cols-2">
@@ -327,7 +341,10 @@ export function ProjectDetailPage() {
 
         {tab === 'documents' && domains.data && (
           <div className="flex flex-col gap-6">
-            {s && <MixBars title="Documents by status" data={s.analytics.documentsMix} emptyHint="No drawings or deliverables yet." />}
+            {s && <MixDonut title="Documents by status" data={s.analytics.documentsMix} emptyHint="No drawings or deliverables yet." />}
+            {s && s.analytics.documentsMix.length > 0 && (
+              <TreemapChartWrapper title="Documents by status (proportion)" data={s.analytics.documentsMix} />
+            )}
             <div className="grid gap-6 lg:grid-cols-2">
               <DomainGroup title="Drawings" items={domains.data.documents.drawings} metaLabel="discipline" />
               <DomainGroup title="Deliverables" items={domains.data.documents.deliverables} metaLabel="discipline" />
@@ -343,11 +360,13 @@ export function ProjectDetailPage() {
                 <h2 className="mb-3 text-overline uppercase text-neutral-500">Risk matrix (likelihood × impact)</h2>
                 {s ? <ProjectRiskHeatmap cells={s.analytics.riskMatrix} /> : <Skeleton className="h-32 w-full" />}
               </section>
-              <div className="flex flex-col gap-6">
-                <DomainGroup title="Risks" items={domains.data.governance.risks} metaLabel="category" />
-              </div>
+              <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+                <h2 className="mb-3 text-overline uppercase text-neutral-500">Risk profile by dimension</h2>
+                {s ? <HealthRadar summary={s} /> : <Skeleton className="h-56 w-full" />}
+              </section>
             </div>
             <div className="grid gap-6 lg:grid-cols-2">
+              <DomainGroup title="Risks" items={domains.data.governance.risks} metaLabel="category" />
               <DomainGroup title="Legal cases" items={domains.data.governance.legalCases} />
               <DomainGroup title="Contracts" items={domains.data.governance.contracts} />
             </div>
@@ -361,12 +380,28 @@ export function ProjectDetailPage() {
               {evm.data ? <EvmBars metrics={evm.data.metrics} format={formatIdr} /> : <p className="text-body-sm text-neutral-500">No earned-value baseline for this project.</p>}
             </section>
             <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Cost position</h2>
+              <Waterfall contract={h.contractValue} budget={h.totalBudget} actual={h.totalActual} format={formatIdr} />
+              <p className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-body-sm text-neutral-600">
+                <span>Variance <span className={`font-mono tabular-nums ${h.variance >= 0 ? 'text-financial-positive-600' : 'text-financial-negative-600'}`}>{formatIdr(h.variance)}</span></span>
+                <span>Budget used <span className="font-mono tabular-nums text-neutral-800">{h.utilization != null ? `${Math.round(h.utilization)}%` : '—'}</span></span>
+                <span>Revenue <span className="font-mono tabular-nums text-neutral-800">{formatIdr(h.revenue)}</span></span>
+              </p>
+            </section>
+            <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
               <h2 className="mb-3 text-overline uppercase text-neutral-500">Performance indices</h2>
               {evm.data ? (
-                <div className="flex flex-col gap-3">
-                  <IndexTrend label="CPI" values={[evm.data.metrics.cpi].filter((v): v is number => v != null)} />
-                  <IndexTrend label="SPI" values={[evm.data.metrics.spi].filter((v): v is number => v != null)} />
-                </div>
+                <dl className="flex flex-wrap gap-x-8 gap-y-3">
+                  {[{ label: 'CPI', value: evm.data.metrics.cpi }, { label: 'SPI', value: evm.data.metrics.spi }].map((idx) => (
+                    <div key={idx.label}>
+                      <dt className="text-overline uppercase text-neutral-500">{idx.label}</dt>
+                      <dd className={`font-mono text-metric tabular-nums ${idx.value == null ? 'text-neutral-400' : idx.value >= 1 ? 'text-financial-positive-600' : 'text-warning-600'}`}>
+                        {idx.value == null ? '—' : idx.value.toFixed(2)}
+                      </dd>
+                      <p className="text-caption text-neutral-400">{idx.value == null ? 'no baseline' : idx.value >= 1 ? 'ahead of plan' : 'behind plan'}</p>
+                    </div>
+                  ))}
+                </dl>
               ) : (
                 <p className="text-body-sm text-neutral-500">No indices available.</p>
               )}
@@ -450,5 +485,35 @@ function DomainTile({ label, value, format, href }: { label: string; value: numb
       <span className="text-caption text-neutral-400 group-hover:text-neutral-700">Open →</span>
     </Link>
   );
+}
+
+/** Agregasi belanja per vendor dari PO + vendor invoice + subcontract. */
+function vendorSpend(domains: { procurement: { purchaseOrders: Array<{ label: string; value?: number }>; vendorInvoices: Array<{ label: string; value?: number }>; subcontracts: Array<{ label: string; value?: number }> } }): Array<{ key: string; value: number }> {
+  const map = new Map<string, number>();
+  const add = (rows: Array<{ label: string; value?: number }>) => {
+    for (const r of rows) {
+      if (!r.label) continue;
+      map.set(r.label, (map.get(r.label) ?? 0) + (r.value ?? 0));
+    }
+  };
+  add(domains.procurement.purchaseOrders);
+  add(domains.procurement.vendorInvoices);
+  add(domains.procurement.subcontracts);
+  return [...map.entries()].map(([key, value]) => ({ key, value })).filter((d) => d.value > 0);
+}
+
+/** Ubah daily report (label = tanggal) menjadi seri kalender per hari. */
+function dailyReportDays(rows: Array<{ label: string }>): Array<{ date: string; count: number }> {
+  const map = new Map<string, number>();
+  for (const r of rows) {
+    if (!r.label) continue;
+    map.set(r.label, (map.get(r.label) ?? 0) + 1);
+  }
+  return [...map.entries()].map(([date, count]) => ({ date, count }));
+}
+
+/** Treemap untuk distribusi dokumen (key sudah berisi prefix tipe). */
+function TreemapChartWrapper({ title, data }: { title: string; data: Array<{ key: string; count: number }> }) {
+  return <TreemapChart title={title} data={data.map((d) => ({ key: d.key.replace(':', ': '), value: d.count }))} format={(n) => String(n)} />;
 }
 
