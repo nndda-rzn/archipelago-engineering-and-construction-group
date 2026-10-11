@@ -8,8 +8,9 @@ import { CommitmentBar } from '@/features/project/ui/commitment-bar';
 import { ProjectEditForm } from '@/features/project/ui/project-edit-form';
 import { ProjectTeamBand } from '@/features/project/ui/project-team-band';
 import { PhaseRibbon } from '@/features/project/ui/phase-ribbon';
-import { GlanceStrip, SCurve, MilestoneBand, CashChain } from '@/features/project/ui/project-command-center';
+import { GlanceStrip, MilestoneBand, CashChain } from '@/features/project/ui/project-command-center';
 import { DomainGroup, DomainSignals } from '@/features/project/ui/project-domains';
+import { MixBars, ProjectRiskHeatmap, SCurveCompare, BillingBar, IndexTrend } from '@/features/project/ui/project-tab-visuals';
 import { healthLabel } from '@/features/project/ui/health-summary';
 import { formatIdr } from '@/shared/lib/format';
 
@@ -180,6 +181,10 @@ export function ProjectDetailPage() {
         {tab === 'overview' && (
           <div className="grid gap-6 xl:grid-cols-2">
             <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Billing position</h2>
+              {s ? <BillingBar billing={s.analytics.billing} contractValue={s.cost.contractValue} /> : <Skeleton className="h-24 w-full" />}
+            </section>
+            <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
               <h2 className="mb-3 text-overline uppercase text-neutral-500">Cash chain</h2>
               {cashFlow.data ? <CashChain cashFlow={cashFlow.data} /> : <Skeleton className="h-32 w-full" />}
             </section>
@@ -192,14 +197,18 @@ export function ProjectDetailPage() {
                 <span>Revenue <span className="font-mono tabular-nums text-neutral-800">{formatIdr(h.revenue)}</span></span>
               </p>
             </section>
+            <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Risk profile</h2>
+              {s ? <ProjectRiskHeatmap cells={s.analytics.riskMatrix} /> : <Skeleton className="h-32 w-full" />}
+            </section>
           </div>
         )}
 
         {tab === 'schedule' && (
           <div className="flex flex-col gap-6">
             <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-              <h2 className="mb-3 text-overline uppercase text-neutral-500">Progress (S-curve)</h2>
-              {schedule.data ? <SCurve schedule={schedule.data} /> : <Skeleton className="h-40 w-full" />}
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Progress — planned vs actual</h2>
+              {schedule.data ? <SCurveCompare schedule={schedule.data} /> : <Skeleton className="h-40 w-full" />}
             </section>
             <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
               <h2 className="mb-3 text-overline uppercase text-neutral-500">Milestones</h2>
@@ -237,21 +246,53 @@ export function ProjectDetailPage() {
         )}
 
         {tab === 'commercial' && s && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <DomainTile label="Contracts" value={s.domains.commercial.contract} href="/commercial" />
-            <DomainTile label="Progress claims" value={s.domains.commercial.progressClaim} format={formatIdr} href="/finance/progress-claims" />
-            <DomainTile label="Client invoices" value={s.domains.commercial.clientInvoice} format={formatIdr} href="/finance/client-invoices" />
-            <DomainTile label="Collected" value={s.domains.commercial.collection} format={formatIdr} href="/finance/collections" />
-            <DomainTile label="Variation orders" value={s.domains.commercial.variation} href="/finance/variations" />
+          <div className="flex flex-col gap-6">
+            <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Billing position</h2>
+              <BillingBar billing={s.analytics.billing} contractValue={s.cost.contractValue} />
+            </section>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <DomainTile label="Contracts" value={s.domains.commercial.contract} href="/commercial" />
+              <DomainTile label="Progress claims" value={s.domains.commercial.progressClaim} format={formatIdr} href="/finance/progress-claims" />
+              <DomainTile label="Client invoices" value={s.domains.commercial.clientInvoice} format={formatIdr} href="/finance/client-invoices" />
+              <DomainTile label="Collected" value={s.domains.commercial.collection} format={formatIdr} href="/finance/collections" />
+              <DomainTile label="Variation orders" value={s.domains.commercial.variation} href="/finance/variations" />
+            </div>
+            {domains.data && (
+              <div className="grid gap-6 lg:grid-cols-2">
+                <DomainGroup title="Progress claims" items={domains.data.commercial.progressClaims} />
+                <DomainGroup title="Client invoices" items={domains.data.commercial.clientInvoices} />
+                <DomainGroup title="Collections" items={domains.data.commercial.collections} />
+                <DomainGroup title="Variation orders" items={domains.data.commercial.variations} />
+              </div>
+            )}
           </div>
         )}
 
         {tab === 'procurement' && s && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <DomainTile label="Purchase requisitions" value={s.domains.procurement.pr} href="/procurement/pr" />
-            <DomainTile label="Purchase orders" value={s.domains.procurement.po} href="/procurement/po" />
-            <DomainTile label="Vendor invoices" value={s.domains.procurement.vendorInvoice} href="/finance/vendor-invoices" />
-            <DomainTile label="Subcontracts" value={s.domains.procurement.subcontract} href="/finance/subcontracts" />
+          <div className="flex flex-col gap-6">
+            <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Commitment vs budget</h2>
+              {commitment.data ? (
+                <CommitmentBar po={commitment.data.poCommitment} subcontract={commitment.data.subcontractCommitment} budget={commitment.data.totalBudget} remaining={commitment.data.remainingBudget} />
+              ) : (
+                <p className="text-body-sm text-neutral-500">No commitments recorded.</p>
+              )}
+            </section>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <DomainTile label="Purchase requisitions" value={s.domains.procurement.pr} href="/procurement/pr" />
+              <DomainTile label="Purchase orders" value={s.domains.procurement.po} href="/procurement/po" />
+              <DomainTile label="Vendor invoices" value={s.domains.procurement.vendorInvoice} href="/finance/vendor-invoices" />
+              <DomainTile label="Subcontracts" value={s.domains.procurement.subcontract} href="/finance/subcontracts" />
+            </div>
+            {domains.data && (
+              <div className="grid gap-6 lg:grid-cols-2">
+                <DomainGroup title="Purchase requisitions" items={domains.data.procurement.requisitions} />
+                <DomainGroup title="Purchase orders" items={domains.data.procurement.purchaseOrders} />
+                <DomainGroup title="Vendor invoices" items={domains.data.procurement.vendorInvoices} />
+                <DomainGroup title="Subcontracts" items={domains.data.procurement.subcontracts} />
+              </div>
+            )}
           </div>
         )}
 
@@ -259,7 +300,7 @@ export function ProjectDetailPage() {
           <div className="flex flex-col gap-6">
             {s && <DomainSignals summary={s} />}
             <div className="grid gap-6 lg:grid-cols-2">
-              <DomainGroup title="Work packages" items={domains.data.execution.workPackages} />
+              <DomainGroup title="Work packages (progress %)" items={domains.data.execution.workPackages} />
               <DomainGroup title="Daily reports" items={domains.data.execution.dailyReports} />
             </div>
           </div>
@@ -268,6 +309,12 @@ export function ProjectDetailPage() {
         {tab === 'quality' && domains.data && (
           <div className="flex flex-col gap-6">
             {s && <DomainSignals summary={s} />}
+            {s && (
+              <div className="grid gap-6 lg:grid-cols-2">
+                <MixBars title="NCR by severity" data={s.analytics.qualityMix} />
+                <MixBars title="HSE incidents by severity" data={s.analytics.hseMix} />
+              </div>
+            )}
             <div className="grid gap-6 lg:grid-cols-2">
               <DomainGroup title="Non-conformance reports" items={domains.data.quality.ncrs} metaLabel="severity" />
               <DomainGroup title="Punch list" items={domains.data.quality.punchItems} />
@@ -279,9 +326,12 @@ export function ProjectDetailPage() {
         )}
 
         {tab === 'documents' && domains.data && (
-          <div className="grid gap-6 lg:grid-cols-2">
-            <DomainGroup title="Drawings" items={domains.data.documents.drawings} metaLabel="discipline" />
-            <DomainGroup title="Deliverables" items={domains.data.documents.deliverables} metaLabel="discipline" />
+          <div className="flex flex-col gap-6">
+            {s && <MixBars title="Documents by status" data={s.analytics.documentsMix} emptyHint="No drawings or deliverables yet." />}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <DomainGroup title="Drawings" items={domains.data.documents.drawings} metaLabel="discipline" />
+              <DomainGroup title="Deliverables" items={domains.data.documents.deliverables} metaLabel="discipline" />
+            </div>
           </div>
         )}
 
@@ -289,7 +339,15 @@ export function ProjectDetailPage() {
           <div className="flex flex-col gap-6">
             {s && <DomainSignals summary={s} />}
             <div className="grid gap-6 lg:grid-cols-2">
-              <DomainGroup title="Risks" items={domains.data.governance.risks} metaLabel="category" />
+              <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+                <h2 className="mb-3 text-overline uppercase text-neutral-500">Risk matrix (likelihood × impact)</h2>
+                {s ? <ProjectRiskHeatmap cells={s.analytics.riskMatrix} /> : <Skeleton className="h-32 w-full" />}
+              </section>
+              <div className="flex flex-col gap-6">
+                <DomainGroup title="Risks" items={domains.data.governance.risks} metaLabel="category" />
+              </div>
+            </div>
+            <div className="grid gap-6 lg:grid-cols-2">
               <DomainGroup title="Legal cases" items={domains.data.governance.legalCases} />
               <DomainGroup title="Contracts" items={domains.data.governance.contracts} />
             </div>
@@ -303,19 +361,36 @@ export function ProjectDetailPage() {
               {evm.data ? <EvmBars metrics={evm.data.metrics} format={formatIdr} /> : <p className="text-body-sm text-neutral-500">No earned-value baseline for this project.</p>}
             </section>
             <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-              <h2 className="mb-3 text-overline uppercase text-neutral-500">Commitment &amp; forecast</h2>
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Performance indices</h2>
+              {evm.data ? (
+                <div className="flex flex-col gap-3">
+                  <IndexTrend label="CPI" values={[evm.data.metrics.cpi].filter((v): v is number => v != null)} />
+                  <IndexTrend label="SPI" values={[evm.data.metrics.spi].filter((v): v is number => v != null)} />
+                </div>
+              ) : (
+                <p className="text-body-sm text-neutral-500">No indices available.</p>
+              )}
+            </section>
+            <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Commitment</h2>
               {commitment.data ? (
                 <CommitmentBar po={commitment.data.poCommitment} subcontract={commitment.data.subcontractCommitment} budget={commitment.data.totalBudget} remaining={commitment.data.remainingBudget} />
               ) : (
                 <p className="text-body-sm text-neutral-500">No commitments recorded.</p>
               )}
+            </section>
+            <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Forecast</h2>
               {forecast ? (
-                <p className="mt-4 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-body-sm text-neutral-700">
+                <p className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-body-sm text-neutral-700">
                   <span>EAC <span className="font-mono tabular-nums text-neutral-900">{formatIdr(forecast.estimateAtCompletion)}</span></span>
+                  <span>ETC <span className="font-mono tabular-nums text-neutral-900">{formatIdr(forecast.estimateToComplete)}</span></span>
                   <span>VAC <span className={`font-mono tabular-nums ${forecast.varianceAtCompletion >= 0 ? 'text-financial-positive-600' : 'text-financial-negative-600'}`}>{formatIdr(forecast.varianceAtCompletion)}</span></span>
                   <StatusBadge status={forecast.status} label={`v${forecast.version}`} />
                 </p>
-              ) : null}
+              ) : (
+                <p className="text-body-sm text-neutral-500">No forecast yet for this project.</p>
+              )}
             </section>
           </div>
         )}

@@ -7,6 +7,7 @@ export { ProjectTeamBand } from './project-team-band';
 export { PhaseRibbon } from './phase-ribbon';
 export { GlanceStrip, SCurve, MilestoneBand, CashChain } from './project-command-center';
 export { DomainGroup, DomainSignals } from './project-domains';
+export { MixBars, ProjectRiskHeatmap, SCurveCompare, BillingBar, IndexTrend } from './project-tab-visuals';
 export { WbsTree } from './wbs-tree';
 export { WbsForm } from './wbs-form';
 export { BudgetRow } from './budget-row';
