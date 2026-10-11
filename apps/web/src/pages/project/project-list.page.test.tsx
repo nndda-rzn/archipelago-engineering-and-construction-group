@@ -45,8 +45,8 @@ vi.mock('@tanstack/react-router', () => ({
 
 const register = vi.hoisted(() => ({
   items: [
-    { projectId: 'p1', code: 'PRJ-01', name: 'Alpha EPC', client: 'PT Klien', manager: 'Andi', status: 'ACTIVE', contractValue: 100_000_000, startDate: '2026-01-01T00:00:00.000Z', completionDate: '2027-01-01T00:00:00.000Z', budget: 80_000_000, actual: 60_000_000, variance: 20_000_000, utilization: 75, health: 'AT_RISK' as const },
-    { projectId: 'p2', code: 'PRJ-02', name: 'Beta Pipeline', client: 'PT Utama', manager: null, status: 'PLANNING', contractValue: 50_000_000, startDate: null, completionDate: null, budget: 0, actual: 0, variance: 0, utilization: null, health: 'NO_BUDGET' as const },
+    { projectId: 'p1', code: 'PRJ-01', name: 'Alpha EPC', client: 'PT Klien', manager: 'Andi', status: 'ACTIVE', contractValue: 100_000_000, startDate: '2026-01-01T00:00:00.000Z', completionDate: '2027-01-01T00:00:00.000Z', budget: 80_000_000, actual: 60_000_000, variance: 20_000_000, utilization: 75, health: 'AT_RISK' as const, phase: 'CONSTRUCTION', healthStatus: 'AT_RISK', progressPlanned: 55, progressActual: 48, cpi: 0.98, spi: 0.87, openRisks: 3, openNcr: 1, openHse: 1, nextMilestone: { name: 'Handover', plannedDate: '2027-01-01T00:00:00.000Z', isCritical: true }, trend: [10, 30, 60, 100], teamCount: 2, team: [{ id: 'e1', name: 'Andi', position: 'PM', isKeyMember: true }], tagline: 'EPC fasilitas pengolahan', isWatchlist: true, watchlistReason: 'Behind schedule', type: 'EPC', priority: 'HIGH', managerRef: { id: 'e1', name: 'Andi Pratama', position: 'PM' }, directorRef: null },
+    { projectId: 'p2', code: 'PRJ-02', name: 'Beta Pipeline', client: 'PT Utama', manager: null, status: 'PLANNING', contractValue: 50_000_000, startDate: null, completionDate: null, budget: 0, actual: 0, variance: 0, utilization: null, health: 'NO_BUDGET' as const, phase: 'INITIATION', healthStatus: 'ON_TRACK', progressPlanned: 0, progressActual: 0, cpi: null, spi: null, openRisks: 0, openNcr: 0, openHse: 0, nextMilestone: null, trend: [], teamCount: 0, team: [], tagline: null, isWatchlist: false, watchlistReason: null, type: 'OTHER', priority: 'MEDIUM', managerRef: null, directorRef: null },
   ],
 }));
 
@@ -108,7 +108,7 @@ describe('ProjectListPage — 3 view', () => {
   it('switching to the card view keeps the same data (no refetch, same records)', () => {
     renderWithProviders(<ProjectListPage />);
     fireEvent.click(within(viewOptions()).getByRole('radio', { name: /kartu|card/i }));
-    expect(screen.getByRole('link', { name: /PRJ-02/ })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Beta Pipeline/ })).toBeTruthy();
   });
 
   it('writes the selected view to the URL', () => {
@@ -118,13 +118,15 @@ describe('ProjectListPage — 3 view', () => {
     expect(nav.get().view).toBe('timeline');
   });
 
-  it('labels cost consumption as "Budget used" (not "Utilization")', () => {
+  it('labels cost consumption as "Budget used" in the table, and shows CPI on the card', () => {
     renderWithProviders(<ProjectListPage />);
-    // Header tabel + kartu sama-sama memakai istilah jujur "Budget used".
+    // Tabel memakai istilah jujur "Budget used".
     expect(screen.getAllByText(/Budget used/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/^Utilization$/i)).toBeNull();
+    // Kartu memakai sinyal triage (CPI), bukan sekadar mengulang kolom tabel.
     fireEvent.click(within(viewOptions()).getByRole('radio', { name: /kartu|card/i }));
-    expect(screen.getAllByText(/Budget used/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/CPI/).length).toBeGreaterThan(0);
+    expect(screen.getByText('Needs attention')).toBeTruthy();
   });
 
   it('groups projects without dates instead of drawing a bogus bar', () => {
