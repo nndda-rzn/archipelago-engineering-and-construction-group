@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsDateString, IsInt, IsOptional, IsString, Length, Max, Min } from 'class-validator';
+import { IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, Length, Max, Min } from 'class-validator';
 import { PartialType } from '@nestjs/mapped-types';
 
 export class CreateProjectDto {
@@ -98,3 +98,27 @@ export class ListProjectQueryDto {  @IsOptional()
  * kode adalah identitas, entity menentukan pembukuan.
  */
 export class UpdateProjectDto extends PartialType(CreateProjectDto) {}
+
+export const PROJECT_TYPES = ['EPC', 'MARINE', 'POWER', 'PROCESS', 'INFRASTRUCTURE', 'OTHER'] as const;
+export const PROJECT_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
+
+/** Body `PATCH /projects/:id` — menambah type/priority & manager/director sebagai orang. */
+export class UpdateProjectMetaDto {
+  @IsOptional() @IsIn(PROJECT_TYPES) type?: (typeof PROJECT_TYPES)[number];
+  @IsOptional() @IsIn(PROJECT_PRIORITIES) priority?: (typeof PROJECT_PRIORITIES)[number];
+  @IsOptional() @IsString() managerId?: string;
+  @IsOptional() @IsString() directorId?: string;
+}
+
+/** Body `POST /projects/:id/team` — tugaskan karyawan ke proyek. */
+export class AddProjectMemberDto {
+  @IsString() employeeId!: string;
+
+  @IsOptional() @IsString() @Length(2, 100) role?: string;
+
+  @Type(() => Number) @IsInt() @Min(1) @Max(100) allocationPercent!: number;
+
+  @IsOptional() @IsDateString() startDate?: string;
+  @IsOptional() @IsDateString() endDate?: string;
+  @IsOptional() @IsBoolean() isKeyMember?: boolean;
+}

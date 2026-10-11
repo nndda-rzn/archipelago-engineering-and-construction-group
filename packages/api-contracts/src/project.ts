@@ -17,6 +17,10 @@ export const projectSchema = z.object({
   completionDate: z.string().nullable(),
   director: z.string().nullable(),
   manager: z.string().nullable(),
+  type: z.string(),
+  priority: z.string(),
+  directorId: z.string().nullable().optional(),
+  managerId: z.string().nullable().optional(),
   status: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -34,13 +38,30 @@ export type ProjectListResponse = z.infer<typeof projectListResponseSchema>;
  * Catatan pelabelan: `utilization` = **serapan biaya** (actual/budget × 100),
  * bukan progress fisik. UI harus melabelinya "Budget used", bukan "Utilization".
  */
+export const personRefSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  position: z.string().nullable(),
+});
+
+export const teamMemberRefSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  position: z.string().nullable(),
+  isKeyMember: z.boolean(),
+});
+
 export const projectRegisterItemSchema = z.object({
   projectId: z.string(),
   code: z.string(),
   name: z.string(),
   client: z.string(),
   manager: z.string().nullable(),
+  managerRef: personRefSchema.nullable(),
+  directorRef: personRefSchema.nullable(),
   status: z.string(),
+  type: z.string(),
+  priority: z.string(),
   contractValue: z.number(),
   startDate: z.string().nullable(),
   completionDate: z.string().nullable(),
@@ -50,8 +71,72 @@ export const projectRegisterItemSchema = z.object({
   /** Serapan biaya (%) — `null` bila belum ada budget. */
   utilization: z.number().nullable(),
   health: z.enum(['NO_BUDGET', 'ON_TRACK', 'AT_RISK', 'CRITICAL']),
+  teamCount: z.number(),
+  team: z.array(teamMemberRefSchema),
 });
 export type ProjectRegisterItem = z.infer<typeof projectRegisterItemSchema>;
+
+export const projectStatsSchema = z.object({
+  total: z.number(),
+  active: z.number(),
+  onHold: z.number(),
+  completed: z.number(),
+  critical: z.number(),
+  withoutTeam: z.number(),
+  totalContract: z.number(),
+});
+export type ProjectStats = z.infer<typeof projectStatsSchema>;
+
+export const projectTeamMemberSchema = z.object({
+  assignmentId: z.string(),
+  employeeId: z.string(),
+  name: z.string(),
+  position: z.string().nullable(),
+  department: z.string().nullable(),
+  grade: z.string().nullable(),
+  employeeNumber: z.string(),
+  role: z.string().nullable(),
+  allocationPercent: z.number(),
+  startDate: z.string(),
+  endDate: z.string().nullable(),
+  isKeyMember: z.boolean(),
+  status: z.string(),
+});
+export type ProjectTeamMember = z.infer<typeof projectTeamMemberSchema>;
+
+export const projectTeamSchema = z.object({
+  items: z.array(projectTeamMemberSchema),
+  total: z.number(),
+  totalAllocation: z.number(),
+});
+export type ProjectTeam = z.infer<typeof projectTeamSchema>;
+
+export const projectActivitySchema = z.object({
+  id: z.string(),
+  action: z.string(),
+  summary: z.string(),
+  actorId: z.string().nullable(),
+  at: z.string(),
+});
+export type ProjectActivity = z.infer<typeof projectActivitySchema>;
+
+export const updateProjectMetaSchema = z.object({
+  type: z.enum(['EPC', 'MARINE', 'POWER', 'PROCESS', 'INFRASTRUCTURE', 'OTHER']).optional(),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
+  managerId: z.string().optional(),
+  directorId: z.string().optional(),
+});
+export type UpdateProjectMeta = z.infer<typeof updateProjectMetaSchema>;
+
+export const addProjectMemberSchema = z.object({
+  employeeId: z.string(),
+  role: z.string().max(100).optional(),
+  allocationPercent: z.number().min(1).max(100),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  isKeyMember: z.boolean().optional(),
+});
+export type AddProjectMember = z.infer<typeof addProjectMemberSchema>;
 
 export const projectRegisterSchema = z.object({
   items: z.array(projectRegisterItemSchema),
@@ -100,6 +185,8 @@ export const updateProjectSchema = z.object({
   completionDate: z.string().optional(),
   director: z.string().max(200).optional(),
   manager: z.string().max(200).optional(),
+  type: z.enum(['EPC', 'MARINE', 'POWER', 'PROCESS', 'INFRASTRUCTURE', 'OTHER']).optional(),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
   status: z.enum(PROJECT_STATUSES).optional(),
 });
 export type UpdateProject = z.infer<typeof updateProjectSchema>;
