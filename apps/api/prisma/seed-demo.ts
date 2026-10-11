@@ -836,19 +836,19 @@ async function seedProjectLifecycle() {
   });
 
   // Profil fase & progress per proyek (kaya: ada yang maju, ada yang tertinggal).
-  const profileByCode: Record<string, { phase: string; planned: number; actual: number; health: string }> = {
-    'PRJ-EPC-2027-014': { phase: 'CONSTRUCTION', planned: 55, actual: 48, health: 'AT_RISK' },
-    'PRJ-EPC-2027-020': { phase: 'CONSTRUCTION', planned: 40, actual: 45, health: 'ON_TRACK' },
-    'PRJ-EPC-2027-021': { phase: 'CONSTRUCTION', planned: 50, actual: 34, health: 'CRITICAL' },
-    'PRJ-EPC-2027-022': { phase: 'PROCUREMENT', planned: 30, actual: 33, health: 'ON_TRACK' },
-    'PRJ-EPC-2027-023': { phase: 'CONSTRUCTION', planned: 60, actual: 41, health: 'CRITICAL' },
-    'PRJ-EPC-2027-024': { phase: 'ENGINEERING', planned: 35, actual: 35, health: 'ON_HOLD' },
-    'PRJ-EPC-2027-025': { phase: 'PROCUREMENT', planned: 45, actual: 38, health: 'AT_RISK' },
-    'PRJ-EPC-2027-026': { phase: 'ENGINEERING', planned: 20, actual: 22, health: 'ON_TRACK' },
-    'PRJ-EPC-2027-027': { phase: 'CONSTRUCTION', planned: 70, actual: 68, health: 'ON_TRACK' },
-    'PRJ-EPC-2027-028': { phase: 'CLOSEOUT', planned: 100, actual: 100, health: 'COMPLETED' },
-    'PRJ-EPC-2027-029': { phase: 'INITIATION', planned: 5, actual: 3, health: 'ON_TRACK' },
-    'PRJ-EPC-2027-030': { phase: 'FEED', planned: 10, actual: 9, health: 'ON_TRACK' },
+  const profileByCode: Record<string, { phase: string; planned: number; actual: number; health: string; tagline: string; watchlist?: string }> = {
+    'PRJ-EPC-2027-014': { phase: 'CONSTRUCTION', planned: 55, actual: 48, health: 'AT_RISK', tagline: 'EPC fasilitas pengolahan industri — struktur & MEP', watchlist: 'Progress 7 pts di belakang rencana' },
+    'PRJ-EPC-2027-020': { phase: 'CONSTRUCTION', planned: 40, actual: 45, health: 'ON_TRACK', tagline: 'Perpanjangan jetty fase 2 — pekerjaan laut' },
+    'PRJ-EPC-2027-021': { phase: 'CONSTRUCTION', planned: 50, actual: 34, health: 'CRITICAL', tagline: 'Pengerukan & reklamasi — Makassar', watchlist: 'Tertinggal 16 pts, biaya overrun' },
+    'PRJ-EPC-2027-022': { phase: 'PROCUREMENT', planned: 30, actual: 33, health: 'ON_TRACK', tagline: 'Fabrikasi platform lepas pantai — Batam' },
+    'PRJ-EPC-2027-023': { phase: 'CONSTRUCTION', planned: 60, actual: 41, health: 'CRITICAL', tagline: 'PLTU Unit 3 balance of plant — Cirebon', watchlist: 'Tertinggal 19 pts' },
+    'PRJ-EPC-2027-024': { phase: 'ENGINEERING', planned: 35, actual: 35, health: 'ON_HOLD', tagline: 'Instalasi gas turbin — ditahan sementara', watchlist: 'Proyek di-hold' },
+    'PRJ-EPC-2027-025': { phase: 'PROCUREMENT', planned: 45, actual: 38, health: 'AT_RISK', tagline: 'Substation EPC 150kV — Bekasi', watchlist: 'Tertinggal 7 pts' },
+    'PRJ-EPC-2027-026': { phase: 'ENGINEERING', planned: 20, actual: 22, health: 'ON_TRACK', tagline: 'Transmission line 70 km — Sumatra' },
+    'PRJ-EPC-2027-027': { phase: 'CONSTRUCTION', planned: 70, actual: 68, health: 'ON_TRACK', tagline: 'Revamp kilang — Balikpapan' },
+    'PRJ-EPC-2027-028': { phase: 'CLOSEOUT', planned: 100, actual: 100, health: 'COMPLETED', tagline: 'Ekspansi tank farm — Tuban (selesai)' },
+    'PRJ-EPC-2027-029': { phase: 'INITIATION', planned: 5, actual: 3, health: 'ON_TRACK', tagline: 'Pekerjaan awal — persiapan lahan' },
+    'PRJ-EPC-2027-030': { phase: 'FEED', planned: 10, actual: 9, health: 'ON_TRACK', tagline: 'Studi kelayakan & basic engineering' },
   };
 
   let updated = 0;
@@ -862,6 +862,9 @@ async function seedProjectLifecycle() {
         healthStatus: prof.health as never,
         progressPlanned: prof.planned,
         progressActual: prof.actual,
+        tagline: prof.tagline,
+        isWatchlist: prof.watchlist != null,
+        watchlistReason: prof.watchlist ?? null,
       },
     });
     updated += 1;

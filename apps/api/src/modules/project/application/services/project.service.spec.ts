@@ -11,13 +11,18 @@ function makePrisma(overrides: Record<string, unknown> = {}) {
           id: 'p1', code: 'PRJ-01', name: 'Alpha', client: 'C1', manager: 'Andi', status: 'ACTIVE',
           contractValue: 100, startDate: new Date('2026-01-01'), completionDate: new Date('2027-01-01'), createdAt: new Date('2026-01-01'),
           type: 'EPC', priority: 'HIGH',
+          phase: 'CONSTRUCTION', healthStatus: 'AT_RISK', progressPlanned: 55, progressActual: 48,
+          tagline: 'Alpha tagline', isWatchlist: true, watchlistReason: 'behind schedule',
           managerRef: { id: 'e1', name: 'Andi Pratama', position: 'Project Manager' }, directorRef: null,
           _count: { assignments: 2 },
         },
         {
           id: 'p2', code: 'PRJ-02', name: 'Beta', client: 'C2', manager: null, status: 'PLANNING',
           contractValue: 50, startDate: null, completionDate: null, createdAt: new Date('2026-02-01'),
-          type: 'OTHER', priority: 'MEDIUM', managerRef: null, directorRef: null, _count: { assignments: 0 },
+          type: 'OTHER', priority: 'MEDIUM',
+          phase: 'INITIATION', healthStatus: 'ON_TRACK', progressPlanned: 0, progressActual: 0,
+          tagline: null, isWatchlist: false, watchlistReason: null,
+          managerRef: null, directorRef: null, _count: { assignments: 0 },
         },
       ]),
     },
@@ -31,6 +36,11 @@ function makePrisma(overrides: Record<string, unknown> = {}) {
         { projectId: 'p1', isKeyMember: false, employee: { id: 'e2', name: 'Dewi Lestari', position: 'Site Engineer' } },
       ]),
     },
+    risk: { groupBy: jest.fn().mockResolvedValue([]) },
+    ncr: { groupBy: jest.fn().mockResolvedValue([]) },
+    hseIncident: { groupBy: jest.fn().mockResolvedValue([]) },
+    projectMilestone: { findMany: jest.fn().mockResolvedValue([]) },
+    projectPeriodBudget: { findMany: jest.fn().mockResolvedValue([]) },
     projectActivity: { create: jest.fn().mockResolvedValue({}) },
     ...overrides,
   } as never;
@@ -82,6 +92,29 @@ describe('ProjectService.register', () => {
     expect(a.teamCount).toBe(2);
     expect(a.team[0]!.name).toBe('Andi Pratama');
     expect(a.team[0]!.isKeyMember).toBe(true);
+  });
+
+  it('carries card signals: phase, progress, cpi/spi, watchlist, tagline and next milestone', async () => {
+    const prisma = makePrisma({
+      risk: { groupBy: jest.fn().mockResolvedValue([{ projectId: 'p1', _count: { _all: 3 } }]) },
+      ncr: { groupBy: jest.fn().mockResolvedValue([{ projectId: 'p1', _count: { _all: 2 } }]) },
+      hseIncident: { groupBy: jest.fn().mockResolvedValue([{ projectId: 'p1', _count: { _all: 1 } }]) },
+      projectMilestone: { findMany: jest.fn().mockResolvedValue([{ projectId: 'p1', name: 'Handover', plannedDate: new Date('2027-01-01'), isCritical: true }]) },
+      projectPeriodBudget: { findMany: jest.fn().mockResolvedValue([{ projectId: 'p1', period: '2026-Q1', plannedCost: 50 }, { projectId: 'p1', period: '2026-Q2', plannedCost: 50 }]) },
+    });
+    const svc = new ProjectService(prisma, audit, cache, makeActualCost());
+    const result = await svc.register();
+    const a = result.items.find((i) => i.code === 'PRJ-01')!;
+    expect(a.phase).toBe('CONSTRUCTION');
+    expect(a.progressPlanned).toBe(55);
+    expect(a.openRisks).toBe(3);
+    expect(a.openNcr).toBe(2);
+    expect(a.openHse).toBe(1);
+    expect(a.isWatchlist).toBe(true);
+    expect(a.tagline).toBe('Alpha tagline');
+    expect(a.nextMilestone?.name).toBe('Handover');
+    expect(a.trend).toEqual([50, 100]);
+    expect(typeof a.cpi === 'number' || a.cpi === null).toBe(true);
   });
 
   it('marks a project with no published budget as NO_BUDGET with null utilization', async () => {
