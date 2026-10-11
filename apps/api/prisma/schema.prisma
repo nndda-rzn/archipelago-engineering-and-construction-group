@@ -161,6 +161,43 @@ enum ProjectPriority {
   CRITICAL
 }
 
+/// Fase siklus hidup proyek EPC (FR-PRJ-007). Proyek bergerak berurutan
+/// melewati gate; `ProjectPhaseHistory` mencatat kapan tiap fase dimulai.
+enum ProjectPhase {
+  INITIATION
+  FEED
+  ENGINEERING
+  PROCUREMENT
+  CONSTRUCTION
+  COMMISSIONING
+  CLOSEOUT
+}
+
+/// Status sebuah milestone.
+enum MilestoneStatus {
+  PLANNED
+  IN_PROGRESS
+  ACHIEVED
+  MISSED
+}
+
+/// Keputusan pada stage-gate review.
+enum GateDecision {
+  GO
+  HOLD
+  NO_GO
+}
+
+/// Kesehatan proyek komposit (biaya + jadwal + risiko + mutu + HSE), bukan hanya
+/// serapan biaya seperti klasifikasi lama.
+enum ProjectHealthStatus {
+  ON_TRACK
+  AT_RISK
+  CRITICAL
+  ON_HOLD
+  COMPLETED
+}
+
 // FR-FND-001: Multi-Legal Entity
 model LegalEntity {
   id                 String   @id @default(cuid())
@@ -505,6 +542,13 @@ model Project {
   managerId           String?
   managerRef          Employee?   @relation("ProjectManager", fields: [managerId], references: [id], onDelete: SetNull)
   status              ProjectStatus @default(PLANNING)
+  /** Fase siklus hidup saat ini (FR-PRJ-007). */
+  phase               ProjectPhase @default(INITIATION)
+  /** Kesehatan komposit — biaya + jadwal + risiko + mutu + HSE. */
+  healthStatus        ProjectHealthStatus @default(ON_TRACK)
+  /** Progress fisik (%) — rencana vs aktual (dasar S-curve). */
+  progressPlanned     Decimal     @default(0) @db.Decimal(5, 2)
+  progressActual      Decimal     @default(0) @db.Decimal(5, 2)
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
 
@@ -560,11 +604,18 @@ model Project {
   vendorPerformanceRatings VendorPerformanceRating[]
   doaRules                 DoaRule[]
   activity                 ProjectActivity[]
+  phaseHistory             ProjectPhaseHistory[]
+  milestones               ProjectMilestone[]
+  gateReviews              StageGateReview[]
+  periodBudgets            ProjectPeriodBudget[]
+  stakeholders             ProjectStakeholder[]
+  calendars                ProjectCalendar[]
 
   @@index([legalEntityId])
   @@index([status])
   @@index([type])
   @@index([priority])
+  @@index([phase])
 }
 
 // FR-PRJ-002: WBS — hierarchical, unlimited practical depth
@@ -579,6 +630,8 @@ model WbsItem {
   parent      WbsItem?  @relation("WbsHierarchy", fields: [parentId], references: [id])
   children    WbsItem[] @relation("WbsHierarchy")
   sortOrder   Int       @default(0)
+  /** Progress fisik (%) untuk item ini — dasar rollup progress proyek. */
+  progressPercent Decimal @default(0) @db.Decimal(5, 2)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -1577,6 +1630,111 @@ model ProjectActivity {
 
   @@index([projectId])
   @@index([at])
+}
+
+// ─── Project lifecycle (FR-PRJ-007) ─────────────────────────────────────────
+
+/// Riwayat fase: kapan proyek masuk & keluar sebuah fase, dan siapa yang
+/// memindahkannya. Menjawab "kapan proyek masuk Construction?".
+model ProjectPhaseHistory {
+  id        String       @id @default(cuid())
+  projectId String
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phase     ProjectPhase
+  enteredAt DateTime     @default(now())
+  exitedAt  DateTime?
+  movedById String?
+  note      String?
+  createdAt DateTime     @default(now())
+
+  @@index([projectId])
+  @@index([phase])
+}
+
+/// Milestone proyek — rencana vs aktual. `isCritical` menandai milestone di
+/// jalur kritis (keterlambatan di sini menunda seluruh proyek).
+model ProjectMilestone {
+  id           String          @id @default(cuid())
+  projectId    String
+  project      Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name         String
+  plannedDate  DateTime
+  actualDate   DateTime?
+  status       MilestoneStatus @default(PLANNED)
+  /** Bobot milestone terhadap progress total (0-100). */
+  weight       Decimal         @default(0) @db.Decimal(5, 2)
+  isCritical   Boolean         @default(false)
+  notes        String?
+  sortOrder    Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
+/// Stage-gate review: keputusan lolos/tidak di batas antar-fase.
+model StageGateReview {
+  id         String       @id @default(cuid())
+  projectId  String
+  project    Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  gate       String // mis. "G2 Design Freeze"
+  phase      ProjectPhase // fase yang di-review
+  decision   GateDecision @default(HOLD)
+  reviewerId String?
+  decidedAt  DateTime?
+  notes      String?
+  createdAt  DateTime     @default(now())
+
+  @@index([projectId])
+  @@index([decision])
+}
+
+/// Budget per periode (time-phased) — dasar S-curve & cash-flow curve. Tanpa
+/// dimensi waktu, kurva rencana mustahil dihitung.
+model ProjectPeriodBudget {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  period      String // mis. "2026-01"
+  plannedCost Decimal  @default(0) @db.Decimal(18, 2)
+  createdAt   DateTime @default(now())
+
+  @@unique([projectId, period])
+  @@index([projectId])
+}
+
+/// Stakeholder proyek dengan peran RACI.
+model ProjectStakeholder {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  employeeId String?
+  name      String
+  role      String // mis. "Sponsor", "Client Rep", "Project Director"
+  /** RACI: RESPONSIBLE | ACCOUNTABLE | CONSULTED | INFORMED */
+  raci      String   @default("INFORMED")
+  email     String?
+  phone     String?
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+}
+
+/// Kalender kerja proyek — hari kerja & hari libur (mis. untuk menghitung
+/// durasi efektif dan menggeser milestone).
+model ProjectCalendar {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  date        DateTime
+  isWorkingDay Boolean @default(true)
+  note        String?
+  createdAt   DateTime @default(now())
+
+  @@unique([projectId, date])
+  @@index([projectId])
 }
 
 // FR-HCM-004: Timesheet — jam kerja ke project/WBS

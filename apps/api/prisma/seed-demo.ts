@@ -603,6 +603,45 @@ async function seedPortfolio() {
     if (!existingInc) {
       await prisma.hseIncident.create({ data: { incidentNumber: incNumber, projectId: project.id, type: 'NEAR_MISS', severity: p.profile === 'overrun' ? 'HIGH' : 'LOW', description: 'Near miss di area kerja (seed)', status: 'OPEN', reportedBy: 'HSE Demo' } });
     }
+
+    // PR → Progress Claim → Client Invoice (aliran commercial utuh per proyek)
+    // supaya tab Commercial & rantai kas punya isi nyata.
+    const prNumber = `PR-${p.code.slice(-3)}-900001`;
+    const existingPr = await prisma.purchaseRequisition.findUnique({ where: { prNumber } });
+    if (!existingPr) {
+      await prisma.purchaseRequisition.create({ data: { prNumber, projectId: project.id, requestedBy: 'buyer@aec.local', description: `Permintaan material ${p.name}`, estimatedTotal: p.value * 0.1, status: 'APPROVED' } });
+    }
+    const claimNumber = `CLM-${p.code.slice(-3)}-900001`;
+    let claim = await prisma.progressClaim.findUnique({ where: { claimNumber } });
+    if (!claim) {
+      claim = await prisma.progressClaim.create({ data: { claimNumber, projectId: project.id, claimDate: new Date(`${year}-05-01`), period: `${year}-04`, description: 'Progress klaim (seed)', amount: p.value * 0.1, certifiedAmount: p.value * 0.1, status: 'CERTIFIED', certifiedBy: 'admin@aec.local', certifiedAt: new Date(`${year}-05-03`) } });
+    }
+    const ciNumber = `CINV-${p.code.slice(-3)}-900001`;
+    const existingCi = await prisma.clientInvoice.findUnique({ where: { invoiceNumber: ciNumber } });
+    if (!existingCi && claim) {
+      await prisma.clientInvoice.create({ data: { invoiceNumber: ciNumber, projectId: project.id, claimId: claim.id, client: clientRows[0]!.name, invoiceDate: new Date(`${year}-05-05`), currency: p.ccy, amount: p.value * 0.1, totalAmount: p.value * 0.111, status: 'POSTED', postedAt: new Date(`${year}-05-06`), postedBy: 'admin@aec.local' } });
+    }
+
+    // Risk terdaftar (kecuali proyek sehat) — supaya heatmap tidak kosong.
+    if (p.profile !== 'healthy') {
+      const riskNumber = `RSK-${p.code.slice(-3)}-900001`;
+      const existingRisk = await prisma.risk.findUnique({ where: { riskNumber } });
+      if (!existingRisk) {
+        await prisma.risk.create({ data: { riskNumber, projectId: project.id, title: `Risiko keterlambatan ${p.name}`, category: p.profile === 'overrun' ? 'SCHEDULE' : 'TECHNICAL', likelihood: p.profile === 'overrun' ? 4 : 3, impact: p.profile === 'overrun' ? 4 : 3, score: p.profile === 'overrun' ? 16 : 9, owner: 'PM Demo', mitigation: 'Percepat pengadaan & tambah tenaga', status: 'OPEN' } });
+      }
+    }
+
+    // Dokumen engineering (drawing + deliverable) — dasar tab Documents.
+    const drawingNumber = `DRW-${p.code.slice(-3)}-900001`;
+    const existingDrawing = await prisma.drawing.findUnique({ where: { drawingNumber } });
+    if (!existingDrawing) {
+      await prisma.drawing.create({ data: { drawingNumber, projectId: project.id, title: `General Arrangement ${p.name}`, discipline: 'CIVIL', currentRevision: 'A', status: 'PUBLISHED', isIFC: true } });
+    }
+    const deliverableNumber = `DLV-${p.code.slice(-3)}-900001`;
+    const existingDeliv = await prisma.deliverable.findUnique({ where: { deliverableNumber } });
+    if (!existingDeliv) {
+      await prisma.deliverable.create({ data: { deliverableNumber, projectId: project.id, title: `Design Package ${p.name}`, discipline: 'CIVIL', engineer: 'Dewi Lestari', status: 'SUBMITTED', plannedDate: new Date(`${year}-03-15`) } });
+    }
   }
   console.log(`Portfolio: ${createdProjectIds.length} proyek di 3 entitas (healthy/overrun/nobudget)`);
 
@@ -775,6 +814,182 @@ async function seedProjectTeams() {
     }
   }
   console.log(`[teams] ProjectAssignment: +${assignments} (tim per proyek)`);
+}
+
+/**
+ * Siklus hidup proyek (FR-PRJ-007): fase, milestone, stage-gate, time-phased
+ * budget, progress fisik, stakeholder, dan kalender. Idempoten — tiap bagian
+ * hanya diisi bila belum ada.
+ */
+async function seedProjectLifecycle() {
+  const year = new Date().getFullYear();
+  const d = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
+  const addMonths = (iso: string, months: number) => {
+    const dt = new Date(`${iso}T00:00:00.000Z`);
+    dt.setUTCMonth(dt.getUTCMonth() + months);
+    return dt;
+  };
+
+  const projects = await prisma.project.findMany({
+    select: { id: true, code: true, startDate: true, completionDate: true, contractValue: true, phase: true, status: true },
+    orderBy: { code: 'asc' },
+  });
+
+  // Profil fase & progress per proyek (kaya: ada yang maju, ada yang tertinggal).
+  const profileByCode: Record<string, { phase: string; planned: number; actual: number; health: string }> = {
+    'PRJ-EPC-2027-014': { phase: 'CONSTRUCTION', planned: 55, actual: 48, health: 'AT_RISK' },
+    'PRJ-EPC-2027-020': { phase: 'CONSTRUCTION', planned: 40, actual: 45, health: 'ON_TRACK' },
+    'PRJ-EPC-2027-021': { phase: 'CONSTRUCTION', planned: 50, actual: 34, health: 'CRITICAL' },
+    'PRJ-EPC-2027-022': { phase: 'PROCUREMENT', planned: 30, actual: 33, health: 'ON_TRACK' },
+    'PRJ-EPC-2027-023': { phase: 'CONSTRUCTION', planned: 60, actual: 41, health: 'CRITICAL' },
+    'PRJ-EPC-2027-024': { phase: 'ENGINEERING', planned: 35, actual: 35, health: 'ON_HOLD' },
+    'PRJ-EPC-2027-025': { phase: 'PROCUREMENT', planned: 45, actual: 38, health: 'AT_RISK' },
+    'PRJ-EPC-2027-026': { phase: 'ENGINEERING', planned: 20, actual: 22, health: 'ON_TRACK' },
+    'PRJ-EPC-2027-027': { phase: 'CONSTRUCTION', planned: 70, actual: 68, health: 'ON_TRACK' },
+    'PRJ-EPC-2027-028': { phase: 'CLOSEOUT', planned: 100, actual: 100, health: 'COMPLETED' },
+    'PRJ-EPC-2027-029': { phase: 'INITIATION', planned: 5, actual: 3, health: 'ON_TRACK' },
+    'PRJ-EPC-2027-030': { phase: 'FEED', planned: 10, actual: 9, health: 'ON_TRACK' },
+  };
+
+  let updated = 0;
+  for (const p of projects) {
+    const prof = profileByCode[p.code];
+    if (!prof) continue;
+    await prisma.project.update({
+      where: { id: p.id },
+      data: {
+        phase: prof.phase as never,
+        healthStatus: prof.health as never,
+        progressPlanned: prof.planned,
+        progressActual: prof.actual,
+      },
+    });
+    updated += 1;
+  }
+  console.log(`[lifecycle] Projects phased: ${updated}`);
+
+  // ── Riwayat fase: dari INITIATION menuju fase saat ini (agar ribbon bermakna) ──
+  const PHASE_ORDER = ['INITIATION', 'FEED', 'ENGINEERING', 'PROCUREMENT', 'CONSTRUCTION', 'COMMISSIONING', 'CLOSEOUT'];
+  for (const p of projects) {
+    const prof = profileByCode[p.code];
+    if (!prof) continue;
+    const existing = await prisma.projectPhaseHistory.count({ where: { projectId: p.id } });
+    if (existing > 1) continue; // sudah kaya
+    const targetIdx = PHASE_ORDER.indexOf(prof.phase);
+    const startIso = (p.startDate ?? new Date()).toISOString().slice(0, 10);
+    // Bersihkan backfill tunggal agar riwayat bisa dibangun ulang secara benar.
+    await prisma.projectPhaseHistory.deleteMany({ where: { projectId: p.id } });
+    for (let i = 0; i <= targetIdx; i++) {
+      const entered = addMonths(startIso, i * 3);
+      const exited = i < targetIdx ? addMonths(startIso, (i + 1) * 3) : null;
+      await prisma.projectPhaseHistory.create({
+        data: { projectId: p.id, phase: PHASE_ORDER[i] as never, enteredAt: entered, exitedAt: exited, movedById: 'seed', note: i === 0 ? 'Project initiated' : 'Phase advanced' },
+      });
+    }
+  }
+  console.log('[lifecycle] Phase history built');
+
+  // ── Milestone per proyek (rencana vs aktual; sebagian telat) ──
+  const MILESTONES = ['Design Freeze', 'Procurement Award', 'Construction Start', 'Mechanical Completion', 'Handover'];
+  let msCount = 0;
+  for (const p of projects) {
+    const prof = profileByCode[p.code];
+    if (!prof) continue;
+    const existing = await prisma.projectMilestone.count({ where: { projectId: p.id } });
+    if (existing > 0) continue;
+    const startIso = (p.startDate ?? new Date()).toISOString().slice(0, 10);
+    const targetIdx = PHASE_ORDER.indexOf(prof.phase);
+    for (let i = 0; i < MILESTONES.length; i++) {
+      const planned = addMonths(startIso, i * 6 + 3);
+      // Milestone yang fasenya sudah lewat → ACHIEVED (sebagian telat), sisanya PLANNED.
+      const passed = i <= targetIdx;
+      const late = passed && prof.health !== 'ON_TRACK' && i === targetIdx;
+      const actual = passed ? addMonths(planned.toISOString().slice(0, 10), late ? 2 : 0) : null;
+      await prisma.projectMilestone.create({
+        data: {
+          projectId: p.id, name: MILESTONES[i]!, plannedDate: planned,
+          actualDate: actual, status: (passed ? 'ACHIEVED' : 'PLANNED') as never,
+          weight: 20, isCritical: i === 2 || i === 3, sortOrder: i,
+          notes: late ? 'Completed later than planned' : null,
+        },
+      });
+      msCount += 1;
+    }
+  }
+  console.log(`[lifecycle] Milestones: +${msCount}`);
+
+  // ── Stage-gate review (fase yang sudah dilewati) ──
+  let gateCount = 0;
+  for (const p of projects) {
+    const prof = profileByCode[p.code];
+    if (!prof) continue;
+    const existing = await prisma.stageGateReview.count({ where: { projectId: p.id } });
+    if (existing > 0) continue;
+    const targetIdx = PHASE_ORDER.indexOf(prof.phase);
+    for (let i = 0; i < targetIdx; i++) {
+      const decision = prof.health === 'ON_TRACK' ? 'GO' : (i === targetIdx - 1 && prof.health === 'CRITICAL' ? 'HOLD' : 'GO');
+      await prisma.stageGateReview.create({
+        data: { projectId: p.id, gate: `G${i + 1} ${PHASE_ORDER[i + 1]}`, phase: PHASE_ORDER[i + 1] as never, decision: decision as never, reviewerId: 'seed', decidedAt: addMonths((p.startDate ?? new Date()).toISOString().slice(0, 10), (i + 1) * 3), notes: decision === 'HOLD' ? 'Conditional — rework required' : 'Approved' },
+      });
+      gateCount += 1;
+    }
+  }
+  console.log(`[lifecycle] Stage gates: +${gateCount}`);
+
+  // ── Time-phased budget: bagi nilai kontrak menjadi kurva S (mengikuti progress) ──
+  let periodCount = 0;
+  for (const p of projects) {
+    const existing = await prisma.projectPeriodBudget.count({ where: { projectId: p.id } });
+    if (existing > 0) continue;
+    const value = Number(p.contractValue ?? 0);
+    if (value <= 0) continue;
+    const startIso = (p.startDate ?? new Date()).toISOString().slice(0, 10);
+    const start = new Date(`${startIso}T00:00:00.000Z`);
+    // Kurva S: distribusi berbobot per kuartal (awal & akhir landai, tengah tinggi).
+    const weights = [0.05, 0.12, 0.2, 0.26, 0.2, 0.12, 0.05];
+    for (let q = 0; q < weights.length; q++) {
+      const dt = new Date(start);
+      dt.setUTCMonth(dt.getUTCMonth() + q * 3);
+      const period = `${dt.getUTCFullYear()}-Q${Math.floor(dt.getUTCMonth() / 3) + 1}`;
+      await prisma.projectPeriodBudget.create({ data: { projectId: p.id, period, plannedCost: Math.round(value * weights[q]!) } });
+      periodCount += 1;
+    }
+  }
+  console.log(`[lifecycle] Period budget rows: +${periodCount}`);
+
+  // ── Stakeholder (RACI) ──
+  let shCount = 0;
+  for (const p of projects) {
+    const existing = await prisma.projectStakeholder.count({ where: { projectId: p.id } });
+    if (existing > 0) continue;
+    const rows = [
+      { name: 'Budi Santoso', role: 'Project Sponsor', raci: 'ACCOUNTABLE', isPrimary: true, email: 'sponsor@aec.local' },
+      { name: 'Ahmad Fauzi', role: 'Project Manager', raci: 'RESPONSIBLE', isPrimary: true, email: 'pm@aec.local' },
+      { name: 'Siti Rahayu', role: 'Project Controls', raci: 'CONSULTED', isPrimary: false, email: 'controls@aec.local' },
+      { name: 'Client Representative', role: 'Client Rep', raci: 'INFORMED', isPrimary: false, email: 'client@klien.co.id' },
+    ];
+    for (const r of rows) {
+      await prisma.projectStakeholder.create({ data: { projectId: p.id, ...r } });
+      shCount += 1;
+    }
+  }
+  console.log(`[lifecycle] Stakeholders: +${shCount}`);
+
+  // ── Kalender kerja: tandai akhir pekan sebagai non-working day (contoh) ──
+  let calCount = 0;
+  for (const p of projects) {
+    const existing = await prisma.projectCalendar.count({ where: { projectId: p.id } });
+    if (existing > 0) continue;
+    const start = new Date(`${(p.startDate ?? new Date()).toISOString().slice(0, 10)}T00:00:00.000Z`);
+    for (let i = 0; i < 30; i++) {
+      const dt = new Date(start);
+      dt.setUTCDate(dt.getUTCDate() + i);
+      const dow = dt.getUTCDay();
+      await prisma.projectCalendar.create({ data: { projectId: p.id, date: dt, isWorkingDay: dow !== 0 && dow !== 6, note: dow === 0 || dow === 6 ? 'Weekend' : null } });
+      calCount += 1;
+    }
+  }
+  console.log(`[lifecycle] Calendar days: +${calCount}`);
 }
 
 async function main() {
@@ -1388,6 +1603,9 @@ async function main() {
 
   // ── 13c. Tim proyek & jadwal (tanggal + assignment) ──
   await seedProjectTeams();
+
+  // ── 13d. Siklus hidup proyek (fase, milestone, gate, budget, stakeholder) ──
+  await seedProjectLifecycle();
 
   // ── 14. Workflow demo: versi (DRAFT/ACTIVE/ARCHIVED) + task tersebar ──
   // Tanpa ini, halaman Workflow hanya punya 1 versi ACTIVE dan seluruh task
