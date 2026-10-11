@@ -10,6 +10,12 @@ const node = (id: string, code: string, name: string, children: WbsItem[] = []):
   name,
   description: null,
   sortOrder: 0,
+  progressPercent: 0,
+  plannedStart: null,
+  plannedEnd: null,
+  responsibleManager: null,
+  isMilestone: false,
+  rollup: { budget: 0, actual: 0, progress: null, childCount: children.length },
   children,
 });
 

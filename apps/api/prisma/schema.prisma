@@ -650,6 +650,10 @@ model WbsItem {
   /** Jadwal rencana item WBS (dasar baris Gantt). */
   plannedStart DateTime?
   plannedEnd   DateTime?
+  /** Penanggung jawab node (nama/peran) — akuntabilitas per item WBS. */
+  responsibleManager String?
+  /** Menandai leaf sebagai milestone (penanda di tree). */
+  isMilestone        Boolean @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

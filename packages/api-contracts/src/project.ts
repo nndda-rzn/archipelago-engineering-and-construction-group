@@ -326,20 +326,45 @@ export const portfolioEvmSchema = z.object({
 });
 export type PortfolioEvm = z.infer<typeof portfolioEvmSchema>;
 
-export const wbsItemSchema: z.ZodType<{
-  id: string;
-  code: string;
-  name: string;
-  description: string | null;
-  sortOrder: number;
-  children: WbsItem[];
-}> = z.lazy(() =>
+export const wbsItemSchema: z.ZodType<
+  {
+    id: string;
+    code: string;
+    name: string;
+    description: string | null;
+    sortOrder: number;
+    progressPercent: number;
+    plannedStart: string | null;
+    plannedEnd: string | null;
+    responsibleManager: string | null;
+    isMilestone: boolean;
+    rollup: { budget: number; actual: number; progress: number | null; childCount: number };
+    children: WbsItem[];
+  },
+  z.ZodTypeDef,
+  unknown
+> = z.lazy(() =>
   z.object({
     id: z.string(),
     code: z.string(),
     name: z.string(),
     description: z.string().nullable(),
     sortOrder: z.number(),
+    // Field manajemen & rollup: ber-DEFAULT agar kontrak tetap aditif — klien
+    // yang lebih baru dari API-nya tetap bisa mem-parse respons lama.
+    progressPercent: z.number().default(0),
+    plannedStart: z.string().nullable().default(null),
+    plannedEnd: z.string().nullable().default(null),
+    responsibleManager: z.string().nullable().default(null),
+    isMilestone: z.boolean().default(false),
+    rollup: z
+      .object({
+        budget: z.number(),
+        actual: z.number(),
+        progress: z.number().nullable(),
+        childCount: z.number(),
+      })
+      .default({ budget: 0, actual: 0, progress: null, childCount: 0 }),
     children: wbsItemSchema.array(),
   }),
 );
@@ -350,8 +375,31 @@ export const createWbsItemSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().max(500).optional(),
   parentId: z.string().optional(),
+  progressPercent: z.number().min(0).max(100).optional(),
+  plannedStart: z.string().optional(),
+  plannedEnd: z.string().optional(),
+  responsibleManager: z.string().max(200).optional(),
+  isMilestone: z.boolean().optional(),
 });
 export type CreateWbsItem = z.infer<typeof createWbsItemSchema>;
+
+export const updateWbsItemSchema = z.object({
+  code: z.string().min(1).max(30).optional(),
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().max(500).nullable().optional(),
+  progressPercent: z.number().min(0).max(100).optional(),
+  plannedStart: z.string().nullable().optional(),
+  plannedEnd: z.string().nullable().optional(),
+  responsibleManager: z.string().max(200).nullable().optional(),
+  isMilestone: z.boolean().optional(),
+});
+export type UpdateWbsItem = z.infer<typeof updateWbsItemSchema>;
+
+export const moveWbsItemSchema = z.object({
+  parentId: z.string().nullable().optional(),
+  sortOrder: z.number().int().min(0).optional(),
+});
+export type MoveWbsItem = z.infer<typeof moveWbsItemSchema>;
 
 export const budgetSummarySchema = z.object({
   projectId: z.string(),
