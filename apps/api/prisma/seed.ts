@@ -188,18 +188,59 @@ async function seedDemoData(entityId: string) {
     },
   });
 
-  const wbsLevels = [
-    { code: '1', name: 'Engineering' },
-    { code: '2', name: 'Procurement' },
-    { code: '3', name: 'Construction' },
-    { code: '4', name: 'Commissioning' },
+  // WBS dua level dengan progress, tanggal rencana, dan owner — supaya UI punya
+  // data nyata (progress bar, rollup budget, inspector).
+  const wbsRoots: Array<{
+    code: string; name: string; progress: number; owner: string;
+    start: string; end: string; milestone?: boolean;
+    children?: Array<{ code: string; name: string; progress: number; owner: string; start: string; end: string; milestone?: boolean }>;
+  }> = [
+    {
+      code: '1', name: 'Engineering', progress: 68, owner: 'Ahmad Fauzi',
+      start: '2026-01-05', end: '2026-06-30',
+      children: [
+        { code: '1.1', name: 'Detail Engineering', progress: 82, owner: 'Rina Sari', start: '2026-01-05', end: '2026-03-31' },
+        { code: '1.2', name: 'Shop Drawings', progress: 54, owner: 'Rina Sari', start: '2026-03-01', end: '2026-06-30' },
+      ],
+    },
+    {
+      code: '2', name: 'Procurement', progress: 45, owner: 'Budi Santoso',
+      start: '2026-02-01', end: '2026-09-30',
+      children: [
+        { code: '2.1', name: 'Long-lead Items', progress: 90, owner: 'Budi Santoso', start: '2026-02-01', end: '2026-05-31' },
+        { code: '2.2', name: 'Bulk Materials', progress: 20, owner: 'Siti Nurhaliza', start: '2026-06-01', end: '2026-09-30' },
+      ],
+    },
+    { code: '3', name: 'Construction', progress: 30, owner: 'Dedi Kurniawan', start: '2026-06-01', end: '2027-03-31' },
+    { code: '4', name: 'Commissioning', progress: 0, owner: 'Dedi Kurniawan', start: '2027-04-01', end: '2027-07-31', milestone: true },
   ];
-  for (const w of wbsLevels) {
-    await prisma.wbsItem.upsert({
+  for (const w of wbsRoots) {
+    const root = await prisma.wbsItem.upsert({
       where: { projectId_code: { projectId: demoProject.id, code: w.code } },
-      update: {},
-      create: { projectId: demoProject.id, code: w.code, name: w.name, sortOrder: Number(w.code) },
+      update: {
+        progressPercent: w.progress, responsibleManager: w.owner, isMilestone: w.milestone ?? false,
+        plannedStart: new Date(w.start), plannedEnd: new Date(w.end),
+      },
+      create: {
+        projectId: demoProject.id, code: w.code, name: w.name, sortOrder: Number(w.code),
+        progressPercent: w.progress, responsibleManager: w.owner, isMilestone: w.milestone ?? false,
+        plannedStart: new Date(w.start), plannedEnd: new Date(w.end),
+      },
     });
+    for (const c of w.children ?? []) {
+      await prisma.wbsItem.upsert({
+        where: { projectId_code: { projectId: demoProject.id, code: c.code } },
+        update: {
+          progressPercent: c.progress, responsibleManager: c.owner, isMilestone: c.milestone ?? false,
+          plannedStart: new Date(c.start), plannedEnd: new Date(c.end),
+        },
+        create: {
+          projectId: demoProject.id, code: c.code, name: c.name, parentId: root.id, sortOrder: Number(c.code.split('.')[1] ?? 0),
+          progressPercent: c.progress, responsibleManager: c.owner, isMilestone: c.milestone ?? false,
+          plannedStart: new Date(c.start), plannedEnd: new Date(c.end),
+        },
+      });
+    }
   }
 
   const demoWarehouse = await prisma.warehouse.upsert({
@@ -208,7 +249,7 @@ async function seedDemoData(entityId: string) {
     create: { code: 'WH-PROJ-014', name: 'Warehouse Proyek 014', warehouseType: 'PROJECT', projectId: demoProject.id, location: 'Karawang' },
   });
 
-  console.log(`[demo-data] Seeded: ${demoProject.code} + ${wbsLevels.length} WBS + ${demoWarehouse.code}`);
+  console.log(`[demo-data] Seeded: ${demoProject.code} + ${wbsRoots.length} WBS roots + ${demoWarehouse.code}`);
   return { demoProject };
 }
 
