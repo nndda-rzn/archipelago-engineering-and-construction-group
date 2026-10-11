@@ -11,8 +11,9 @@ export interface DomainGroupProps {
 
 /**
  * Grup domain: baris ringkas (ref + label + status). Bukan tabel penuh — hanya
- * daftar bernomor dengan hairline. Status selalu punya label teks (warna bukan
- * satu-satunya sinyal).
+ * daftar bernomor dengan hairline. Bila item membawa `score` (mis. progress %),
+ * ditampilkan sebagai bar (FT: *magnitude*) — bukan angka telanjang. Status
+ * selalu punya label teks (warna bukan satu-satunya sinyal).
  */
 export function DomainGroup({ title, items, metaLabel }: DomainGroupProps) {
   if (items.length === 0) {
@@ -34,6 +35,14 @@ export function DomainGroup({ title, items, metaLabel }: DomainGroupProps) {
           <li key={it.id} className="flex items-center gap-3 py-1.5">
             {it.ref && <span className="w-28 shrink-0 truncate font-mono text-caption text-neutral-500" title={it.ref}>{it.ref}</span>}
             <span className="min-w-0 flex-1 truncate text-body-sm text-neutral-800" title={it.label}>{it.label || '—'}</span>
+            {it.score != null && (
+              <span className="hidden shrink-0 items-center gap-2 sm:flex" title={`${it.score}%`}>
+                <span className="h-1.5 w-16 overflow-hidden rounded-full bg-neutral-100">
+                  <span className="block h-full rounded-full bg-neutral-700" style={{ width: `${Math.min(100, Math.max(0, it.score))}%` }} />
+                </span>
+                <span className="w-8 text-right font-mono text-caption tabular-nums text-neutral-500">{Math.round(it.score)}%</span>
+              </span>
+            )}
             {metaLabel && it.meta && <span className="hidden shrink-0 text-caption text-neutral-400 sm:inline">{it.meta}</span>}
             <span className="shrink-0 rounded border border-neutral-200 px-1.5 py-px text-caption text-neutral-600">{it.status.replace(/_/g, ' ').toLowerCase()}</span>
           </li>

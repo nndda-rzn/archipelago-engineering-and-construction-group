@@ -20,6 +20,11 @@ describe('DomainGroup', () => {
     expect(screen.getByText('CIVIL')).toBeTruthy();
   });
 
+  it('renders a progress bar when an item carries a score', () => {
+    render(<DomainGroup title="Work packages" items={[{ id: 'w1', ref: 'WP-1', label: 'Erection', status: 'IN_PROGRESS', score: 45 }]} />);
+    expect(screen.getByTitle('45%')).toBeTruthy();
+  });
+
   it('shows a calm empty state when there is nothing', () => {
     render(<DomainGroup title="Punch list" items={[]} />);
     expect(screen.getByText('None recorded.')).toBeTruthy();

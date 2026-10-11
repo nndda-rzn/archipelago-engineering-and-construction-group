@@ -30,6 +30,13 @@ vi.mock('@/entities/project', async () => {
           { key: 'cpi', label: 'CPI', value: 0.99, unit: '', tone: 'warn' },
           { key: 'risk', label: 'Open risks', value: 3, unit: '', tone: 'warn' },
         ],
+        analytics: {
+          riskMatrix: [{ likelihood: 4, impact: 4, count: 2 }],
+          qualityMix: [{ key: 'MAJOR', count: 1 }],
+          hseMix: [{ key: 'LOW', count: 1 }],
+          documentsMix: [{ key: 'Drawing:PUBLISHED', count: 1 }],
+          billing: { certified: 20_000_000_000, billed: 18_000_000_000, collected: 12_000_000_000, approvedVariation: 0 },
+        },
         domains: {
           commercial: { contract: 1, progressClaim: 20_000_000_000, clientInvoice: 18_000_000_000, collection: 12_000_000_000, variation: 2 },
           procurement: { pr: 3, po: 2, vendorInvoice: 4, subcontract: 1 },
@@ -47,6 +54,8 @@ vi.mock('@/entities/project', async () => {
       data: {
         progressPlanned: 55, progressActual: 48,
         plannedCurve: [{ period: '2026-Q1', planned: 100, plannedCumulative: 100, plannedPct: 25 }, { period: '2026-Q2', planned: 300, plannedCumulative: 400, plannedPct: 100 }],
+        actualProgressCurve: [{ period: '2026-01', value: 100, cumulative: 100, pct: 20 }, { period: '2026-02', value: 300, cumulative: 400, pct: 95 }],
+        actualCostCurve: [{ period: '2026-01', value: 50, cumulative: 50 }],
         milestones: [{ id: 'm1', name: 'Design Freeze', plannedDate: '2026-03-01T00:00:00.000Z', actualDate: null, status: 'PLANNED', weight: 20, isCritical: true, notes: null }],
         phases: [{ phase: 'INITIATION', enteredAt: '2026-01-01T00:00:00.000Z', exitedAt: null, note: null }],
         gates: [{ id: 'g1', gate: 'G2 Engineering', phase: 'ENGINEERING', decision: 'GO', decidedAt: '2026-03-01T00:00:00.000Z', notes: null }],
@@ -64,7 +73,19 @@ vi.mock('@/entities/project', async () => {
     useProjectStakeholders: () => ({ data: [{ id: 's1', name: 'Budi Santoso', role: 'Project Sponsor', raci: 'ACCOUNTABLE', employeeId: null, email: null, phone: null, isPrimary: true }], isLoading: false }),
     useProjectDomains: () => ({
       data: {
-        execution: { workPackages: [{ id: 'w1', ref: 'WP-1', label: 'Erection Steel Structure', status: 'IN_PROGRESS' }], dailyReports: [{ id: 'd1', ref: 'DR-1', label: '2026-03-01', status: 'SUBMITTED' }] },
+        commercial: {
+          progressClaims: [{ id: 'c1', ref: 'CLM-1', label: '2026-04', status: 'CERTIFIED', value: 20_000_000_000 }],
+          clientInvoices: [{ id: 'ci1', ref: 'CINV-1', label: '', status: 'POSTED', value: 18_000_000_000 }],
+          collections: [],
+          variations: [],
+        },
+        procurement: {
+          requisitions: [{ id: 'pr1', ref: 'PR-1', label: 'Material', status: 'APPROVED' }],
+          purchaseOrders: [{ id: 'po1', ref: 'PO-1', label: 'PT Baja Utama', status: 'RELEASED', value: 150_000_000 }],
+          vendorInvoices: [],
+          subcontracts: [],
+        },
+        execution: { workPackages: [{ id: 'w1', ref: 'WP-1', label: 'Erection Steel Structure', status: 'IN_PROGRESS', score: 45 }], dailyReports: [{ id: 'd1', ref: 'DR-1', label: '2026-03-01', status: 'SUBMITTED' }] },
         quality: { ncrs: [{ id: 'n1', ref: 'NCR-1', label: 'Weld defect', status: 'OPEN', severity: 'MAJOR' }], punchItems: [] },
         hse: { incidents: [{ id: 'i1', ref: 'INC-1', label: 'NEAR_MISS', status: 'OPEN', severity: 'LOW' }], observations: [], permits: [] },
         documents: { drawings: [{ id: 'dr1', ref: 'DRW-1', label: 'GA Drawing', status: 'PUBLISHED', meta: 'CIVIL', flag: true }], deliverables: [] },
@@ -163,26 +184,28 @@ describe('ProjectDetailPage', () => {
     expect(screen.getAllByText('Schedule').length).toBeGreaterThan(0);
   });
 
-  it('renders the S-curve and milestones on the Schedule tab', () => {
+  it('renders the planned-vs-actual S-curve and milestones on the Schedule tab', () => {
     const { container } = renderWithProviders(<ProjectDetailPage />);
     fireEvent.click(screen.getByRole('tab', { name: 'Schedule' }));
-    expect(screen.getByLabelText(/S-curve:/)).toBeTruthy();
+    expect(screen.getByLabelText(/Planned progress/)).toBeTruthy();
+    expect(screen.getByLabelText(/Actual progress/)).toBeTruthy();
     expect(screen.getByLabelText(/Milestones:/)).toBeTruthy();
     expect(container.querySelectorAll('[data-slot="milestone-dot"]').length).toBeGreaterThan(0);
   });
 
-  it('shows the cash chain on the Overview tab', () => {
+  it('shows the cash chain and billing position on the Overview tab', () => {
     const { container } = renderWithProviders(<ProjectDetailPage />);
     expect(container.querySelectorAll('[data-slot="cash-bar"]').length).toBe(6);
-    expect(screen.getByText('Collected')).toBeTruthy();
+    expect(screen.getByText('Billing position')).toBeTruthy();
+    expect(screen.getByLabelText(/Collected .*Certified/)).toBeTruthy();
   });
 
   it('renders EVM bars with CPI and SPI on the Cost & EVM tab', () => {
     const { container } = renderWithProviders(<ProjectDetailPage />);
     fireEvent.click(screen.getByRole('tab', { name: 'Cost & EVM' }));
     expect(container.querySelectorAll('[data-slot="evm-bar"]')).toHaveLength(3);
-    expect(screen.getByText('1.02')).toBeTruthy();
-    expect(screen.getByText('0.91')).toBeTruthy();
+    expect(screen.getAllByText('1.02').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('0.91').length).toBeGreaterThan(0);
   });
 
   it('shows the forecast as figures, not a chart, on the Cost & EVM tab', () => {
@@ -195,8 +218,9 @@ describe('ProjectDetailPage', () => {
   it('shows commercial domain tiles on the Commercial tab', () => {
     renderWithProviders(<ProjectDetailPage />);
     fireEvent.click(screen.getByRole('tab', { name: 'Commercial' }));
-    expect(screen.getByText('Progress claims')).toBeTruthy();
-    expect(screen.getByText('Client invoices')).toBeTruthy();
+    expect(screen.getAllByText('Progress claims').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Client invoices').length).toBeGreaterThan(0);
+    expect(screen.getByText('Billing position')).toBeTruthy();
   });
 
   it('lists execution work packages on the Execution tab', () => {
