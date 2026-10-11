@@ -94,6 +94,18 @@ vi.mock('@/entities/project', async () => {
       isLoading: false,
     }),
     useAdvancePhase: () => ({ mutate: vi.fn(), isPending: false }),
+    useProjectGantt: () => ({
+      data: {
+        projectId: 'p1', startDate: '2026-01-01T00:00:00.000Z', completionDate: '2027-01-01T00:00:00.000Z',
+        rows: [
+          { id: 'ca1', group: 'Work package', label: 'Engineering', start: '2026-01-01T00:00:00.000Z', end: '2026-03-01T00:00:00.000Z', progress: 100, isCriticalPath: true, baselineStart: '2026-01-01T00:00:00.000Z', baselineEnd: '2026-02-20T00:00:00.000Z' },
+          { id: 'wp1', group: 'Field', label: 'Erection', start: '2026-03-01T00:00:00.000Z', end: '2026-08-01T00:00:00.000Z', progress: 45, isCriticalPath: true, baselineStart: null, baselineEnd: null },
+        ],
+        links: [],
+      },
+      isLoading: false,
+      isError: false,
+    }),
     useProjectTeam: () => ({
       data: { items: [
         { assignmentId: 'as1', employeeId: 'e1', name: 'Ahmad Fauzi', position: 'Project Manager', department: 'Construction', grade: 'L3', employeeNumber: 'EMP-1', role: 'Project Manager', allocationPercent: 60, startDate: '2026-01-01T00:00:00.000Z', endDate: null, isKeyMember: true, status: 'ACTIVE' },
@@ -158,8 +170,9 @@ describe('ProjectDetailPage', () => {
     expect(screen.getByText('Andi Pratama')).toBeTruthy();
   });
 
-  it('renders a cost waterfall (Contract → Budget → Actual → Variance) on Overview', () => {
+  it('renders a cost waterfall (Contract → Budget → Actual → Variance) on the Cost tab', () => {
     const { container } = renderWithProviders(<ProjectDetailPage />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Cost & EVM' }));
     const bars = container.querySelectorAll('[data-slot="waterfall-bar"]');
     expect(bars.length).toBe(4);
   });
@@ -193,11 +206,16 @@ describe('ProjectDetailPage', () => {
     expect(container.querySelectorAll('[data-slot="milestone-dot"]').length).toBeGreaterThan(0);
   });
 
-  it('shows the cash chain and billing position on the Overview tab', () => {
+  it('renders a health radar and a billing funnel on Overview', () => {
+    const { container } = renderWithProviders(<ProjectDetailPage />);
+    expect(screen.getByText('Project health profile')).toBeTruthy();
+    expect(screen.getAllByText('Billing flow').length).toBeGreaterThan(0);
+    expect(container.querySelector('.recharts-responsive-container')).toBeTruthy();
+  });
+
+  it('shows the cash chain on the Overview tab', () => {
     const { container } = renderWithProviders(<ProjectDetailPage />);
     expect(container.querySelectorAll('[data-slot="cash-bar"]').length).toBe(6);
-    expect(screen.getByText('Billing position')).toBeTruthy();
-    expect(screen.getByLabelText(/Collected .*Certified/)).toBeTruthy();
   });
 
   it('renders EVM bars with CPI and SPI on the Cost & EVM tab', () => {
@@ -220,7 +238,7 @@ describe('ProjectDetailPage', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Commercial' }));
     expect(screen.getAllByText('Progress claims').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Client invoices').length).toBeGreaterThan(0);
-    expect(screen.getByText('Billing position')).toBeTruthy();
+    expect(screen.getAllByText('Billing flow').length).toBeGreaterThan(0);
   });
 
   it('lists execution work packages on the Execution tab', () => {

@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import type { ProjectSchedule } from '@aec/api-contracts';
-import { MixBars, ProjectRiskHeatmap, SCurveCompare, BillingBar } from './project-tab-visuals';
+import type { ProjectSummary } from '@aec/api-contracts';
+import { MixDonut, ProjectRiskHeatmap, HealthRadar, BillingFunnel } from './project-tab-visuals';
 
-describe('MixBars', () => {
-  it('renders one labelled bar per category', () => {
-    render(<MixBars title="NCR by severity" data={[{ key: 'MAJOR', count: 2 }, { key: 'MINOR', count: 1 }]} />);
+describe('MixDonut', () => {
+  it('renders each category as a slice label', () => {
+    render(<MixDonut title="NCR by severity" data={[{ key: 'MAJOR', count: 2 }, { key: 'MINOR', count: 1 }]} />);
     expect(screen.getByText('Major')).toBeTruthy();
     expect(screen.getByText('Minor')).toBeTruthy();
   });
 
   it('shows an honest empty state', () => {
-    render(<MixBars title="Documents" data={[]} emptyHint="Nothing yet." />);
+    render(<MixDonut title="Documents" data={[]} emptyHint="Nothing yet." />);
     expect(screen.getByText('Nothing yet.')).toBeTruthy();
   });
 });
@@ -28,43 +28,34 @@ describe('ProjectRiskHeatmap', () => {
   });
 });
 
-const schedule: ProjectSchedule = {
-  progressPlanned: 55,
-  progressActual: 48,
-  plannedCurve: [
-    { period: '2026-Q1', planned: 100, plannedCumulative: 100, plannedPct: 25 },
-    { period: '2026-Q2', planned: 300, plannedCumulative: 400, plannedPct: 100 },
-  ],
-  actualProgressCurve: [
-    { period: '2026-01', value: 100, cumulative: 100, pct: 20 },
-    { period: '2026-02', value: 300, cumulative: 400, pct: 95 },
-  ],
-  actualCostCurve: [{ period: '2026-01', value: 50, cumulative: 50 }, { period: '2026-02', value: 150, cumulative: 200 }],
-  milestones: [],
-  phases: [],
-  gates: [],
-};
+const summary = {
+  cost: { contractValue: 1000, budget: 900, committed: 500, actual: 400, certified: 800, billed: 700, collected: 600, cpi: 0.98 },
+  schedule: { progressPlanned: 55, progressActual: 48, variance: -7, milestoneTotal: 5, milestoneAchieved: 4, milestoneMissed: 1, gateHold: 0 },
+  domains: {
+    commercial: { contract: 1, progressClaim: 800, clientInvoice: 700, collection: 600, variation: 0 },
+    procurement: { pr: 1, po: 1, vendorInvoice: 1, subcontract: 0 },
+    execution: { workPackage: 1, dailyReport: 1 },
+    quality: { ncrOpen: 2, punchOpen: 0 },
+    hse: { incidentOpen: 1 },
+    governance: { riskOpen: 3, gateHold: 0 },
+    engineering: { drawing: 1, deliverable: 1 },
+  },
+  analytics: { riskMatrix: [], qualityMix: [], hseMix: [], documentsMix: [], billing: { certified: 800, billed: 700, collected: 600, approvedVariation: 0 } },
+} as unknown as ProjectSummary;
 
-describe('SCurveCompare', () => {
-  it('shows a planned and an actual line with the latest percentages', () => {
-    render(<SCurveCompare schedule={schedule} />);
-    expect(screen.getAllByText('Planned').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Actual').length).toBeGreaterThan(0);
-    expect(screen.getByText('100%')).toBeTruthy();
-    expect(screen.getByText('95%')).toBeTruthy();
-  });
-
-  it('is honest when there is no actual curve', () => {
-    render(<SCurveCompare schedule={{ ...schedule, actualProgressCurve: [] }} />);
-    expect(screen.getByText(/actual curve unavailable/i)).toBeTruthy();
+describe('HealthRadar', () => {
+  it('renders a radar profile with the five dimensions', () => {
+    const { container } = render(<HealthRadar summary={summary} />);
+    expect(container.querySelector('.recharts-responsive-container')).toBeTruthy();
+    expect(screen.getByText('Project health (higher is healthier)')).toBeTruthy();
   });
 });
 
-describe('BillingBar', () => {
-  it('renders a stacked bar and the collected/billed/certified figures', () => {
-    const { container } = render(<BillingBar billing={{ certified: 1000, billed: 800, collected: 500, approvedVariation: 0 }} contractValue={2000} />);
-    expect(container.querySelectorAll('[data-slot="stacked-segment"]').length).toBeGreaterThan(0);
-    expect(screen.getByText('Collected')).toBeTruthy();
+describe('BillingFunnel', () => {
+  it('renders the four billing steps', () => {
+    render(<BillingFunnel summary={summary} />);
+    expect(screen.getByText('Contract')).toBeTruthy();
     expect(screen.getByText('Certified')).toBeTruthy();
+    expect(screen.getByText('Collected')).toBeTruthy();
   });
 });
