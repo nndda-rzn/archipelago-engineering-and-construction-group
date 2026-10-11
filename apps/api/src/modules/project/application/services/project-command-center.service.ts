@@ -39,6 +39,7 @@ export class ProjectCommandCenterService {
       wpCount, dailyCount, drawingCount, delivCount, contractCount,
       milestoneTotal, milestoneAchieved, milestoneMissed,
       gateHold,
+      riskCells, ncrBySeverity, hseBySeverity, drawingsByStatus, delivByStatus, variationAgg,
     ] = await Promise.all([
       this.prisma.budgetItem.aggregate({ where: { projectId: id, status: 'PUBLISHED' }, _sum: { amount: true } }),
       this.actualCost.compute(id),
@@ -65,6 +66,13 @@ export class ProjectCommandCenterService {
       this.prisma.projectMilestone.count({ where: { projectId: id, status: 'ACHIEVED' } }),
       this.prisma.projectMilestone.count({ where: { projectId: id, status: 'MISSED' } }),
       this.prisma.stageGateReview.count({ where: { projectId: id, decision: 'HOLD' } }),
+      // Distribusi (FT: "distribution") + korelasi (risk heatmap)
+      this.prisma.risk.groupBy({ by: ['likelihood', 'impact'], where: { projectId: id, status: 'OPEN' }, _count: { _all: true } }),
+      this.prisma.ncr.groupBy({ by: ['severity'], where: { projectId: id }, _count: { _all: true } }),
+      this.prisma.hseIncident.groupBy({ by: ['severity'], where: { projectId: id }, _count: { _all: true } }),
+      this.prisma.drawing.groupBy({ by: ['status'], where: { projectId: id }, _count: { _all: true } }),
+      this.prisma.deliverable.groupBy({ by: ['status'], where: { projectId: id }, _count: { _all: true } }),
+      this.prisma.projectVariation.aggregate({ where: { projectId: id, status: 'APPROVED' }, _sum: { amountChange: true } }),
     ]);
 
     const contractValue = Number(project.contractValue ?? 0);
@@ -110,6 +118,19 @@ export class ProjectCommandCenterService {
         governance: { riskOpen, gateHold },
         engineering: { drawing: drawingCount, deliverable: delivCount },
       },
+      analytics: {
+        // Korelasi: risk terbuka per sel likelihood × impact (heatmap 5×5).
+        riskMatrix: riskCells.map((c) => ({ likelihood: c.likelihood, impact: c.impact, count: c._count._all })),
+        // Distribusi kategori (severity/status) untuk bar.
+        qualityMix: ncrBySeverity.map((g) => ({ key: g.severity, count: g._count._all })),
+        hseMix: hseBySeverity.map((g) => ({ key: g.severity, count: g._count._all })),
+        documentsMix: [
+          ...drawingsByStatus.map((g) => ({ key: `Drawing:${g.status}`, count: g._count._all })),
+          ...delivByStatus.map((g) => ({ key: `Deliverable:${g.status}`, count: g._count._all })),
+        ],
+        // Bagian-dari-keseluruhan: penagihan & perubahan.
+        billing: { certified, billed, collected, approvedVariation: Number(variationAgg._sum?.amountChange ?? 0) },
+      },
       generatedAt: new Date().toISOString(),
     };
   }
@@ -123,8 +144,8 @@ export class ProjectCommandCenterService {
     const project = await this.prisma.project.findUnique({ where: { id }, select: { id: true } });
     if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
 
-    const [workPackages, dailyReports, ncrs, punchItems, incidents, observations, permits, drawings, deliverables, risks, legalCases, contracts] = await Promise.all([
-      this.prisma.constructionWorkPackage.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, wpNumber: true, title: true, status: true } }),
+    const [workPackages, dailyReports, ncrs, punchItems, incidents, observations, permits, drawings, deliverables, risks, legalCases, contracts, claims, invoices, collections, variations, prs, pos, vendorInvoices, subcontracts] = await Promise.all([
+      this.prisma.constructionWorkPackage.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, wpNumber: true, title: true, status: true, progress: { orderBy: { createdAt: 'desc' }, take: 1, select: { physicalProgress: true } } } }),
       this.prisma.constructionDailyReport.findMany({ where: { projectId: id }, orderBy: { reportDate: 'desc' }, take: 20, select: { id: true, drNumber: true, reportDate: true, status: true } }),
       this.prisma.ncr.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, ncrNumber: true, description: true, severity: true, status: true } }),
       this.prisma.punchListItem.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, punchNumber: true, description: true, status: true } }),
@@ -136,11 +157,31 @@ export class ProjectCommandCenterService {
       this.prisma.risk.findMany({ where: { projectId: id }, orderBy: { score: 'desc' }, take: 20, select: { id: true, riskNumber: true, title: true, category: true, likelihood: true, impact: true, score: true, status: true } }),
       this.prisma.legalCase.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, caseNumber: true, title: true, status: true } }),
       this.prisma.contract.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, contractNumber: true, title: true, value: true, status: true } }),
+      this.prisma.progressClaim.findMany({ where: { projectId: id }, orderBy: { claimDate: 'desc' }, take: 20, select: { id: true, claimNumber: true, period: true, amount: true, certifiedAmount: true, status: true } }),
+      this.prisma.clientInvoice.findMany({ where: { projectId: id }, orderBy: { invoiceDate: 'desc' }, take: 20, select: { id: true, invoiceNumber: true, totalAmount: true, status: true } }),
+      this.prisma.collectionItem.findMany({ where: { collection: { projectId: id } }, take: 20, select: { id: true, amount: true } }).catch(() => []),
+      this.prisma.projectVariation.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, variationNumber: true, title: true, amountChange: true, status: true } }),
+      this.prisma.purchaseRequisition.findMany({ where: { projectId: id }, orderBy: { requestedAt: 'desc' }, take: 20, select: { id: true, prNumber: true, description: true, status: true } }),
+      this.prisma.purchaseOrder.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, poNumber: true, vendor: true, totalAmount: true, status: true } }),
+      this.prisma.vendorInvoice.findMany({ where: { projectId: id }, orderBy: { invoiceDate: 'desc' }, take: 20, select: { id: true, invoiceNumber: true, vendor: true, totalAmount: true, status: true } }),
+      this.prisma.subcontract.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, subconNumber: true, vendor: true, contractValue: true, status: true } }),
     ]);
 
     return {
+      commercial: {
+        progressClaims: claims.map((c) => ({ id: c.id, ref: c.claimNumber, label: c.period ?? '', status: c.status, value: Number(c.certifiedAmount ?? c.amount) })),
+        clientInvoices: invoices.map((i) => ({ id: i.id, ref: i.invoiceNumber, label: '', status: i.status, value: Number(i.totalAmount) })),
+        collections: collections.map((c) => ({ id: c.id, ref: '', label: 'Collection', status: 'RECEIVED', value: Number(c.amount) })),
+        variations: variations.map((v) => ({ id: v.id, ref: v.variationNumber, label: v.title, status: v.status, value: Number(v.amountChange) })),
+      },
+      procurement: {
+        requisitions: prs.map((p) => ({ id: p.id, ref: p.prNumber, label: p.description ?? '', status: p.status })),
+        purchaseOrders: pos.map((p) => ({ id: p.id, ref: p.poNumber, label: p.vendor, status: p.status, value: Number(p.totalAmount) })),
+        vendorInvoices: vendorInvoices.map((v) => ({ id: v.id, ref: v.invoiceNumber, label: v.vendor, status: v.status, value: Number(v.totalAmount) })),
+        subcontracts: subcontracts.map((s) => ({ id: s.id, ref: s.subconNumber, label: s.vendor, status: s.status, value: Number(s.contractValue) })),
+      },
       execution: {
-        workPackages: workPackages.map((w) => ({ id: w.id, ref: w.wpNumber, label: w.title, status: w.status })),
+        workPackages: workPackages.map((w) => ({ id: w.id, ref: w.wpNumber, label: w.title, status: w.status, score: w.progress[0] ? Number(w.progress[0].physicalProgress) : undefined })),
         dailyReports: dailyReports.map((d) => ({ id: d.id, ref: d.drNumber, label: d.reportDate.toISOString().slice(0, 10), status: d.status })),
       },
       quality: {
@@ -177,14 +218,51 @@ export class ProjectCommandCenterService {
       return { period: p.period, planned: Number(p.plannedCost), plannedCumulative: cumulative, plannedPct: total > 0 ? Math.round((cumulative / total) * 1000) / 10 : 0 };
     });
 
-    const milestones = await this.prisma.projectMilestone.findMany({ where: { projectId: id }, orderBy: { sortOrder: 'asc' } });
-    const phases = await this.prisma.projectPhaseHistory.findMany({ where: { projectId: id }, orderBy: { enteredAt: 'asc' } });
-    const gates = await this.prisma.stageGateReview.findMany({ where: { projectId: id }, orderBy: { decidedAt: 'asc' } });
+    const [milestones, phases, gates, claims, journalLines] = await Promise.all([
+      this.prisma.projectMilestone.findMany({ where: { projectId: id }, orderBy: { sortOrder: 'asc' } }),
+      this.prisma.projectPhaseHistory.findMany({ where: { projectId: id }, orderBy: { enteredAt: 'asc' } }),
+      this.prisma.stageGateReview.findMany({ where: { projectId: id }, orderBy: { decidedAt: 'asc' } }),
+      // Kurva aktual (a): progress fisik kumulatif dari progress claim per periode.
+      this.prisma.progressClaim.findMany({ where: { projectId: id, status: 'CERTIFIED' }, select: { period: true, certifiedAmount: true, amount: true, physicalProgressAtClaim: true } }),
+      // Kurva aktual (b): biaya aktual kumulatif dari jurnal per bulan.
+      this.prisma.journalLine.findMany({ where: { projectId: id, journal: { status: 'POSTED' } }, select: { debit: true, journal: { select: { createdAt: true } } } }),
+    ]);
+
+    // (a) progress fisik kumulatif per periode klaim
+    const claimByPeriod = new Map<string, number>();
+    for (const c of claims) {
+      const period = c.period ?? 'unscheduled';
+      claimByPeriod.set(period, (claimByPeriod.get(period) ?? 0) + Number(c.certifiedAmount ?? c.amount));
+    }
+    let claimCum = 0;
+    const claimTotal = [...claimByPeriod.values()].reduce((s, v) => s + v, 0);
+    const actualProgressCurve = [...claimByPeriod.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([period, value]) => {
+        claimCum += value;
+        return { period, value, cumulative: claimCum, pct: claimTotal > 0 ? Math.round((claimCum / claimTotal) * 1000) / 10 : 0 };
+      });
+
+    // (b) biaya aktual kumulatif per bulan
+    const costByMonth = new Map<string, number>();
+    for (const l of journalLines) {
+      const month = l.journal.createdAt.toISOString().slice(0, 7);
+      costByMonth.set(month, (costByMonth.get(month) ?? 0) + Number(l.debit));
+    }
+    let costCum = 0;
+    const actualCostCurve = [...costByMonth.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([period, value]) => {
+        costCum += value;
+        return { period, value, cumulative: costCum };
+      });
 
     return {
       progressPlanned: Number(project.progressPlanned),
       progressActual: Number(project.progressActual),
       plannedCurve,
+      actualProgressCurve,
+      actualCostCurve,
       milestones: milestones.map((m) => ({
         id: m.id, name: m.name, plannedDate: m.plannedDate.toISOString(),
         actualDate: m.actualDate?.toISOString() ?? null, status: m.status, weight: Number(m.weight), isCritical: m.isCritical, notes: m.notes,

@@ -521,6 +521,13 @@ export const projectSummarySchema = z.object({
     governance: z.object({ riskOpen: z.number(), gateHold: z.number() }),
     engineering: z.object({ drawing: z.number(), deliverable: z.number() }),
   }),
+  analytics: z.object({
+    riskMatrix: z.array(z.object({ likelihood: z.number(), impact: z.number(), count: z.number() })),
+    qualityMix: z.array(z.object({ key: z.string(), count: z.number() })),
+    hseMix: z.array(z.object({ key: z.string(), count: z.number() })),
+    documentsMix: z.array(z.object({ key: z.string(), count: z.number() })),
+    billing: z.object({ certified: z.number(), billed: z.number(), collected: z.number(), approvedVariation: z.number() }),
+  }),
   generatedAt: z.string(),
 });
 export type ProjectSummary = z.infer<typeof projectSummarySchema>;
@@ -535,6 +542,8 @@ export const projectScheduleSchema = z.object({
   progressPlanned: z.number(),
   progressActual: z.number(),
   plannedCurve: z.array(z.object({ period: z.string(), planned: z.number(), plannedCumulative: z.number(), plannedPct: z.number() })),
+  actualProgressCurve: z.array(z.object({ period: z.string(), value: z.number(), cumulative: z.number(), pct: z.number() })),
+  actualCostCurve: z.array(z.object({ period: z.string(), value: z.number(), cumulative: z.number() })),
   milestones: z.array(projectMilestoneSchema),
   phases: z.array(z.object({ phase: z.string(), enteredAt: z.string(), exitedAt: z.string().nullable(), note: z.string().nullable() })),
   gates: z.array(z.object({ id: z.string(), gate: z.string(), phase: z.string(), decision: z.string(), decidedAt: z.string().nullable(), notes: z.string().nullable() })),
@@ -564,6 +573,8 @@ export const domainItemSchema = z.object({
 export type DomainItem = z.infer<typeof domainItemSchema>;
 
 export const projectDomainsSchema = z.object({
+  commercial: z.object({ progressClaims: z.array(domainItemSchema), clientInvoices: z.array(domainItemSchema), collections: z.array(domainItemSchema), variations: z.array(domainItemSchema) }),
+  procurement: z.object({ requisitions: z.array(domainItemSchema), purchaseOrders: z.array(domainItemSchema), vendorInvoices: z.array(domainItemSchema), subcontracts: z.array(domainItemSchema) }),
   execution: z.object({ workPackages: z.array(domainItemSchema), dailyReports: z.array(domainItemSchema) }),
   quality: z.object({ ncrs: z.array(domainItemSchema), punchItems: z.array(domainItemSchema) }),
   hse: z.object({ incidents: z.array(domainItemSchema), observations: z.array(domainItemSchema), permits: z.array(domainItemSchema) }),
