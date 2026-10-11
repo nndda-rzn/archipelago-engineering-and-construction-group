@@ -80,11 +80,11 @@ export function RoleManagementPage() {
             <div key={role.id} className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
               <div className="flex items-center justify-between">
                 <span className="text-body-sm font-medium text-neutral-900">{role.name}</span>
-                <Badge variant="default">{role._count.userRoles} user</Badge>
+                <Badge variant="default">{role.memberCount} user</Badge>
               </div>
               <div className="mt-1 font-mono text-caption text-neutral-500">{role.code}</div>
               <div className="mt-3 flex flex-wrap gap-1">
-                {role.permissions.map(({ permission }) => (
+                {role.permissions.map((permission) => (
                   <Badge key={permission.code} variant="outline">{labelPermission(permission.code)}</Badge>
                 ))}
                 {role.permissions.length === 0 && (

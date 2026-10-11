@@ -32,7 +32,7 @@ export function useWorkflowEditor() {
   const templates = useWorkflowTemplates();
 
   const roleOptions = useMemo(
-    () => (roles.data ?? []).map((r) => ({ code: r.code, name: r.name, holders: r._count?.userRoles ?? 0 })),
+    () => (roles.data ?? []).map((r) => ({ code: r.code, name: r.name, holders: r.memberCount ?? 0 })),
     [roles.data],
   );
   const holdersByRole = useMemo(
