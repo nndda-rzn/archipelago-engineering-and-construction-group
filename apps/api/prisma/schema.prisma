@@ -73,6 +73,44 @@ enum RoleStatus {
   INACTIVE
 }
 
+/// Kategori role — memisahkan role bawaan sistem dari role fungsional/proyek.
+/// Dipakai UI untuk mengelompokkan dan untuk mengunci role sistem dari penghapusan.
+enum RoleCategory {
+  SYSTEM
+  FUNCTIONAL
+  PROJECT
+  CUSTOM
+}
+
+/// Cakupan pemberian izin. GLOBAL = berlaku lintas entitas; sisanya membatasi
+/// izin ke satu entitas/business unit/proyek (via `scopeValue`).
+enum PermissionScope {
+  GLOBAL
+  LEGAL_ENTITY
+  BUSINESS_UNIT
+  PROJECT
+}
+
+/// Kelompok domain izin — memetakan resource ke modul ERP sehingga matriks izin
+/// dapat dikelompokkan (Procurement, Finance, dst.) alih-alih satu daftar panjang.
+enum PermissionGroup {
+  FOUNDATION
+  PROCUREMENT
+  FINANCE
+  TREASURY
+  PROJECT
+  CONSTRUCTION
+  INVENTORY
+  HSE
+  QUALITY
+  COMMERCIAL
+  ANALYTICS
+  GOVERNANCE
+  HCM
+  ENGINEERING
+  MASTER_DATA
+}
+
 /// Status sesi login pengguna.
 enum UserSessionStatus {
   ACTIVE
@@ -222,15 +260,24 @@ model Role {
   name        String
   description String?
   status      RoleStatus @default(ACTIVE)
+  /** Kategori role: sistem, fungsional, proyek, atau kustom. */
+  category    RoleCategory @default(CUSTOM)
   /** Role bawaan sistem — tidak boleh dihapus/diubah kodenya. */
   isSystem    Boolean    @default(false)
+  /** Boleh ditugaskan ke user? Role yang dinonaktifkan tetap tampil di audit. */
+  isAssignable Boolean   @default(true)
+  /** Jejak pembuat/penyunting terakhir (id user, tanpa FK agar role sistem bisa dibuat seed). */
+  createdById String?
+  updatedById String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
   permissions RolePermission[]
   userRoles   UserRole[]
+  activity    RoleActivity[]
 
   @@index([status])
+  @@index([category])
 }
 
 model Permission {
@@ -239,20 +286,51 @@ model Permission {
   resource    String // mis. "PurchaseOrder"
   action      String // mis. "APPROVE"
   description String?
+  /** Kelompok domain untuk pengelompokan di matriks izin. */
+  group       PermissionGroup?
+  /** Izin berisiko tinggi (mis. Role.DELETE, User.BLOCK) — ditandai di UI. */
+  isSensitive Boolean @default(false)
+  /** Urutan tampil di dalam grup. */
+  sortOrder   Int     @default(0)
 
   rolePermissions RolePermission[]
+
+  @@index([group])
+  @@index([resource])
 }
 
 model RolePermission {
   roleId       String
   permissionId String
-  scopeType    String @default("GLOBAL") // GLOBAL | LEGAL_ENTITY | BUSINESS_UNIT | PROJECT
+  scopeType    PermissionScope @default(GLOBAL) // GLOBAL | LEGAL_ENTITY | BUSINESS_UNIT | PROJECT
   scopeValue   String @default("") // entity/project id bila scope terbatas
+  /** Kapan izin diberikan (jejak audit). */
+  createdAt    DateTime @default(now())
+  /** Siapa yang memberi izin ini (id user / "seed"). */
+  grantedById  String?
+  /** Hibah berbatas waktu (opsional). Null = selamanya. */
+  expiresAt    DateTime?
 
   role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId, scopeType, scopeValue])
+}
+
+/// Timeline khusus role — mirror `UserActivity` supaya tab Activity role punya
+/// sumber data nyata (bukan menafsirkan AuditLog generik).
+model RoleActivity {
+  id        String   @id @default(cuid())
+  roleId    String
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  actorId   String?
+  action    String // mis. "ROLE.PERMISSIONS_CHANGE", "ROLE.MEMBER_ADD"
+  summary   String
+  metadata  Json?
+  at        DateTime @default(now())
+
+  @@index([roleId])
+  @@index([at])
 }
 
 model UserRole {
