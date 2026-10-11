@@ -2,8 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   addProjectMemberSchema, createProjectSchema, projectActivitySchema, projectListResponseSchema,
   projectRegisterSchema, projectSchema, projectStatsSchema, projectTeamSchema, updateProjectMetaSchema,
-  personRefSchema, updateProjectSchema,
-  type AddProjectMember, type CreateProject, type UpdateProject, type UpdateProjectMeta,
+  personRefSchema, updateProjectSchema, projectSummarySchema, projectScheduleSchema, projectCashFlowSchema,
+  projectStakeholderSchema, createMilestoneSchema, advancePhaseSchema,
+  type AddProjectMember, type CreateProject, type UpdateProject, type UpdateProjectMeta, type CreateMilestone, type AdvancePhase,
 } from '@aec/api-contracts';
 import { getJson, patchJson, postJson, deleteJson } from '@/shared/lib/http';
 
@@ -154,5 +155,80 @@ export function useProjectEmployees() {
       return data.items;
     },
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ─── Command center (ringkasan, jadwal, aliran kas, fase, milestone) ─────────
+
+export const commandCenterKeys = {
+  summary: (id: string) => [...projectKeys.all, 'summary', id] as const,
+  schedule: (id: string) => [...projectKeys.all, 'schedule', id] as const,
+  cashFlow: (id: string) => [...projectKeys.all, 'cash-flow', id] as const,
+  milestones: (id: string) => [...projectKeys.all, 'milestones', id] as const,
+  stakeholders: (id: string) => [...projectKeys.all, 'stakeholders', id] as const,
+};
+
+export function useProjectSummary(id: string) {
+  return useQuery({
+    queryKey: commandCenterKeys.summary(id),
+    queryFn: async () => projectSummarySchema.parse(await getJson<unknown>(`/projects/${id}/summary`)),
+    enabled: !!id,
+  });
+}
+
+export function useProjectSchedule(id: string) {
+  return useQuery({
+    queryKey: commandCenterKeys.schedule(id),
+    queryFn: async () => projectScheduleSchema.parse(await getJson<unknown>(`/projects/${id}/schedule`)),
+    enabled: !!id,
+  });
+}
+
+export function useProjectCashFlow(id: string) {
+  return useQuery({
+    queryKey: commandCenterKeys.cashFlow(id),
+    queryFn: async () => projectCashFlowSchema.parse(await getJson<unknown>(`/projects/${id}/cash-flow`)),
+    enabled: !!id,
+  });
+}
+
+export function useProjectStakeholders(id: string) {
+  return useQuery({
+    queryKey: commandCenterKeys.stakeholders(id),
+    queryFn: async () => projectStakeholderSchema.array().parse(await getJson<unknown>(`/projects/${id}/stakeholders`)),
+    enabled: !!id,
+  });
+}
+
+export function useCreateMilestone(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: CreateMilestone) => postJson<unknown>(`/projects/${id}/milestones`, createMilestoneSchema.parse(input)),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: projectKeys.all }),
+  });
+}
+
+export function useUpdateMilestone(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ milestoneId, ...input }: { milestoneId: string } & Partial<CreateMilestone>) =>
+      patchJson<unknown>(`/projects/${id}/milestones/${milestoneId}`, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: projectKeys.all }),
+  });
+}
+
+export function useDeleteMilestone(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (milestoneId: string) => deleteJson<unknown>(`/projects/${id}/milestones/${milestoneId}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: projectKeys.all }),
+  });
+}
+
+export function useAdvancePhase(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: AdvancePhase) => postJson<unknown>(`/projects/${id}/phases/advance`, advancePhaseSchema.parse(input)),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: projectKeys.all }),
   });
 }
