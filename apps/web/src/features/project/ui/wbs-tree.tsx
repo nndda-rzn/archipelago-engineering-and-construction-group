@@ -29,14 +29,14 @@ function ProgressCell({ item }: { item: WbsItem }) {
   const value = item.rollup.progress;
   if (value == null) {
     return (
-      <span className="flex items-center gap-2" title="No progress recorded">
+      <span className="hidden items-center gap-2 sm:flex" title="No progress recorded">
         <span className="h-2 w-16 overflow-hidden rounded-full bg-neutral-100" aria-hidden="true" />
         <span className="w-9 text-right font-mono text-caption tabular-nums text-neutral-400">—</span>
       </span>
     );
   }
   return (
-    <span className="flex items-center gap-2">
+    <span className="hidden items-center gap-2 sm:flex">
       <BulletBar value={value} max={100} label={`${item.code} progress`} tone={value >= 100 ? 'success' : 'neutral'} className="w-16" />
       <span className="w-9 text-right font-mono text-caption tabular-nums text-neutral-600">{Math.round(value)}%</span>
     </span>
@@ -77,19 +77,21 @@ export function WbsTree({
   }
 
   return (
-    <div role="tree" aria-label="Work breakdown structure" className="overflow-hidden rounded-md border border-neutral-200 bg-white shadow-xs">
-      {tree.map((item) => (
-        <WbsRow
-          key={item.id}
-          item={item}
-          depth={0}
-          collapsed={collapsed}
-          selectedId={selectedId}
-          onToggle={toggle}
-          onSelect={onSelect}
-          onAddChild={onAddChild}
-        />
-      ))}
+    <div role="tree" aria-label="Work breakdown structure" className="overflow-x-auto rounded-md border border-neutral-200 bg-white shadow-xs">
+      <div className="min-w-0">
+        {tree.map((item) => (
+          <WbsRow
+            key={item.id}
+            item={item}
+            depth={0}
+            collapsed={collapsed}
+            selectedId={selectedId}
+            onToggle={toggle}
+            onSelect={onSelect}
+            onAddChild={onAddChild}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -172,7 +174,7 @@ function WbsRow({
 
         <ProgressCell item={item} />
 
-        <span className="w-20 shrink-0 text-right font-mono text-caption tabular-nums text-neutral-700">
+        <span className="hidden w-20 shrink-0 text-right font-mono text-caption tabular-nums text-neutral-700 sm:block">
           <Money value={item.rollup.budget} />
         </span>
 
