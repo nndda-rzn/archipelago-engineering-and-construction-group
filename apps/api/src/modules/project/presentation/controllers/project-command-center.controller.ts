@@ -35,6 +35,12 @@ export class ProjectCommandCenterController {
     return this.service.cashFlow(projectId);
   }
 
+  @Get('domains')
+  @Permissions(Permission.ProjectView)
+  domains(@Param('projectId') projectId: string) {
+    return this.service.domains(projectId);
+  }
+
   @Get('phases')
   @Permissions(Permission.ProjectView)
   phases(@Param('projectId') projectId: string) {

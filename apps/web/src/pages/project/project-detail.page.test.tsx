@@ -62,6 +62,16 @@ vi.mock('@/entities/project', async () => {
       isLoading: false,
     }),
     useProjectStakeholders: () => ({ data: [{ id: 's1', name: 'Budi Santoso', role: 'Project Sponsor', raci: 'ACCOUNTABLE', employeeId: null, email: null, phone: null, isPrimary: true }], isLoading: false }),
+    useProjectDomains: () => ({
+      data: {
+        execution: { workPackages: [{ id: 'w1', ref: 'WP-1', label: 'Erection Steel Structure', status: 'IN_PROGRESS' }], dailyReports: [{ id: 'd1', ref: 'DR-1', label: '2026-03-01', status: 'SUBMITTED' }] },
+        quality: { ncrs: [{ id: 'n1', ref: 'NCR-1', label: 'Weld defect', status: 'OPEN', severity: 'MAJOR' }], punchItems: [] },
+        hse: { incidents: [{ id: 'i1', ref: 'INC-1', label: 'NEAR_MISS', status: 'OPEN', severity: 'LOW' }], observations: [], permits: [] },
+        documents: { drawings: [{ id: 'dr1', ref: 'DRW-1', label: 'GA Drawing', status: 'PUBLISHED', meta: 'CIVIL', flag: true }], deliverables: [] },
+        governance: { risks: [{ id: 'r1', ref: 'RSK-1', label: 'Delay', status: 'OPEN', meta: 'SCHEDULE', score: 16 }], legalCases: [], contracts: [] },
+      },
+      isLoading: false,
+    }),
     useAdvancePhase: () => ({ mutate: vi.fn(), isPending: false }),
     useProjectTeam: () => ({
       data: { items: [
@@ -140,10 +150,10 @@ describe('ProjectDetailPage', () => {
     expect(screen.getByText(/Remaining/i)).toBeTruthy();
   });
 
-  it('exposes the seven workspace tabs', () => {
+  it('exposes the eleven workspace tabs', () => {
     renderWithProviders(<ProjectDetailPage />);
     const tabs = screen.getAllByRole('tab').map((t) => t.textContent);
-    expect(tabs).toEqual(['Overview', 'Schedule', 'Commercial', 'Procurement', 'Cost & EVM', 'Team', 'Activity']);
+    expect(tabs).toEqual(['Overview', 'Schedule', 'Commercial', 'Procurement', 'Execution', 'Quality & HSE', 'Documents', 'Risk & Gov', 'Cost & EVM', 'Team', 'Activity']);
   });
 
   it('renders the lifecycle phase ribbon and at-a-glance signals', () => {
@@ -187,6 +197,27 @@ describe('ProjectDetailPage', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Commercial' }));
     expect(screen.getByText('Progress claims')).toBeTruthy();
     expect(screen.getByText('Client invoices')).toBeTruthy();
+  });
+
+  it('lists execution work packages on the Execution tab', () => {
+    renderWithProviders(<ProjectDetailPage />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Execution' }));
+    expect(screen.getByText('Erection Steel Structure')).toBeTruthy();
+    expect(screen.getByText('WP-1')).toBeTruthy();
+  });
+
+  it('lists NCRs and HSE on the Quality & HSE tab', () => {
+    renderWithProviders(<ProjectDetailPage />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Quality & HSE' }));
+    expect(screen.getByText('Weld defect')).toBeTruthy();
+    expect(screen.getByText('INC-1')).toBeTruthy();
+  });
+
+  it('lists risks on the Risk & Gov tab', () => {
+    renderWithProviders(<ProjectDetailPage />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Risk & Gov' }));
+    expect(screen.getByText('RSK-1')).toBeTruthy();
+    expect(screen.getByText('Delay')).toBeTruthy();
   });
 
   it('shows the project team with allocation on the Team tab', () => {
