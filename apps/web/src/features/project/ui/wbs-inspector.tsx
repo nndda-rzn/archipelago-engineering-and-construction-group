@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ArrowUpRight, CalendarRange, Diamond, Trash2 } from 'lucide-react';
 import { Button, ConfirmDialog, ICON_SIZE, ICON_STROKE, Input, Label } from '@aec/ui';
@@ -48,16 +48,6 @@ export function WbsInspector({ projectId, item, onDeleted }: { projectId: string
   const [description, setDescription] = useState(item.description ?? '');
   const [milestone, setMilestone] = useState(item.isMilestone);
   const [confirmOpen, setConfirmOpen] = useState(false);
-
-  // Ganti node terpilih → muat ulang nilai form.
-  useEffect(() => {
-    setProgress(item.progressPercent);
-    setPlannedStart(toDateInput(item.plannedStart));
-    setPlannedEnd(toDateInput(item.plannedEnd));
-    setOwner(item.responsibleManager ?? '');
-    setDescription(item.description ?? '');
-    setMilestone(item.isMilestone);
-  }, [item]);
 
   const save = () => {
     update.mutate({

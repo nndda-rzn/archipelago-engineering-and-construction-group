@@ -76,8 +76,8 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
     throw new ApiError(
       errBody?.error?.message ?? `Request failed: ${res.status}`,
       errBody?.error?.code ?? 'HTTP_ERROR',
-      errbody?.error?.correlationId,
-      body?.error?.details,
+      errBody?.error?.correlationId,
+        errBody?.error?.details,
     );
   }
 
@@ -100,8 +100,8 @@ export async function patchJson<T>(path: string, body: unknown): Promise<T> {
     throw new ApiError(
       errBody?.error?.message ?? `Request failed: ${res.status}`,
       errBody?.error?.code ?? 'HTTP_ERROR',
-      errbody?.error?.correlationId,
-      body?.error?.details,
+      errBody?.error?.correlationId,
+        errBody?.error?.details,
     );
   }
 
@@ -124,8 +124,8 @@ export async function putJson<T>(path: string, body: unknown): Promise<T> {
     throw new ApiError(
       errBody?.error?.message ?? `Request failed: ${res.status}`,
       errBody?.error?.code ?? 'HTTP_ERROR',
-      errbody?.error?.correlationId,
-      body?.error?.details,
+      errBody?.error?.correlationId,
+        errBody?.error?.details,
     );
   }
 
@@ -144,8 +144,8 @@ export async function deleteJson<T>(path: string): Promise<T> {
     throw new ApiError(
       errBody?.error?.message ?? `Request failed: ${res.status}`,
       errBody?.error?.code ?? 'HTTP_ERROR',
-      errbody?.error?.correlationId,
-      body?.error?.details,
+      errBody?.error?.correlationId,
+        errBody?.error?.details,
     );
   }
 
