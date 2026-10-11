@@ -122,3 +122,52 @@ export class AddProjectMemberDto {
   @IsOptional() @IsDateString() endDate?: string;
   @IsOptional() @IsBoolean() isKeyMember?: boolean;
 }
+
+export const PROJECT_PHASES = ['INITIATION', 'FEED', 'ENGINEERING', 'PROCUREMENT', 'CONSTRUCTION', 'COMMISSIONING', 'CLOSEOUT'] as const;
+export const MILESTONE_STATUSES = ['PLANNED', 'IN_PROGRESS', 'ACHIEVED', 'MISSED'] as const;
+export const GATE_DECISIONS = ['GO', 'HOLD', 'NO_GO'] as const;
+
+/** Body `POST /projects/:id/milestones`. */
+export class CreateMilestoneDto {
+  @IsString() @Length(2, 200) name!: string;
+
+  @IsDateString() plannedDate!: string;
+
+  @IsOptional() @IsDateString() actualDate?: string;
+
+  @IsOptional() @IsIn(MILESTONE_STATUSES) status?: (typeof MILESTONE_STATUSES)[number];
+
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100) weight?: number;
+
+  @IsOptional() @IsBoolean() isCritical?: boolean;
+
+  @IsOptional() @IsString() @Length(0, 500) notes?: string;
+}
+
+/** Body `PATCH /projects/:id/milestones/:milestoneId`. */
+export class UpdateMilestoneDto extends PartialType(CreateMilestoneDto) {}
+
+/** Body `POST /projects/:id/phases/advance` — majukan fase (stage-gate). */
+export class AdvancePhaseDto {
+  @IsIn(PROJECT_PHASES) phase!: (typeof PROJECT_PHASES)[number];
+
+  @IsOptional() @IsIn(GATE_DECISIONS) decision?: (typeof GATE_DECISIONS)[number];
+
+  @IsOptional() @IsString() @Length(0, 200) gate?: string;
+
+  @IsOptional() @IsString() @Length(0, 500) notes?: string;
+}
+
+/** Body `POST /projects/:id/stakeholders`. */
+export class AddStakeholderDto {
+  @IsString() @Length(2, 200) name!: string;
+
+  @IsString() @Length(2, 100) role!: string;
+
+  @IsOptional() @IsIn(['RESPONSIBLE', 'ACCOUNTABLE', 'CONSULTED', 'INFORMED']) raci?: string;
+
+  @IsOptional() @IsString() employeeId?: string;
+  @IsOptional() @IsString() email?: string;
+  @IsOptional() @IsString() phone?: string;
+  @IsOptional() @IsBoolean() isPrimary?: boolean;
+}

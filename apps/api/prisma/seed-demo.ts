@@ -1154,6 +1154,19 @@ async function main() {
     }
   }
 
+  // ── 5b. Ledger material massal (OUT ≈ EV) ──
+  // Tanpa ini, AC proyek 014 hanya dari invoice kecil (75 M) padahal budget 4.8 T,
+  // sehingga "Budget used" ~1,5% dan CPI meledak (~30) — angka yang tak masuk akal
+  // untuk proyek unggulan. Di sini AC disetel ≈ EV pada progress 48% agar CPI ≈ 1.
+  const massIn = await prisma.stockLedgerEntry.findFirst({ where: { projectId: project.id, reference: 'SEED-014-IN' } });
+  if (!massIn) {
+    const evTarget = 4800000000000 * 0.48; // ≈ earned value pada progress 48%
+    const acTarget = Math.round(evTarget / 1.02); // CPI ≈ 1,02
+    await prisma.stockLedgerEntry.create({ data: { projectId: project.id, wbsItemId: wbsMap.get('2'), warehouseId: warehouse.id, movementType: 'IN', quantity: 120000, unit: 'ton', unitPrice: (acTarget * 1.3) / 120000, totalValue: acTarget * 1.3, documentType: 'GR', reference: 'SEED-014-IN', description: 'Penerimaan material massal (seed)', balanceAfter: 120000 } });
+    await prisma.stockLedgerEntry.create({ data: { projectId: project.id, wbsItemId: wbsMap.get('3'), warehouseId: warehouse.id, movementType: 'OUT', quantity: 70000, unit: 'ton', unitPrice: acTarget / 70000, totalValue: acTarget, documentType: 'ISSUE', reference: 'SEED-014-OUT', description: 'Pemakaian material massal (seed)', balanceAfter: 50000 } });
+    console.log(`Ledger massal 014: OUT ≈ ${(acTarget / 1e12).toFixed(2)} T (CPI ≈ 1)`);
+  }
+
   // ── 6. Construction work package + progress ──
   const demoWp = await prisma.constructionWorkPackage.findUnique({ where: { wpNumber: `WP-${year}-EPC-900001` } });
   if (!demoWp) {

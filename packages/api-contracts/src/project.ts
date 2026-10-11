@@ -477,3 +477,98 @@ export const evmSchema = z.object({
   generatedAt: z.string(),
 });
 export type Evm = z.infer<typeof evmSchema>;
+
+// ─── Command center (fase, jadwal, aliran kas, stakeholder) ──────────────────
+
+export const PROJECT_PHASES = ['INITIATION', 'FEED', 'ENGINEERING', 'PROCUREMENT', 'CONSTRUCTION', 'COMMISSIONING', 'CLOSEOUT'] as const;
+export const MILESTONE_STATUSES = ['PLANNED', 'IN_PROGRESS', 'ACHIEVED', 'MISSED'] as const;
+export const GATE_DECISIONS = ['GO', 'HOLD', 'NO_GO'] as const;
+
+export const glanceSignalSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  value: z.number().nullable(),
+  unit: z.string(),
+  tone: z.enum(['ok', 'warn', 'bad', 'neutral']),
+});
+export type GlanceSignal = z.infer<typeof glanceSignalSchema>;
+
+export const projectSummarySchema = z.object({
+  project: z.object({
+    id: z.string(), code: z.string(), name: z.string(), client: z.string(),
+    status: z.string(), phase: z.string(), healthStatus: z.string(),
+    type: z.string(), priority: z.string(), currency: z.string(),
+    location: z.string().nullable(), legalEntityCode: z.string(),
+    manager: z.object({ id: z.string(), name: z.string(), position: z.string().nullable() }).nullable(),
+    director: z.object({ id: z.string(), name: z.string(), position: z.string().nullable() }).nullable(),
+    startDate: z.string().nullable(), completionDate: z.string().nullable(),
+  }),
+  schedule: z.object({
+    progressPlanned: z.number(), progressActual: z.number(), variance: z.number(),
+    milestoneTotal: z.number(), milestoneAchieved: z.number(), milestoneMissed: z.number(), gateHold: z.number(),
+  }),
+  cost: z.object({
+    contractValue: z.number(), budget: z.number(), committed: z.number(), actual: z.number(),
+    certified: z.number(), billed: z.number(), collected: z.number(), cpi: z.number().nullable(),
+  }),
+  signals: z.array(glanceSignalSchema),
+  domains: z.object({
+    commercial: z.object({ contract: z.number(), progressClaim: z.number(), clientInvoice: z.number(), collection: z.number(), variation: z.number() }),
+    procurement: z.object({ pr: z.number(), po: z.number(), vendorInvoice: z.number(), subcontract: z.number() }),
+    execution: z.object({ workPackage: z.number(), dailyReport: z.number() }),
+    quality: z.object({ ncrOpen: z.number(), punchOpen: z.number() }),
+    hse: z.object({ incidentOpen: z.number() }),
+    governance: z.object({ riskOpen: z.number(), gateHold: z.number() }),
+    engineering: z.object({ drawing: z.number(), deliverable: z.number() }),
+  }),
+  generatedAt: z.string(),
+});
+export type ProjectSummary = z.infer<typeof projectSummarySchema>;
+
+export const projectMilestoneSchema = z.object({
+  id: z.string(), name: z.string(), plannedDate: z.string(), actualDate: z.string().nullable(),
+  status: z.string(), weight: z.number(), isCritical: z.boolean(), notes: z.string().nullable(),
+});
+export type ProjectMilestone = z.infer<typeof projectMilestoneSchema>;
+
+export const projectScheduleSchema = z.object({
+  progressPlanned: z.number(),
+  progressActual: z.number(),
+  plannedCurve: z.array(z.object({ period: z.string(), planned: z.number(), plannedCumulative: z.number(), plannedPct: z.number() })),
+  milestones: z.array(projectMilestoneSchema),
+  phases: z.array(z.object({ phase: z.string(), enteredAt: z.string(), exitedAt: z.string().nullable(), note: z.string().nullable() })),
+  gates: z.array(z.object({ id: z.string(), gate: z.string(), phase: z.string(), decision: z.string(), decidedAt: z.string().nullable(), notes: z.string().nullable() })),
+});
+export type ProjectSchedule = z.infer<typeof projectScheduleSchema>;
+
+export const projectCashFlowSchema = z.object({
+  projectId: z.string(),
+  chain: z.array(z.object({ key: z.string(), label: z.string(), value: z.number() })),
+  generatedAt: z.string(),
+});
+export type ProjectCashFlow = z.infer<typeof projectCashFlowSchema>;
+
+export const projectStakeholderSchema = z.object({
+  id: z.string(), name: z.string(), role: z.string(), raci: z.string(),
+  employeeId: z.string().nullable(), email: z.string().nullable(), phone: z.string().nullable(), isPrimary: z.boolean(),
+});
+export type ProjectStakeholder = z.infer<typeof projectStakeholderSchema>;
+
+export const createMilestoneSchema = z.object({
+  name: z.string().min(2).max(200),
+  plannedDate: z.string(),
+  actualDate: z.string().optional(),
+  status: z.enum(MILESTONE_STATUSES).optional(),
+  weight: z.number().min(0).max(100).optional(),
+  isCritical: z.boolean().optional(),
+  notes: z.string().max(500).optional(),
+});
+export type CreateMilestone = z.infer<typeof createMilestoneSchema>;
+
+export const advancePhaseSchema = z.object({
+  phase: z.enum(PROJECT_PHASES),
+  decision: z.enum(GATE_DECISIONS).optional(),
+  gate: z.string().max(200).optional(),
+  notes: z.string().max(500).optional(),
+});
+export type AdvancePhase = z.infer<typeof advancePhaseSchema>;
