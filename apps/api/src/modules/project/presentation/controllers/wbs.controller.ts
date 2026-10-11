@@ -1,9 +1,9 @@
-import { Body, Controller, Get, Inject, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@/shared/guards/auth.guard';
 import { Permissions } from '@/shared/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/shared/guards/permissions.guard';
 import { Permission } from '@/shared/permissions/permissions';
-import { CreateWbsItemDto } from '../dto/wbs.dto';
+import { CreateWbsItemDto, MoveWbsItemDto, UpdateWbsItemDto } from '../dto/wbs.dto';
 import { WbsService } from '../../application/services/wbs.service';
 
 @Controller('projects/:projectId/wbs')
@@ -25,5 +25,37 @@ export class WbsController {
     @Req() request: { user?: { sub?: string } },
   ) {
     return this.service.create(projectId, dto, request.user?.sub ?? 'system');
+  }
+
+  @Patch(':itemId')
+  @Permissions(Permission.WbsEdit)
+  update(
+    @Param('projectId') projectId: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: UpdateWbsItemDto,
+    @Req() request: { user?: { sub?: string } },
+  ) {
+    return this.service.update(projectId, itemId, dto, request.user?.sub ?? 'system');
+  }
+
+  @Delete(':itemId')
+  @Permissions(Permission.WbsEdit)
+  remove(
+    @Param('projectId') projectId: string,
+    @Param('itemId') itemId: string,
+    @Req() request: { user?: { sub?: string } },
+  ) {
+    return this.service.remove(projectId, itemId, request.user?.sub ?? 'system');
+  }
+
+  @Post(':itemId/move')
+  @Permissions(Permission.WbsEdit)
+  move(
+    @Param('projectId') projectId: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: MoveWbsItemDto,
+    @Req() request: { user?: { sub?: string } },
+  ) {
+    return this.service.move(projectId, itemId, dto, request.user?.sub ?? 'system');
   }
 }
