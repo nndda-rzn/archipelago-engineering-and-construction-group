@@ -35,6 +35,8 @@ export class ProjectService {
       select: {
         id: true, code: true, name: true, client: true, manager: true, status: true,
         contractValue: true, startDate: true, completionDate: true, type: true, priority: true,
+        phase: true, healthStatus: true, progressPlanned: true, progressActual: true,
+        tagline: true, isWatchlist: true, watchlistReason: true,
         managerRef: { select: { id: true, name: true, position: true } },
         directorRef: { select: { id: true, name: true, position: true } },
         _count: { select: { assignments: true } },
@@ -52,7 +54,7 @@ export class ProjectService {
     }
 
     const projectIds = projects.map((p) => p.id);
-    const [budgetGroups, actualMap, teamMembers] = await Promise.all([
+    const [budgetGroups, actualMap, teamMembers, riskGroups, ncrGroups, hseGroups, milestones, periodBudgets] = await Promise.all([
       this.prisma.budgetItem.groupBy({
         by: ['projectId'],
         where: { projectId: { in: projectIds }, status: 'PUBLISHED' },
@@ -63,8 +65,38 @@ export class ProjectService {
         where: { projectId: { in: projectIds }, status: 'ACTIVE' },
         select: { projectId: true, isKeyMember: true, employee: { select: { id: true, name: true, position: true } } },
       }),
+      this.prisma.risk.groupBy({ by: ['projectId'], where: { projectId: { in: projectIds }, status: 'OPEN' }, _count: { _all: true } }),
+      this.prisma.ncr.groupBy({ by: ['projectId'], where: { projectId: { in: projectIds }, status: 'OPEN' }, _count: { _all: true } }),
+      this.prisma.hseIncident.groupBy({ by: ['projectId'], where: { projectId: { in: projectIds }, status: 'OPEN' }, _count: { _all: true } }),
+      // Milestone terdekat yang belum dicapai (untuk kartu: "next milestone").
+      this.prisma.projectMilestone.findMany({
+        where: { projectId: { in: projectIds }, status: { in: ['PLANNED', 'IN_PROGRESS'] } },
+        orderBy: { plannedDate: 'asc' },
+        select: { projectId: true, name: true, plannedDate: true, isCritical: true },
+      }),
+      // Kurva rencana untuk sparkline progress.
+      this.prisma.projectPeriodBudget.findMany({ where: { projectId: { in: projectIds } }, orderBy: { period: 'asc' }, select: { projectId: true, period: true, plannedCost: true } }),
     ]);
     const budgetMap = new Map(budgetGroups.map((r) => [r.projectId, Number(r._sum?.amount ?? 0)]));
+    const riskMap = new Map(riskGroups.map((r) => [r.projectId, r._count._all]));
+    const ncrMap = new Map(ncrGroups.map((r) => [r.projectId, r._count._all]));
+    const hseMap = new Map(hseGroups.map((r) => [r.projectId, r._count._all]));
+    // Milestone terdekat per proyek (baris pertama karena sudah diurut tanggal).
+    const nextMilestone = new Map<string, { name: string; plannedDate: Date; isCritical: boolean }>();
+    for (const m of milestones) if (!nextMilestone.has(m.projectId)) nextMilestone.set(m.projectId, m);
+    // Kurva rencana kumulatif (%) per proyek untuk sparkline.
+    const trendByProject = new Map<string, number[]>();
+    const byProjectPeriods = new Map<string, Array<{ plannedCost: number }>>();
+    for (const b of periodBudgets) {
+      const list = byProjectPeriods.get(b.projectId) ?? [];
+      list.push({ plannedCost: Number(b.plannedCost) });
+      byProjectPeriods.set(b.projectId, list);
+    }
+    for (const [pid, list] of byProjectPeriods) {
+      const total = list.reduce((s, x) => s + x.plannedCost, 0);
+      let cum = 0;
+      trendByProject.set(pid, list.map((x) => { cum += x.plannedCost; return total > 0 ? Math.round((cum / total) * 100) : 0; }));
+    }
     // Anggota tim per proyek — key member didahulukan agar avatar yang tampil bermakna.
     const teamByProject = new Map<string, Array<{ id: string; name: string; position: string | null; isKeyMember: boolean }>>();
     for (const m of teamMembers) {
@@ -87,6 +119,11 @@ export class ProjectService {
       totalBudget += budget;
       totalActual += actual;
       const team = (teamByProject.get(p.id) ?? []).sort((a, b) => Number(b.isKeyMember) - Number(a.isKeyMember));
+      const progressPlanned = Number(p.progressPlanned);
+      const progressActual = Number(p.progressActual);
+      const cpi = actual > 0 && budget > 0 ? Math.round(((progressActual / 100) * budget / actual) * 100) / 100 : null;
+      const spi = progressPlanned > 0 ? Math.round((progressActual / progressPlanned) * 100) / 100 : null;
+      const ms = nextMilestone.get(p.id);
       return {
         projectId: p.id,
         code: p.code,
@@ -98,6 +135,11 @@ export class ProjectService {
         status: p.status,
         type: p.type,
         priority: p.priority,
+        phase: p.phase,
+        healthStatus: p.healthStatus,
+        tagline: p.tagline,
+        isWatchlist: p.isWatchlist,
+        watchlistReason: p.watchlistReason,
         contractValue: Number(p.contractValue ?? 0),
         startDate: p.startDate ? p.startDate.toISOString() : null,
         completionDate: p.completionDate ? p.completionDate.toISOString() : null,
@@ -106,6 +148,15 @@ export class ProjectService {
         variance: budget - actual,
         utilization: utilization != null ? Math.round(utilization * 10) / 10 : null,
         health,
+        progressPlanned,
+        progressActual,
+        cpi,
+        spi,
+        openRisks: riskMap.get(p.id) ?? 0,
+        openNcr: ncrMap.get(p.id) ?? 0,
+        openHse: hseMap.get(p.id) ?? 0,
+        nextMilestone: ms ? { name: ms.name, plannedDate: ms.plannedDate.toISOString(), isCritical: ms.isCritical } : null,
+        trend: trendByProject.get(p.id) ?? [],
         teamCount: team.length,
         team: team.slice(0, 4),
       };

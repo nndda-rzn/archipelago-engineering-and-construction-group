@@ -558,6 +558,12 @@ model Project {
   /** Progress fisik (%) — rencana vs aktual (dasar S-curve). */
   progressPlanned     Decimal     @default(0) @db.Decimal(5, 2)
   progressActual      Decimal     @default(0) @db.Decimal(5, 2)
+  /** Kalimat singkat untuk kepala kartu (≤120 char). */
+  tagline             String?
+  /** Ditandai PM untuk perhatian khusus (mis. telat, CPI<1, risiko tinggi). */
+  isWatchlist         Boolean     @default(false)
+  /** Alasan masuk watchlist. */
+  watchlistReason     String?
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
 
