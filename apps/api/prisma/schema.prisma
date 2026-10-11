@@ -134,6 +134,33 @@ enum InvitationStatus {
   REVOKED
 }
 
+/// Siklus hidup proyek (FR-PRJ-001). Menggantikan string bebas pada `Project.status`.
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CLOSED
+}
+
+/// Jenis proyek — memengaruhi template WBS & profil risiko.
+enum ProjectType {
+  EPC
+  MARINE
+  POWER
+  PROCESS
+  INFRASTRUCTURE
+  OTHER
+}
+
+/// Prioritas proyek di portofolio.
+enum ProjectPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 // FR-FND-001: Multi-Legal Entity
 model LegalEntity {
   id                 String   @id @default(cuid())
@@ -465,9 +492,19 @@ model Project {
   advanceRecoveryRate Decimal     @default(0) @db.Decimal(5, 2) // % recovery DP per progress claim
   startDate           DateTime?
   completionDate      DateTime?
+  /** Nama direktur/manager lama (teks bebas) — dipertahankan untuk kompatibilitas. */
   director            String?
   manager             String?
-  status              String      @default("PLANNING") // PLANNING | ACTIVE | ON_HOLD | COMPLETED | CLOSED
+  /** Jenis proyek — memengaruhi template & profil risiko. */
+  type                ProjectType @default(OTHER)
+  /** Prioritas portofolio. */
+  priority            ProjectPriority @default(MEDIUM)
+  /** Direktur/manager sebagai ORANG nyata (relasi ke Employee), bukan teks. */
+  directorId          String?
+  directorRef         Employee?   @relation("ProjectDirector", fields: [directorId], references: [id], onDelete: SetNull)
+  managerId           String?
+  managerRef          Employee?   @relation("ProjectManager", fields: [managerId], references: [id], onDelete: SetNull)
+  status              ProjectStatus @default(PLANNING)
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
 
@@ -522,9 +559,12 @@ model Project {
   bankGuarantees           BankGuarantee[]
   vendorPerformanceRatings VendorPerformanceRating[]
   doaRules                 DoaRule[]
+  activity                 ProjectActivity[]
 
   @@index([legalEntityId])
   @@index([status])
+  @@index([type])
+  @@index([priority])
 }
 
 // FR-PRJ-002: WBS — hierarchical, unlimited practical depth
@@ -1489,6 +1529,8 @@ model Employee {
   assignments        ProjectAssignment[]
   timesheets         Timesheet[]
   payrollAllocations PayrollAllocation[]
+  directedProjects   Project[]   @relation("ProjectDirector")
+  managedProjects    Project[]   @relation("ProjectManager")
 
   @@index([legalEntityId])
   @@index([managerId])
@@ -1508,12 +1550,33 @@ model ProjectAssignment {
   endDate           DateTime?
   status            String    @default("ACTIVE") // ACTIVE | ENDED
   exceptionApproved Boolean   @default(false) // alokasi >100% butuh approval (FR-HCM-003)
+  /** Anggota kunci (key person) proyek — disorot di band tim. */
+  isKeyMember       Boolean   @default(false)
+  /** Alasan penugasan berakhir (mis. "roll-off", "mutasi"). */
+  endedReason       String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
   @@index([employeeId])
   @@index([projectId])
   @@index([status])
+  @@index([projectId, status])
+}
+
+/// Timeline khusus proyek — mirror `RoleActivity`/`UserActivity` supaya tab
+/// Activity proyek punya sumber data nyata.
+model ProjectActivity {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actorId   String?
+  action    String // mis. "PROJECT.UPDATE", "PROJECT.MEMBER_ADD"
+  summary   String
+  metadata  Json?
+  at        DateTime @default(now())
+
+  @@index([projectId])
+  @@index([at])
 }
 
 // FR-HCM-004: Timesheet — jam kerja ke project/WBS

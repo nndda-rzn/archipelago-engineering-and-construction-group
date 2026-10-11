@@ -103,7 +103,9 @@ export class ProjectService {
     const pageSize = Math.min(Number(query.pageSize) || 50, 200);
 
     const where: Prisma.ProjectWhereInput = {
-      ...(query.status ? { status: query.status } : {}),
+      ...(query.status && (PROJECT_STATUSES as readonly string[]).includes(query.status)
+        ? { status: query.status as Prisma.ProjectWhereInput['status'] }
+        : {}),
       ...(query.search
         ? {
             OR: [
