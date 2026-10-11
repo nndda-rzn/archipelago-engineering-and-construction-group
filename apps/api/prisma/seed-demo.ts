@@ -644,6 +644,139 @@ async function seedPortfolio() {
   console.log(`Opportunity: +${oppCount} (funnel LEAD→WON + won/lost)`);
 }
 
+/**
+ * Tim proyek & jadwal (FR-HCM-002 / FR-PRJ-001).
+ *
+ * Mengisi dua celah data nyata yang membuat halaman Projects tak bermakna:
+ *  - SEMUA proyek sebelumnya tanpa `startDate`/`completionDate` → view Timeline mati.
+ *  - TIDAK ADA `ProjectAssignment` → tak satu pun proyek punya tim, sehingga
+ *    pertanyaan "siapa mengerjakan, sebagai apa" tak bisa dijawab.
+ *
+ * Idempoten: proyek hanya diisi tanggalnya bila kosong; assignment di-upsert per
+ * (employee, project, startDate). Menambah ~8 karyawan lintas posisi agar tim
+ * punya orang yang berbeda-beda (bukan satu nama berulang).
+ */
+async function seedProjectTeams() {
+  const year = new Date().getFullYear();
+  const d = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
+  const entities = await prisma.legalEntity.findMany({ select: { id: true, code: true } });
+  const entityByCode = new Map(entities.map((e) => [e.code, e.id]));
+  const conId = entityByCode.get('AEC-CON') ?? entities[0]?.id;
+  if (!conId) throw new Error('LegalEntity tidak ada — jalankan seed dasar dulu.');
+
+  // ── A. Karyawan lintas posisi (idempoten per employeeNumber) ──
+  const employees: Array<{ no: string; name: string; position: string; grade: string; department: string; entity?: string }> = [
+    { no: '000001', name: 'Budi Santoso', position: 'Project Director', grade: 'L4', department: 'Executive' },
+    { no: '000002', name: 'Siti Rahayu', position: 'Project Controls Manager', grade: 'L3', department: 'Project Controls' },
+    { no: '000003', name: 'Ahmad Fauzi', position: 'Project Manager', grade: 'L3', department: 'Construction' },
+    { no: '000004', name: 'Dewi Lestari', position: 'Site Engineer', grade: 'L2', department: 'Engineering' },
+    { no: '000005', name: 'Rudi Hartono', position: 'QA/QC Engineer', grade: 'L2', department: 'Quality' },
+    { no: '000006', name: 'Rina Marlina', position: 'HSE Officer', grade: 'L2', department: 'HSE' },
+    { no: '000007', name: 'Hendra Gunawan', position: 'Procurement Lead', grade: 'L3', department: 'Procurement' },
+    { no: '000008', name: 'Fajar Nugroho', position: 'Cost Engineer', grade: 'L2', department: 'Project Controls' },
+    { no: '000009', name: 'Putri Anggraini', position: 'Document Controller', grade: 'L1', department: 'Project Controls' },
+    { no: '000010', name: 'Yusuf Maulana', position: 'Construction Superintendent', grade: 'L3', department: 'Construction', entity: 'AEC-MAR' },
+  ];
+  const employeeIdByNo = new Map<string, string>();
+  for (const e of employees) {
+    const employeeNumber = `EMP-${year}-${e.no}`;
+    const row = await prisma.employee.upsert({
+      where: { employeeNumber },
+      update: { name: e.name, position: e.position, grade: e.grade, department: e.department },
+      create: { employeeNumber, name: e.name, position: e.position, grade: e.grade, department: e.department, legalEntityId: entityByCode.get(e.entity ?? 'AEC-CON') ?? conId, status: 'ACTIVE' },
+    });
+    employeeIdByNo.set(e.no, row.id);
+  }
+  console.log(`[teams] Employees: ${employees.length}`);
+
+  // ── B. Jadwal proyek (isi tanggal yang kosong) + manager/director sebagai orang ──
+  // Rentang sengaja beragam (selesai, berjalan, akan datang) agar timeline bermakna.
+  const schedule: Record<string, { start: string; end: string; status?: 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CLOSED'; priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'; managerNo?: string; directorNo?: string }> = {
+    'PRJ-EPC-2027-014': { start: `${year - 1}-03-01`, end: `${year + 2}-09-30`, status: 'ACTIVE', priority: 'CRITICAL', managerNo: '000003', directorNo: '000001' },
+    'PRJ-EPC-2027-020': { start: `${year}-01-15`, end: `${year + 1}-08-31`, status: 'ACTIVE', priority: 'HIGH', managerNo: '000003', directorNo: '000001' },
+    'PRJ-EPC-2027-021': { start: `${year}-02-01`, end: `${year + 1}-02-28`, status: 'ACTIVE', priority: 'MEDIUM', managerNo: '000003', directorNo: '000001' },
+    'PRJ-EPC-2027-022': { start: `${year}-04-01`, end: `${year + 2}-03-31`, status: 'ACTIVE', priority: 'HIGH', managerNo: '000003', directorNo: '000001' },
+    'PRJ-EPC-2027-023': { start: `${year - 1}-06-01`, end: `${year + 1}-12-31`, status: 'ACTIVE', priority: 'CRITICAL', managerNo: '000003', directorNo: '000001' },
+    'PRJ-EPC-2027-024': { start: `${year}-03-01`, end: `${year + 1}-06-30`, status: 'ON_HOLD', priority: 'MEDIUM', managerNo: '000003', directorNo: '000001' },
+    'PRJ-EPC-2027-025': { start: `${year}-05-01`, end: `${year + 1}-10-31`, status: 'ACTIVE', priority: 'HIGH', managerNo: '000003', directorNo: '000001' },
+    'PRJ-EPC-2027-026': { start: `${year}-07-01`, end: `${year + 2}-06-30`, status: 'ACTIVE', priority: 'MEDIUM', managerNo: '000003', directorNo: '000001' },
+    'PRJ-EPC-2027-027': { start: `${year - 1}-09-01`, end: `${year + 1}-03-31`, status: 'ACTIVE', priority: 'HIGH', managerNo: '000003', directorNo: '000001' },
+    'PRJ-EPC-2027-028': { start: `${year - 2}-04-01`, end: `${year - 1}-11-30`, status: 'COMPLETED', priority: 'LOW', managerNo: '000003', directorNo: '000001' },
+    'PRJ-EPC-2027-029': { start: `${year + 1}-01-01`, end: `${year + 1}-06-30`, status: 'PLANNING', priority: 'LOW', managerNo: '000003' },
+    'PRJ-EPC-2027-030': { start: `${year + 1}-02-01`, end: `${year + 1}-08-31`, status: 'PLANNING', priority: 'LOW' },
+  };
+  const projects = await prisma.project.findMany({ select: { id: true, code: true, startDate: true, completionDate: true } });
+  let dated = 0;
+  const projectIdByCode = new Map<string, string>();
+  for (const p of projects) {
+    projectIdByCode.set(p.code, p.id);
+    const s = schedule[p.code];
+    if (!s) continue;
+    const data: Record<string, unknown> = {};
+    if (!p.startDate) data.startDate = d(s.start);
+    if (!p.completionDate) data.completionDate = d(s.end);
+    if (s.status) data.status = s.status;
+    if (s.priority) data.priority = s.priority;
+    if (s.managerNo && employeeIdByNo.get(s.managerNo)) data.managerId = employeeIdByNo.get(s.managerNo);
+    if (s.directorNo && employeeIdByNo.get(s.directorNo)) data.directorId = employeeIdByNo.get(s.directorNo);
+    if (Object.keys(data).length > 0) {
+      await prisma.project.update({ where: { id: p.id }, data });
+      if (!p.startDate || !p.completionDate) dated += 1;
+    }
+  }
+  console.log(`[teams] Projects dated: ${dated} (timeline hidup)`);
+
+  // ── C. Tim per proyek (assignment dengan role + alokasi) ──
+  const teamByProject: Record<string, Array<{ no: string; role: string; alloc: number; key?: boolean }>> = {
+    'PRJ-EPC-2027-014': [
+      { no: '000003', role: 'Project Manager', alloc: 60, key: true },
+      { no: '000004', role: 'Lead Site Engineer', alloc: 100, key: true },
+      { no: '000005', role: 'QA/QC Engineer', alloc: 50 },
+      { no: '000006', role: 'HSE Officer', alloc: 50 },
+      { no: '000008', role: 'Cost Engineer', alloc: 40 },
+      { no: '000009', role: 'Document Controller', alloc: 30 },
+    ],
+    'PRJ-EPC-2027-020': [
+      { no: '000010', role: 'Construction Superintendent', alloc: 80, key: true },
+      { no: '000004', role: 'Site Engineer', alloc: 40 },
+      { no: '000006', role: 'HSE Officer', alloc: 30 },
+    ],
+    'PRJ-EPC-2027-021': [
+      { no: '000004', role: 'Site Engineer', alloc: 60, key: true },
+      { no: '000007', role: 'Procurement Lead', alloc: 40 },
+    ],
+    'PRJ-EPC-2027-023': [
+      { no: '000010', role: 'Construction Superintendent', alloc: 60, key: true },
+      { no: '000005', role: 'QA/QC Engineer', alloc: 50 },
+      { no: '000008', role: 'Cost Engineer', alloc: 60, key: true },
+      { no: '000002', role: 'Project Controls Manager', alloc: 30 },
+    ],
+    'PRJ-EPC-2027-027': [
+      { no: '000004', role: 'Lead Site Engineer', alloc: 80, key: true },
+      { no: '000007', role: 'Procurement Lead', alloc: 30 },
+      { no: '000009', role: 'Document Controller', alloc: 40 },
+    ],
+  };
+  let assignments = 0;
+  for (const [code, team] of Object.entries(teamByProject)) {
+    const projectId = projectIdByCode.get(code);
+    if (!projectId) continue;
+    const s = schedule[code];
+    const start = d(s?.start ?? `${year}-01-01`);
+    for (const t of team) {
+      const employeeId = employeeIdByNo.get(t.no);
+      if (!employeeId) continue;
+      const existing = await prisma.projectAssignment.findFirst({ where: { employeeId, projectId, status: 'ACTIVE' } });
+      if (existing) continue;
+      await prisma.projectAssignment.create({
+        data: { employeeId, projectId, role: t.role, allocationPercent: t.alloc, startDate: start, isKeyMember: t.key ?? false },
+      });
+      assignments += 1;
+    }
+  }
+  console.log(`[teams] ProjectAssignment: +${assignments} (tim per proyek)`);
+}
+
 async function main() {
   const entity = await prisma.legalEntity.findUnique({ where: { code: 'AEC-CON' } });
   if (!entity) throw new Error('Seed base dulu: pnpm --filter @aec/api db:seed');
@@ -1252,6 +1385,9 @@ async function main() {
 
   // ── 13b. Portfolio multi-entitas (proyek, EVM baseline, inventory, funnel) ──
   await seedPortfolio();
+
+  // ── 13c. Tim proyek & jadwal (tanggal + assignment) ──
+  await seedProjectTeams();
 
   // ── 14. Workflow demo: versi (DRAFT/ACTIVE/ARCHIVED) + task tersebar ──
   // Tanpa ini, halaman Workflow hanya punya 1 versi ACTIVE dan seluruh task
