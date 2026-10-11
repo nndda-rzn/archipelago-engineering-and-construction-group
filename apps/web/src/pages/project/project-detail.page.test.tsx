@@ -19,12 +19,25 @@ vi.mock('@/entities/project', async () => {
   return {
     ...actual,
     useUpdateProject: () => ({ mutate: updateMutate, isPending: false, isError: false }),
+    useProjectActivity: () => ({ data: [{ id: 'a1', action: 'PROJECT.UPDATE', summary: 'Project details updated', actorId: 'u1', at: '2026-10-06T00:00:00.000Z' }], isLoading: false }),
+    useProjectTeam: () => ({
+      data: { items: [
+        { assignmentId: 'as1', employeeId: 'e1', name: 'Ahmad Fauzi', position: 'Project Manager', department: 'Construction', grade: 'L3', employeeNumber: 'EMP-1', role: 'Project Manager', allocationPercent: 60, startDate: '2026-01-01T00:00:00.000Z', endDate: null, isKeyMember: true, status: 'ACTIVE' },
+      ], total: 1, totalAllocation: 60 },
+      isLoading: false,
+    }),
+    useProjectEmployees: () => ({ data: [] }),
+    useAddProjectMember: () => ({ mutate: vi.fn(), isPending: false }),
+    useRemoveProjectMember: () => ({ mutate: vi.fn() }),
     useProject: () => ({
       data: {
         id: 'p1', code: 'PRJ-01', name: 'Alpha EPC', client: 'PT Klien', legalEntityId: 'le1',
         businessUnit: null, location: 'Karawang', currency: 'IDR', contractValue: 42_100_000_000,
         advanceAmount: 3_000_000_000, advanceRecoveryRate: 10, startDate: '2026-01-15T00:00:00.000Z',
         completionDate: '2027-08-30T00:00:00.000Z', director: 'Budi', manager: 'Andi', status: 'ACTIVE',
+        type: 'EPC', priority: 'HIGH',
+        managerRef: { id: 'e1', name: 'Andi Pratama', position: 'Project Manager' },
+        directorRef: { id: 'e2', name: 'Budi Santoso', position: 'Project Director' },
         createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
       },
       isLoading: false,
@@ -68,20 +81,13 @@ describe('ProjectDetailPage', () => {
     renderWithProviders(<ProjectDetailPage />);
     expect(screen.getByText('Alpha EPC')).toBeTruthy();
     expect(screen.getByText(/PRJ-01/)).toBeTruthy();
-    expect(screen.getByText(/Andi/)).toBeTruthy();
+    expect(screen.getByText('Andi Pratama')).toBeTruthy();
   });
 
-  it('renders a cost waterfall (Contract → Budget → Actual → Variance)', () => {
+  it('renders a cost waterfall (Contract → Budget → Actual → Variance) on Overview', () => {
     const { container } = renderWithProviders(<ProjectDetailPage />);
     const bars = container.querySelectorAll('[data-slot="waterfall-bar"]');
     expect(bars.length).toBe(4);
-  });
-
-  it('renders EVM bars with CPI and SPI', () => {
-    const { container } = renderWithProviders(<ProjectDetailPage />);
-    expect(container.querySelectorAll('[data-slot="evm-bar"]')).toHaveLength(3);
-    expect(screen.getByText('1.02')).toBeTruthy();
-    expect(screen.getByText('0.91')).toBeTruthy();
   });
 
   it('shows commitment as a nested breakdown within the budget', () => {
@@ -90,21 +96,44 @@ describe('ProjectDetailPage', () => {
     expect(screen.getByText(/Remaining/i)).toBeTruthy();
   });
 
-  it('renders the WBS breakdown table', () => {
+  it('exposes the five workspace tabs', () => {
     renderWithProviders(<ProjectDetailPage />);
-    expect(screen.getByText('Civil')).toBeTruthy();
+    const tabs = screen.getAllByRole('tab').map((t) => t.textContent);
+    expect(tabs).toEqual(['Overview', 'Team', 'Cost & EVM', 'WBS', 'Activity']);
   });
 
-  it('shows the forecast as figures, not a chart', () => {
+  it('renders EVM bars with CPI and SPI on the Cost & EVM tab', () => {
+    const { container } = renderWithProviders(<ProjectDetailPage />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Cost & EVM' }));
+    expect(container.querySelectorAll('[data-slot="evm-bar"]')).toHaveLength(3);
+    expect(screen.getByText('1.02')).toBeTruthy();
+    expect(screen.getByText('0.91')).toBeTruthy();
+  });
+
+  it('shows the forecast as figures, not a chart, on the Cost & EVM tab', () => {
     renderWithProviders(<ProjectDetailPage />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Cost & EVM' }));
     expect(screen.getByText(/EAC/i)).toBeTruthy();
     expect(screen.getByText(/VAC/i)).toBeTruthy();
   });
 
-  it('links to the sibling pages (WBS, budget, health, controls)', () => {
+  it('renders the WBS breakdown table on the WBS tab', () => {
     renderWithProviders(<ProjectDetailPage />);
-    expect(screen.getByRole('link', { name: /WBS/i }).getAttribute('href')).toContain('/wbs');
-    expect(screen.getByRole('link', { name: /Budget/i }).getAttribute('href')).toContain('/budget');
+    fireEvent.click(screen.getByRole('tab', { name: 'WBS' }));
+    expect(screen.getByText('Civil')).toBeTruthy();
+  });
+
+  it('shows the project team with allocation on the Team tab', () => {
+    renderWithProviders(<ProjectDetailPage />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Team' }));
+    expect(screen.getByText('Ahmad Fauzi')).toBeTruthy();
+    expect(screen.getByText('60%')).toBeTruthy();
+  });
+
+  it('renders the activity timeline on the Activity tab', () => {
+    renderWithProviders(<ProjectDetailPage />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
+    expect(screen.getByText('Project details updated')).toBeTruthy();
   });
 
   it('renders an entity avatar tile (a component, not just text)', () => {
@@ -118,32 +147,21 @@ describe('ProjectDetailPage', () => {
     const { container } = renderWithProviders(<ProjectDetailPage />);
     const header = container.querySelector('header');
     expect(header).not.toBeNull();
-    // Label ada sebagai elemen sendiri (bukan dijejalkan dalam satu kalimat).
     const labels = Array.from(header!.querySelectorAll('dt')).map((el) => el.textContent);
-    expect(labels).toEqual(expect.arrayContaining(['Client', 'Manager', 'Director', 'Schedule', 'Legal entity', 'Currency', 'Location', 'Budget used']));
-    // …dan tidak ada lagi kalimat berjalan dengan pemisah middot.
-    expect(header?.textContent).not.toMatch(/Manager Andi ·/);
-    expect(header?.textContent).not.toMatch(/Director Budi ·/);
+    expect(labels).toEqual(expect.arrayContaining(['Project manager', 'Director', 'Schedule', 'Location']));
   });
 
-  it('puts the status pill on the same row as the title', () => {
+  it('puts the status on the same row as the title', () => {
     const { container } = renderWithProviders(<ProjectDetailPage />);
-    const row = container.querySelector('[data-slot="title-row"]');
-    expect(row?.querySelector('h1')).not.toBeNull();
-    expect(row?.textContent).toMatch(/At Risk/);
+    const header = container.querySelector('header');
+    expect(header?.querySelector('h1')).not.toBeNull();
+    expect(header?.textContent).toMatch(/At Risk/);
   });
 
   it('keeps a single h1 and puts the edit action inside the header', () => {
     const { container } = renderWithProviders(<ProjectDetailPage />);
     expect(container.querySelectorAll('h1')).toHaveLength(1);
     expect(container.querySelector('header')?.querySelector('button')).not.toBeNull();
-  });
-
-  it('renders related-page navigation as chips in a separate nav', () => {
-    const { container } = renderWithProviders(<ProjectDetailPage />);
-    const nav = container.querySelector('nav[aria-label="Related pages"]');
-    expect(nav).not.toBeNull();
-    expect(nav?.querySelectorAll('a').length).toBe(4);
   });
 
   it('offers a back link to the project list', () => {

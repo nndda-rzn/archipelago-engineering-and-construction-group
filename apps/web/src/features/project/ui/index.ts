@@ -3,6 +3,7 @@ export * from './project-controls-forms';
 export { projectColumns } from './project-list-grid';
 export { ProjectTableView, ProjectCardView, ProjectTimelineView, timelineScale, budgetUsedLabel, type RegisterRow } from './project-views';
 export { ProjectForm } from './project-list-form';
+export { ProjectTeamBand } from './project-team-band';
 export { WbsTree } from './wbs-tree';
 export { WbsForm } from './wbs-form';
 export { BudgetRow } from './budget-row';
