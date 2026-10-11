@@ -104,6 +104,29 @@ export async function patchJson<T>(path: string, body: unknown): Promise<T> {
   return res.text().then((text) => JSON.parse(text, jsonReviver)) as Promise<T>;
 }
 
+/** Sama seperti `postJson`, tetapi memakai method PUT (replace menyeluruh). */
+export async function putJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'PUT',
+    headers: { ...AUTH_HEADERS(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    if (res.status === 401) handleUnauthorized();
+    const errBody = (await res.json().catch(() => null)) as {
+      error?: { code?: string; message?: string; correlationId?: string };
+    } | null;
+    throw new ApiError(
+      errBody?.error?.message ?? `Request failed: ${res.status}`,
+      errBody?.error?.code ?? 'HTTP_ERROR',
+      errBody?.error?.correlationId,
+    );
+  }
+
+  return res.text().then((text) => JSON.parse(text, jsonReviver)) as Promise<T>;
+}
+
 /** Sama seperti `postJson`, tetapi memakai method DELETE. */
 export async function deleteJson<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, { method: 'DELETE', headers: AUTH_HEADERS() });
