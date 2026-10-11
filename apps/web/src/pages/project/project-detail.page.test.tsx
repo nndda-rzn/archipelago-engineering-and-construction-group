@@ -20,6 +20,49 @@ vi.mock('@/entities/project', async () => {
     ...actual,
     useUpdateProject: () => ({ mutate: updateMutate, isPending: false, isError: false }),
     useProjectActivity: () => ({ data: [{ id: 'a1', action: 'PROJECT.UPDATE', summary: 'Project details updated', actorId: 'u1', at: '2026-10-06T00:00:00.000Z' }], isLoading: false }),
+    useProjectSummary: () => ({
+      data: {
+        project: { id: 'p1', code: 'PRJ-01', name: 'Alpha EPC', client: 'PT Klien', status: 'ACTIVE', phase: 'CONSTRUCTION', healthStatus: 'AT_RISK', type: 'EPC', priority: 'HIGH', currency: 'IDR', location: 'Karawang', legalEntityCode: 'LE-AEC', manager: { id: 'e1', name: 'Andi Pratama', position: 'PM' }, director: { id: 'e2', name: 'Budi', position: 'Director' }, startDate: '2026-01-15T00:00:00.000Z', completionDate: '2027-08-30T00:00:00.000Z' },
+        schedule: { progressPlanned: 55, progressActual: 48, variance: -7, milestoneTotal: 5, milestoneAchieved: 4, milestoneMissed: 1, gateHold: 0 },
+        cost: { contractValue: 42_100_000_000, budget: 38_000_000_000, committed: 13_300_000_000, actual: 27_400_000_000, certified: 20_000_000_000, billed: 18_000_000_000, collected: 12_000_000_000, cpi: 0.99 },
+        signals: [
+          { key: 'schedule', label: 'Schedule', value: -7, unit: 'pts', tone: 'warn' },
+          { key: 'cpi', label: 'CPI', value: 0.99, unit: '', tone: 'warn' },
+          { key: 'risk', label: 'Open risks', value: 3, unit: '', tone: 'warn' },
+        ],
+        domains: {
+          commercial: { contract: 1, progressClaim: 20_000_000_000, clientInvoice: 18_000_000_000, collection: 12_000_000_000, variation: 2 },
+          procurement: { pr: 3, po: 2, vendorInvoice: 4, subcontract: 1 },
+          execution: { workPackage: 1, dailyReport: 3 },
+          quality: { ncrOpen: 2, punchOpen: 0 },
+          hse: { incidentOpen: 1 },
+          governance: { riskOpen: 3, gateHold: 0 },
+          engineering: { drawing: 2, deliverable: 1 },
+        },
+        generatedAt: '',
+      },
+      isLoading: false,
+    }),
+    useProjectSchedule: () => ({
+      data: {
+        progressPlanned: 55, progressActual: 48,
+        plannedCurve: [{ period: '2026-Q1', planned: 100, plannedCumulative: 100, plannedPct: 25 }, { period: '2026-Q2', planned: 300, plannedCumulative: 400, plannedPct: 100 }],
+        milestones: [{ id: 'm1', name: 'Design Freeze', plannedDate: '2026-03-01T00:00:00.000Z', actualDate: null, status: 'PLANNED', weight: 20, isCritical: true, notes: null }],
+        phases: [{ phase: 'INITIATION', enteredAt: '2026-01-01T00:00:00.000Z', exitedAt: null, note: null }],
+        gates: [{ id: 'g1', gate: 'G2 Engineering', phase: 'ENGINEERING', decision: 'GO', decidedAt: '2026-03-01T00:00:00.000Z', notes: null }],
+      },
+      isLoading: false,
+    }),
+    useProjectCashFlow: () => ({
+      data: { projectId: 'p1', chain: [
+        { key: 'contract', label: 'Contract', value: 42_100_000_000 }, { key: 'budget', label: 'Budget', value: 38_000_000_000 },
+        { key: 'committed', label: 'Committed', value: 13_300_000_000 }, { key: 'actual', label: 'Actual', value: 27_400_000_000 },
+        { key: 'billed', label: 'Billed', value: 18_000_000_000 }, { key: 'collected', label: 'Collected', value: 12_000_000_000 },
+      ], generatedAt: '' },
+      isLoading: false,
+    }),
+    useProjectStakeholders: () => ({ data: [{ id: 's1', name: 'Budi Santoso', role: 'Project Sponsor', raci: 'ACCOUNTABLE', employeeId: null, email: null, phone: null, isPrimary: true }], isLoading: false }),
+    useAdvancePhase: () => ({ mutate: vi.fn(), isPending: false }),
     useProjectTeam: () => ({
       data: { items: [
         { assignmentId: 'as1', employeeId: 'e1', name: 'Ahmad Fauzi', position: 'Project Manager', department: 'Construction', grade: 'L3', employeeNumber: 'EMP-1', role: 'Project Manager', allocationPercent: 60, startDate: '2026-01-01T00:00:00.000Z', endDate: null, isKeyMember: true, status: 'ACTIVE' },
@@ -90,16 +133,38 @@ describe('ProjectDetailPage', () => {
     expect(bars.length).toBe(4);
   });
 
-  it('shows commitment as a nested breakdown within the budget', () => {
+  it('shows commitment as a nested breakdown within the budget, on the Cost tab', () => {
     const { container } = renderWithProviders(<ProjectDetailPage />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Cost & EVM' }));
     expect(container.querySelector('[data-slot="commitment"]')).toBeTruthy();
     expect(screen.getByText(/Remaining/i)).toBeTruthy();
   });
 
-  it('exposes the five workspace tabs', () => {
+  it('exposes the seven workspace tabs', () => {
     renderWithProviders(<ProjectDetailPage />);
     const tabs = screen.getAllByRole('tab').map((t) => t.textContent);
-    expect(tabs).toEqual(['Overview', 'Team', 'Cost & EVM', 'WBS', 'Activity']);
+    expect(tabs).toEqual(['Overview', 'Schedule', 'Commercial', 'Procurement', 'Cost & EVM', 'Team', 'Activity']);
+  });
+
+  it('renders the lifecycle phase ribbon and at-a-glance signals', () => {
+    const { container } = renderWithProviders(<ProjectDetailPage />);
+    expect(container.querySelectorAll('[data-slot="phase-bar"]').length).toBeGreaterThan(0);
+    expect(screen.getByLabelText('Project at a glance')).toBeTruthy();
+    expect(screen.getAllByText('Schedule').length).toBeGreaterThan(0);
+  });
+
+  it('renders the S-curve and milestones on the Schedule tab', () => {
+    const { container } = renderWithProviders(<ProjectDetailPage />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Schedule' }));
+    expect(screen.getByLabelText(/S-curve:/)).toBeTruthy();
+    expect(screen.getByLabelText(/Milestones:/)).toBeTruthy();
+    expect(container.querySelectorAll('[data-slot="milestone-dot"]').length).toBeGreaterThan(0);
+  });
+
+  it('shows the cash chain on the Overview tab', () => {
+    const { container } = renderWithProviders(<ProjectDetailPage />);
+    expect(container.querySelectorAll('[data-slot="cash-bar"]').length).toBe(6);
+    expect(screen.getByText('Collected')).toBeTruthy();
   });
 
   it('renders EVM bars with CPI and SPI on the Cost & EVM tab', () => {
@@ -117,10 +182,11 @@ describe('ProjectDetailPage', () => {
     expect(screen.getByText(/VAC/i)).toBeTruthy();
   });
 
-  it('renders the WBS breakdown table on the WBS tab', () => {
+  it('shows commercial domain tiles on the Commercial tab', () => {
     renderWithProviders(<ProjectDetailPage />);
-    fireEvent.click(screen.getByRole('tab', { name: 'WBS' }));
-    expect(screen.getByText('Civil')).toBeTruthy();
+    fireEvent.click(screen.getByRole('tab', { name: 'Commercial' }));
+    expect(screen.getByText('Progress claims')).toBeTruthy();
+    expect(screen.getByText('Client invoices')).toBeTruthy();
   });
 
   it('shows the project team with allocation on the Team tab', () => {

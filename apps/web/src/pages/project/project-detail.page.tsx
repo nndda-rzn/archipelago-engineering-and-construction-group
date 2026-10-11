@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Link, useParams } from '@tanstack/react-router';
 import { ArrowLeft } from 'lucide-react';
-import { Button, cn, EmptyState, EntityAvatar, ErrorState, EvmBars, Skeleton, StatusBadge, Waterfall, humanizeCode } from '@aec/ui';
-import { useProject, useProjectActivity } from '@/entities/project';
+import { Button, cn, EntityAvatar, ErrorState, EvmBars, Skeleton, StatusBadge, Waterfall, humanizeCode } from '@aec/ui';
+import { useProject, useProjectActivity, useProjectSummary, useProjectSchedule, useProjectCashFlow, useProjectStakeholders, useAdvancePhase } from '@/entities/project';
 import { useCommitment, useEvm, useForecasts, useProjectHealth } from '@/features/project';
-import { HealthTable } from '@/features/project/ui';
 import { CommitmentBar } from '@/features/project/ui/commitment-bar';
 import { ProjectEditForm } from '@/features/project/ui/project-edit-form';
 import { ProjectTeamBand } from '@/features/project/ui/project-team-band';
+import { PhaseRibbon } from '@/features/project/ui/phase-ribbon';
+import { GlanceStrip, SCurve, MilestoneBand, CashChain } from '@/features/project/ui/project-command-center';
 import { healthLabel } from '@/features/project/ui/health-summary';
 import { formatIdr } from '@/shared/lib/format';
 
@@ -24,7 +25,7 @@ const PRIORITY_TONE: Record<string, string> = {
   CRITICAL: 'border-destructive-200 bg-destructive-50 text-destructive-700',
 };
 
-type Tab = 'overview' | 'team' | 'cost' | 'wbs' | 'activity';
+type Tab = 'overview' | 'schedule' | 'commercial' | 'procurement' | 'cost' | 'team' | 'activity';
 
 export function ProjectDetailPage() {
   const { projectId } = useParams({ strict: false }) as { projectId: string };
@@ -34,6 +35,11 @@ export function ProjectDetailPage() {
   const commitment = useCommitment(projectId);
   const forecasts = useForecasts(projectId);
   const activity = useProjectActivity(projectId);
+  const summary = useProjectSummary(projectId);
+  const schedule = useProjectSchedule(projectId);
+  const cashFlow = useProjectCashFlow(projectId);
+  const stakeholders = useProjectStakeholders(projectId);
+  const advance = useAdvancePhase(projectId);
   const [editing, setEditing] = useState(false);
   const [tab, setTab] = useState<Tab>('overview');
 
@@ -61,15 +67,18 @@ export function ProjectDetailPage() {
 
   const h = health.data;
   const p = project.data;
+  const s = summary.data;
   const forecast = forecasts.data?.items[0];
   const manager = p?.managerRef as { name: string; position: string | null } | undefined;
   const director = p?.directorRef as { name: string; position: string | null } | undefined;
 
   const tabs: Array<{ id: Tab; label: string }> = [
     { id: 'overview', label: 'Overview' },
-    { id: 'team', label: 'Team' },
+    { id: 'schedule', label: 'Schedule' },
+    { id: 'commercial', label: 'Commercial' },
+    { id: 'procurement', label: 'Procurement' },
     { id: 'cost', label: 'Cost & EVM' },
-    { id: 'wbs', label: 'WBS' },
+    { id: 'team', label: 'Team' },
     { id: 'activity', label: 'Activity' },
   ];
 
@@ -105,7 +114,14 @@ export function ProjectDetailPage() {
           </div>
         </div>
 
-        <dl className="mt-5 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 xl:grid-cols-4">
+        {/* Fase siklus hidup */}
+        {s && (
+          <div className="mt-4">
+            <PhaseRibbon phase={s.project.phase} gates={schedule.data?.gates ?? []} />
+          </div>
+        )}
+
+        <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 xl:grid-cols-4">
           <div className="min-w-0">
             <dt className="text-overline uppercase text-neutral-500">Project manager</dt>
             <dd className="mt-0.5 truncate text-body-sm text-neutral-800" title={manager?.name}>{manager?.name ?? p?.manager ?? '—'}</dd>
@@ -124,6 +140,9 @@ export function ProjectDetailPage() {
           </div>
         </dl>
       </header>
+
+      {/* At a glance */}
+      {s && <GlanceStrip signals={s.signals} />}
 
       {editing && p && (
         <ProjectEditForm
@@ -155,6 +174,10 @@ export function ProjectDetailPage() {
         {tab === 'overview' && (
           <div className="grid gap-6 xl:grid-cols-2">
             <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Cash chain</h2>
+              {cashFlow.data ? <CashChain cashFlow={cashFlow.data} /> : <Skeleton className="h-32 w-full" />}
+            </section>
+            <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
               <h2 className="mb-3 text-overline uppercase text-neutral-500">Cost position</h2>
               <Waterfall contract={h.contractValue} budget={h.totalBudget} actual={h.totalActual} format={formatIdr} />
               <p className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-body-sm text-neutral-600">
@@ -163,20 +186,66 @@ export function ProjectDetailPage() {
                 <span>Revenue <span className="font-mono tabular-nums text-neutral-800">{formatIdr(h.revenue)}</span></span>
               </p>
             </section>
+          </div>
+        )}
+
+        {tab === 'schedule' && (
+          <div className="flex flex-col gap-6">
             <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-              <h2 className="mb-3 text-overline uppercase text-neutral-500">Commitment</h2>
-              {commitment.data ? (
-                <CommitmentBar po={commitment.data.poCommitment} subcontract={commitment.data.subcontractCommitment} budget={commitment.data.totalBudget} remaining={commitment.data.remainingBudget} />
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Progress (S-curve)</h2>
+              {schedule.data ? <SCurve schedule={schedule.data} /> : <Skeleton className="h-40 w-full" />}
+            </section>
+            <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Milestones</h2>
+              {schedule.data ? <MilestoneBand schedule={schedule.data} /> : <Skeleton className="h-40 w-full" />}
+            </section>
+            <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Phase history &amp; gates</h2>
+              {schedule.data && schedule.data.gates.length > 0 ? (
+                <ol className="flex flex-col gap-2">
+                  {schedule.data.gates.map((g) => (
+                    <li key={g.id} className="flex items-center gap-3 text-body-sm">
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${g.decision === 'GO' ? 'bg-success-500' : g.decision === 'HOLD' ? 'bg-warning-500' : 'bg-destructive-500'}`} aria-hidden="true" />
+                      <span className="font-mono text-caption text-neutral-500">{g.decidedAt?.slice(0, 10) ?? '—'}</span>
+                      <span className="text-neutral-800">{g.gate}</span>
+                      <span className="ml-auto rounded border border-neutral-200 px-1.5 py-px text-caption text-neutral-600">{g.decision}</span>
+                    </li>
+                  ))}
+                </ol>
               ) : (
-                <p className="text-body-sm text-neutral-500">No commitments recorded.</p>
+                <p className="text-body-sm text-neutral-500">No gate decisions recorded.</p>
               )}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {(['PROCUREMENT', 'CONSTRUCTION', 'COMMISSIONING', 'CLOSEOUT'] as const).map((ph) => (
+                  <Button
+                    key={ph} size="sm" variant="secondary"
+                    disabled={s?.project.phase === ph || advance.isPending}
+                    onClick={() => advance.mutate({ phase: ph, decision: 'GO' })}
+                  >
+                    Advance to {ph.charAt(0) + ph.slice(1).toLowerCase()}
+                  </Button>
+                ))}
+              </div>
             </section>
           </div>
         )}
 
-        {tab === 'team' && (
-          <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-            <ProjectTeamBand projectId={projectId} />
+        {tab === 'commercial' && s && (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <DomainTile label="Contracts" value={s.domains.commercial.contract} href="/commercial" />
+            <DomainTile label="Progress claims" value={s.domains.commercial.progressClaim} format={formatIdr} href="/finance/progress-claims" />
+            <DomainTile label="Client invoices" value={s.domains.commercial.clientInvoice} format={formatIdr} href="/finance/client-invoices" />
+            <DomainTile label="Collected" value={s.domains.commercial.collection} format={formatIdr} href="/finance/collections" />
+            <DomainTile label="Variation orders" value={s.domains.commercial.variation} href="/finance/variations" />
+          </div>
+        )}
+
+        {tab === 'procurement' && s && (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <DomainTile label="Purchase requisitions" value={s.domains.procurement.pr} href="/procurement/pr" />
+            <DomainTile label="Purchase orders" value={s.domains.procurement.po} href="/procurement/po" />
+            <DomainTile label="Vendor invoices" value={s.domains.procurement.vendorInvoice} href="/finance/vendor-invoices" />
+            <DomainTile label="Subcontracts" value={s.domains.procurement.subcontract} href="/finance/subcontracts" />
           </div>
         )}
 
@@ -187,27 +256,45 @@ export function ProjectDetailPage() {
               {evm.data ? <EvmBars metrics={evm.data.metrics} format={formatIdr} /> : <p className="text-body-sm text-neutral-500">No earned-value baseline for this project.</p>}
             </section>
             <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-              <h2 className="mb-3 text-overline uppercase text-neutral-500">Forecast</h2>
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Commitment &amp; forecast</h2>
+              {commitment.data ? (
+                <CommitmentBar po={commitment.data.poCommitment} subcontract={commitment.data.subcontractCommitment} budget={commitment.data.totalBudget} remaining={commitment.data.remainingBudget} />
+              ) : (
+                <p className="text-body-sm text-neutral-500">No commitments recorded.</p>
+              )}
               {forecast ? (
-                <p className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-body-sm text-neutral-700">
+                <p className="mt-4 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-body-sm text-neutral-700">
                   <span>EAC <span className="font-mono tabular-nums text-neutral-900">{formatIdr(forecast.estimateAtCompletion)}</span></span>
-                  <span>ETC <span className="font-mono tabular-nums text-neutral-900">{formatIdr(forecast.estimateToComplete)}</span></span>
                   <span>VAC <span className={`font-mono tabular-nums ${forecast.varianceAtCompletion >= 0 ? 'text-financial-positive-600' : 'text-financial-negative-600'}`}>{formatIdr(forecast.varianceAtCompletion)}</span></span>
                   <StatusBadge status={forecast.status} label={`v${forecast.version}`} />
                 </p>
-              ) : (
-                <p className="text-body-sm text-neutral-500">No forecast yet for this project.</p>
-              )}
+              ) : null}
             </section>
           </div>
         )}
 
-        {tab === 'wbs' && (
-          h.wbs.length === 0 ? (
-            <EmptyState title="No WBS yet" description="Define work breakdown items to track budget per deliverable." action={<Link to="/wbs" search={{ project: projectId } as never} className="text-body-sm text-neutral-700 underline">Go to WBS →</Link>} />
-          ) : (
-            <HealthTable data={h} />
-          )
+        {tab === 'team' && (
+          <div className="flex flex-col gap-6">
+            <div className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+              <ProjectTeamBand projectId={projectId} />
+            </div>
+            {stakeholders.data && stakeholders.data.length > 0 && (
+              <section aria-label="Stakeholders" className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
+                <h2 className="mb-3 text-overline uppercase text-neutral-500">Stakeholders (RACI)</h2>
+                <ul className="flex flex-col divide-y divide-neutral-100">
+                  {stakeholders.data.map((st) => (
+                    <li key={st.id} className="flex items-center gap-3 py-2">
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-body-sm font-medium text-neutral-900">{st.name}</span>
+                        <span className="block truncate text-caption text-neutral-500">{st.role}</span>
+                      </span>
+                      <span className="shrink-0 rounded border border-neutral-200 px-1.5 py-px text-caption text-neutral-600" title={st.raci}>{st.raci}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
         )}
 
         {tab === 'activity' && (
@@ -231,3 +318,15 @@ export function ProjectDetailPage() {
     </div>
   );
 }
+
+/** Kartu domain: angka besar + label + tautan ke halaman domainnya. */
+function DomainTile({ label, value, format, href }: { label: string; value: number; format?: (n: number) => string; href: string }) {
+  return (
+    <Link to={href} className="group flex flex-col gap-1 rounded-md border border-neutral-200 bg-white p-4 shadow-xs transition-colors duration-fast hover:border-neutral-300">
+      <span className="text-overline uppercase text-neutral-500">{label}</span>
+      <span className="font-mono text-metric tabular-nums text-neutral-950">{format ? format(value) : value}</span>
+      <span className="text-caption text-neutral-400 group-hover:text-neutral-700">Open →</span>
+    </Link>
+  );
+}
+
