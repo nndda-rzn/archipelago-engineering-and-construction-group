@@ -190,9 +190,11 @@ export function Lollipop({ title, data, format = money }: { title: string; data:
           <li key={d.key} className="grid grid-cols-[8rem_1fr_auto] items-center gap-3">
             <span className="truncate text-caption text-neutral-600" title={d.key}>{d.key}</span>
             <span role="img" aria-label={`${d.key}: ${format(d.value)}`} className="relative h-3">
-              <span className="absolute top-1/2 h-px w-full -translate-y-1/2" style={{ backgroundColor: CHART.grid }} aria-hidden="true" />
-              <span className="absolute top-1/2 h-0.5 -translate-y-1/2" style={{ width: `${(d.value / max) * 100}%`, backgroundColor: catColor(i) }} aria-hidden="true" />
-              <span className="absolute top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full" style={{ left: `calc(${(d.value / max) * 100}% - 5px)`, backgroundColor: catColor(i) }} aria-hidden="true" />
+              <span className="absolute inset-y-0 left-0 right-2 overflow-hidden">
+                <span className="absolute top-1/2 h-px w-full -translate-y-1/2" style={{ backgroundColor: CHART.grid }} aria-hidden="true" />
+                <span className="absolute top-1/2 h-0.5 -translate-y-1/2" style={{ width: `${(d.value / max) * 100}%`, backgroundColor: catColor(i) }} aria-hidden="true" />
+                <span className="absolute top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full" style={{ left: `calc(${(d.value / max) * 100}% - 5px)`, backgroundColor: catColor(i) }} aria-hidden="true" />
+              </span>
             </span>
             <span className="text-right font-mono text-caption tabular-nums text-neutral-700">{format(d.value)}</span>
           </li>
@@ -220,18 +222,27 @@ export function FunnelSteps({ title, steps, format = money }: { title: string; s
   return (
     <section aria-label={title} className="flex flex-col gap-2">
       <h3 className="text-overline uppercase text-neutral-500">{title}</h3>
-      <div role="img" aria-label={steps.map((s) => `${s.key} ${format(s.value)}`).join(', ')} className="flex flex-col items-center gap-1">
+      <div role="img" aria-label={steps.map((s) => `${s.key} ${format(s.value)}`).join(', ')} className="flex min-w-0 flex-col gap-1.5">
         {steps.map((s, i) => {
-          const w = Math.max(8, (s.value / first) * 100);
+          // Lebar proporsional; langkah bernilai 0 tidak digambar sebagai bar
+          // minimum palsu — hanya jejak kosong dengan angka 0.
+          const zero = s.value <= 0;
+          const w = zero ? 0 : Math.max(6, (s.value / first) * 100);
           return (
-            <div key={s.key} className="flex w-full items-center justify-center gap-3">
-              <span className="w-24 shrink-0 truncate text-right text-caption text-neutral-600">{s.key}</span>
-              <span className="flex flex-1 justify-center">
-                <span className="flex h-6 items-center justify-center rounded-sm text-caption text-white" style={{ width: `${w}%`, backgroundColor: i === 0 ? CHART.strong : i === steps.length - 1 ? CHART.positive : catColor(i) }}>
-                  {w > 22 ? format(s.value) : ''}
-                </span>
+            <div key={s.key} className="grid min-w-0 grid-cols-[6rem_minmax(0,1fr)_auto] items-center gap-3">
+              <span className="truncate text-caption text-neutral-600" title={s.key}>{s.key}</span>
+              <span className="relative h-6 min-w-0 rounded-sm bg-neutral-100">
+                {!zero && (
+                  <span
+                    data-slot="funnel-bar"
+                    className="absolute inset-y-0 left-0 rounded-sm"
+                    style={{ width: `${w}%`, backgroundColor: i === 0 ? CHART.strong : i === steps.length - 1 ? CHART.positive : catColor(i) }}
+                  />
+                )}
               </span>
-              <span className="w-24 shrink-0 text-right font-mono text-caption tabular-nums text-neutral-700">{format(s.value)}</span>
+              <span className={`shrink-0 text-right font-mono text-caption tabular-nums ${zero ? 'text-neutral-400' : 'text-neutral-700'}`} title={format(s.value)}>
+                {format(s.value)}
+              </span>
             </div>
           );
         })}
@@ -283,17 +294,19 @@ export function CalendarHeatmap({ title, days }: { title: string; days: Array<{ 
     <section aria-label={title} className="flex flex-col gap-2">
       <h3 className="text-overline uppercase text-neutral-500">{title}</h3>
       <div className="overflow-x-auto">
-        <div className="relative inline-flex gap-0.5 pt-4">
+        <div className="relative w-max min-w-full pt-4">
           {monthLabels.map((m, i) => (
-            <span key={`${m.label}-${i}`} className="absolute top-0 text-caption text-neutral-400" style={{ left: m.col * 12 }}>{m.label}</span>
+            <span key={`${m.label}-${i}`} className="absolute top-0 whitespace-nowrap text-caption text-neutral-400" style={{ left: m.col * 12 }}>{m.label}</span>
           ))}
-          {weeks.map((week, ci) => (
-            <div key={ci} className="flex flex-col gap-0.5">
-              {week.map((cell, ri) => (
-                <span key={ri} data-slot="cal-cell" className="h-2.5 w-2.5 rounded-[2px]" style={{ backgroundColor: cell ? shade(cell.count) : 'transparent' }} title={cell ? `${cell.date}: ${cell.count}` : undefined} />
-              ))}
-            </div>
-          ))}
+          <div className="flex gap-0.5">
+            {weeks.map((week, ci) => (
+              <div key={ci} className="flex flex-col gap-0.5">
+                {week.map((cell, ri) => (
+                  <span key={ri} data-slot="cal-cell" className="h-2.5 w-2.5 rounded-[2px]" style={{ backgroundColor: cell ? shade(cell.count) : 'transparent' }} title={cell ? `${cell.date}: ${cell.count}` : undefined} />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>

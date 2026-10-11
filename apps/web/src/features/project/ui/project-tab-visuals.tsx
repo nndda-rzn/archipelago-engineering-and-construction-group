@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { RiskHeatmap } from '@aec/ui';
 import type { ProjectSchedule, ProjectSummary, ProjectGantt } from '@aec/api-contracts';
-import { formatIdr } from '@/shared/lib/format';
+import { formatIdrCompact } from '@/shared/lib/format';
 import { AreaTrend, CalendarHeatmap, Donut, FunnelSteps, Lollipop, RadarProfile, TreemapChart } from '@/shared/charts';
 
 const MIX_LABEL: Record<string, string> = {
@@ -59,7 +59,7 @@ export function HealthRadar({ summary }: { summary: ProjectSummary }) {
   return <RadarProfile title="Project health (higher is healthier)" axes={axes} format={(n) => `${Math.round(n)}`} />;
 }
 
-/** Aliran penagihan sebagai funnel bertahap. */
+/** Aliran penagihan sebagai funnel bertahap (nilai ringkas agar tak meluber). */
 export function BillingFunnel({ summary }: { summary: ProjectSummary }) {
   const { contractValue } = summary.cost;
   const b = summary.analytics.billing;
@@ -69,7 +69,7 @@ export function BillingFunnel({ summary }: { summary: ProjectSummary }) {
     { key: 'Billed', value: b.billed },
     { key: 'Collected', value: b.collected },
   ];
-  return <FunnelSteps title="Billing flow" steps={steps} format={formatIdr} />;
+  return <FunnelSteps title="Billing flow" steps={steps} format={formatIdrCompact} />;
 }
 
 /**
@@ -97,12 +97,12 @@ export function SCurveCompare({ schedule }: { schedule: ProjectSchedule }) {
 
 /** Belanja per vendor sebagai treemap (komposisi proporsional). */
 export function VendorTreemap({ data }: { data: Array<{ key: string; value: number }> }) {
-  return <TreemapChart title="Spend by vendor" data={data} format={formatIdr} />;
+  return <TreemapChart title="Spend by vendor" data={data} format={formatIdrCompact} />;
 }
 
 /** Ranking vendor sebagai lollipop. */
 export function VendorRanking({ data }: { data: Array<{ key: string; value: number }> }) {
-  return <Lollipop title="Top vendors by value" data={data} format={formatIdr} />;
+  return <Lollipop title="Top vendors by value" data={data} format={formatIdrCompact} />;
 }
 
 /** Tren NCR/HSE per periode (garis ber-sumbu). */
