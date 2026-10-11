@@ -3,7 +3,7 @@ import {
   addProjectMemberSchema, createProjectSchema, projectActivitySchema, projectListResponseSchema,
   projectRegisterSchema, projectSchema, projectStatsSchema, projectTeamSchema, updateProjectMetaSchema,
   personRefSchema, updateProjectSchema, projectSummarySchema, projectScheduleSchema, projectCashFlowSchema,
-  projectStakeholderSchema, createMilestoneSchema, advancePhaseSchema, projectDomainsSchema,
+  projectStakeholderSchema, createMilestoneSchema, advancePhaseSchema, projectDomainsSchema, projectGanttSchema,
   type AddProjectMember, type CreateProject, type UpdateProject, type UpdateProjectMeta, type CreateMilestone, type AdvancePhase,
 } from '@aec/api-contracts';
 import { getJson, patchJson, postJson, deleteJson } from '@/shared/lib/http';
@@ -196,6 +196,14 @@ export function useProjectDomains(id: string) {
   return useQuery({
     queryKey: [...projectKeys.all, 'domains', id] as const,
     queryFn: async () => projectDomainsSchema.parse(await getJson<unknown>(`/projects/${id}/domains`)),
+    enabled: !!id,
+  });
+}
+
+export function useProjectGantt(id: string) {
+  return useQuery({
+    queryKey: [...projectKeys.all, 'gantt', id] as const,
+    queryFn: async () => projectGanttSchema.parse(await getJson<unknown>(`/projects/${id}/gantt`)),
     enabled: !!id,
   });
 }

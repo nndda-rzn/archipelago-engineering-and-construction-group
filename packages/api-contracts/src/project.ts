@@ -589,6 +589,30 @@ export const projectStakeholderSchema = z.object({
 });
 export type ProjectStakeholder = z.infer<typeof projectStakeholderSchema>;
 
+export const ganttRowSchema = z.object({
+  id: z.string(),
+  group: z.string(),
+  label: z.string(),
+  start: z.string(),
+  end: z.string().nullable(),
+  progress: z.number().nullable(),
+  isCriticalPath: z.boolean(),
+  baselineStart: z.string().nullable(),
+  baselineEnd: z.string().nullable(),
+  milestone: z.boolean().optional(),
+  status: z.string().optional(),
+});
+export type GanttRow = z.infer<typeof ganttRowSchema>;
+
+export const projectGanttSchema = z.object({
+  projectId: z.string(),
+  startDate: z.string().nullable(),
+  completionDate: z.string().nullable(),
+  rows: z.array(ganttRowSchema),
+  links: z.array(z.object({ from: z.string(), to: z.string(), type: z.string(), lagDays: z.number() })),
+});
+export type ProjectGantt = z.infer<typeof projectGanttSchema>;
+
 export const createMilestoneSchema = z.object({
   name: z.string().min(2).max(200),
   plannedDate: z.string(),

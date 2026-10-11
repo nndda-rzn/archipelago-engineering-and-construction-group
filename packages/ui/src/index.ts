@@ -1,4 +1,5 @@
 export { cn } from './lib/cn';
+export { ICON_STROKE, ICON_SIZE } from './lib/icon';
 export {
   humanizeCode,
   labelResource,
