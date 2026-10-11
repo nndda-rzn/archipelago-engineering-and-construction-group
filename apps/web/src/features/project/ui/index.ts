@@ -10,6 +10,7 @@ export { DomainGroup, DomainSignals } from './project-domains';
 export { MixDonut, ProjectRiskHeatmap, HealthRadar, BillingFunnel, SCurveCompare, VendorTreemap, VendorRanking, TrendArea, ReportsCalendar } from './project-tab-visuals';
 export { ProjectGanttView } from './project-gantt-view';
 export { WbsTree } from './wbs-tree';
+export { WbsInspector } from './wbs-inspector';
 export { WbsForm } from './wbs-form';
 export { BudgetRow } from './budget-row';
 export { BudgetStatusBadge, BudgetTotalBar } from './budget-status';

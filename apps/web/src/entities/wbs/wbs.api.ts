@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   wbsItemSchema,
+  wbsLinksSchema,
   createWbsItemSchema,
   updateWbsItemSchema,
   moveWbsItemSchema,
@@ -12,6 +13,7 @@ import { deleteJson, getJson, patchJson, postJson } from '@/shared/lib/http';
 
 export const wbsKeys = {
   all: (projectId: string) => ['projects', projectId, 'wbs'] as const,
+  links: (projectId: string, itemId: string) => ['projects', projectId, 'wbs', itemId, 'links'] as const,
 };
 
 export function useWbsTree(projectId: string) {
@@ -22,6 +24,15 @@ export function useWbsTree(projectId: string) {
       return wbsItemSchema.array().parse(data);
     },
     enabled: !!projectId,
+  });
+}
+
+/** Dokumen tertaut untuk satu node (dipakai inspector). */
+export function useWbsLinks(projectId: string, itemId: string | null) {
+  return useQuery({
+    queryKey: wbsKeys.links(projectId, itemId ?? ''),
+    queryFn: async () => wbsLinksSchema.parse(await getJson<unknown>(`/projects/${projectId}/wbs/${itemId}/links`)),
+    enabled: !!projectId && !!itemId,
   });
 }
 
