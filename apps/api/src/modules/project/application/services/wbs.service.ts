@@ -198,6 +198,33 @@ export class WbsService {
     return ordered;
   }
 
+  /** Hitung dokumen tertaut untuk sekumpulan id WBS, per jenis. */
+  private async countLinks(subtreeIds: string[]) {
+    const client = this.prisma as unknown as Record<string, { count: (args: unknown) => Promise<number> }>;
+    const links: Array<{ key: string; label: string; count: number }> = [];
+    let total = 0;
+    for (const counter of LINK_COUNTERS) {
+      const model = client[counter.model]!;
+      const count = await model.count({ where: { wbsItemId: { in: subtreeIds } } });
+      if (count > 0) {
+        links.push({ key: counter.key, label: counter.label, count });
+        total += count;
+      }
+    }
+    return { links, total };
+  }
+
+  /** Dokumen tertaut untuk node + keturunannya (dipakai inspector & guard hapus). */
+  async getLinks(projectId: string, itemId: string) {
+    const item = await this.prisma.wbsItem.findUnique({ where: { id: itemId } });
+    if (!item || item.projectId !== projectId) {
+      throw new NotFoundException({ code: 'WBS_NOT_FOUND', message: 'WBS item not found in this project' });
+    }
+    const subtreeIds = await this.collectSubtree(projectId, itemId);
+    const { links, total } = await this.countLinks(subtreeIds);
+    return { itemId, links, total };
+  }
+
   async remove(projectId: string, itemId: string, actorId: string) {
     const item = await this.prisma.wbsItem.findUnique({ where: { id: itemId } });
     if (!item || item.projectId !== projectId) {
@@ -208,18 +235,10 @@ export class WbsService {
 
     // Guard: hapus tidak boleh cascade budget/cost code/control account atau
     // memutus dokumen yang mereferensikan node ini.
-    const counts: Record<string, number> = {};
-    let total = 0;
-    const client = this.prisma as unknown as Record<string, { count: (args: unknown) => Promise<number> }>;
-    for (const counter of LINK_COUNTERS) {
-      const model = client[counter.model]!;
-      const n = await model.count({ where: { wbsItemId: { in: subtreeIds } } });
-      if (n > 0) {
-        counts[counter.label] = n;
-        total += n;
-      }
-    }
+    const { links, total } = await this.countLinks(subtreeIds);
     if (total > 0) {
+      const counts: Record<string, number> = {};
+      for (const l of links) counts[l.label] = l.count;
       throw new ConflictException({
         code: 'WBS_HAS_LINKS',
         message: 'This WBS item (or its descendants) is referenced by other records and cannot be deleted',

@@ -401,6 +401,13 @@ export const moveWbsItemSchema = z.object({
 });
 export type MoveWbsItem = z.infer<typeof moveWbsItemSchema>;
 
+export const wbsLinksSchema = z.object({
+  itemId: z.string(),
+  total: z.number(),
+  links: z.array(z.object({ key: z.string(), label: z.string(), count: z.number() })),
+});
+export type WbsLinks = z.infer<typeof wbsLinksSchema>;
+
 export const budgetSummarySchema = z.object({
   projectId: z.string(),
   status: z.enum(['DRAFT', 'PUBLISHED']),

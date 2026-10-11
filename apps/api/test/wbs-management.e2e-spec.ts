@@ -94,6 +94,22 @@ describe('WBS management (e2e)', () => {
     expect(ids).not.toContain(itemId);
   });
 
+  it('GET /wbs/:id/links returns per-type counts', async () => {
+    const code = `E2E-L-${Date.now()}`;
+    const itemId = await createWbs(app, adminToken, projectId, code, 'Linked node');
+    await request(app.getHttpServer())
+      .post(`/api/v1/projects/${projectId}/budget/items`)
+      .set('Authorization', auth(adminToken))
+      .send({ wbsItemId: itemId, amount: 500_000 });
+
+    const res = await request(app.getHttpServer())
+      .get(`/api/v1/projects/${projectId}/wbs/${itemId}/links`)
+      .set('Authorization', auth(adminToken));
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBeGreaterThan(0);
+    expect(res.body.links.some((l: { key: string }) => l.key === 'budgetItems')).toBe(true);
+  });
+
   it('buyer without WBS.EDIT -> 403 on PATCH (RBAC deny)', async () => {
     const buyerToken = await loginAs(app, 'buyer@aec.local', 'Buyer123!');
     const itemId = await createWbs(app, adminToken, projectId, `E2E-R-${Date.now()}`, 'RBAC node');

@@ -27,6 +27,12 @@ export class WbsController {
     return this.service.create(projectId, dto, request.user?.sub ?? 'system');
   }
 
+  @Get(':itemId/links')
+  @Permissions(Permission.WbsView)
+  links(@Param('projectId') projectId: string, @Param('itemId') itemId: string) {
+    return this.service.getLinks(projectId, itemId);
+  }
+
   @Patch(':itemId')
   @Permissions(Permission.WbsEdit)
   update(

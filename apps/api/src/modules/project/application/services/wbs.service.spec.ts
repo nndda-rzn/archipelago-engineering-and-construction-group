@@ -157,6 +157,32 @@ describe('WbsService.move', () => {
   });
 });
 
+describe('WbsService.getLinks', () => {
+  it('returns per-type counts and a total for a node subtree', async () => {
+    const prisma = makePrisma({
+      wbsItem: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'w1', projectId: 'p1', code: '1' }),
+        findMany: jest.fn().mockResolvedValue([
+          { id: 'w1', parentId: null },
+          { id: 'w2', parentId: 'w1' },
+        ]),
+      },
+      purchaseOrderItem: { count: jest.fn().mockResolvedValue(12) },
+      costCode: { count: jest.fn().mockResolvedValue(2) },
+    });
+    const out = await makeService(prisma).getLinks('p1', 'w1');
+    expect(out.total).toBe(14);
+    expect(out.links).toEqual(expect.arrayContaining([{ key: 'poItems', label: 'purchase order items', count: 12 }]));
+  });
+
+  it('404s for a node outside the project', async () => {
+    const prisma = makePrisma({
+      wbsItem: { findUnique: jest.fn().mockResolvedValue({ id: 'w1', projectId: 'other' }) },
+    });
+    await expect(makeService(prisma).getLinks('p1', 'w1')).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
 describe('WbsService.getTree', () => {
   it('attaches a rollup to every node', async () => {
     const prisma = makePrisma({
