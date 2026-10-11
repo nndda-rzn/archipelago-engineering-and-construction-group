@@ -27,18 +27,21 @@ function makePrisma(overrides: Record<string, unknown> = {}) {
     subcontract: { aggregate: jest.fn().mockResolvedValue({ _sum: { contractValue: 0 } }), count: jest.fn().mockResolvedValue(0) },
     progressClaim: { aggregate: jest.fn().mockResolvedValue({ _sum: { certifiedAmount: 0 } }) },
     clientInvoice: { aggregate: jest.fn().mockResolvedValue({ _sum: { totalAmount: 0 } }) },
-    risk: { count: jest.fn().mockResolvedValue(0) },
-    ncr: { count: jest.fn().mockResolvedValue(0) },
-    hseIncident: { count: jest.fn().mockResolvedValue(0) },
-    punchListItem: { count: jest.fn().mockResolvedValue(0) },
+    risk: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+    ncr: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+    hseIncident: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+    punchListItem: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
     purchaseRequisition: { count: jest.fn().mockResolvedValue(0) },
     vendorInvoice: { count: jest.fn().mockResolvedValue(0) },
     projectVariation: { count: jest.fn().mockResolvedValue(0) },
-    constructionWorkPackage: { count: jest.fn().mockResolvedValue(0) },
-    constructionDailyReport: { count: jest.fn().mockResolvedValue(0) },
-    drawing: { count: jest.fn().mockResolvedValue(0) },
-    deliverable: { count: jest.fn().mockResolvedValue(0) },
-    contract: { count: jest.fn().mockResolvedValue(0) },
+    constructionWorkPackage: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+    constructionDailyReport: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+    drawing: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+    deliverable: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+    contract: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+    safetyObservation: { findMany: jest.fn().mockResolvedValue([]) },
+    permitToWork: { findMany: jest.fn().mockResolvedValue([]) },
+    legalCase: { findMany: jest.fn().mockResolvedValue([]) },
     projectMilestone: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
     stageGateReview: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
     projectPhaseHistory: { findMany: jest.fn().mockResolvedValue([]) },
@@ -97,6 +100,26 @@ describe('ProjectCommandCenterService.cashFlow', () => {
   it('returns the six-step chain', async () => {
     const out = await makeService(makePrisma()).cashFlow('p1');
     expect(out.chain.map((c) => c.key)).toEqual(['contract', 'budget', 'committed', 'actual', 'billed', 'collected']);
+  });
+});
+
+describe('ProjectCommandCenterService.domains', () => {
+  it('returns per-domain short lists', async () => {
+    const prisma = makePrisma({
+      project: { findUnique: jest.fn().mockResolvedValue({ id: 'p1' }) },
+      constructionWorkPackage: { findMany: jest.fn().mockResolvedValue([{ id: 'w1', wpNumber: 'WP-1', title: 'Erection', status: 'IN_PROGRESS' }]), count: jest.fn().mockResolvedValue(1) },
+      ncr: { findMany: jest.fn().mockResolvedValue([{ id: 'n1', ncrNumber: 'NCR-1', description: 'Weld defect', severity: 'MAJOR', status: 'OPEN' }]), count: jest.fn().mockResolvedValue(1) },
+      risk: { findMany: jest.fn().mockResolvedValue([{ id: 'r1', riskNumber: 'RSK-1', title: 'Delay', category: 'SCHEDULE', likelihood: 4, impact: 4, score: 16, status: 'OPEN' }]), count: jest.fn().mockResolvedValue(1) },
+    });
+    const out = await makeService(prisma).domains('p1');
+    expect(out.execution.workPackages[0]!.ref).toBe('WP-1');
+    expect(out.quality.ncrs[0]!.severity).toBe('MAJOR');
+    expect(out.governance.risks[0]!.score).toBe(16);
+  });
+
+  it('throws NotFound for a missing project', async () => {
+    const prisma = makePrisma({ project: { findUnique: jest.fn().mockResolvedValue(null) } });
+    await expect(makeService(prisma).domains('nope')).rejects.toBeInstanceOf(NotFoundException);
   });
 });
 

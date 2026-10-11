@@ -1,0 +1,61 @@
+import { SignalChip } from '@aec/ui';
+import type { DomainItem, ProjectDomains, ProjectSummary } from '@aec/api-contracts';
+
+/** Domain tile: angka + label + tautan (reuse pola dari detail page). */
+export interface DomainGroupProps {
+  title: string;
+  items: DomainItem[];
+  /** Kolom meta (mis. discipline / category) yang ditampilkan di kanan. */
+  metaLabel?: string;
+}
+
+/**
+ * Grup domain: baris ringkas (ref + label + status). Bukan tabel penuh — hanya
+ * daftar bernomor dengan hairline. Status selalu punya label teks (warna bukan
+ * satu-satunya sinyal).
+ */
+export function DomainGroup({ title, items, metaLabel }: DomainGroupProps) {
+  if (items.length === 0) {
+    return (
+      <section aria-label={title} className="flex flex-col gap-2">
+        <h3 className="text-overline uppercase text-neutral-500">{title}</h3>
+        <p className="text-body-sm text-neutral-400">None recorded.</p>
+      </section>
+    );
+  }
+  return (
+    <section aria-label={title} className="flex flex-col gap-2">
+      <h3 className="flex items-center gap-2 text-overline uppercase text-neutral-500">
+        {title}
+        <span className="font-mono text-caption tabular-nums text-neutral-400">{items.length}</span>
+      </h3>
+      <ul className="flex flex-col divide-y divide-neutral-100">
+        {items.map((it) => (
+          <li key={it.id} className="flex items-center gap-3 py-1.5">
+            {it.ref && <span className="w-28 shrink-0 truncate font-mono text-caption text-neutral-500" title={it.ref}>{it.ref}</span>}
+            <span className="min-w-0 flex-1 truncate text-body-sm text-neutral-800" title={it.label}>{it.label || '—'}</span>
+            {metaLabel && it.meta && <span className="hidden shrink-0 text-caption text-neutral-400 sm:inline">{it.meta}</span>}
+            <span className="shrink-0 rounded border border-neutral-200 px-1.5 py-px text-caption text-neutral-600">{it.status.replace(/_/g, ' ').toLowerCase()}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Signal strip domain: angka terbuka per kategori (ber-tone). */
+export function DomainSignals({ summary }: { summary: ProjectSummary }) {
+  const d = summary.domains;
+  return (
+    <div className="flex flex-wrap gap-2">
+      <SignalChip severity={d.execution.workPackage === 0 ? 'low' : 'low'} count={d.execution.workPackage} label="Work packages" />
+      <SignalChip severity={d.quality.ncrOpen === 0 ? 'low' : d.quality.ncrOpen > 2 ? 'high' : 'medium'} count={d.quality.ncrOpen} label="Open NCR" />
+      <SignalChip severity={d.hse.incidentOpen === 0 ? 'low' : 'high'} count={d.hse.incidentOpen} label="Open HSE" />
+      <SignalChip severity={d.governance.riskOpen === 0 ? 'low' : d.governance.riskOpen > 3 ? 'high' : 'medium'} count={d.governance.riskOpen} label="Open risks" />
+      <SignalChip severity="low" count={d.engineering.drawing} label="Drawings" />
+      <SignalChip severity="low" count={d.engineering.deliverable} label="Deliverables" />
+    </div>
+  );
+}
+
+export type { ProjectDomains };

@@ -548,6 +548,30 @@ export const projectCashFlowSchema = z.object({
 });
 export type ProjectCashFlow = z.infer<typeof projectCashFlowSchema>;
 
+export const domainItemSchema = z.object({
+  id: z.string(),
+  ref: z.string(),
+  label: z.string(),
+  status: z.string(),
+  meta: z.string().optional(),
+  severity: z.string().optional(),
+  score: z.number().optional(),
+  likelihood: z.number().optional(),
+  impact: z.number().optional(),
+  value: z.number().optional(),
+  flag: z.boolean().optional(),
+});
+export type DomainItem = z.infer<typeof domainItemSchema>;
+
+export const projectDomainsSchema = z.object({
+  execution: z.object({ workPackages: z.array(domainItemSchema), dailyReports: z.array(domainItemSchema) }),
+  quality: z.object({ ncrs: z.array(domainItemSchema), punchItems: z.array(domainItemSchema) }),
+  hse: z.object({ incidents: z.array(domainItemSchema), observations: z.array(domainItemSchema), permits: z.array(domainItemSchema) }),
+  documents: z.object({ drawings: z.array(domainItemSchema), deliverables: z.array(domainItemSchema) }),
+  governance: z.object({ risks: z.array(domainItemSchema), legalCases: z.array(domainItemSchema), contracts: z.array(domainItemSchema) }),
+});
+export type ProjectDomains = z.infer<typeof projectDomainsSchema>;
+
 export const projectStakeholderSchema = z.object({
   id: z.string(), name: z.string(), role: z.string(), raci: z.string(),
   employeeId: z.string().nullable(), email: z.string().nullable(), phone: z.string().nullable(), isPrimary: z.boolean(),

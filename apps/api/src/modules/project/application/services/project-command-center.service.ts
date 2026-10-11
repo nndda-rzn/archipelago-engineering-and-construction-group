@@ -114,6 +114,56 @@ export class ProjectCommandCenterService {
     };
   }
 
+  /**
+   * Rincian per domain: daftar ringkas (bukan tabel penuh) untuk tab domain —
+   * executive/quality/HSE/documents/risk. Tiap item punya status agar bisa
+   * diberi tone. Semua dibatasi 20 baris terbaru.
+   */
+  async domains(id: string) {
+    const project = await this.prisma.project.findUnique({ where: { id }, select: { id: true } });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
+
+    const [workPackages, dailyReports, ncrs, punchItems, incidents, observations, permits, drawings, deliverables, risks, legalCases, contracts] = await Promise.all([
+      this.prisma.constructionWorkPackage.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, wpNumber: true, title: true, status: true } }),
+      this.prisma.constructionDailyReport.findMany({ where: { projectId: id }, orderBy: { reportDate: 'desc' }, take: 20, select: { id: true, drNumber: true, reportDate: true, status: true } }),
+      this.prisma.ncr.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, ncrNumber: true, description: true, severity: true, status: true } }),
+      this.prisma.punchListItem.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, punchNumber: true, description: true, status: true } }),
+      this.prisma.hseIncident.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, incidentNumber: true, type: true, severity: true, status: true } }),
+      this.prisma.safetyObservation.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, observationNumber: true, description: true, status: true } }),
+      this.prisma.permitToWork.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, permitNumber: true, area: true, status: true } }),
+      this.prisma.drawing.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, drawingNumber: true, title: true, discipline: true, status: true, isIFC: true } }),
+      this.prisma.deliverable.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, deliverableNumber: true, title: true, discipline: true, status: true } }),
+      this.prisma.risk.findMany({ where: { projectId: id }, orderBy: { score: 'desc' }, take: 20, select: { id: true, riskNumber: true, title: true, category: true, likelihood: true, impact: true, score: true, status: true } }),
+      this.prisma.legalCase.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, caseNumber: true, title: true, status: true } }),
+      this.prisma.contract.findMany({ where: { projectId: id }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, contractNumber: true, title: true, value: true, status: true } }),
+    ]);
+
+    return {
+      execution: {
+        workPackages: workPackages.map((w) => ({ id: w.id, ref: w.wpNumber, label: w.title, status: w.status })),
+        dailyReports: dailyReports.map((d) => ({ id: d.id, ref: d.drNumber, label: d.reportDate.toISOString().slice(0, 10), status: d.status })),
+      },
+      quality: {
+        ncrs: ncrs.map((n) => ({ id: n.id, ref: n.ncrNumber, label: n.description ?? '', status: n.status, severity: n.severity })),
+        punchItems: punchItems.map((p) => ({ id: p.id, ref: p.punchNumber, label: p.description, status: p.status })),
+      },
+      hse: {
+        incidents: incidents.map((i) => ({ id: i.id, ref: i.incidentNumber, label: i.type, status: i.status, severity: i.severity })),
+        observations: observations.map((o) => ({ id: o.id, ref: o.observationNumber, label: o.description ?? '', status: o.status })),
+        permits: permits.map((p) => ({ id: p.id, ref: p.permitNumber, label: p.area, status: p.status })),
+      },
+      documents: {
+        drawings: drawings.map((d) => ({ id: d.id, ref: d.drawingNumber, label: d.title, status: d.status, meta: d.discipline, flag: d.isIFC })),
+        deliverables: deliverables.map((d) => ({ id: d.id, ref: d.deliverableNumber, label: d.title, status: d.status, meta: d.discipline })),
+      },
+      governance: {
+        risks: risks.map((r) => ({ id: r.id, ref: r.riskNumber, label: r.title, status: r.status, meta: r.category, score: r.score, likelihood: r.likelihood, impact: r.impact })),
+        legalCases: legalCases.map((l) => ({ id: l.id, ref: l.caseNumber, label: l.title, status: l.status })),
+        contracts: contracts.map((c) => ({ id: c.id, ref: c.contractNumber, label: c.title, status: c.status, value: Number(c.value) })),
+      },
+    };
+  }
+
   /** S-curve: budget rencana per periode (kumulatif) vs progress aktual kumulatif. */
   async schedule(id: string) {
     const project = await this.prisma.project.findUnique({ where: { id }, select: { progressPlanned: true, progressActual: true, startDate: true } });

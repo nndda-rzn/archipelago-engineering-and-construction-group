@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Link, useParams } from '@tanstack/react-router';
 import { ArrowLeft } from 'lucide-react';
 import { Button, cn, EntityAvatar, ErrorState, EvmBars, Skeleton, StatusBadge, Waterfall, humanizeCode } from '@aec/ui';
-import { useProject, useProjectActivity, useProjectSummary, useProjectSchedule, useProjectCashFlow, useProjectStakeholders, useAdvancePhase } from '@/entities/project';
+import { useProject, useProjectActivity, useProjectSummary, useProjectSchedule, useProjectCashFlow, useProjectStakeholders, useProjectDomains, useAdvancePhase } from '@/entities/project';
 import { useCommitment, useEvm, useForecasts, useProjectHealth } from '@/features/project';
 import { CommitmentBar } from '@/features/project/ui/commitment-bar';
 import { ProjectEditForm } from '@/features/project/ui/project-edit-form';
 import { ProjectTeamBand } from '@/features/project/ui/project-team-band';
 import { PhaseRibbon } from '@/features/project/ui/phase-ribbon';
 import { GlanceStrip, SCurve, MilestoneBand, CashChain } from '@/features/project/ui/project-command-center';
+import { DomainGroup, DomainSignals } from '@/features/project/ui/project-domains';
 import { healthLabel } from '@/features/project/ui/health-summary';
 import { formatIdr } from '@/shared/lib/format';
 
@@ -25,7 +26,7 @@ const PRIORITY_TONE: Record<string, string> = {
   CRITICAL: 'border-destructive-200 bg-destructive-50 text-destructive-700',
 };
 
-type Tab = 'overview' | 'schedule' | 'commercial' | 'procurement' | 'cost' | 'team' | 'activity';
+type Tab = 'overview' | 'schedule' | 'commercial' | 'procurement' | 'execution' | 'quality' | 'documents' | 'risk' | 'cost' | 'team' | 'activity';
 
 export function ProjectDetailPage() {
   const { projectId } = useParams({ strict: false }) as { projectId: string };
@@ -39,6 +40,7 @@ export function ProjectDetailPage() {
   const schedule = useProjectSchedule(projectId);
   const cashFlow = useProjectCashFlow(projectId);
   const stakeholders = useProjectStakeholders(projectId);
+  const domains = useProjectDomains(projectId);
   const advance = useAdvancePhase(projectId);
   const [editing, setEditing] = useState(false);
   const [tab, setTab] = useState<Tab>('overview');
@@ -77,6 +79,10 @@ export function ProjectDetailPage() {
     { id: 'schedule', label: 'Schedule' },
     { id: 'commercial', label: 'Commercial' },
     { id: 'procurement', label: 'Procurement' },
+    { id: 'execution', label: 'Execution' },
+    { id: 'quality', label: 'Quality & HSE' },
+    { id: 'documents', label: 'Documents' },
+    { id: 'risk', label: 'Risk & Gov' },
     { id: 'cost', label: 'Cost & EVM' },
     { id: 'team', label: 'Team' },
     { id: 'activity', label: 'Activity' },
@@ -246,6 +252,47 @@ export function ProjectDetailPage() {
             <DomainTile label="Purchase orders" value={s.domains.procurement.po} href="/procurement/po" />
             <DomainTile label="Vendor invoices" value={s.domains.procurement.vendorInvoice} href="/finance/vendor-invoices" />
             <DomainTile label="Subcontracts" value={s.domains.procurement.subcontract} href="/finance/subcontracts" />
+          </div>
+        )}
+
+        {tab === 'execution' && domains.data && (
+          <div className="flex flex-col gap-6">
+            {s && <DomainSignals summary={s} />}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <DomainGroup title="Work packages" items={domains.data.execution.workPackages} />
+              <DomainGroup title="Daily reports" items={domains.data.execution.dailyReports} />
+            </div>
+          </div>
+        )}
+
+        {tab === 'quality' && domains.data && (
+          <div className="flex flex-col gap-6">
+            {s && <DomainSignals summary={s} />}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <DomainGroup title="Non-conformance reports" items={domains.data.quality.ncrs} metaLabel="severity" />
+              <DomainGroup title="Punch list" items={domains.data.quality.punchItems} />
+              <DomainGroup title="HSE incidents" items={domains.data.hse.incidents} metaLabel="severity" />
+              <DomainGroup title="Safety observations" items={domains.data.hse.observations} />
+              <DomainGroup title="Permits to work" items={domains.data.hse.permits} />
+            </div>
+          </div>
+        )}
+
+        {tab === 'documents' && domains.data && (
+          <div className="grid gap-6 lg:grid-cols-2">
+            <DomainGroup title="Drawings" items={domains.data.documents.drawings} metaLabel="discipline" />
+            <DomainGroup title="Deliverables" items={domains.data.documents.deliverables} metaLabel="discipline" />
+          </div>
+        )}
+
+        {tab === 'risk' && domains.data && (
+          <div className="flex flex-col gap-6">
+            {s && <DomainSignals summary={s} />}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <DomainGroup title="Risks" items={domains.data.governance.risks} metaLabel="category" />
+              <DomainGroup title="Legal cases" items={domains.data.governance.legalCases} />
+              <DomainGroup title="Contracts" items={domains.data.governance.contracts} />
+            </div>
           </div>
         )}
 

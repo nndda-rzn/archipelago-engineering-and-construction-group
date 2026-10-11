@@ -3,7 +3,7 @@ import {
   addProjectMemberSchema, createProjectSchema, projectActivitySchema, projectListResponseSchema,
   projectRegisterSchema, projectSchema, projectStatsSchema, projectTeamSchema, updateProjectMetaSchema,
   personRefSchema, updateProjectSchema, projectSummarySchema, projectScheduleSchema, projectCashFlowSchema,
-  projectStakeholderSchema, createMilestoneSchema, advancePhaseSchema,
+  projectStakeholderSchema, createMilestoneSchema, advancePhaseSchema, projectDomainsSchema,
   type AddProjectMember, type CreateProject, type UpdateProject, type UpdateProjectMeta, type CreateMilestone, type AdvancePhase,
 } from '@aec/api-contracts';
 import { getJson, patchJson, postJson, deleteJson } from '@/shared/lib/http';
@@ -188,6 +188,14 @@ export function useProjectCashFlow(id: string) {
   return useQuery({
     queryKey: commandCenterKeys.cashFlow(id),
     queryFn: async () => projectCashFlowSchema.parse(await getJson<unknown>(`/projects/${id}/cash-flow`)),
+    enabled: !!id,
+  });
+}
+
+export function useProjectDomains(id: string) {
+  return useQuery({
+    queryKey: [...projectKeys.all, 'domains', id] as const,
+    queryFn: async () => projectDomainsSchema.parse(await getJson<unknown>(`/projects/${id}/domains`)),
     enabled: !!id,
   });
 }
