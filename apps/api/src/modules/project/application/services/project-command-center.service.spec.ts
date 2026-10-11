@@ -23,21 +23,21 @@ function makePrisma(overrides: Record<string, unknown> = {}) {
   return {
     project: { findUnique: jest.fn().mockResolvedValue(baseProject) },
     budgetItem: { aggregate: jest.fn().mockResolvedValue(agg) },
-    purchaseOrder: { aggregate: jest.fn().mockResolvedValue({ _sum: { totalAmount: 0 } }), count: jest.fn().mockResolvedValue(0) },
-    subcontract: { aggregate: jest.fn().mockResolvedValue({ _sum: { contractValue: 0 } }), count: jest.fn().mockResolvedValue(0) },
-    progressClaim: { aggregate: jest.fn().mockResolvedValue({ _sum: { certifiedAmount: 0 } }) },
-    clientInvoice: { aggregate: jest.fn().mockResolvedValue({ _sum: { totalAmount: 0 } }) },
-    risk: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
-    ncr: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
-    hseIncident: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+    progressClaim: { aggregate: jest.fn().mockResolvedValue({ _sum: { certifiedAmount: 0 } }), findMany: jest.fn().mockResolvedValue([]) },
+    clientInvoice: { aggregate: jest.fn().mockResolvedValue({ _sum: { totalAmount: 0 } }), count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+    risk: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]), groupBy: jest.fn().mockResolvedValue([]) },
+    ncr: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]), groupBy: jest.fn().mockResolvedValue([]) },
+    hseIncident: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]), groupBy: jest.fn().mockResolvedValue([]) },
     punchListItem: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
-    purchaseRequisition: { count: jest.fn().mockResolvedValue(0) },
-    vendorInvoice: { count: jest.fn().mockResolvedValue(0) },
-    projectVariation: { count: jest.fn().mockResolvedValue(0) },
+    purchaseRequisition: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+    vendorInvoice: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+    projectVariation: { count: jest.fn().mockResolvedValue(0), aggregate: jest.fn().mockResolvedValue({ _sum: { amountChange: 0 } }), findMany: jest.fn().mockResolvedValue([]) },
+    purchaseOrder: { aggregate: jest.fn().mockResolvedValue({ _sum: { totalAmount: 0 } }), count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+    subcontract: { aggregate: jest.fn().mockResolvedValue({ _sum: { contractValue: 0 } }), count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
     constructionWorkPackage: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
     constructionDailyReport: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
-    drawing: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
-    deliverable: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+    drawing: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]), groupBy: jest.fn().mockResolvedValue([]) },
+    deliverable: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]), groupBy: jest.fn().mockResolvedValue([]) },
     contract: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
     safetyObservation: { findMany: jest.fn().mockResolvedValue([]) },
     permitToWork: { findMany: jest.fn().mockResolvedValue([]) },
@@ -46,6 +46,8 @@ function makePrisma(overrides: Record<string, unknown> = {}) {
     stageGateReview: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
     projectPhaseHistory: { findMany: jest.fn().mockResolvedValue([]) },
     projectPeriodBudget: { findMany: jest.fn().mockResolvedValue([]) },
+    journalLine: { findMany: jest.fn().mockResolvedValue([]) },
+    collectionItem: { findMany: jest.fn().mockResolvedValue([]) },
     projectActivity: { create: jest.fn().mockResolvedValue({}) },
     ...overrides,
   } as never;
@@ -55,8 +57,8 @@ describe('ProjectCommandCenterService.summary', () => {
   it('assembles schedule, cost and cross-domain counts', async () => {
     const prisma = makePrisma({
       budgetItem: { aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 1000 } }) },
-      risk: { count: jest.fn().mockResolvedValue(2) },
-      ncr: { count: jest.fn().mockResolvedValue(1) },
+      risk: { count: jest.fn().mockResolvedValue(2), groupBy: jest.fn().mockResolvedValue([]) },
+      ncr: { count: jest.fn().mockResolvedValue(1), groupBy: jest.fn().mockResolvedValue([]) },
       projectMilestone: { count: jest.fn().mockResolvedValueOnce(5).mockResolvedValueOnce(4).mockResolvedValueOnce(1), findMany: jest.fn() },
     });
     const out = await makeService(prisma).summary('p1');
@@ -72,6 +74,18 @@ describe('ProjectCommandCenterService.summary', () => {
   it('throws NotFound for a missing project', async () => {
     const prisma = makePrisma({ project: { findUnique: jest.fn().mockResolvedValue(null) } });
     await expect(makeService(prisma).summary('nope')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('includes a risk matrix and category mixes for the visuals', async () => {
+    const prisma = makePrisma({
+      risk: { count: jest.fn().mockResolvedValue(3), groupBy: jest.fn().mockResolvedValue([{ likelihood: 4, impact: 4, _count: { _all: 2 } }]) },
+      ncr: { count: jest.fn().mockResolvedValue(1), groupBy: jest.fn().mockResolvedValue([{ severity: 'MAJOR', _count: { _all: 1 } }]) },
+      hseIncident: { count: jest.fn().mockResolvedValue(0), groupBy: jest.fn().mockResolvedValue([{ severity: 'LOW', _count: { _all: 1 } }]) },
+    });
+    const out = await makeService(prisma).summary('p1');
+    expect(out.analytics.riskMatrix[0]).toEqual({ likelihood: 4, impact: 4, count: 2 });
+    expect(out.analytics.qualityMix[0]).toEqual({ key: 'MAJOR', count: 1 });
+    expect(out.analytics.billing).toHaveProperty('certified');
   });
 });
 
@@ -94,6 +108,26 @@ describe('ProjectCommandCenterService.schedule', () => {
     expect(out.milestones[0]!.name).toBe('Design Freeze');
     expect(out.gates[0]!.decision).toBe('GO');
   });
+
+  it('derives an actual progress curve from certified claims and an actual cost curve from journals', async () => {
+    const prisma = makePrisma({
+      project: { findUnique: jest.fn().mockResolvedValue({ progressPlanned: 55, progressActual: 48, startDate: new Date() }) },
+      progressClaim: { findMany: jest.fn().mockResolvedValue([
+        { period: '2026-01', certifiedAmount: 100, amount: 100, physicalProgressAtClaim: null },
+        { period: '2026-02', certifiedAmount: 300, amount: 300, physicalProgressAtClaim: null },
+      ]), aggregate: jest.fn() },
+      journalLine: { findMany: jest.fn().mockResolvedValue([
+        { debit: 50, journal: { createdAt: new Date('2026-01-15') } },
+        { debit: 150, journal: { createdAt: new Date('2026-02-15') } },
+      ]) },
+    });
+    const out = await makeService(prisma).schedule('p1');
+    expect(out.actualProgressCurve).toHaveLength(2);
+    expect(out.actualProgressCurve[1]!.cumulative).toBe(400);
+    expect(out.actualProgressCurve[1]!.pct).toBe(100);
+    expect(out.actualCostCurve).toHaveLength(2);
+    expect(out.actualCostCurve[1]!.cumulative).toBe(200);
+  });
 });
 
 describe('ProjectCommandCenterService.cashFlow', () => {
@@ -107,7 +141,7 @@ describe('ProjectCommandCenterService.domains', () => {
   it('returns per-domain short lists', async () => {
     const prisma = makePrisma({
       project: { findUnique: jest.fn().mockResolvedValue({ id: 'p1' }) },
-      constructionWorkPackage: { findMany: jest.fn().mockResolvedValue([{ id: 'w1', wpNumber: 'WP-1', title: 'Erection', status: 'IN_PROGRESS' }]), count: jest.fn().mockResolvedValue(1) },
+      constructionWorkPackage: { findMany: jest.fn().mockResolvedValue([{ id: 'w1', wpNumber: 'WP-1', title: 'Erection', status: 'IN_PROGRESS', progress: [] }]), count: jest.fn().mockResolvedValue(1) },
       ncr: { findMany: jest.fn().mockResolvedValue([{ id: 'n1', ncrNumber: 'NCR-1', description: 'Weld defect', severity: 'MAJOR', status: 'OPEN' }]), count: jest.fn().mockResolvedValue(1) },
       risk: { findMany: jest.fn().mockResolvedValue([{ id: 'r1', riskNumber: 'RSK-1', title: 'Delay', category: 'SCHEDULE', likelihood: 4, impact: 4, score: 16, status: 'OPEN' }]), count: jest.fn().mockResolvedValue(1) },
     });

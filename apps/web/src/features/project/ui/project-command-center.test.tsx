@@ -10,6 +10,14 @@ const schedule: ProjectSchedule = {
     { period: '2026-Q1', planned: 100, plannedCumulative: 100, plannedPct: 25 },
     { period: '2026-Q2', planned: 300, plannedCumulative: 400, plannedPct: 100 },
   ],
+  actualProgressCurve: [
+    { period: '2026-01', value: 100, cumulative: 100, pct: 25 },
+    { period: '2026-02', value: 300, cumulative: 400, pct: 100 },
+  ],
+  actualCostCurve: [
+    { period: '2026-01', value: 50, cumulative: 50 },
+    { period: '2026-02', value: 150, cumulative: 200 },
+  ],
   milestones: [
     { id: 'm1', name: 'Design Freeze', plannedDate: '2026-03-01T00:00:00.000Z', actualDate: '2026-05-01T00:00:00.000Z', status: 'ACHIEVED', weight: 20, isCritical: true, notes: null },
     { id: 'm2', name: 'Handover', plannedDate: '2027-06-01T00:00:00.000Z', actualDate: null, status: 'PLANNED', weight: 20, isCritical: false, notes: null },
