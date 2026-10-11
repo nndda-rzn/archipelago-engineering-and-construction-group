@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Button, EmptyState, FilterChip, Input, Label, SegmentedControl, Skeleton } from '@aec/ui';
-import { useProjectRegister } from '@/entities/project';
+import { useProjectRegister, useProjectStats } from '@/entities/project';
 import { ProjectForm } from '@/features/project/ui';
 import { ProjectCardView, ProjectTableView, ProjectTimelineView, type RegisterRow } from '@/features/project/ui/project-views';
 import { useUrlFilter } from '@/shared/lib/use-url-state';
@@ -20,6 +20,18 @@ const STATUS_LABEL: Record<string, string> = {
   COMPLETED: 'Completed',
   CLOSED: 'Closed',
 };
+
+/** KPI tanpa bingkai kartu — angka = angka, dengan label & konteks. */
+function Kpi({ label, value, context, tone }: { label: string; value: React.ReactNode; context?: string; tone?: 'negative' | 'warning' }) {
+  const toneClass = tone === 'negative' ? 'text-destructive-600' : tone === 'warning' ? 'text-warning-700' : 'text-neutral-950';
+  return (
+    <div className="min-w-0">
+      <p className="text-overline uppercase text-neutral-500">{label}</p>
+      <p className={`mt-0.5 font-mono tabular-nums text-h1 ${toneClass}`}>{value}</p>
+      {context && <p className="text-caption text-neutral-500">{context}</p>}
+    </div>
+  );
+}
 
 /**
  * Ringkasan portofolio dari register. Label "within budget" / "at 90%+" sengaja
@@ -63,6 +75,7 @@ export function ProjectListPage() {
   const [now] = useState(() => Date.now());
 
   const { data, isLoading, isError, refetch } = useProjectRegister();
+  const stats = useProjectStats();
 
   const rows = useMemo(() => filterRows((data?.items ?? []) as RegisterRow[], { status, query }), [data, status, query]);
   const hasFilter = Boolean(status || query);
@@ -77,6 +90,16 @@ export function ProjectListPage() {
         </div>
         <Button size="sm" onClick={() => setShowForm((s) => !s)}>{showForm ? 'Close' : '+ New project'}</Button>
       </div>
+
+      {/* KPI strip */}
+      <section aria-label="Project summary" className="grid grid-cols-2 gap-x-8 gap-y-4 border-b border-neutral-200 pb-4 sm:grid-cols-3 lg:grid-cols-6">
+        <Kpi label="Projects" value={stats.data?.total ?? '—'} />
+        <Kpi label="Active" value={stats.data?.active ?? '—'} />
+        <Kpi label="On hold" value={stats.data?.onHold ?? '—'} tone={stats.data && stats.data.onHold > 0 ? 'warning' : undefined} />
+        <Kpi label="Completed" value={stats.data?.completed ?? '—'} />
+        <Kpi label="Critical" value={stats.data?.critical ?? '—'} tone={stats.data && stats.data.critical > 0 ? 'negative' : undefined} />
+        <Kpi label="No team" value={stats.data?.withoutTeam ?? '—'} tone={stats.data && stats.data.withoutTeam > 0 ? 'warning' : undefined} context="nobody assigned" />
+      </section>
 
       {showForm && <ProjectForm onDone={() => setShowForm(false)} />}
 

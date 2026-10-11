@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { StatusBadge } from '@aec/ui';
+import { AvatarStack, StatusBadge } from '@aec/ui';
 import type { ProjectRegisterItem as RegisterItem } from '@aec/api-contracts';
 import { formatIdr } from '@/shared/lib/format';
 import { healthMeta } from '@/entities/health';
@@ -46,7 +46,7 @@ export function ProjectTableView({ items }: { items: RegisterRow[] }) {
           <tr>
             <th scope="col" className="px-3 py-2">Project</th>
             <th scope="col" className="px-3 py-2">Client</th>
-            <th scope="col" className="px-3 py-2">Manager</th>
+            <th scope="col" className="px-3 py-2">Team</th>
             <th scope="col" className="px-3 py-2 text-right">Contract</th>
             <th scope="col" className="px-3 py-2">Start</th>
             <th scope="col" className="px-3 py-2">Status</th>
@@ -64,7 +64,16 @@ export function ProjectTableView({ items }: { items: RegisterRow[] }) {
                 </Link>
               </td>
               <td className="px-3 py-2 text-neutral-600">{p.client}</td>
-              <td className="px-3 py-2 text-neutral-600">{p.manager ?? '—'}</td>
+              <td className="px-3 py-2">
+                {p.teamCount > 0 ? (
+                  <span className="flex items-center gap-2">
+                    <AvatarStack names={p.team.map((t) => t.name)} max={3} size="sm" />
+                    <span className="font-mono text-caption tabular-nums text-neutral-500">{p.teamCount}</span>
+                  </span>
+                ) : (
+                  <span className="text-caption text-neutral-400">—</span>
+                )}
+              </td>
               <td className="px-3 py-2 text-right font-mono tabular-nums text-neutral-700">{formatIdr(p.contractValue)}</td>
               <td className="px-3 py-2 font-mono text-caption text-neutral-600">{p.startDate ? p.startDate.slice(0, 10) : '—'}</td>
               <td className="px-3 py-2"><StatusBadge status={p.status} /></td>
@@ -101,6 +110,18 @@ export function ProjectCardView({ items }: { items: RegisterRow[] }) {
             <div>
               <p className="text-caption text-neutral-500">Budget used</p>
               <BudgetUsedBar utilization={p.utilization} />
+            </div>
+            {/* Tim: siapa mengerjakan — avatar, bukan teks "PM Demo". */}
+            <div className="flex items-center gap-2">
+              {p.teamCount > 0 ? (
+                <>
+                  <AvatarStack names={p.team.map((t) => t.name)} max={4} size="sm" />
+                  <span className="text-caption text-neutral-500">{p.teamCount} on team</span>
+                </>
+              ) : (
+                <span className="rounded border border-dashed border-neutral-300 px-1.5 py-px text-caption text-neutral-500">No team</span>
+              )}
+              {p.managerRef && <span className="ml-auto truncate text-caption text-neutral-500" title={p.managerRef.name}>PM · {p.managerRef.name}</span>}
             </div>
             <div className="mt-auto flex items-center justify-between border-t border-neutral-100 pt-2">
               <HealthBadge health={p.health} />
