@@ -128,6 +128,7 @@ export const Permission = {
   RiskEdit: 'Risk.EDIT',
   RiskView: 'Risk.VIEW',
   RoleCreate: 'Role.CREATE',
+  RoleDelete: 'Role.DELETE',
   RoleEdit: 'Role.EDIT',
   RoleView: 'Role.VIEW',
   SafetyObservationCreate: 'SafetyObservation.CREATE',
@@ -183,3 +184,73 @@ export const Permission = {
 } as const;
 
 export type PermissionCode = (typeof Permission)[keyof typeof Permission];
+
+/**
+ * Kelompok domain izin — SATU sumber untuk seed (kolom `Permission.group`) dan
+ * UI (pengelompokan matriks izin). Kunci = `resource` (bagian sebelum titik pada
+ * kode izin). Resource yang tidak terdaftar jatuh ke `MASTER_DATA`.
+ */
+export const PERMISSION_GROUPS = [
+  'FOUNDATION', 'PROCUREMENT', 'FINANCE', 'TREASURY', 'PROJECT', 'CONSTRUCTION',
+  'INVENTORY', 'HSE', 'QUALITY', 'COMMERCIAL', 'ANALYTICS', 'GOVERNANCE', 'HCM',
+  'ENGINEERING', 'MASTER_DATA',
+] as const;
+export type PermissionGroup = (typeof PERMISSION_GROUPS)[number];
+
+export const PERMISSION_GROUP_OF: Record<string, PermissionGroup> = {
+  // Foundation
+  AccessReview: 'FOUNDATION', Audit: 'FOUNDATION', FoundationHardening: 'FOUNDATION',
+  LegalEntity: 'FOUNDATION', Role: 'FOUNDATION', User: 'FOUNDATION',
+  // Procurement
+  GoodsReceipt: 'PROCUREMENT', ProcurementHardening: 'PROCUREMENT',
+  PurchaseOrder: 'PROCUREMENT', PurchaseRequisition: 'PROCUREMENT', Rfq: 'PROCUREMENT',
+  Vendor: 'PROCUREMENT', VendorInvoice: 'PROCUREMENT',
+  // Finance
+  Budget: 'FINANCE', ChartOfAccount: 'FINANCE', Client: 'FINANCE', ClientInvoice: 'FINANCE',
+  Collection: 'FINANCE', Commissioning: 'FINANCE', CostCode: 'FINANCE', Forecast: 'FINANCE',
+  Journal: 'FINANCE', Payment: 'FINANCE', ProgressClaim: 'FINANCE',
+  // Treasury
+  Treasury: 'TREASURY',
+  // Project
+  Contract: 'PROJECT', ControlAccount: 'PROJECT', Project: 'PROJECT', Variation: 'PROJECT',
+  WBS: 'PROJECT', WorkPackage: 'PROJECT',
+  // Construction
+  DailyReport: 'CONSTRUCTION', Equipment: 'CONSTRUCTION', EquipmentAssignment: 'CONSTRUCTION',
+  Handover: 'CONSTRUCTION', PermitToWork: 'CONSTRUCTION', Subcontract: 'CONSTRUCTION',
+  SubcontractProgress: 'CONSTRUCTION', Timesheet: 'CONSTRUCTION',
+  // Inventory
+  MaterialIssue: 'INVENTORY', StockAdjustment: 'INVENTORY', StockLedger: 'INVENTORY',
+  StockOpname: 'INVENTORY', StockTransfer: 'INVENTORY', Warehouse: 'INVENTORY',
+  // HSE
+  CorrectiveAction: 'HSE', HseIncident: 'HSE', SafetyObservation: 'HSE',
+  // Quality
+  Quality: 'QUALITY',
+  // Commercial
+  Opportunity: 'COMMERCIAL',
+  // Analytics
+  Analytics: 'ANALYTICS',
+  // Governance
+  Approval: 'GOVERNANCE', LegalCase: 'GOVERNANCE', Risk: 'GOVERNANCE', Workflow: 'GOVERNANCE',
+  // HCM
+  Employee: 'HCM', EmployeeAssignment: 'HCM', Payroll: 'HCM',
+  // Engineering
+  Engineering: 'ENGINEERING',
+  // Master data
+  Currency: 'MASTER_DATA', FiscalPeriod: 'MASTER_DATA', MasterData: 'MASTER_DATA',
+  NumberSequence: 'MASTER_DATA',
+};
+
+/** Izin berisiko tinggi — ditandai di UI dan diperlakukan lebih hati-hati. */
+export const SENSITIVE_PERMISSIONS: readonly string[] = [
+  'Role.DELETE', 'Role.EDIT', 'User.BLOCK', 'User.EDIT', 'User.MANAGE_ROLE',
+  'User.RESET_PASSWORD', 'Treasury.RELEASE', 'Journal.AUTO_POST', 'Payment.APPROVE',
+  'VendorInvoice.POST', 'LegalEntity.EDIT', 'Workflow.DELETE',
+];
+
+export function permissionGroupOf(resource: string): PermissionGroup {
+  return PERMISSION_GROUP_OF[resource] ?? 'MASTER_DATA';
+}
+
+export function isSensitivePermission(code: string): boolean {
+  return SENSITIVE_PERMISSIONS.includes(code);
+}

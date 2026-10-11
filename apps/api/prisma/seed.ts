@@ -5,7 +5,7 @@ loadEnvFile();
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
-import { Permission } from '@aec/shared-types';
+import { Permission, permissionGroupOf, isSensitivePermission } from '@aec/shared-types';
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error('DATABASE_URL is required');
@@ -49,12 +49,14 @@ async function seedFoundation() {
 }
 
 async function seedPermissions(roleId: string) {
+  let order = 0;
   for (const [code, resource, action] of permissions) {
     const permission = await prisma.permission.upsert({
       where: { code },
-      update: {},
-      create: { code, resource, action },
+      update: { group: permissionGroupOf(resource), isSensitive: isSensitivePermission(code), sortOrder: order },
+      create: { code, resource, action, group: permissionGroupOf(resource), isSensitive: isSensitivePermission(code), sortOrder: order },
     });
+    order += 1;
     await prisma.rolePermission.upsert({
       where: {
         roleId_permissionId_scopeType_scopeValue: {
@@ -65,29 +67,49 @@ async function seedPermissions(roleId: string) {
         },
       },
       update: {},
-      create: { roleId, permissionId: permission.id, scopeType: 'GLOBAL', scopeValue: '' },
+      create: { roleId, permissionId: permission.id, scopeType: 'GLOBAL', scopeValue: '', grantedById: 'seed' },
     });
   }
-  console.log(`[permissions] Seeded ${permissions.length} permissions → SUPER_ADMIN`);
+  console.log(`[permissions] Seeded ${permissions.length} permissions → SUPER_ADMIN (grouped)`);
+}
+
+/**
+ * Beri satu role sekumpulan izin (idempoten). Dipakai untuk role fungsional yang
+ * butuh akses nyata — tanpa ini role seperti PROCUREMENT_MANAGER tampil "kosong"
+ * dan pemegangnya tidak bisa apa-apa meski sudah di-assign.
+ */
+async function grantPermissions(roleId: string, codes: readonly string[]) {
+  let granted = 0;
+  for (const code of codes) {
+    const permission = await prisma.permission.findUnique({ where: { code } });
+    if (!permission) continue;
+    await prisma.rolePermission.upsert({
+      where: { roleId_permissionId_scopeType_scopeValue: { roleId, permissionId: permission.id, scopeType: 'GLOBAL', scopeValue: '' } },
+      update: {},
+      create: { roleId, permissionId: permission.id, scopeType: 'GLOBAL', scopeValue: '', grantedById: 'seed' },
+    });
+    granted += 1;
+  }
+  return granted;
 }
 
 async function seedUsers(entityId: string) {
   const superAdminRole = await prisma.role.upsert({
     where: { code: 'SUPER_ADMIN' },
-    update: { isSystem: true },
-    create: { code: 'SUPER_ADMIN', name: 'Super Administrator', isSystem: true },
+    update: { isSystem: true, category: 'SYSTEM', isAssignable: true },
+    create: { code: 'SUPER_ADMIN', name: 'Super Administrator', isSystem: true, category: 'SYSTEM' },
   });
 
   const buyerRole = await prisma.role.upsert({
     where: { code: 'BUYER' },
-    update: { isSystem: true },
-    create: { code: 'BUYER', name: 'Buyer', description: 'Membuat PR', isSystem: true },
+    update: { isSystem: true, category: 'FUNCTIONAL', isAssignable: true },
+    create: { code: 'BUYER', name: 'Buyer', description: 'Membuat PR', isSystem: true, category: 'FUNCTIONAL' },
   });
 
   const procManagerRole = await prisma.role.upsert({
     where: { code: 'PROCUREMENT_MANAGER' },
-    update: { isSystem: true },
-    create: { code: 'PROCUREMENT_MANAGER', name: 'Procurement Manager', description: 'Menyetujui PR/PO', isSystem: true },
+    update: { isSystem: true, category: 'FUNCTIONAL', isAssignable: true },
+    create: { code: 'PROCUREMENT_MANAGER', name: 'Procurement Manager', description: 'Menyetujui PR/PO', isSystem: true, category: 'FUNCTIONAL' },
   });
 
   // Seed permissions untuk SUPER_ADMIN
@@ -129,22 +151,26 @@ async function seedUsers(entityId: string) {
     create: { userId: buyer.id, roleId: buyerRole.id, effectiveFrom: new Date('2026-01-01T00:00:00.000Z') },
   });
 
-  // Buyer permissions
+  // Buyer permissions — akses pembuatan & lihat dokumen procurement.
   const buyerPermissionCodes = [
     'Project.VIEW', 'WBS.VIEW', 'PurchaseRequisition.VIEW', 'PurchaseRequisition.CREATE',
     'PurchaseOrder.VIEW', 'PurchaseOrder.CREATE', 'Approval.VIEW', 'Approval.SUBMIT', 'Approval.APPROVE',
   ];
-  for (const code of buyerPermissionCodes) {
-    const permission = await prisma.permission.findUnique({ where: { code } });
-    if (!permission) continue;
-    await prisma.rolePermission.upsert({
-      where: { roleId_permissionId_scopeType_scopeValue: { roleId: buyerRole.id, permissionId: permission.id, scopeType: 'GLOBAL', scopeValue: '' } },
-      update: {},
-      create: { roleId: buyerRole.id, permissionId: permission.id, scopeType: 'GLOBAL', scopeValue: '' },
-    });
-  }
+  const buyerGranted = await grantPermissions(buyerRole.id, buyerPermissionCodes);
+
+  // Procurement Manager permissions — penyetuju PR/PO dengan visibilitas vendor.
+  // Sebelumnya role ini 0 izin sehingga 2 pemegangnya tak bisa berbuat apa pun.
+  const procManagerPermissionCodes = [
+    'Project.VIEW', 'WBS.VIEW', 'Vendor.VIEW', 'Vendor.CREATE',
+    'PurchaseRequisition.VIEW', 'PurchaseRequisition.CREATE', 'PurchaseRequisition.APPROVE',
+    'PurchaseOrder.VIEW', 'PurchaseOrder.CREATE', 'PurchaseOrder.APPROVE',
+    'GoodsReceipt.VIEW', 'Rfq.VIEW', 'Rfq.SEND', 'Rfq.EVALUATE',
+    'Approval.VIEW', 'Approval.APPROVE', 'Analytics.VIEW', 'Audit.VIEW',
+  ];
+  const pmGranted = await grantPermissions(procManagerRole.id, procManagerPermissionCodes);
 
   console.log(`[users] Seeded: ${admin.email}, ${buyer.email}`);
+  console.log(`[roles] BUYER ${buyerGranted} izin · PROCUREMENT_MANAGER ${pmGranted} izin`);
   return { superAdminRole, buyerRole, procManagerRole, admin, buyer };
 }
 
