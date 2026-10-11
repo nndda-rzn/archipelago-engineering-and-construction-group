@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button, cn, EntityAvatar, ErrorState, EvmBars, Skeleton, StatusBadge, Waterfall, humanizeCode } from '@aec/ui';
 import { useProject, useProjectActivity, useProjectSummary, useProjectSchedule, useProjectCashFlow, useProjectStakeholders, useProjectDomains, useAdvancePhase } from '@/entities/project';
 import { useCommitment, useEvm, useForecasts, useProjectHealth } from '@/features/project';
+import { Money } from '@/shared/ui/money';
 import { CommitmentBar } from '@/features/project/ui/commitment-bar';
 import { ProjectEditForm } from '@/features/project/ui/project-edit-form';
 import { ProjectTeamBand } from '@/features/project/ui/project-team-band';
@@ -182,21 +183,44 @@ export function ProjectDetailPage() {
       <div>
         {tab === 'overview' && (
           <div className="grid gap-6 xl:grid-cols-2">
-            <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-              <h2 className="mb-3 text-overline uppercase text-neutral-500">Project health profile</h2>
-              {s ? <HealthRadar summary={s} /> : <Skeleton className="h-56 w-full" />}
-            </section>
-            <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-              <h2 className="mb-3 text-overline uppercase text-neutral-500">Billing flow</h2>
-              {s ? <BillingFunnel summary={s} /> : <Skeleton className="h-56 w-full" />}
-            </section>
+            {/* Cash chain — satu-satunya aliran uang di Overview (funnel ada di Commercial). */}
             <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
               <h2 className="mb-3 text-overline uppercase text-neutral-500">Cash chain</h2>
               {cashFlow.data ? <CashChain cashFlow={cashFlow.data} /> : <Skeleton className="h-32 w-full" />}
             </section>
+
+            {/* Ringkasan sinyal lintas domain — angka + tautan ke tab, bukan chart penuh. */}
             <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
-              <h2 className="mb-3 text-overline uppercase text-neutral-500">Risk profile</h2>
-              {s ? <ProjectRiskHeatmap cells={s.analytics.riskMatrix} /> : <Skeleton className="h-32 w-full" />}
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Signals across the project</h2>
+              {s ? (
+                <ul className="flex flex-col divide-y divide-neutral-100">
+                  <SignalRow label="Open risks" value={s.domains.governance.riskOpen} tab="risk" onGo={setTab} tone={s.domains.governance.riskOpen > 3 ? 'bad' : s.domains.governance.riskOpen > 0 ? 'warn' : 'ok'} />
+                  <SignalRow label="Open NCR" value={s.domains.quality.ncrOpen} tab="quality" onGo={setTab} tone={s.domains.quality.ncrOpen > 0 ? 'warn' : 'ok'} />
+                  <SignalRow label="Open HSE" value={s.domains.hse.incidentOpen} tab="quality" onGo={setTab} tone={s.domains.hse.incidentOpen > 0 ? 'bad' : 'ok'} />
+                  <SignalRow label="Work packages" value={s.domains.execution.workPackage} tab="execution" onGo={setTab} tone="neutral" />
+                  <SignalRow label="Variation orders" value={s.domains.commercial.variation} tab="commercial" onGo={setTab} tone="neutral" />
+                </ul>
+              ) : (
+                <Skeleton className="h-40 w-full" />
+              )}
+            </section>
+
+            {/* Aktivitas terbaru — jejak hidup proyek. */}
+            <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs xl:col-span-2">
+              <h2 className="mb-3 text-overline uppercase text-neutral-500">Recent activity</h2>
+              {activity.data && activity.data.length > 0 ? (
+                <ol className="flex flex-col gap-3">
+                  {activity.data.slice(0, 5).map((a) => (
+                    <li key={a.id} className="flex items-baseline gap-3 text-body-sm">
+                      <span className="w-32 shrink-0 font-mono text-caption tabular-nums text-neutral-400">{new Date(a.at).toLocaleDateString('id-ID', { dateStyle: 'medium' })}</span>
+                      <span className="min-w-0 flex-1 truncate text-neutral-800" title={a.summary}>{a.summary}</span>
+                      <span className="shrink-0 text-caption text-neutral-400">{humanizeCode(a.action)}</span>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="text-body-sm text-neutral-500">No activity recorded yet.</p>
+              )}
             </section>
           </div>
         )}
@@ -248,23 +272,36 @@ export function ProjectDetailPage() {
 
         {tab === 'commercial' && s && (
           <div className="flex flex-col gap-6">
+            {/* Hero: billing funnel — satu-satunya tempat funnel muncul. */}
             <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
               <h2 className="mb-3 text-overline uppercase text-neutral-500">Billing flow</h2>
               <BillingFunnel summary={s} />
             </section>
+
+            {/* Strip ringkas: angka kunci penagihan, bukan 5 kartu sama besar. */}
+            <section aria-label="Billing summary" className="grid grid-cols-2 gap-x-6 gap-y-3 border-y border-neutral-200 py-4 sm:grid-cols-4">
+              <MiniKpi label="Collected" value={s.domains.commercial.collection} tone="positive" />
+              <MiniKpi label="Billed" value={s.domains.commercial.clientInvoice} />
+              <MiniKpi label="Certified" value={s.domains.commercial.progressClaim} />
+              <MiniKpi label="Outstanding" value={Math.max(0, s.domains.commercial.progressClaim - s.domains.commercial.collection)} tone="warning" />
+            </section>
+
+            {/* Tautan domain */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <DomainTile label="Contracts" value={s.domains.commercial.contract} href="/commercial" />
-              <DomainTile label="Progress claims" value={s.domains.commercial.progressClaim} format={formatIdr} href="/finance/progress-claims" />
-              <DomainTile label="Client invoices" value={s.domains.commercial.clientInvoice} format={formatIdr} href="/finance/client-invoices" />
-              <DomainTile label="Collected" value={s.domains.commercial.collection} format={formatIdr} href="/finance/collections" />
+              <DomainTile label="Progress claims" value={s.domains.commercial.progressClaim} money href="/finance/progress-claims" />
+              <DomainTile label="Client invoices" value={s.domains.commercial.clientInvoice} money href="/finance/client-invoices" />
+              <DomainTile label="Collected" value={s.domains.commercial.collection} money href="/finance/collections" />
               <DomainTile label="Variation orders" value={s.domains.commercial.variation} href="/finance/variations" />
             </div>
+
+            {/* Grup dokumen dengan empty state jujur bertautan. */}
             {domains.data && (
               <div className="grid gap-6 lg:grid-cols-2">
-                <DomainGroup title="Progress claims" items={domains.data.commercial.progressClaims} />
-                <DomainGroup title="Client invoices" items={domains.data.commercial.clientInvoices} />
-                <DomainGroup title="Collections" items={domains.data.commercial.collections} />
-                <DomainGroup title="Variation orders" items={domains.data.commercial.variations} />
+                <DomainGroup title="Progress claims" items={domains.data.commercial.progressClaims} emptyHref="/finance/progress-claims" emptyLabel="Open progress claims" />
+                <DomainGroup title="Client invoices" items={domains.data.commercial.clientInvoices} emptyHref="/finance/client-invoices" emptyLabel="Open client invoices" />
+                <DomainGroup title="Collections" items={domains.data.commercial.collections} emptyHref="/finance/collections" emptyLabel="Open collections" />
+                <DomainGroup title="Variation orders" items={domains.data.commercial.variations} emptyHref="/finance/variations" emptyLabel="Open variation orders" />
               </div>
             )}
           </div>
@@ -303,7 +340,6 @@ export function ProjectDetailPage() {
 
         {tab === 'execution' && domains.data && (
           <div className="flex flex-col gap-6">
-            {s && <DomainSignals summary={s} />}
             <section className="rounded-md border border-neutral-200 bg-white p-4 shadow-xs">
               <h2 className="mb-3 text-overline uppercase text-neutral-500">Field schedule (Gantt)</h2>
               <ProjectGanttView projectId={projectId} defaultGroup="field" />
@@ -322,7 +358,6 @@ export function ProjectDetailPage() {
 
         {tab === 'quality' && domains.data && (
           <div className="flex flex-col gap-6">
-            {s && <DomainSignals summary={s} />}
             {s && (
               <div className="grid gap-6 lg:grid-cols-2">
                 <MixDonut title="NCR by severity" data={s.analytics.qualityMix} />
@@ -476,14 +511,46 @@ export function ProjectDetailPage() {
   );
 }
 
-/** Kartu domain: angka besar + label + tautan ke halaman domainnya. */
-function DomainTile({ label, value, format, href }: { label: string; value: number; format?: (n: number) => string; href: string }) {
+/** Kartu domain: angka ringkas + label + tautan ke halaman domainnya. */
+function DomainTile({ label, value, money, href }: { label: string; value: number; money?: boolean; href: string }) {
   return (
     <Link to={href} className="group flex flex-col gap-1 rounded-md border border-neutral-200 bg-white p-4 shadow-xs transition-colors duration-fast hover:border-neutral-300">
       <span className="text-overline uppercase text-neutral-500">{label}</span>
-      <span className="font-mono text-metric tabular-nums text-neutral-950">{format ? format(value) : value}</span>
+      <span className="truncate font-mono text-h3 tabular-nums text-neutral-950">
+        {money ? <Money value={value} /> : value}
+      </span>
       <span className="text-caption text-neutral-400 group-hover:text-neutral-700">Open →</span>
     </Link>
+  );
+}
+
+/** KPI ringkas tanpa bingkai — angka mono + label, ber-tone. */
+function MiniKpi({ label, value, tone }: { label: string; value: number; tone?: 'positive' | 'warning' }) {
+  const toneClass = tone === 'positive' ? 'text-financial-positive-600' : tone === 'warning' ? 'text-warning-700' : 'text-neutral-950';
+  return (
+    <div className="min-w-0">
+      <p className="text-overline uppercase text-neutral-500">{label}</p>
+      <p className={`mt-0.5 truncate font-mono text-h3 tabular-nums ${toneClass}`}><Money value={value} /></p>
+    </div>
+  );
+}
+
+/** Baris sinyal lintas domain — angka + tautan ke tab terkait (bukan chart penuh). */
+function SignalRow({ label, value, tab, onGo, tone }: { label: string; value: number; tab: Tab; onGo: (t: Tab) => void; tone: 'ok' | 'warn' | 'bad' | 'neutral' }) {
+  const dot = tone === 'bad' ? 'bg-destructive-500' : tone === 'warn' ? 'bg-warning-500' : tone === 'ok' ? 'bg-success-500' : 'bg-neutral-300';
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onGo(tab)}
+        className="flex w-full items-center gap-3 py-2 text-left transition-colors duration-fast hover:text-neutral-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-racing-red-600/40"
+      >
+        <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} aria-hidden="true" />
+        <span className="min-w-0 flex-1 truncate text-body-sm text-neutral-700">{label}</span>
+        <span className="shrink-0 font-mono text-body-sm tabular-nums text-neutral-900">{value}</span>
+        <span className="shrink-0 text-caption text-neutral-400">View →</span>
+      </button>
+    </li>
   );
 }
 

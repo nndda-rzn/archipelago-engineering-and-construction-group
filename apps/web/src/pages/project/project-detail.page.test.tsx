@@ -206,11 +206,22 @@ describe('ProjectDetailPage', () => {
     expect(container.querySelectorAll('[data-slot="milestone-dot"]').length).toBeGreaterThan(0);
   });
 
-  it('renders a health radar and a billing funnel on Overview', () => {
+  it('Overview is an orientation view — cash chain + cross-domain signals, no duplicate charts', () => {
     const { container } = renderWithProviders(<ProjectDetailPage />);
-    expect(screen.getByText('Project health profile')).toBeTruthy();
-    expect(screen.getAllByText('Billing flow').length).toBeGreaterThan(0);
-    expect(container.querySelector('.recharts-responsive-container')).toBeTruthy();
+    expect(screen.getByText('Cash chain')).toBeTruthy();
+    expect(screen.getByText('Signals across the project')).toBeTruthy();
+    // Chart detail (funnel/radar/heatmap) TIDAK diulang di Overview.
+    expect(screen.queryByText('Project health profile')).toBeNull();
+    expect(screen.queryByText('Billing flow')).toBeNull();
+    expect(screen.queryByText('Risk profile')).toBeNull();
+    expect(container.querySelectorAll('[data-slot="risk-cell"]').length).toBe(0);
+  });
+
+  it('Overview signal rows link to the owning tab', () => {
+    renderWithProviders(<ProjectDetailPage />);
+    fireEvent.click(screen.getByRole('button', { name: /Open risks/ }));
+    // setelah klik, tab Risk & Gov aktif
+    expect(screen.getByRole('tab', { name: 'Risk & Gov' }).getAttribute('aria-selected')).toBe('true');
   });
 
   it('shows the cash chain on the Overview tab', () => {

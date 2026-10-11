@@ -56,6 +56,13 @@ describe('FunnelSteps', () => {
     expect(screen.getByText('Contract')).toBeTruthy();
     expect(screen.getByText('Collected')).toBeTruthy();
   });
+
+  it('draws a bar only for non-zero steps (no fake minimum bar for 0)', () => {
+    const { container } = render(<FunnelSteps title="Billing" steps={[{ key: 'Contract', value: 100 }, { key: 'Collected', value: 0 }]} />);
+    // dua baris, tapi hanya satu bar yang benar-benar digambar
+    expect(container.querySelectorAll('[data-slot="funnel-bar"]')).toHaveLength(1);
+    expect(screen.getByText('0')).toBeTruthy();
+  });
 });
 
 describe('CalendarHeatmap', () => {
