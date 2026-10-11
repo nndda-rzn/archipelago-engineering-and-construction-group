@@ -4,7 +4,9 @@ import { ProjectController } from './presentation/controllers/project.controller
 import { WbsController } from './presentation/controllers/wbs.controller';
 import { BudgetController } from './presentation/controllers/budget.controller';
 import { ProjectControlsController } from './presentation/controllers/project-controls.controller';
+import { ProjectCommandCenterController } from './presentation/controllers/project-command-center.controller';
 import { ProjectService } from './application/services/project.service';
+import { ProjectCommandCenterService } from './application/services/project-command-center.service';
 import { WbsService } from './application/services/wbs.service';
 import { BudgetService } from './application/services/budget.service';
 import { ProjectHealthService } from './application/services/project-health.service';
@@ -18,9 +20,10 @@ import { EarnedValueService } from './application/services/earned-value.service'
 
 @Module({
   imports: [SharedModule],
-  controllers: [ProjectController, WbsController, BudgetController, ProjectControlsController],
+  controllers: [ProjectController, WbsController, BudgetController, ProjectControlsController, ProjectCommandCenterController],
   providers: [
     ProjectService,
+    ProjectCommandCenterService,
     WbsService,
     BudgetService,
     ProjectHealthService,
