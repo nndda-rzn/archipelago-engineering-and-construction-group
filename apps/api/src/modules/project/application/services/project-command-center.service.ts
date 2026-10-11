@@ -205,6 +205,70 @@ export class ProjectCommandCenterService {
     };
   }
 
+  /**
+   * Gantt: satu payload ber-jadwal — fase, milestone, paket kerja (ControlAccount
+   * dengan baseline/dependency/critical path/progress), dan work package.
+   * `links` = dependensi (predecessor → successor) untuk garis penghubung.
+   */
+  async gantt(id: string) {
+    const project = await this.prisma.project.findUnique({ where: { id }, select: { id: true, startDate: true, completionDate: true } });
+    if (!project) throw new NotFoundException({ code: 'PROJECT_NOT_FOUND', message: 'Project not found' });
+
+    const [phases, milestones, controlAccounts, workPackages] = await Promise.all([
+      this.prisma.projectPhaseHistory.findMany({ where: { projectId: id }, orderBy: { enteredAt: 'asc' } }),
+      this.prisma.projectMilestone.findMany({ where: { projectId: id }, orderBy: { plannedDate: 'asc' } }),
+      this.prisma.controlAccount.findMany({ where: { projectId: id }, orderBy: { scheduleStart: 'asc' } }),
+      this.prisma.constructionWorkPackage.findMany({ where: { projectId: id }, orderBy: { startDate: 'asc' }, select: { id: true, wpNumber: true, title: true, startDate: true, endDate: true, baselineStart: true, baselineEnd: true, predecessorId: true, isCriticalPath: true, status: true, progress: { orderBy: { progressDate: 'desc' }, take: 1, select: { physicalProgress: true } } } }),
+    ]);
+
+    const rows: Array<Record<string, unknown>> = [];
+
+    // Fase siklus hidup
+    for (const ph of phases) {
+      if (!ph.enteredAt) continue;
+      rows.push({ id: `phase-${ph.id}`, group: 'Phase', label: ph.phase, start: ph.enteredAt.toISOString(), end: (ph.exitedAt ?? null)?.toISOString() ?? null, progress: null, isCriticalPath: false, baselineStart: null, baselineEnd: null });
+    }
+    // Milestone sebagai diamond (start = end = tanggal)
+    for (const m of milestones) {
+      rows.push({ id: `ms-${m.id}`, group: 'Milestone', label: m.name, start: m.plannedDate.toISOString(), end: m.actualDate?.toISOString() ?? m.plannedDate.toISOString(), progress: null, isCriticalPath: m.isCritical, milestone: true, baselineStart: null, baselineEnd: null, status: m.status });
+    }
+    // Paket kerja
+    for (const ca of controlAccounts) {
+      if (!ca.scheduleStart || !ca.scheduleEnd) continue;
+      rows.push({
+        id: `ca-${ca.id}`, group: 'Work package', label: ca.name, start: ca.scheduleStart.toISOString(), end: ca.scheduleEnd.toISOString(),
+        progress: Number(ca.progressPercent), isCriticalPath: ca.isCriticalPath,
+        baselineStart: ca.baselineStart?.toISOString() ?? null, baselineEnd: ca.baselineEnd?.toISOString() ?? null, status: ca.status,
+      });
+    }
+    // Work package lapangan
+    for (const wp of workPackages) {
+      if (!wp.startDate || !wp.endDate) continue;
+      rows.push({
+        id: `wp-${wp.id}`, group: 'Field', label: wp.title, start: wp.startDate.toISOString(), end: wp.endDate.toISOString(),
+        progress: wp.progress[0] ? Number(wp.progress[0].physicalProgress) : null, isCriticalPath: wp.isCriticalPath,
+        baselineStart: wp.baselineStart?.toISOString() ?? null, baselineEnd: wp.baselineEnd?.toISOString() ?? null, status: wp.status,
+      });
+    }
+
+    // Dependensi: predecessor → successor (berdasarkan urutan jadwal paket kerja)
+    const links: Array<{ from: string; to: string; type: string; lagDays: number }> = [];
+    for (const ca of controlAccounts) {
+      if (ca.predecessorId) links.push({ from: `ca-${ca.predecessorId}`, to: `ca-${ca.id}`, type: ca.dependencyType, lagDays: ca.lagDays });
+    }
+    for (const wp of workPackages) {
+      if (wp.predecessorId) links.push({ from: `wp-${wp.predecessorId}`, to: `wp-${wp.id}`, type: 'FS', lagDays: 0 });
+    }
+
+    return {
+      projectId: id,
+      startDate: project.startDate?.toISOString() ?? null,
+      completionDate: project.completionDate?.toISOString() ?? null,
+      rows,
+      links,
+    };
+  }
+
   /** S-curve: budget rencana per periode (kumulatif) vs progress aktual kumulatif. */
   async schedule(id: string) {
     const project = await this.prisma.project.findUnique({ where: { id }, select: { progressPlanned: true, progressActual: true, startDate: true } });

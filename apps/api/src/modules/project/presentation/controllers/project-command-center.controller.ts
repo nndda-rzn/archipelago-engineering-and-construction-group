@@ -41,6 +41,12 @@ export class ProjectCommandCenterController {
     return this.service.domains(projectId);
   }
 
+  @Get('gantt')
+  @Permissions(Permission.ProjectView)
+  gantt(@Param('projectId') projectId: string) {
+    return this.service.gantt(projectId);
+  }
+
   @Get('phases')
   @Permissions(Permission.ProjectView)
   phases(@Param('projectId') projectId: string) {

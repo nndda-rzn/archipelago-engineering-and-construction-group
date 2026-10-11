@@ -35,6 +35,7 @@ function makePrisma(overrides: Record<string, unknown> = {}) {
     purchaseOrder: { aggregate: jest.fn().mockResolvedValue({ _sum: { totalAmount: 0 } }), count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
     subcontract: { aggregate: jest.fn().mockResolvedValue({ _sum: { contractValue: 0 } }), count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
     constructionWorkPackage: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+    controlAccount: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null), update: jest.fn(), create: jest.fn() },
     constructionDailyReport: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
     drawing: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]), groupBy: jest.fn().mockResolvedValue([]) },
     deliverable: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]), groupBy: jest.fn().mockResolvedValue([]) },
@@ -134,6 +135,28 @@ describe('ProjectCommandCenterService.cashFlow', () => {
   it('returns the six-step chain', async () => {
     const out = await makeService(makePrisma()).cashFlow('p1');
     expect(out.chain.map((c) => c.key)).toEqual(['contract', 'budget', 'committed', 'actual', 'billed', 'collected']);
+  });
+});
+
+describe('ProjectCommandCenterService.gantt', () => {
+  it('assembles scheduled rows from phases, milestones, control accounts and work packages', async () => {
+    const prisma = makePrisma({
+      project: { findUnique: jest.fn().mockResolvedValue({ id: 'p1', startDate: new Date('2026-01-01'), completionDate: new Date('2027-01-01') }) },
+      projectPhaseHistory: { findMany: jest.fn().mockResolvedValue([{ id: 'ph1', phase: 'CONSTRUCTION', enteredAt: new Date('2026-03-01'), exitedAt: null }]) },
+      projectMilestone: { count: jest.fn(), findMany: jest.fn().mockResolvedValue([{ id: 'm1', name: 'Handover', plannedDate: new Date('2027-01-01'), actualDate: null, status: 'PLANNED', isCritical: true }]) },
+      controlAccount: { findMany: jest.fn().mockResolvedValue([{ id: 'ca1', name: 'Engineering', scheduleStart: new Date('2026-01-01'), scheduleEnd: new Date('2026-03-01'), progressPercent: 100, isCriticalPath: true, baselineStart: new Date('2026-01-01'), baselineEnd: new Date('2026-02-20'), predecessorId: null, dependencyType: 'FS', lagDays: 0, status: 'ACTIVE' }, { id: 'ca2', name: 'Construction', scheduleStart: new Date('2026-03-01'), scheduleEnd: new Date('2026-08-01'), progressPercent: 40, isCriticalPath: false, baselineStart: null, baselineEnd: null, predecessorId: 'ca1', dependencyType: 'FS', lagDays: 0, status: 'ACTIVE' }]) },
+      constructionWorkPackage: { findMany: jest.fn().mockResolvedValue([{ id: 'wp1', wpNumber: 'WP-1', title: 'Erection', startDate: new Date('2026-03-01'), endDate: new Date('2026-08-01'), baselineStart: null, baselineEnd: null, predecessorId: null, isCriticalPath: true, status: 'IN_PROGRESS', progress: [{ physicalProgress: 45 }] }]) },
+    });
+    const out = await makeService(prisma).gantt('p1');
+    expect(out.rows.length).toBeGreaterThanOrEqual(5);
+    expect(out.rows.find((r) => r.id === 'ca-ca2')).toBeTruthy();
+    expect(out.rows.find((r) => r.milestone === true)!.label).toBe('Handover');
+    expect(out.links).toContainEqual({ from: 'ca-ca1', to: 'ca-ca2', type: 'FS', lagDays: 0 });
+  });
+
+  it('throws NotFound for a missing project', async () => {
+    const prisma = makePrisma({ project: { findUnique: jest.fn().mockResolvedValue(null) } });
+    await expect(makeService(prisma).gantt('nope')).rejects.toBeInstanceOf(NotFoundException);
   });
 });
 
