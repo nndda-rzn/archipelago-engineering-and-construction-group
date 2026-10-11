@@ -223,30 +223,102 @@ export const roleSchema = z.object({
   name: z.string(),
   description: z.string().nullable(),
   status: z.string(),
+  category: z.string(),
+  isSystem: z.boolean(),
+  isAssignable: z.boolean(),
 });
 export type Role = z.infer<typeof roleSchema>;
 
+export const permissionRefSchema = z.object({
+  code: z.string(),
+  resource: z.string(),
+  action: z.string(),
+  group: z.string().nullable().optional(),
+  isSensitive: z.boolean().optional(),
+});
+
 export const roleWithPermissionsSchema = roleSchema.extend({
-  _count: z.object({ userRoles: z.number() }),
-  permissions: z.array(
-    z.object({
-      permission: z.object({ code: z.string(), resource: z.string(), action: z.string() }),
-    }),
-  ),
+  memberCount: z.number(),
+  permissionCount: z.number(),
+  permissions: z.array(permissionRefSchema),
 });
 export type RoleWithPermissions = z.infer<typeof roleWithPermissionsSchema>;
+
+export const roleStatsSchema = z.object({
+  total: z.number(),
+  active: z.number(),
+  emptyRoles: z.number(),
+  unusedRoles: z.number(),
+  assignments: z.number(),
+});
+export type RoleStats = z.infer<typeof roleStatsSchema>;
+
+export const roleMemberSchema = z.object({
+  userId: z.string(),
+  displayName: z.string(),
+  email: z.string(),
+  jobTitle: z.string().nullable(),
+  department: z.string().nullable(),
+  legalEntityCode: z.string().nullable(),
+  legalEntityName: z.string().nullable(),
+  effectiveFrom: z.string(),
+  effectiveTo: z.string().nullable(),
+  assignedById: z.string().nullable(),
+  reason: z.string().nullable(),
+});
+export type RoleMember = z.infer<typeof roleMemberSchema>;
+
+export const roleActivitySchema = z.object({
+  id: z.string(),
+  action: z.string(),
+  summary: z.string(),
+  actorId: z.string().nullable(),
+  at: z.string(),
+});
+export type RoleActivity = z.infer<typeof roleActivitySchema>;
+
+export const roleDetailSchema = z.object({
+  role: roleSchema.extend({ createdAt: z.string(), updatedAt: z.string() }),
+  permissions: z.array(permissionRefSchema),
+  members: z.array(roleMemberSchema),
+  activity: z.array(roleActivitySchema),
+});
+export type RoleDetail = z.infer<typeof roleDetailSchema>;
+
+export const permissionCatalogSchema = z.object({
+  code: z.string(),
+  resource: z.string(),
+  action: z.string(),
+  description: z.string().nullable(),
+  group: z.string().nullable(),
+  isSensitive: z.boolean(),
+  sortOrder: z.number(),
+});
+export type PermissionCatalog = z.infer<typeof permissionCatalogSchema>;
 
 export const createRoleSchema = z.object({
   code: z.string().min(2).max(50),
   name: z.string().min(2).max(100),
-  description: z.string().optional(),
+  description: z.string().max(500).optional(),
+  category: z.string().optional(),
+  status: z.string().optional(),
 });
 export type CreateRole = z.infer<typeof createRoleSchema>;
+
+export const updateRoleSchema = createRoleSchema.omit({ code: true }).partial();
+export type UpdateRole = z.infer<typeof updateRoleSchema>;
 
 export const assignPermissionsSchema = z.object({
   permissionCodes: z.array(z.string()),
 });
 export type AssignPermissions = z.infer<typeof assignPermissionsSchema>;
+
+export const addRoleMemberSchema = z.object({
+  userId: z.string(),
+  reason: z.string().max(200).optional(),
+  effectiveFrom: z.string().optional(),
+});
+export type AddRoleMember = z.infer<typeof addRoleMemberSchema>;
 
 export const auditLogSchema = z.object({
   id: z.string(),

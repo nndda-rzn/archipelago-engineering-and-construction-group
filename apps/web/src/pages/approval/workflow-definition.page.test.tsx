@@ -153,8 +153,8 @@ vi.mock('@/entities/role', async () => {
     ...actual,
     useRoles: () => ({
       data: [
-        { id: 'r1', code: 'PROCUREMENT_MANAGER', name: 'Procurement Manager', description: null, status: 'ACTIVE', _count: { userRoles: 1 }, permissions: [] },
-        { id: 'r2', code: 'SUPER_ADMIN', name: 'Super Administrator', description: null, status: 'ACTIVE', _count: { userRoles: 2 }, permissions: [] },
+        { id: 'r1', code: 'PROCUREMENT_MANAGER', name: 'Procurement Manager', description: null, status: 'ACTIVE', category: 'FUNCTIONAL', isSystem: false, isAssignable: true, memberCount: 1, permissionCount: 0, permissions: [] },
+        { id: 'r2', code: 'SUPER_ADMIN', name: 'Super Administrator', description: null, status: 'ACTIVE', category: 'SYSTEM', isSystem: true, isAssignable: true, memberCount: 2, permissionCount: 0, permissions: [] },
       ],
       isLoading: false,
     }),
