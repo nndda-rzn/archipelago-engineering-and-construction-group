@@ -11,6 +11,8 @@ export { MixDonut, ProjectRiskHeatmap, HealthRadar, BillingFunnel, SCurveCompare
 export { ProjectGanttView } from './project-gantt-view';
 export { WbsTree } from './wbs-tree';
 export { WbsInspector } from './wbs-inspector';
+export { WbsSummaryStrip } from './wbs-summary-strip';
+export { ProjectPicker } from './project-picker';
 export { WbsForm } from './wbs-form';
 export { BudgetRow } from './budget-row';
 export { BudgetStatusBadge, BudgetTotalBar } from './budget-status';

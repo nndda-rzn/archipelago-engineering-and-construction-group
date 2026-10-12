@@ -80,8 +80,8 @@ export function WbsInspector({ projectId, item, onDeleted }: { projectId: string
 
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
-          <Label htmlFor="wbs-progress">Progress %</Label>
-          <div className="flex items-center gap-3">
+          <Label htmlFor="wbs-progress" id="wbs-progress-label">Progress %</Label>
+          <div role="group" aria-labelledby="wbs-progress-label" className="flex items-center gap-3">
             <input
               id="wbs-progress-range"
               type="range"
@@ -90,7 +90,7 @@ export function WbsInspector({ projectId, item, onDeleted }: { projectId: string
               value={progress}
               aria-label="Progress slider"
               onChange={(e) => setProgress(Number(e.target.value))}
-              className="h-1.5 flex-1 accent-racing-red-600"
+              className="h-1.5 flex-1 accent-neutral-800"
             />
             <Input
               id="wbs-progress"
@@ -146,8 +146,8 @@ export function WbsInspector({ projectId, item, onDeleted }: { projectId: string
       </div>
       {update.isError && <p className="text-caption text-destructive-600">Failed to save. Try again.</p>}
 
-      <section aria-label="Rollup" className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
-        <h3 className="mb-2 text-overline uppercase text-neutral-500">Rollup · read-only</h3>
+      <section aria-label="Derived from children" className="rounded-md border border-neutral-200 bg-surface-sunken p-3">
+        <h3 className="mb-2 text-overline uppercase text-neutral-500">Derived from children · read-only</h3>
         <dl className="grid grid-cols-3 gap-2 text-body-sm">
           <div>
             <dt className="text-caption text-neutral-500">Budget</dt>
@@ -197,7 +197,7 @@ export function WbsInspector({ projectId, item, onDeleted }: { projectId: string
       </section>
 
       <div className="flex items-center justify-between border-t border-neutral-100 pt-3">
-        <span className="flex items-center gap-1 text-caption text-neutral-400">
+        <span className="flex items-center gap-1 text-caption text-neutral-500">
           <CalendarRange size={ICON_SIZE.sm} strokeWidth={ICON_STROKE} aria-hidden="true" />
           {plannedStart || plannedEnd ? `${plannedStart || '…'} → ${plannedEnd || '…'}` : 'No dates set'}
         </span>

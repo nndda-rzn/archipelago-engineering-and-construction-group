@@ -32,16 +32,32 @@ describe('WbsInspector', () => {
 
   it('saves edited progress through PATCH', async () => {
     renderWithProviders(<WbsInspector projectId="p1" item={item} onDeleted={vi.fn()} />);
-    const input = screen.getByLabelText('Progress %') as HTMLInputElement;
+    const input = screen.getByRole('spinbutton') as HTMLInputElement;
     fireEvent.change(input, { target: { value: '55' } });
     fireEvent.click(screen.getByRole('button', { name: /Save/i }));
     await waitFor(() => expect(updateMutate).toHaveBeenCalledTimes(1));
     expect(updateMutate.mock.calls[0]![0]).toMatchObject({ itemId: 'w1', input: expect.objectContaining({ progressPercent: 55 }) });
   });
 
+  it('groups the slider and number as one labelled control', () => {
+    renderWithProviders(<WbsInspector projectId="p1" item={item} onDeleted={vi.fn()} />);
+    expect(screen.getByRole('group', { name: 'Progress %' })).toBeTruthy();
+  });
+
+  it('does not paint the progress control in the action colour', () => {
+    renderWithProviders(<WbsInspector projectId="p1" item={item} onDeleted={vi.fn()} />);
+    const slider = screen.getByLabelText('Progress slider');
+    expect(slider.className).not.toContain('racing-red');
+    expect(slider.className).toContain('accent-neutral-800');
+  });
+
+  it('labels the rollup block in plain language, not jargon', () => {
+    renderWithProviders(<WbsInspector projectId="p1" item={item} onDeleted={vi.fn()} />);
+    expect(screen.getByText(/Derived from children/i)).toBeTruthy();
+  });
+
   it('shows rollup as read-only, separate from the inputs', () => {
     renderWithProviders(<WbsInspector projectId="p1" item={item} onDeleted={vi.fn()} />);
-    expect(screen.getByText(/Rollup/i)).toBeTruthy();
     expect(screen.getByText(/Budget/i)).toBeTruthy();
     // Rollup budget is rendered compact (Rp 1,1 M), not as an editable field.
     expect(screen.getAllByText(/Rp/).length).toBeGreaterThan(0);
