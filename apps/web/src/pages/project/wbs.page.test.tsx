@@ -46,7 +46,22 @@ vi.mock('@/entities/wbs', () => ({
 }));
 
 vi.mock('@/entities/project', () => ({
-  useProjects: () => ({ data: { items: [{ id: 'p1', code: 'PRJ-1', name: 'Alpha', currency: 'IDR' }] }, isLoading: false }),
+  useProjects: () => ({
+    data: {
+      items: [{
+        id: 'p1', code: 'PRJ-EPC-2027-014', name: 'EPC Industrial Processing Facility', client: 'PT Klien Utama',
+        legalEntityId: 'le1', businessUnit: null, location: 'Karawang', currency: 'IDR',
+        contractValue: 4_800_000_000_000, startDate: '2026-01-05T00:00:00.000Z', completionDate: '2027-07-31T00:00:00.000Z',
+        director: null, manager: 'Ahmad', type: 'EPC', priority: 'HIGH', status: 'ACTIVE', createdAt: '', updatedAt: '',
+      }],
+    },
+    isLoading: false,
+  }),
+}));
+
+// Picker punya test sendiri; di sini cukup stub agar tidak bergantung hook-nya.
+vi.mock('@/features/project/ui/project-picker', () => ({
+  ProjectPicker: ({ value }: { value: string }) => <div data-testid="project-picker">{value || 'none'}</div>,
 }));
 
 import { WbsPage } from './wbs.page';
@@ -54,7 +69,10 @@ import { WbsPage } from './wbs.page';
 describe('WbsPage', () => {
   beforeEach(() => {
     nav.state.search = {};
-    treeState.value = [node('w1', '1', 'Engineering', [node('w2', '1.1', 'Detail')])];
+    treeState.value = [
+      { ...node('w1', '1', 'Engineering', [node('w2', '1.1', 'Detail')]), rollup: { budget: 4_200_000_000, actual: 1_100_000_000, progress: 68, childCount: 1 } },
+      { ...node('w3', '2', 'Procurement'), rollup: { budget: 2_000_000_000, actual: 900_000_000, progress: 45, childCount: 0 } },
+    ];
     treeState.isLoading = false;
     treeState.isError = false;
   });
@@ -62,7 +80,6 @@ describe('WbsPage', () => {
   it('reads the project id from the URL deep-link', () => {
     nav.state.search = { project: 'p1' };
     renderWithProviders(<WbsPage />);
-    // With a project selected, the tree renders instead of the empty prompt.
     expect(screen.getByRole('tree')).toBeTruthy();
   });
 
@@ -83,5 +100,21 @@ describe('WbsPage', () => {
     renderWithProviders(<WbsPage />);
     fireEvent.click(screen.getByRole('treeitem', { name: '1 Engineering' }));
     expect(screen.getByLabelText('WBS item detail')).toBeTruthy();
+  });
+
+  it('shows project context in the identity band', () => {
+    nav.state.search = { project: 'p1' };
+    renderWithProviders(<WbsPage />);
+    expect(screen.getByText(/PT Klien Utama/)).toBeTruthy();
+    expect(screen.getByText(/PRJ-EPC-2027-014/)).toBeTruthy();
+  });
+
+  it('summarises the breakdown above the ledger', () => {
+    nav.state.search = { project: 'p1' };
+    renderWithProviders(<WbsPage />);
+    expect(screen.getByLabelText('WBS summary')).toBeTruthy();
+    expect(screen.getByText(/Total budget/i)).toBeTruthy();
+    // 4.2B + 2.0B = 6.2B across two roots
+    expect(screen.getByText(/Rp 6,2 M/)).toBeTruthy();
   });
 });

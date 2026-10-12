@@ -11,19 +11,9 @@ const node = (
   extra: Partial<WbsItem> = {},
   children: WbsItem[] = [],
 ): WbsItem => ({
-  id,
-  code,
-  name,
-  description: null,
-  sortOrder: 0,
-  progressPercent: 0,
-  plannedStart: null,
-  plannedEnd: null,
-  responsibleManager: null,
-  isMilestone: false,
-  rollup: { budget: 0, actual: 0, progress: null, childCount: children.length },
-  children,
-  ...extra,
+  id, code, name, description: null, sortOrder: 0, progressPercent: 0, plannedStart: null, plannedEnd: null,
+  responsibleManager: null, isMilestone: false,
+  rollup: { budget: 0, actual: 0, progress: null, childCount: children.length }, children, ...extra,
 });
 
 const tree: WbsItem[] = [
@@ -33,41 +23,65 @@ const tree: WbsItem[] = [
   node('r2', '2', 'Commissioning', { isMilestone: true, rollup: { budget: 0, actual: 0, progress: null, childCount: 0 } }),
 ];
 
+const render = (props: Partial<Parameters<typeof WbsTree>[0]> = {}) =>
+  renderWithProviders(
+    <WbsTree tree={tree} selectedId={null} onSelect={vi.fn()} onAddChild={vi.fn()} {...props} />,
+  );
+
 describe('WbsTree', () => {
   beforeEach(() => localStorage.clear());
 
   it('renders a compact rollup budget per node', () => {
-    renderWithProviders(<WbsTree tree={tree} selectedId={null} onSelect={vi.fn()} onAddChild={vi.fn()} />);
+    render();
     expect(screen.getAllByText(/Rp/).length).toBeGreaterThan(0);
   });
 
   it('marks the selected row with aria-selected', () => {
-    renderWithProviders(<WbsTree tree={tree} selectedId="r1" onSelect={vi.fn()} onAddChild={vi.fn()} />);
+    render({ selectedId: 'r1' });
     expect(screen.getByRole('treeitem', { name: '1 Engineering' }).getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('exposes only one tab stop (roving tabindex)', () => {
+    render();
+    const items = screen.getAllByRole('treeitem');
+    expect(items.filter((el) => el.getAttribute('tabindex') === '0')).toHaveLength(1);
+  });
+
+  it('moves focus to the next node with ArrowDown', () => {
+    render();
+    const first = screen.getByRole('treeitem', { name: '1 Engineering' });
+    first.focus();
+    fireEvent.keyDown(first, { key: 'ArrowDown' });
+    expect(screen.getByRole('treeitem', { name: '1.1 Detail Engineering' }).getAttribute('tabindex')).toBe('0');
+    expect(screen.getByRole('treeitem', { name: '1 Engineering' }).getAttribute('tabindex')).toBe('-1');
+  });
+
+  it('collapses a node with ArrowLeft and expands with ArrowRight', () => {
+    render();
+    const root = screen.getByRole('treeitem', { name: '1 Engineering' });
+    root.focus();
+    fireEvent.keyDown(root, { key: 'ArrowLeft' });
+    expect(screen.queryByText('Detail Engineering')).toBeNull();
+    fireEvent.keyDown(root, { key: 'ArrowRight' });
+    expect(screen.getByText('Detail Engineering')).toBeTruthy();
   });
 
   it('selects a node when its row is clicked', () => {
     const onSelect = vi.fn();
-    renderWithProviders(<WbsTree tree={tree} selectedId={null} onSelect={onSelect} onAddChild={vi.fn()} />);
+    render({ onSelect });
     fireEvent.click(screen.getByRole('treeitem', { name: '1 Engineering' }));
     expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: 'r1' }));
   });
 
   it('renders a milestone flag for a milestone node', () => {
-    renderWithProviders(<WbsTree tree={tree} selectedId={null} onSelect={vi.fn()} onAddChild={vi.fn()} />);
+    render();
     expect(screen.getByLabelText(/milestone/i)).toBeTruthy();
   });
 
-  it('collapses a node’s children when its toggle is clicked', () => {
-    renderWithProviders(<WbsTree tree={tree} selectedId={null} onSelect={vi.fn()} onAddChild={vi.fn()} />);
-    expect(screen.getByText('Detail Engineering')).toBeTruthy();
-    fireEvent.click(screen.getByLabelText('Collapse 1'));
-    expect(screen.queryByText('Detail Engineering')).toBeNull();
-  });
-
-  it('shows an honest dash when progress is unknown', () => {
-    renderWithProviders(<WbsTree tree={tree} selectedId={null} onSelect={vi.fn()} onAddChild={vi.fn()} />);
-    // Commissioning has rollup.progress = null → renders an em dash, not 0%
-    expect(screen.getByRole('treeitem', { name: '2 Commissioning' }).textContent).toContain('—');
+  it('shows an honest dash (neutral-500) when progress is unknown', () => {
+    render();
+    const dash = screen.getByRole('treeitem', { name: '2 Commissioning' }).querySelector('[data-slot="wbs-progress-unknown"]');
+    expect(dash).toBeTruthy();
+    expect(dash!.className).toContain('text-neutral-500');
   });
 });
