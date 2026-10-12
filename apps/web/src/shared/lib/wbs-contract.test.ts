@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { wbsItemSchema, updateWbsItemSchema } from '@aec/api-contracts';
+import { wbsItemSchema, updateWbsItemSchema, wbsLinksSchema } from '@aec/api-contracts';
 
 const node = {
   id: 'w1',
@@ -55,5 +55,17 @@ describe('updateWbsItemSchema', () => {
 
   it('rejects a progress above 100', () => {
     expect(updateWbsItemSchema.safeParse({ progressPercent: 120 }).success).toBe(false);
+  });
+});
+
+describe('wbsLinksSchema', () => {
+  it('parses per-type linked-document counts', () => {
+    const parsed = wbsLinksSchema.parse({
+      itemId: 'w1',
+      total: 14,
+      links: [{ key: 'poItems', label: 'purchase order items', count: 12 }],
+    });
+    expect(parsed.total).toBe(14);
+    expect(parsed.links[0]!.count).toBe(12);
   });
 });
