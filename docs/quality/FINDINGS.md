@@ -23,6 +23,7 @@ Audit 2026-10-05. Temuan diurutkan berdasarkan tingkat keparahan. Setiap temuan 
 | F13 | **Info** | Infra | Migrasi Prisma dijalankan dari `apps/api/prisma`, bukan `infrastructure/database` (folder infra hanya `.gitkeep`). |
 | F14 | **Info** | Test | E2E "Jest did not exit" (open handle Redis) — suite lulus, tapi proses tak keluar bersih. |
 | F15 | ~~**Tinggi**~~ **Selesai** | A11y | ~~Drill-through tabel & chart mouse-only~~ → **selesai** (2026-10-10): baris `DataGrid` kini fokusable (`tabIndex` + Enter/Space) dan scatter punya padanan tombol keyboard. Detail: `docs/quality/DASHBOARD-UIUX-AUDIT.md` CON-2. |
+| F16 | **Sedang** | Layout | AppShell (`flex h-screen`) tidak menyesuaikan lebar < ~640px: sidebar tetap selebar desktop sehingga `documentElement` meluber horizontal di **semua** halaman (`/projects` 1106 vs 375; `/projects/:id` 569 vs 375). Permukaan halaman sendiri 0 overflow; pelakunya shell + breadcrumb topbar. Ditemukan saat verifikasi WBS (2026-10-12). |
 
 ---
 

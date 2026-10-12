@@ -7,6 +7,7 @@ export class ApiError extends Error {
     message: string,
     public readonly code: string,
     public readonly correlationId?: string,
+    public readonly details?: unknown,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -47,12 +48,13 @@ export async function getJson<T>(path: string): Promise<T> {
   if (!res.ok) {
     if (res.status === 401) handleUnauthorized();
     const body = (await res.json().catch(() => null)) as {
-      error?: { code?: string; message?: string; correlationId?: string };
+      error?: { code?: string; message?: string; correlationId?: string; details?: unknown };
     } | null;
     throw new ApiError(
       body?.error?.message ?? `Request failed: ${res.status}`,
       body?.error?.code ?? 'HTTP_ERROR',
       body?.error?.correlationId,
+      body?.error?.details,
     );
   }
 
@@ -69,12 +71,13 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
   if (!res.ok) {
     if (res.status === 401) handleUnauthorized();
     const errBody = (await res.json().catch(() => null)) as {
-      error?: { code?: string; message?: string; correlationId?: string };
+      error?: { code?: string; message?: string; correlationId?: string; details?: unknown };
     } | null;
     throw new ApiError(
       errBody?.error?.message ?? `Request failed: ${res.status}`,
       errBody?.error?.code ?? 'HTTP_ERROR',
       errBody?.error?.correlationId,
+        errBody?.error?.details,
     );
   }
 
@@ -92,12 +95,13 @@ export async function patchJson<T>(path: string, body: unknown): Promise<T> {
   if (!res.ok) {
     if (res.status === 401) handleUnauthorized();
     const errBody = (await res.json().catch(() => null)) as {
-      error?: { code?: string; message?: string; correlationId?: string };
+      error?: { code?: string; message?: string; correlationId?: string; details?: unknown };
     } | null;
     throw new ApiError(
       errBody?.error?.message ?? `Request failed: ${res.status}`,
       errBody?.error?.code ?? 'HTTP_ERROR',
       errBody?.error?.correlationId,
+        errBody?.error?.details,
     );
   }
 
@@ -115,12 +119,13 @@ export async function putJson<T>(path: string, body: unknown): Promise<T> {
   if (!res.ok) {
     if (res.status === 401) handleUnauthorized();
     const errBody = (await res.json().catch(() => null)) as {
-      error?: { code?: string; message?: string; correlationId?: string };
+      error?: { code?: string; message?: string; correlationId?: string; details?: unknown };
     } | null;
     throw new ApiError(
       errBody?.error?.message ?? `Request failed: ${res.status}`,
       errBody?.error?.code ?? 'HTTP_ERROR',
       errBody?.error?.correlationId,
+        errBody?.error?.details,
     );
   }
 
@@ -134,12 +139,13 @@ export async function deleteJson<T>(path: string): Promise<T> {
   if (!res.ok) {
     if (res.status === 401) handleUnauthorized();
     const errBody = (await res.json().catch(() => null)) as {
-      error?: { code?: string; message?: string; correlationId?: string };
+      error?: { code?: string; message?: string; correlationId?: string; details?: unknown };
     } | null;
     throw new ApiError(
       errBody?.error?.message ?? `Request failed: ${res.status}`,
       errBody?.error?.code ?? 'HTTP_ERROR',
       errBody?.error?.correlationId,
+        errBody?.error?.details,
     );
   }
 
