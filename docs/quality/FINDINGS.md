@@ -24,6 +24,7 @@ Audit 2026-10-05. Temuan diurutkan berdasarkan tingkat keparahan. Setiap temuan 
 | F14 | **Info** | Test | E2E "Jest did not exit" (open handle Redis) — suite lulus, tapi proses tak keluar bersih. |
 | F15 | ~~**Tinggi**~~ **Selesai** | A11y | ~~Drill-through tabel & chart mouse-only~~ → **selesai** (2026-10-10): baris `DataGrid` kini fokusable (`tabIndex` + Enter/Space) dan scatter punya padanan tombol keyboard. Detail: `docs/quality/DASHBOARD-UIUX-AUDIT.md` CON-2. |
 | F16 | **Sedang** | Layout | AppShell (`flex h-screen`) tidak menyesuaikan lebar < ~640px: sidebar tetap selebar desktop sehingga `documentElement` meluber horizontal di **semua** halaman (`/projects` 1106 vs 375; `/projects/:id` 569 vs 375). Permukaan halaman sendiri 0 overflow; pelakunya shell + breadcrumb topbar. Ditemukan saat verifikasi WBS (2026-10-12). |
+| F17 | **Info** | Test | Uji web sesekali flaky: 1 test gagal tanpa pola pada satu run merged-tree (2026-10-12), lalu 5 run berturut-turut hijau (776/776) tanpa perubahan kode. Belum teridentifikasi test-nya (output gagal tidak tertangkap). Kandidat penyebab: timing/`requestAnimationFrame` pada uji WBS atau async mock. Perlu pemantauan; jika berulang, jalankan dengan `--reporter=verbose` untuk menangkap nama test. |
 
 ---
 
