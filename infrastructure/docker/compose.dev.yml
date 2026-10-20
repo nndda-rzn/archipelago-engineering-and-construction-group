@@ -14,7 +14,10 @@ services:
       POSTGRES_PASSWORD: aec_dev_password
       POSTGRES_DB: aec_erp
     ports:
-      - '5432:5432'
+      # Bind ke loopback saja: container tetap bisa diakses dari host (API/seed
+      # jalan native di host), tapi tidak terekspos ke internet. `ufw` TIDAK
+      # melindungi port Docker karena Docker menulis aturan iptables sendiri.
+      - '127.0.0.1:5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -28,7 +31,7 @@ services:
     container_name: aec-redis
     restart: unless-stopped
     ports:
-      - '6379:6379'
+      - '127.0.0.1:6379:6379'
     volumes:
       - redis-data:/data
     healthcheck:
@@ -46,8 +49,8 @@ services:
       MINIO_ROOT_USER: aec
       MINIO_ROOT_PASSWORD: aec_dev_password
     ports:
-      - '9000:9000'
-      - '9001:9001'
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
     volumes:
       - minio-data:/data
     healthcheck:
@@ -69,7 +72,7 @@ services:
       KC_DB_USERNAME: aec
       KC_DB_PASSWORD: aec_dev_password
     ports:
-      - '8080:8080'
+      - '127.0.0.1:8080:8080'
     depends_on:
       postgres:
         condition: service_healthy
