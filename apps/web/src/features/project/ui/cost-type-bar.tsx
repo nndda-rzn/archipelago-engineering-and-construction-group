@@ -68,13 +68,15 @@ export function CostTypeBar({ byCostType, total, usedPercent }: CostTypeBarProps
     .join(', ');
   const usedLabel = usedPercent == null ? '' : `, ${Math.round(usedPercent)}% used`;
 
-  let cumulative = 0;
-  const segments = entries.map(([key, value]) => {
+  // Posisi kumulatif dihitung sebagai reduksi murni, bukan variabel yang
+  // di-reassign di dalam `map` (dilarang lint karena bisa tidak konsisten antar
+  // render).
+  const segments = entries.reduce<Array<{ key: string; left: number; pct: number }>>((acc, [key, value]) => {
     const pct = (value / total) * 100;
-    const left = cumulative;
-    cumulative += pct;
-    return { key, left, pct };
-  });
+    const left = acc.length === 0 ? 0 : acc[acc.length - 1]!.left + acc[acc.length - 1]!.pct;
+    acc.push({ key, left, pct });
+    return acc;
+  }, []);
 
   // Penanda serapan dijepit ke 0-100 supaya tidak keluar dari trek, tetapi angka
   // di `aria-label` tetap nilai aslinya (150% tetap terbaca 150%).
