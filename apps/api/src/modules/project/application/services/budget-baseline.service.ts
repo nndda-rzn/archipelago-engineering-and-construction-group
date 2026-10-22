@@ -72,9 +72,44 @@ export class BudgetBaselineService {
     }
 
     const created = await this.prisma.$transaction(async (tx) => {
-      const openDraft = await tx.budgetBaseline.findFirst({ where: { projectId, status: 'DRAFT' } });
+      /**
+       * Bila ada revisi terbuka, freeze membekukan revisi ITU — bukan menolak.
+       *
+       * Versi pertama menolak dengan REVISION_OPEN, dan itu membuat alur revisi
+       * jalan buntu: `openRevision` membuat draft, lalu `freeze` menolak
+       * keberadaan draft tersebut. Persis bug "publish = jalan buntu" yang
+       * seharusnya diperbaiki halaman ini.
+       */
+      const openDraft = await tx.budgetBaseline.findFirst({
+        where: { projectId, status: 'DRAFT' },
+        orderBy: { version: 'desc' },
+      });
+
       if (openDraft) {
-        throw new ConflictException({ code: 'REVISION_OPEN', message: 'A revision is already open - freeze it first' });
+        // Baris draft disegarkan dari budget hidup, lalu dibekukan.
+        await tx.budgetBaselineLine.deleteMany({ where: { baselineId: openDraft.id } });
+        await tx.budgetBaselineLine.createMany({
+          data: items.map((i) => ({
+            baselineId: openDraft.id,
+            wbsItemId: i.wbsItemId,
+            costType: i.costType,
+            amount: i.amount,
+          })),
+        });
+
+        const frozen = await tx.budgetBaseline.update({
+          where: { id: openDraft.id },
+          data: {
+            status: 'FROZEN',
+            frozenAt: new Date(),
+            frozenBy: actorId,
+            label: dto.label ?? openDraft.label,
+            reason: dto.reason ?? openDraft.reason,
+          },
+        });
+
+        await tx.budgetItem.updateMany({ where: { projectId }, data: { status: 'PUBLISHED' } });
+        return frozen;
       }
 
       const last = await tx.budgetBaseline.findFirst({ where: { projectId }, orderBy: { version: 'desc' } });
