@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Button, Input } from '@aec/ui';
-import type { BudgetSummary, CostTypeKey } from '@aec/api-contracts';
-
-type Node = BudgetSummary['wbs'][number];
+import type { BudgetStatementRow, CostTypeKey } from '@aec/api-contracts';
+import { formatIdr } from '@/shared/lib/format';
 
 const COST_LABEL: Record<string, string> = {
   DIRECT: 'Direct',
@@ -14,12 +13,9 @@ const COST_LABEL: Record<string, string> = {
   OVERHEAD: 'Overhead',
 };
 
-function money(n: number): string {
-  return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(n);
-}
-
 /**
- * Panel detail satu simpul WBS: rincian per cost type, PV, dan form edit.
+ * Panel detail satu simpul WBS: rincian per cost type, nilai berjalan, dan form
+ * edit. Dirender inline di bawah baris yang dipilih (bukan rail kanan).
  *
  * Form mengirim `costType` bersama nominalnya. Tanpa itu, `BudgetService` dulu
  * jatuh ke 'DIRECT' dan menambah baris kelima di samping empat cost type nyata.
@@ -30,7 +26,7 @@ export function BudgetInspector({
   saving,
   published,
 }: {
-  node: Node | null;
+  node: BudgetStatementRow | null;
   onSave: (costType: CostTypeKey, amount: number) => void;
   saving: boolean;
   published: boolean;
@@ -48,7 +44,7 @@ export function BudgetInspector({
 
   if (!node) {
     return (
-      <aside aria-label="Budget detail" className="rounded-md border border-neutral-200 bg-surface-raised p-4">
+      <aside aria-label="Budget detail" className="p-4">
         <p className="text-body-sm text-neutral-500">Select a WBS node to see its cost breakdown.</p>
       </aside>
     );
@@ -58,14 +54,13 @@ export function BudgetInspector({
   const available = entries.length > 0 ? entries.map(([k]) => k as CostTypeKey) : (['LABOR', 'MATERIAL', 'SUBCONTRACTOR', 'EQUIPMENT'] as CostTypeKey[]);
 
   return (
-    <aside aria-label="Budget detail" className="flex flex-col gap-4 rounded-md border border-neutral-200 bg-surface-raised p-4">
-      <header>
-        <p className="font-mono text-caption text-neutral-500">{node.code}</p>
-        <h2 className="mt-0.5 text-h3 text-neutral-950">{node.name}</h2>
-      </header>
-
+    <aside aria-label="Budget detail" className="grid gap-6 p-4 md:grid-cols-3">
       <section aria-label="Cost breakdown">
-        <h3 className="text-overline uppercase text-neutral-500">Cost type</h3>
+        <header>
+          <p className="font-mono text-caption text-neutral-500">{node.code}</p>
+          <h3 className="mt-0.5 text-h3 text-neutral-950">{node.name}</h3>
+        </header>
+        <h4 className="mt-3 text-overline uppercase text-neutral-500">Cost type</h4>
         <dl className="mt-1 divide-y divide-neutral-100">
           {entries.length === 0 ? (
             <p className="py-1 text-body-sm text-neutral-500">No budget allocated yet.</p>
@@ -75,32 +70,41 @@ export function BudgetInspector({
               .map(([key, value]) => (
                 <div key={key} className="flex items-center justify-between py-1">
                   <dt className="text-body-sm text-neutral-700">{COST_LABEL[key] ?? key}</dt>
-                  <dd className="font-mono text-body-sm tabular-nums text-neutral-900">{money(value)}</dd>
+                  <dd className="font-mono text-body-sm tabular-nums text-neutral-900" title={formatIdr(value)}>{formatIdr(value)}</dd>
                 </div>
               ))
           )}
         </dl>
       </section>
 
-      <section aria-label="Totals" className="grid grid-cols-2 gap-x-3 gap-y-1 border-t border-neutral-100 pt-2 text-body-sm">
-        <span className="text-neutral-500">Budget</span>
-        <span className="text-right font-mono tabular-nums text-neutral-900">{money(node.budget)}</span>
-        <span className="text-neutral-500">Used</span>
-        <span className="text-right font-mono tabular-nums text-neutral-900">{money(node.used)}</span>
-        <span className="text-neutral-500">Remaining</span>
-        <span className={`text-right font-mono tabular-nums ${node.remaining < 0 ? 'text-destructive-600' : 'text-neutral-900'}`}>
-          {money(node.remaining)}
-        </span>
-        <span className="text-neutral-500">Planned value</span>
-        <span className="text-right font-mono tabular-nums text-neutral-700">{money(node.plannedValue)}</span>
+      <section aria-label="Totals" className="text-body-sm">
+        <h4 className="text-overline uppercase text-neutral-500">Position</h4>
+        <dl className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1">
+          <dt className="text-neutral-500">Baseline</dt>
+          <dd className="text-right font-mono tabular-nums text-neutral-900">{formatIdr(node.baseline)}</dd>
+          <dt className="text-neutral-500">Revised</dt>
+          <dd className="text-right font-mono tabular-nums text-neutral-900">{formatIdr(node.revised)}</dd>
+          <dt className="text-neutral-500">Committed</dt>
+          <dd className="text-right font-mono tabular-nums text-neutral-900">{formatIdr(node.committed)}</dd>
+          <dt className="text-neutral-500">Actual</dt>
+          <dd className="text-right font-mono tabular-nums text-neutral-900">{formatIdr(node.actual)}</dd>
+          <dt className="text-neutral-500">Available</dt>
+          <dd className={`text-right font-mono tabular-nums ${node.available < 0 ? 'text-destructive-700' : 'text-neutral-900'}`}>
+            {formatIdr(node.available)}
+          </dd>
+          <dt className="text-neutral-500">Variance</dt>
+          <dd className={`text-right font-mono tabular-nums ${node.variance < 0 ? 'text-destructive-700' : 'text-neutral-900'}`}>
+            {formatIdr(node.variance)}
+          </dd>
+        </dl>
       </section>
 
       {published ? (
-        <p className="border-t border-neutral-100 pt-2 text-caption text-neutral-500">
-          Budget is published. Editing requires a new version.
+        <p className="text-caption text-neutral-500 md:self-end">
+          No revision is open. Open a revision to change this budget.
         </p>
       ) : (
-        <section aria-label="Edit budget" className="flex flex-col gap-2 border-t border-neutral-100 pt-3">
+        <section aria-label="Edit budget" className="flex flex-col gap-2">
           <label className="text-body-sm font-medium text-neutral-700" htmlFor="budget-cost-type">Cost type</label>
           <select
             id="budget-cost-type"
@@ -111,7 +115,7 @@ export function BudgetInspector({
               const current = node.byCostType[next];
               setAmount(current != null && current > 0 ? String(current) : '');
             }}
-            className="h-8 rounded-md border border-neutral-300 bg-white px-2 text-body-sm text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-800"
+            className="h-8 rounded-md border border-neutral-300 bg-white px-2 text-body-sm text-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-800"
           >
             {available.map((k) => (
               <option key={k} value={k}>{COST_LABEL[k] ?? k}</option>
