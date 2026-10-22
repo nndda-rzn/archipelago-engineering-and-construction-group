@@ -4,9 +4,13 @@ export class UpsertBudgetItemDto {
   @IsString()
   wbsItemId!: string;
 
-  @IsOptional()
+  /**
+   * WAJIB. Sebelumnya `@IsOptional()`, dan service jatuh ke 'DIRECT' bila kosong —
+   * sehingga setiap edit dari UI membuat baris kelima di samping 4 cost type yang
+   * sudah ada. Klien (web) mengirim nilai ini sejak Task 1.
+   */
   @IsEnum(['DIRECT', 'LABOR', 'MATERIAL', 'SUBCONTRACTOR', 'EQUIPMENT', 'INDIRECT', 'OVERHEAD'])
-  costType?: string;
+  costType!: string;
 
   @IsNumber()
   amount!: number;
