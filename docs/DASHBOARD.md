@@ -133,7 +133,8 @@ Prisma model ──► service (domain) ──► controller (@Permissions) ─�
 | `pnpm lint` / `pnpm typecheck` / `pnpm test` | Kualitas kode |
 | `pnpm --filter @aec/api test:unit` | Unit test API (jest, `*.spec.ts`) |
 | `pnpm --filter @aec/api test:e2e` | E2E API (supertest, butuh Postgres+Redis) |
-| `pnpm --filter @aec/api db:seed` | Seed DB |
+| `pnpm --filter @aec/api db:setup` | Migrate + seed dasar + seed demo (dev/VPS) |
+| `pnpm --filter @aec/api db:seed` | Seed data dasar saja (dipakai test) |
 | `pnpm --filter @aec/web dev` | Vite dev server web |
 | `pnpm --filter @aec/web test` | Vitest web |
 
