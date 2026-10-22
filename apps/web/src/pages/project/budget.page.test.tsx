@@ -4,22 +4,24 @@ import { renderWithProviders } from '@/test/render';
 
 const summary = vi.hoisted(() => ({
   projectId: 'p1',
-  status: 'DRAFT',
-  wbs: [
-    { id: 'p', code: '1', name: 'Engineering', parentId: null, depth: 0, budget: 400, used: 40, remaining: 360, byCostType: { LABOR: 400 }, plannedValue: 0, itemCount: 1, childrenCount: 1 },
-    { id: 'c1', code: '1.1', name: 'Detail Engineering', parentId: 'p', depth: 1, budget: 400, used: 40, remaining: 360, byCostType: { LABOR: 400 }, plannedValue: 0, itemCount: 1, childrenCount: 0 },
+  currency: 'IDR',
+  baseline: { id: 'b1', version: 2, status: 'FROZEN', label: 'VO-01', reason: null, frozenAt: '2026-10-22T00:00:00.000Z', total: 400 },
+  previous: null,
+  // Revisi terbuka: tabel boleh diedit, jadi form inspector tampil.
+  openRevision: true,
+  rows: [
+    { id: 'p', code: '1', name: 'Engineering', parentId: null, depth: 0, childrenCount: 1, baseline: 400, revised: 450, committed: 100, actual: 40, available: 310, variance: 410, varianceBaseline: 50, byCostType: { LABOR: 450 } },
+    { id: 'c1', code: '1.1', name: 'Detail Engineering', parentId: 'p', depth: 1, childrenCount: 0, baseline: 400, revised: 450, committed: 100, actual: 40, available: 310, variance: 410, varianceBaseline: 50, byCostType: { LABOR: 450 } },
   ],
-  totalBudget: 400,
-  totals: { budget: 400, used: 40, remaining: 360, contractValue: 1000, variance: 600 },
-  warnings: { overContract: false, overAllocated: [], noBudget: [], pvMismatch: null },
-  costCoverage: { allocatedNodes: 1, totalNodes: 2 },
+  totals: { baseline: 400, revised: 450, committed: 100, actual: 40, available: 310, variance: 410, varianceBaseline: 50, contractValue: 1000, eac: 470, vac: -20 },
+  unallocated: { committed: 0, actual: 0 },
+  reconciliation: { ledgerOut: 40, journalExpense610: 0, doubleCountRisk: false },
+  warnings: { overContract: false, overCommitted: [], noBudget: [], pvCoverage: { pv: 270, bac: 450, status: 'COMPLETE' } },
+  costCoverage: { allocatedNodes: 2, totalNodes: 2 },
 }));
 
 const mutate = vi.hoisted(() => vi.fn());
 
-// `EntitySelect` adalah combobox Radix yang butuh interaksi pointer kompleks di
-// jsdom. Untuk menguji halaman (bukan komponen pihak ketiga), ia diganti tombol
-// sederhana yang memilih proyek pertama — persis efek yang diharapkan halaman.
 vi.mock('@aec/ui', async () => {
   const actual = await vi.importActual<typeof import('@aec/ui')>('@aec/ui');
   return {
@@ -36,37 +38,40 @@ vi.mock('@/features/project', async () => {
     ...actual,
     useBudget: () => ({ data: summary, isLoading: false, isError: false, refetch: vi.fn() }),
     useUpsertBudget: () => ({ mutate, isPending: false, isError: false }),
-    usePublishBudget: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
+    useFreezeBaseline: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
+    useOpenRevision: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
   };
 });
 
-// Halaman mengambil daftar proyek dari `@/entities/project`, bukan `@/features/project`.
 vi.mock('@/entities/project', () => ({
   useProjects: () => ({ data: { items: [{ id: 'p1', code: 'PRJ-1', name: 'Alpha', currency: 'IDR' }] } }),
 }));
 
 import { BudgetPage } from './budget.page';
 
-/** Pilih proyek lebih dulu — halaman memang menunggu pemilihan sebelum memuat budget. */
 const renderPage = async () => {
   renderWithProviders(<BudgetPage />);
   fireEvent.click(screen.getByRole('button', { name: 'pick-project' }));
 };
 
 describe('BudgetPage', () => {
-  it('renders the tree, the totals and the coverage note', async () => {
+  it('renders the cost statement instead of a tree', async () => {
     await renderPage();
-    expect(await screen.findByText('Engineering')).toBeTruthy();
-    expect(screen.getByText(/1 of 2 nodes have allocated spend/i)).toBeTruthy();
+    expect(await screen.findByRole('table')).toBeTruthy();
+    expect(screen.getByText('Engineering')).toBeTruthy();
   });
 
-  it('shows the inspector for the selected node with its cost breakdown', async () => {
+  it('names the frozen baseline version', async () => {
+    await renderPage();
+    await screen.findByRole('table');
+    expect(screen.getByText(/v2/)).toBeTruthy();
+    expect(screen.getByText(/VO-01/)).toBeTruthy();
+  });
+
+  it('opens the inspector inline when a row is selected', async () => {
     await renderPage();
     fireEvent.click(await screen.findByRole('button', { name: /^1\.1\s*Detail Engineering$/ }));
     const panel = screen.getByRole('complementary', { name: /budget detail/i });
-    // "Labor" muncul dua kali: sebagai label rincian (<dt>) dan sebagai <option> di form.
-    const breakdown = within(panel).getByRole('region', { name: /cost breakdown/i });
-    expect(within(breakdown).getByText('Labor')).toBeTruthy();
     expect(within(panel).getByText('1.1')).toBeTruthy();
   });
 
@@ -82,8 +87,8 @@ describe('BudgetPage', () => {
 
   it('shows no warning banner when everything is in order', async () => {
     await renderPage();
-    await screen.findByText('Engineering');
-    expect(screen.queryByText(/exceeds contract/i)).toBeNull();
-    expect(screen.queryByText(/baseline PV/i)).toBeNull();
+    await screen.findByRole('table');
+    expect(screen.queryByText(/exceeds the contract/i)).toBeNull();
+    expect(screen.queryByText(/double count/i)).toBeNull();
   });
 });

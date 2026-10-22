@@ -18,7 +18,7 @@ describe('budget statement contract on the client', () => {
 
   it('accepts a statement payload', () => {
     const statement = {
-      projectId: 'p1', currency: 'IDR', baseline: null, previous: null, rows: [],
+      projectId: 'p1', currency: 'IDR', baseline: null, previous: null, openRevision: false, rows: [],
       totals: {
         baseline: 0, revised: 0, committed: 0, actual: 0, available: 0,
         variance: 0, varianceBaseline: 0, contractValue: 0, eac: null, vac: null,

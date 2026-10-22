@@ -507,6 +507,12 @@ export const budgetStatementSchema = z.object({
   currency: z.string(),
   baseline: budgetBaselineSchema.nullable(),
   previous: budgetBaselineSchema.nullable(),
+  /**
+   * Apakah ada revisi yang belum dibekukan. Halaman memakainya untuk menentukan
+   * boleh-tidaknya mengedit; tanpa field ini UI harus menebak dari bentuk data,
+   * dan tebakan itu bisa salah.
+   */
+  openRevision: z.boolean(),
   rows: z.array(budgetStatementRowSchema),
   totals: z.object({
     baseline: z.number(),

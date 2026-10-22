@@ -42,9 +42,13 @@ export class BudgetService {
       orderBy: { version: 'desc' },
     });
 
+    const openDraft = await this.prisma.budgetBaseline.findFirst({
+      where: { projectId, status: 'DRAFT' },
+      orderBy: { version: 'desc' },
+    });
+
     const [wbsItems, budgetItems, ledgerGroups, journalGroups, pvGroups, committedGroups, baselineLines, forecast, previousBaseline] =
-      await Promise.all([
-        this.prisma.wbsItem.findMany({
+      await Promise.all([        this.prisma.wbsItem.findMany({
           where: { projectId },
           select: { id: true, code: true, name: true, parentId: true },
           orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }],
@@ -159,6 +163,7 @@ export class BudgetService {
       // Baseline sebelumnya belum membawa barisnya di query ini; totalnya 0
       // sampai Stage B membutuhkannya untuk perbandingan antar-versi.
       previous: toSummary(previousBaseline, 0),
+      openRevision: openDraft != null,
       rows,
       totals: {
         ...totals,
