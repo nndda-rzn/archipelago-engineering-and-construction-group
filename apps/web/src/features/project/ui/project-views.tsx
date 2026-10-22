@@ -138,7 +138,7 @@ function ProjectCard({ p }: { p: RegisterRow }) {
       <Link
         to="/projects/$projectId"
         params={{ projectId: p.projectId }}
-        className="group block rounded-lg bg-surface-sunken p-1.5 ring-1 ring-neutral-200/70 transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-0.5 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+        className="group block rounded-lg bg-surface-sunken p-1.5 ring-1 ring-neutral-200/70 transition-[transform,box-shadow] duration-200 [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-0.5 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0"
       >
         <div className="flex h-full flex-col gap-3 rounded-[6px] bg-surface-raised p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
           {/* Kepala: kode + status + watchlist */}
