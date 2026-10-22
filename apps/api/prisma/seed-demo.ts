@@ -585,15 +585,25 @@ async function seedPortfolio() {
       update: {},
       create: { code: whCode, name: `Gudang ${p.loc}`, warehouseType: 'PROJECT', projectId: project.id, location: p.loc },
     });
+    // Dimensi WBS untuk biaya material. Semua entri ledger di bawah adalah
+    // pergerakan MATERIAL (GR/ISSUE/ADJUSTMENT), jadi alokasi yang jujur adalah
+    // material → WBS material (kode '2'). Membagi rata ke WBS lain akan mengarang
+    // angka; WBS non-material memang akan menunjukkan biaya 0.
+    const materialWbs = await prisma.wbsItem.findFirst({
+      where: { projectId: project.id, code: '2' },
+      select: { id: true },
+    });
+    const materialWbsId = materialWbs?.id ?? null;
+
     const existingLedger = await prisma.stockLedgerEntry.findFirst({ where: { projectId: project.id, reference: `SEED-${whCode}` } });
     if (!existingLedger) {
       const outValue = isNobudget ? p.value * 0.02 : ac;
       const inValue = outValue * 1.25;
-      await prisma.stockLedgerEntry.create({ data: { projectId: project.id, warehouseId: wh.id, documentType: 'GR', reference: `SEED-${whCode}`, description: 'Penerimaan material (seed)', movementType: 'IN', quantity: 1000, unitPrice: inValue / 1000, totalValue: inValue, balanceAfter: 1000 } });
-      await prisma.stockLedgerEntry.create({ data: { projectId: project.id, warehouseId: wh.id, documentType: 'ISSUE', reference: `SEED-${whCode}`, description: 'Pemakaian material (seed)', movementType: 'OUT', quantity: 600, unitPrice: outValue / 600, totalValue: outValue, balanceAfter: 400 } });
+      await prisma.stockLedgerEntry.create({ data: { projectId: project.id, warehouseId: wh.id, wbsItemId: materialWbsId, documentType: 'GR', reference: `SEED-${whCode}`, description: 'Penerimaan material (seed)', movementType: 'IN', quantity: 1000, unitPrice: inValue / 1000, totalValue: inValue, balanceAfter: 1000 } });
+      await prisma.stockLedgerEntry.create({ data: { projectId: project.id, warehouseId: wh.id, wbsItemId: materialWbsId, documentType: 'ISSUE', reference: `SEED-${whCode}`, description: 'Pemakaian material (seed)', movementType: 'OUT', quantity: 600, unitPrice: outValue / 600, totalValue: outValue, balanceAfter: 400 } });
       if (p.profile === 'overrun') {
         // Baris negatif sengaja: sinyal data-error yang harus muncul di tile inventory.
-        await prisma.stockLedgerEntry.create({ data: { projectId: project.id, warehouseId: wh.id, documentType: 'ADJUSTMENT', reference: `SEED-${whCode}`, description: 'Koreksi stok (seed, negatif)', movementType: 'ADJUST', quantity: -500, totalValue: -outValue * 0.1, balanceAfter: -100 } });
+        await prisma.stockLedgerEntry.create({ data: { projectId: project.id, warehouseId: wh.id, wbsItemId: materialWbsId, documentType: 'ADJUSTMENT', reference: `SEED-${whCode}`, description: 'Koreksi stok (seed, negatif)', movementType: 'ADJUST', quantity: -500, totalValue: -outValue * 0.1, balanceAfter: -100 } });
       }
     }
 
@@ -1317,7 +1327,9 @@ async function main() {
           journalNumber: `${seq.prefix}${String(seq.nextNumber - 1).padStart(6, '0')}`, legalEntityId: entity.id, date: now, source: 'INVOICE', sourceId: inv.id,
           reference: inv.invoiceNumber, description: `Invoice ${inv.invoiceNumber}`, status: 'POSTED', postedAt: now, postedBy: 'system',
           lines: { create: [
-            { accountId: expense.id, description: 'Pembelian material', debit: 75000000000, credit: 0, projectId: project.id },
+            // Dimensi WBS hanya untuk baris beban material; baris PPN dan utang
+            // tidak punya dimensi WBS.
+            { accountId: expense.id, description: 'Pembelian material', debit: 75000000000, credit: 0, projectId: project.id, wbsItemId: wbsMap.get('2') ?? null },
             { accountId: vat.id, description: 'PPN Masukan', debit: 7500000000, credit: 0 },
             { accountId: ap.id, description: 'Utang vendor', debit: 0, credit: 82500000000 },
           ] },
