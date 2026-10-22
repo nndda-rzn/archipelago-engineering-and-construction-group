@@ -111,7 +111,12 @@ export class BudgetService {
     return {
       projectId,
       status: budgetItems.some((i) => i.status === 'PUBLISHED') ? ('PUBLISHED' as const) : ('DRAFT' as const),
-      wbs: flat.map(({ children: _children, ...node }) => node),
+      // `children` adalah detail internal pohon; kontrak mengirim daftar datar.
+      wbs: flat.map((node) => {
+        const { children, ...rest } = node;
+        void children;
+        return rest;
+      }),
       totalBudget,
       totals,
       warnings: collectWarnings(totals, tree, totalPv),
