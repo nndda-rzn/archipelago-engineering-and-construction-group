@@ -9,6 +9,7 @@ import { ProjectService } from './application/services/project.service';
 import { ProjectCommandCenterService } from './application/services/project-command-center.service';
 import { WbsService } from './application/services/wbs.service';
 import { BudgetService } from './application/services/budget.service';
+import { BudgetBaselineService } from './application/services/budget-baseline.service';
 import { ProjectHealthService } from './application/services/project-health.service';
 import { PortfolioService } from './application/services/portfolio.service';
 import { PortfolioEvmService } from './application/services/portfolio-evm.service';
@@ -26,6 +27,7 @@ import { EarnedValueService } from './application/services/earned-value.service'
     ProjectCommandCenterService,
     WbsService,
     BudgetService,
+    BudgetBaselineService,
     ProjectHealthService,
     PortfolioService,
     PortfolioEvmService,
