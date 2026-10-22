@@ -151,12 +151,25 @@ export async function createWarehouse(app: INestApplication, token: string, proj
   return res.body.id as string;
 }
 
-export async function setBudgetItem(app: INestApplication, token: string, projectId: string, wbsItemId: string, amount: number): Promise<Response> {
+/**
+ * `costType` wajib sejak kontrak budget diperketat: tanpa itu service lama jatuh
+ * ke 'DIRECT' dan setiap edit menambah baris kelima di samping 4 cost type nyata.
+ * Helper ini mengirimnya eksplisit (default LABOR) supaya fixture e2e mencerminkan
+ * klien yang benar.
+ */
+export async function setBudgetItem(
+  app: INestApplication,
+  token: string,
+  projectId: string,
+  wbsItemId: string,
+  amount: number,
+  costType = 'LABOR',
+): Promise<Response> {
   return requestWithRetry(() =>
     request(app.getHttpServer())
       .post(`/api/v1/projects/${projectId}/budget/items`)
       .set('Authorization', auth(token))
-      .send({ wbsItemId, amount }),
+      .send({ wbsItemId, costType, amount }),
   );
 }
 

@@ -71,7 +71,7 @@ describe('WBS management (e2e)', () => {
     await request(app.getHttpServer())
       .post(`/api/v1/projects/${projectId}/budget/items`)
       .set('Authorization', auth(adminToken))
-      .send({ wbsItemId: itemId, amount: 1_000_000 });
+      .send({ wbsItemId: itemId, costType: 'LABOR', amount: 1_000_000 });
 
     const res = await request(app.getHttpServer())
       .delete(`/api/v1/projects/${projectId}/wbs/${itemId}`)
@@ -85,7 +85,7 @@ describe('WBS management (e2e)', () => {
     await request(app.getHttpServer())
       .post(`/api/v1/projects/${projectId}/budget/items`)
       .set('Authorization', auth(adminToken))
-      .send({ wbsItemId: itemId, amount: 500_000 });
+      .send({ wbsItemId: itemId, costType: 'LABOR', amount: 500_000 });
 
     const res = await request(app.getHttpServer())
       .get(`/api/v1/projects/${projectId}/wbs/${itemId}/links`)
