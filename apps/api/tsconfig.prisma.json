@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  // Typecheck khusus skrip seed. `tsconfig.json` meng-exclude `prisma/`, sehingga
+  // error tipe di seed tidak pernah terlihat CI. Config ini menutup celah itu.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["prisma/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

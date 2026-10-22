@@ -38,7 +38,9 @@ docs/         (masih kosong — lihat §Catatan)
 | `pnpm lint` / `pnpm typecheck` / `pnpm test` | Kualitas |
 | `pnpm --filter @aec/api test:unit` | Unit test API (jest, `*.spec.ts`) |
 | `pnpm --filter @aec/api test:e2e` | E2E API (supertest, butuh Postgres+Redis) |
-| `pnpm --filter @aec/api db:seed` | Seed DB |
+| `pnpm --filter @aec/api db:seed` | Seed data dasar (user, role, permission, COA, vendor, proyek) |
+| `pnpm --filter @aec/api db:seed:demo` | Seed data demo (12 proyek, 3 entitas, EVM, workflow) — **butuh** `db:seed` dulu |
+| `pnpm --filter @aec/api db:setup` | Migrate + kedua seed sekaligus. Ini yang dipakai untuk dev/VPS |
 | `pnpm --filter @aec/web dev` | Vite dev server web |
 
 ## 3. Backend (`apps/api`)

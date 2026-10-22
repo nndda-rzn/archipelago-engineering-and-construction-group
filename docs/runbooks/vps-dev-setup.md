@@ -136,21 +136,30 @@ memblokir request API dengan error CORS.
 Database VPS mulai kosong (tidak ada dump dari laptop).
 
 ```bash
-cd apps/api
-npx prisma migrate deploy
-npx prisma db seed
-cd ../..
+pnpm --filter @aec/api db:setup
 ```
 
-Gunakan `npx prisma db seed`, **bukan** `pnpm db:seed`. `prisma.config.ts` memuat
-`dotenv/config` sehingga `.env` terbaca; script `pnpm db:seed` hanya menjalankan
-`tsx prisma/seed.ts` tanpa memuat `.env`.
+Perintah itu menjalankan `prisma migrate deploy` lalu **kedua** seed. Gunakan
+`--filter` supaya cwd-nya `apps/api` dan `.env` terbaca; kalau dijalankan dari root
+repo, `tsx apps/api/prisma/seed-demo.ts` tidak menemukan `.env` (repo root tidak
+punya) dan gagal dengan `DATABASE_URL is required`.
 
-Seed demo (data contoh) bersifat opsional:
+Kenapa dua seed, bukan satu:
 
-```bash
-pnpm --filter @aec/api db:seed:demo
-```
+| Perintah | Isi |
+| --- | --- |
+| `db:seed` | Data dasar: user, role, permission, COA, vendor, 1 proyek, WBS |
+| `db:seed:demo` | Data demo: 12 proyek, 3 entitas, EVM baseline, workflow 3 versi, tim, jadwal |
+
+`db:seed` saja **tidak** membuat dashboard berisi — portfolio, vendor register,
+dan approval inbox akan tampak kosong. `db:seed:demo` butuh `db:seed` sudah jalan.
+
+Keduanya idempoten: aman dijalankan berulang tanpa menggandakan data.
+
+Seed demo sengaja **tidak** dirantai ke `prisma db seed`, karena e2e memakai
+perintah itu untuk menyiapkan `aec_test`. Kalau dirantai, budget demo 4,8T di
+`PRJ-EPC-2027-014` akan membuat uji `409 BUDGET_EXCEEDED` di
+`critical-path.e2e-spec.ts` gagal.
 
 ## 8. Jalankan app
 

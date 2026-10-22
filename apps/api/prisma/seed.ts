@@ -16,7 +16,7 @@ const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) })
 // action] diturunkan dari kode `Resource.ACTION`, jadi tidak bisa lagi berbeda
 // dari yang dipakai controller backend.
 const permissions = Object.values(Permission).map((code) => {
-  const [resource, action] = code.split('.');
+  const [resource = '', action = ''] = code.split('.');
   return [code, resource, action] as const;
 });
 

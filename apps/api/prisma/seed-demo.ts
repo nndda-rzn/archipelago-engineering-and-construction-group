@@ -452,6 +452,11 @@ async function seedPortfolio() {
   }
   if (!con) throw new Error('LegalEntity AEC-CON tidak ada — jalankan seed dasar dulu.');
 
+  // Dipakai sebagai `requestedBy` / `releasedBy` dokumen demo. Harus ID user
+  // (bukan email) agar nama penanggung jawab bisa diresolusi di UI.
+  const buyerUser = await prisma.user.findUnique({ where: { email: 'buyer@aec.local' }, select: { id: true } });
+  const buyerUserId = buyerUser?.id ?? null;
+
   // ── B. Klien tambahan ──
   const clientRows = [
     { clientCode: `CLT-${year}-900002`, name: 'PT Marine Nusantara', industry: 'MARINE' },
@@ -560,7 +565,7 @@ async function seedPortfolio() {
     let po = await prisma.purchaseOrder.findUnique({ where: { poNumber } });
     if (!po) {
       po = await prisma.purchaseOrder.create({
-        data: { poNumber, projectId: project.id, vendor: 'PT Baja Utama', currency: p.ccy, totalAmount: p.value * 0.35, status: 'RELEASED', issuedAt: new Date(`${year}-03-01`), releasedBy: 'buyer@aec.local' },
+        data: { poNumber, projectId: project.id, vendor: 'PT Baja Utama', currency: p.ccy, totalAmount: p.value * 0.35, status: 'RELEASED', issuedAt: new Date(`${year}-03-01`), releasedBy: buyerUserId ?? 'system' },
       });
     }
     const invNumber = `INV-${p.code.slice(-3)}-900001`;
@@ -606,10 +611,13 @@ async function seedPortfolio() {
 
     // PR → Progress Claim → Client Invoice (aliran commercial utuh per proyek)
     // supaya tab Commercial & rantai kas punya isi nyata.
+    // `requestedBy` WAJIB id user, bukan email: `approval-detail.service` meresolusi
+    // nama lewat `user.findUnique({ where: { id } })`, jadi email menghasilkan
+    // requesterName null di UI approval.
     const prNumber = `PR-${p.code.slice(-3)}-900001`;
     const existingPr = await prisma.purchaseRequisition.findUnique({ where: { prNumber } });
     if (!existingPr) {
-      await prisma.purchaseRequisition.create({ data: { prNumber, projectId: project.id, requestedBy: 'buyer@aec.local', description: `Permintaan material ${p.name}`, estimatedTotal: p.value * 0.1, status: 'APPROVED' } });
+      await prisma.purchaseRequisition.create({ data: { prNumber, projectId: project.id, requestedBy: buyerUserId ?? 'system', description: `Permintaan material ${p.name}`, estimatedTotal: p.value * 0.1, status: 'APPROVED' } });
     }
     const claimNumber = `CLM-${p.code.slice(-3)}-900001`;
     let claim = await prisma.progressClaim.findUnique({ where: { claimNumber } });
@@ -1101,19 +1109,25 @@ async function main() {
   if (!entity) throw new Error('Seed base dulu: pnpm --filter @aec/api db:seed');
 
   // ── 1. Vendor master ──
+  // Dulu blok ini meng-upsert kode `VND-<year>-000001..000005` dengan nama dari
+  // daftar di bawah. Masalahnya kode yang sama sudah dipakai `seed.ts`
+  // (`seedMasterData`) untuk vendor yang BERBEDA dan berurutan lain, sehingga
+  // `update: { name }` menimpa nama lama. Hasilnya satu vendor hilang
+  // (CV Karya Konstruksi Mandiri) dan satu jadi ganda (PT Logistik Prima).
+  //
+  // Kelima vendor ini sudah dibuat `seed.ts`, jadi tidak ada yang perlu dibuat di
+  // sini — cukup diambil. Lookup by name membuat seed ini tidak menyentuh baris
+  // milik seed dasar, berapa kali pun dijalankan.
   const vendors = ['PT Baja Utama', 'PT Semen Nasional', 'PT Mekanik Jaya', 'PT Elektrik Sejahtera', 'PT Logistik Prima'];
-  const vendorRows = [];
-  for (let vi = 0; vi < vendors.length; vi++) {
-    const v = vendors[vi];
-    const code = `VND-${year}-${String(vi + 1).padStart(6, '0')}`;
-    const vendor = await prisma.vendor.upsert({
-      where: { vendorCode: code },
-      update: { name: v },
-      create: { vendorCode: code, name: v, category: 'MATERIAL', status: 'ACTIVE' },
-    });
-    vendorRows.push(vendor);
+  const vendorRows = await prisma.vendor.findMany({
+    where: { name: { in: vendors } },
+    orderBy: { vendorCode: 'asc' },
+  });
+  const missingVendors = vendors.filter((name) => !vendorRows.some((v) => v.name === name));
+  if (missingVendors.length > 0) {
+    console.warn(`Vendor: belum ada di master (jalankan seed dasar dulu): ${missingVendors.join(', ')}`);
   }
-  console.log(`Vendor: ${vendorRows.length}`);
+  console.log(`Vendor: ${vendorRows.length} dipakai (dari master, tidak dibuat ulang)`);
 
   // ── 2. Client + contract ──
   let client = await prisma.client.upsert({
@@ -1130,7 +1144,7 @@ async function main() {
       signedDate: new Date(`${year}-01-15`), startDate: new Date(`${year}-02-01`), endDate: new Date(`${year + 3}-01-31`),
     },
   });
-  console.log(`Client: ${client.name} | Contract: ${contract.contractNumber} (${contract.value.toLocaleString('id-ID')})`);
+  console.log(`Client: ${client.name} | Contract: ${contract.contractNumber} (${Number(contract.value).toLocaleString('id-ID')})`);
 
   // ── 3. Project PRJ-EPC-2027-014 + WBS + Budget ──
   let project = await prisma.project.findUnique({ where: { code: 'PRJ-EPC-2027-014' } });
@@ -1202,7 +1216,7 @@ async function main() {
         items: { create: [{ description: 'Structural Steel', quantity: 5000, unit: 'ton', unitPrice: 30000000, totalPrice: 150000000000, wbsItemId: wbsMap.get('2') }] },
       },
     });
-    console.log(`PO released: ${po.poNumber} (${po.totalAmount.toLocaleString('id-ID')}) linked to PR ${prId ? 'yes' : 'no'}`);
+    console.log(`PO released: ${po.poNumber} (${Number(po.totalAmount).toLocaleString('id-ID')}) linked to PR ${prId ? 'yes' : 'no'}`);
   } else {
     // Rekonsiliasi: tautkan PO demo ke PR demo agar "related documents" terisi,
     // tanpa menyentuh PO lain yang mungkin sudah punya relasi sendiri.
@@ -1540,8 +1554,7 @@ async function main() {
       { severity: 'MAJOR', category: 'MATERIAL', age: 12 },
       { severity: 'MINOR', category: 'DOCUMENT', age: 5 },
     ];
-    for (let i = 0; i < ncrs.length; i++) {
-      const n = ncrs[i];
+    for (const [i, n] of ncrs.entries()) {
       const created = new Date(now.getTime() - n.age * 86_400_000);
       await prisma.ncr.create({
         data: {
@@ -1561,8 +1574,7 @@ async function main() {
       { severity: 'LOW', type: 'PROPERTY', age: 1 },
     ];
     let firstIncidentId: string | null = null;
-    for (let i = 0; i < incs.length; i++) {
-      const inc = incs[i];
+    for (const [i, inc] of incs.entries()) {
       const created = new Date(now.getTime() - inc.age * 86_400_000);
       const row = await prisma.hseIncident.create({
         data: {
@@ -1595,8 +1607,7 @@ async function main() {
       { title: 'Ketersediaan tenaga ahli las', category: 'TECHNICAL', l: 3, i: 3 },
       { title: 'Perizinan lingkungan terlambat', category: 'HSE', l: 2, i: 4 },
     ];
-    for (let i = 0; i < extraRisks.length; i++) {
-      const r = extraRisks[i];
+    for (const [i, r] of extraRisks.entries()) {
       await prisma.risk.create({
         data: {
           riskNumber: `RSK-${year}-${String(i + 2).padStart(6, '0')}`, projectId: project.id,
@@ -1680,7 +1691,7 @@ async function main() {
       where: { email: u.email },
       update: { displayName: u.name, jobTitle: u.jobTitle, department: u.department, phone: u.phone, legalEntityId: entity.id },
       create: {
-        username: u.email.split('@')[0], email: u.email, displayName: u.name, passwordHash: hash,
+        username: u.email.split('@')[0] ?? u.email, email: u.email, displayName: u.name, passwordHash: hash,
         legalEntityId: entity.id, status: 'ACTIVE',
         jobTitle: u.jobTitle, department: u.department, phone: u.phone,
       },
