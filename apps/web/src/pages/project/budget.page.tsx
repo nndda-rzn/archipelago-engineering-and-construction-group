@@ -58,9 +58,12 @@ export function BudgetPage() {
                 code={w.code}
                 name={w.name}
                 amount={w.budget}
-                depth={w.parentId ? 1 : 0}
+                depth={w.depth}
                 saving={upsert.isPending}
-                onSave={(amount) => upsert.mutate({ wbsItemId: w.id, amount })}
+                // Task 7 mengganti baris ini dengan pemilih cost type. Untuk sementara
+                // dipakai cost type pertama yang dimiliki simpul agar kontrak tetap valid
+                // dan tidak ada baris liar 'DIRECT' yang dibuat.
+                onSave={(amount) => upsert.mutate({ wbsItemId: w.id, costType: (Object.keys(w.byCostType)[0] ?? 'DIRECT') as never, amount })}
               />
             ))
           )}

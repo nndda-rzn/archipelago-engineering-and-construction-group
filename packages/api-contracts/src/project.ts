@@ -408,6 +408,11 @@ export const wbsLinksSchema = z.object({
 });
 export type WbsLinks = z.infer<typeof wbsLinksSchema>;
 
+export const costTypeKeySchema = z.enum([
+  'DIRECT', 'LABOR', 'MATERIAL', 'SUBCONTRACTOR', 'EQUIPMENT', 'INDIRECT', 'OVERHEAD',
+]);
+export type CostTypeKey = z.infer<typeof costTypeKeySchema>;
+
 export const budgetSummarySchema = z.object({
   projectId: z.string(),
   status: z.enum(['DRAFT', 'PUBLISHED']),
@@ -417,17 +422,49 @@ export const budgetSummarySchema = z.object({
       code: z.string(),
       name: z.string(),
       parentId: z.string().nullable(),
+      /** Kedalaman pohon, diturunkan dari rantai `parentId` (root = 0). */
+      depth: z.number(),
+      /** Budget simpul ini + seluruh keturunannya. */
       budget: z.number(),
+      /** Biaya terpakai simpul ini + keturunannya (ledger OUT + jurnal beban material). */
+      used: z.number(),
+      /** `budget - used`; boleh negatif bila terpakai melebihi budget. */
+      remaining: z.number(),
+      /** Rincian per cost type, sudah termasuk rollup keturunan. */
+      byCostType: z.record(costTypeKeySchema, z.number()),
+      /** PV dari ControlAccount untuk simpul ini (bila ada). */
+      plannedValue: z.number(),
       itemCount: z.number(),
+      childrenCount: z.number(),
     }),
   ),
+  /** Dipertahankan untuk kompatibilitas; sama dengan `totals.budget`. */
   totalBudget: z.number(),
+  totals: z.object({
+    budget: z.number(),
+    used: z.number(),
+    remaining: z.number(),
+    contractValue: z.number(),
+    variance: z.number(),
+  }),
+  warnings: z.object({
+    overContract: z.boolean(),
+    overAllocated: z.array(z.object({ wbsId: z.string(), code: z.string(), amount: z.number() })),
+    noBudget: z.array(z.object({ wbsId: z.string(), code: z.string() })),
+    pvMismatch: z.object({ pv: z.number(), bac: z.number(), ratio: z.number() }).nullable(),
+  }),
+  /** Berapa simpul yang benar-benar punya biaya teralokasi per WBS. */
+  costCoverage: z.object({ allocatedNodes: z.number(), totalNodes: z.number() }),
 });
 export type BudgetSummary = z.infer<typeof budgetSummarySchema>;
 
 export const upsertBudgetSchema = z.object({
   wbsItemId: z.string(),
-  costType: z.string().optional(),
+  /**
+   * WAJIB. Dulu opsional dan service jatuh ke 'DIRECT', sehingga setiap edit dari
+   * UI membuat baris kelima di samping 4 cost type yang sudah ada.
+   */
+  costType: costTypeKeySchema,
   amount: z.number().min(0),
 });
 export type UpsertBudget = z.infer<typeof upsertBudgetSchema>;
