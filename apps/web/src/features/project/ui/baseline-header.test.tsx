@@ -31,6 +31,18 @@ describe('BaselineHeader', () => {
     expect(screen.getByText(/22 Oct 2026/)).toBeTruthy();
   });
 
+  it('shows how the total moved from the previous version', () => {
+    const previous = { ...frozen, id: 'b0', version: 2, label: null, frozenAt: '2026-09-01T00:00:00.000Z', total: 4.6e12 };
+    render(<BaselineHeader projectId="p1" baseline={frozen} previous={previous} hasOpenRevision={false} />);
+    // 4,8 T - 4,6 T = +200 M, ditampilkan sebagai delta terhadap versi sebelumnya.
+    expect(screen.getByText(/\+Rp 200 M/)).toBeTruthy();
+  });
+
+  it('omits the delta when there is no previous version', () => {
+    render(<BaselineHeader projectId="p1" baseline={frozen} previous={null} hasOpenRevision={false} />);
+    expect(screen.queryByText(/vs v/)).toBeNull();
+  });
+
   it('offers Open revision when a baseline exists and none is open', () => {
     render(<BaselineHeader projectId="p1" baseline={frozen} hasOpenRevision={false} />);
     expect(screen.getByRole('button', { name: /open revision/i })).toBeTruthy();

@@ -3,7 +3,7 @@ import { BudgetBaselineService } from './budget-baseline.service';
 
 const tx = {
   budgetBaseline: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
-  budgetBaselineLine: { createMany: jest.fn(), findMany: jest.fn() },
+  budgetBaselineLine: { createMany: jest.fn(), findMany: jest.fn(), deleteMany: jest.fn() },
   budgetItem: { findMany: jest.fn(), deleteMany: jest.fn(), createMany: jest.fn(), updateMany: jest.fn() },
 };
 
@@ -49,10 +49,22 @@ describe('freeze', () => {
     await expect(make().freeze('p1', {}, 'u1')).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it('refuses when a revision is already open', async () => {
+  it('freezes the open revision instead of refusing it', async () => {
     prisma.budgetItem.findMany.mockResolvedValue([{ wbsItemId: 'w1', costType: 'LABOR', amount: 100 }]);
-    baselineLookups({ openDraft: { id: 'b', version: 2, status: 'DRAFT' } });
-    await expect(make().freeze('p1', {}, 'u1')).rejects.toBeInstanceOf(ConflictException);
+    baselineLookups({ openDraft: { id: 'b2', version: 2, status: 'DRAFT' } });
+    tx.budgetBaseline.update.mockResolvedValue({ id: 'b2', version: 2, status: 'FROZEN', label: 'VO-01', reason: 'VO-01 steel' });
+
+    await make().freeze('p1', { label: 'VO-01' }, 'u1');
+
+    // Baris draft disegarkan dari budget hidup, lalu header dibekukan.
+    expect(tx.budgetBaselineLine.deleteMany).toHaveBeenCalledWith({ where: { baselineId: 'b2' } });
+    expect(tx.budgetBaseline.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'b2' }, data: expect.objectContaining({ status: 'FROZEN' }) }),
+    );
+    expect(tx.budgetItem.updateMany).toHaveBeenCalledWith({
+      where: { projectId: 'p1' },
+      data: { status: 'PUBLISHED' },
+    });
   });
 
   it('throws NotFound when the project does not exist', async () => {

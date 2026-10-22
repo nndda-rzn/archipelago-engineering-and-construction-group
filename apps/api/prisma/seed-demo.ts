@@ -570,6 +570,30 @@ async function seedPortfolio() {
       }
     }
 
+    // Forecast EAC/VAC — kolom proyeksi di halaman Budget membaca tabel ini.
+    // Tanpa baris di sini, EAC selalu kosong dan kolomnya tidak pernah terbukti
+    // bekerja. EAC = AC + ETC; proyek overrun diproyeksikan melebihi BAC.
+    if (!isNobudget) {
+      const existingForecast = await prisma.forecast.findFirst({ where: { projectId: project.id } });
+      if (!existingForecast) {
+        const eac = p.profile === 'healthy' ? bac * 1.02 : bac * 1.12;
+        const etc = Math.max(eac - ac, 0);
+        await prisma.forecast.create({
+          data: {
+            projectId: project.id,
+            version: 1,
+            period: `${year}-Q4`,
+            estimateAtCompletion: Math.round(eac),
+            estimateToComplete: Math.round(etc),
+            varianceAtCompletion: Math.round(bac - eac),
+            status: 'APPROVED',
+            note: 'Seed forecast (EAC)',
+            createdBy: 'seed',
+          },
+        });
+      }
+    }
+
     const wpNumber = `WP-${p.code.slice(-3)}`;
     let wp = await prisma.constructionWorkPackage.findUnique({ where: { wpNumber } });
     if (!wp && wbsForCa) {
@@ -1317,6 +1341,29 @@ async function main() {
     await prisma.stockLedgerEntry.create({ data: { projectId: project.id, wbsItemId: wbsMap.get('2'), warehouseId: warehouse.id, movementType: 'IN', quantity: 120000, unit: 'ton', unitPrice: (acTarget * 1.3) / 120000, totalValue: acTarget * 1.3, documentType: 'GR', reference: 'SEED-014-IN', description: 'Penerimaan material massal (seed)', balanceAfter: 120000 } });
     await prisma.stockLedgerEntry.create({ data: { projectId: project.id, wbsItemId: wbsMap.get('3'), warehouseId: warehouse.id, movementType: 'OUT', quantity: 70000, unit: 'ton', unitPrice: acTarget / 70000, totalValue: acTarget, documentType: 'ISSUE', reference: 'SEED-014-OUT', description: 'Pemakaian material massal (seed)', balanceAfter: 50000 } });
     console.log(`Ledger massal 014: OUT ≈ ${(acTarget / 1e12).toFixed(2)} T (CPI ≈ 1)`);
+  }
+
+  // Forecast EAC/VAC untuk PRJ-014. Proyek ini dibuat oleh blok tersendiri, bukan
+  // loop portfolio, jadi tanpa blok ini kolom proyeksi selalu kosong di proyek
+  // unggulan. EAC sedikit di atas BAC: proyek berjalan mendekati anggaran.
+  const demoForecast = await prisma.forecast.findFirst({ where: { projectId: project.id } });
+  if (!demoForecast) {
+    const demoBac = 4_800_000_000_000;
+    const demoEac = Math.round(demoBac * 1.04);
+    await prisma.forecast.create({
+      data: {
+        projectId: project.id,
+        version: 1,
+        period: `${year}-Q4`,
+        estimateAtCompletion: demoEac,
+        estimateToComplete: Math.round(demoEac * 0.5),
+        varianceAtCompletion: demoBac - demoEac,
+        status: 'APPROVED',
+        note: 'Seed forecast (EAC)',
+        createdBy: 'seed',
+      },
+    });
+    console.log(`Forecast 014: EAC ${(demoEac / 1e12).toFixed(2)} T`);
   }
 
   // ── 6. Construction work package + progress ──
