@@ -1,4 +1,12 @@
-import { budgetSummarySchema, costTypeKeySchema, upsertBudgetSchema } from '@aec/api-contracts';
+import {
+  budgetStatementRowSchema,
+  budgetStatementSchema,
+  budgetSummarySchema,
+  costTypeKeySchema,
+  freezeBaselineSchema,
+  openRevisionSchema,
+  upsertBudgetSchema,
+} from '@aec/api-contracts';
 
 /**
  * Kontrak budget diparse di sini karena `packages/api-contracts` tidak punya test
@@ -83,3 +91,54 @@ describe('budget contracts', () => {
   });
 });
 
+
+describe('budget statement contract', () => {
+  const validRow = {
+    id: 'w1', code: '1', name: 'Engineering', parentId: null, depth: 0, childrenCount: 0,
+    baseline: 100, revised: 120, committed: 10, actual: 50, available: 60,
+    variance: 70, varianceBaseline: 20, byCostType: { LABOR: 120 },
+  };
+
+  it('rejects a row missing the committed column', () => {
+    const { committed, ...withoutCommitted } = validRow;
+    void committed;
+    expect(budgetStatementRowSchema.safeParse(withoutCommitted).success).toBe(false);
+  });
+
+  it('accepts a complete statement row', () => {
+    expect(budgetStatementRowSchema.safeParse(validRow).success).toBe(true);
+  });
+
+  it('allows a negative variance and a negative available', () => {
+    const row = { ...validRow, variance: -50, available: -10 };
+    expect(budgetStatementRowSchema.safeParse(row).success).toBe(true);
+  });
+
+  it('requires a reason when opening a revision', () => {
+    expect(openRevisionSchema.safeParse({}).success).toBe(false);
+    expect(openRevisionSchema.safeParse({ reason: 'VO-01 steel' }).success).toBe(true);
+  });
+
+  it('accepts a freeze request without a label', () => {
+    expect(freezeBaselineSchema.safeParse({}).success).toBe(true);
+    expect(freezeBaselineSchema.safeParse({ label: 'Original contract' }).success).toBe(true);
+  });
+
+  it('accepts a statement whose baseline is still absent', () => {
+    const statement = {
+      projectId: 'p1', currency: 'IDR', baseline: null, previous: null, openRevision: false, rows: [],
+      totals: {
+        baseline: 0, revised: 0, committed: 0, actual: 0, available: 0,
+        variance: 0, varianceBaseline: 0, contractValue: 0, eac: null, vac: null,
+      },
+      unallocated: { committed: 0, actual: 0 },
+      reconciliation: { ledgerOut: 0, journalExpense610: 0, doubleCountRisk: false },
+      warnings: {
+        overContract: false, overCommitted: [], noBudget: [],
+        pvCoverage: { pv: 0, bac: 0, status: 'NO_BASELINE' },
+      },
+      costCoverage: { allocatedNodes: 0, totalNodes: 0 },
+    };
+    expect(budgetStatementSchema.safeParse(statement).success).toBe(true);
+  });
+});

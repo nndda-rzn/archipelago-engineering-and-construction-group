@@ -8,42 +8,59 @@ const prisma = {
   stockLedgerEntry: { groupBy: jest.fn() },
   journalLine: { groupBy: jest.fn() },
   controlAccount: { groupBy: jest.fn() },
+  budgetBaseline: { findFirst: jest.fn() },
+  budgetBaselineLine: { findMany: jest.fn() },
+  purchaseOrderItem: { groupBy: jest.fn() },
+  forecast: { findFirst: jest.fn() },
 };
 const audit = { record: jest.fn() };
 const cache = { get: jest.fn(), set: jest.fn(), del: jest.fn(), delByPattern: jest.fn() };
 
 const make = () => new BudgetService(prisma as never, audit as never, cache as never);
 
+const project = { id: 'p1', contractValue: 5000, currency: 'IDR' };
+const oneWbs = [{ id: 'w1', code: '1', name: 'Engineering', parentId: null }];
+
+/** Isi default supaya test yang tidak peduli input tertentu tetap berjalan. */
 beforeEach(() => {
   jest.clearAllMocks();
   prisma.stockLedgerEntry.groupBy.mockResolvedValue([]);
   prisma.journalLine.groupBy.mockResolvedValue([]);
   prisma.controlAccount.groupBy.mockResolvedValue([]);
+  prisma.budgetBaseline.findFirst.mockResolvedValue(null);
+  prisma.budgetBaselineLine.findMany.mockResolvedValue([]);
+  prisma.purchaseOrderItem.groupBy.mockResolvedValue([]);
+  prisma.forecast.findFirst.mockResolvedValue(null);
 });
 
 describe('findAll', () => {
-  it('returns spend per WBS, cost breakdown, totals and warnings', async () => {
-    prisma.project.findUnique.mockResolvedValue({ id: 'p1', contractValue: 5000 });
-    prisma.wbsItem.findMany.mockResolvedValue([{ id: 'w1', code: '1', name: 'Engineering', parentId: null }]);
+  it('returns a statement with baseline, revised, actual and derived columns', async () => {
+    prisma.project.findUnique.mockResolvedValue(project);
+    prisma.wbsItem.findMany.mockResolvedValue(oneWbs);
     prisma.budgetItem.findMany.mockResolvedValue([
       { wbsItemId: 'w1', costType: 'LABOR', amount: 1000, status: 'PUBLISHED', version: 1 },
     ]);
     prisma.stockLedgerEntry.groupBy.mockResolvedValue([{ wbsItemId: 'w1', _sum: { totalValue: -400 } }]);
     prisma.controlAccount.groupBy.mockResolvedValue([{ wbsItemId: 'w1', _sum: { plannedValue: 600 } }]);
+    prisma.budgetBaseline.findFirst.mockResolvedValue({
+      id: 'b1', version: 1, status: 'FROZEN', label: null, reason: null, frozenAt: new Date('2026-01-01'),
+    });
+    prisma.budgetBaselineLine.findMany.mockResolvedValue([{ wbsItemId: 'w1', costType: 'LABOR', amount: 900 }]);
 
     const res = await make().findAll('p1');
-    expect(res.wbs[0]!.budget).toBe(1000);
-    expect(res.wbs[0]!.used).toBe(400);
-    expect(res.wbs[0]!.byCostType).toEqual({ LABOR: 1000 });
+
+    expect(res.rows[0]!.revised).toBe(1000);
+    expect(res.rows[0]!.baseline).toBe(900);
+    expect(res.rows[0]!.actual).toBe(400);
+    expect(res.rows[0]!.variance).toBe(600);
+    expect(res.rows[0]!.varianceBaseline).toBe(100);
     expect(res.totals.contractValue).toBe(5000);
-    expect(res.totals.variance).toBe(4000);
-    expect(res.warnings.pvMismatch?.ratio).toBeCloseTo(0.6, 2);
-    expect(res.costCoverage).toEqual({ allocatedNodes: 1, totalNodes: 1 });
+    expect(res.baseline!.version).toBe(1);
   });
 
-  it('adds journal debits to the ledger spend instead of double counting them', async () => {
-    prisma.project.findUnique.mockResolvedValue({ id: 'p1', contractValue: 5000 });
-    prisma.wbsItem.findMany.mockResolvedValue([{ id: 'w1', code: '1', name: 'Engineering', parentId: null }]);
+  it('counts actual from the ledger only, never adding the expense journal', async () => {
+    prisma.project.findUnique.mockResolvedValue(project);
+    prisma.wbsItem.findMany.mockResolvedValue(oneWbs);
     prisma.budgetItem.findMany.mockResolvedValue([
       { wbsItemId: 'w1', costType: 'LABOR', amount: 1000, status: 'PUBLISHED', version: 1 },
     ]);
@@ -51,22 +68,71 @@ describe('findAll', () => {
     prisma.journalLine.groupBy.mockResolvedValue([{ wbsItemId: 'w1', _sum: { debit: 75 } }]);
 
     const res = await make().findAll('p1');
-    expect(res.wbs[0]!.used).toBe(475);
+
+    // Regresi: dulu `used` = 475 karena jurnal ikut dijumlahkan. Material issue
+    // hanya menulis ledger, sedangkan jurnal 6100 berasal dari invoice atas
+    // material yang sama — menjumlahkan keduanya menghitung material dua kali.
+    expect(res.rows[0]!.actual).toBe(400);
+    expect(res.reconciliation.journalExpense610).toBe(75);
+    expect(res.reconciliation.ledgerOut).toBe(400);
+    expect(res.reconciliation.doubleCountRisk).toBe(true);
   });
 
-  it('returns an empty tree without crashing when the project has no WBS', async () => {
-    prisma.project.findUnique.mockResolvedValue({ id: 'p1', contractValue: 5000 });
+  it('reports no baseline rather than pretending one exists', async () => {
+    prisma.project.findUnique.mockResolvedValue(project);
+    prisma.wbsItem.findMany.mockResolvedValue(oneWbs);
+    prisma.budgetItem.findMany.mockResolvedValue([]);
+
+    const res = await make().findAll('p1');
+
+    expect(res.baseline).toBeNull();
+    expect(res.previous).toBeNull();
+    expect(res.rows[0]!.baseline).toBe(0);
+  });
+
+  it('takes committed from released PO items on the same WBS', async () => {
+    prisma.project.findUnique.mockResolvedValue(project);
+    prisma.wbsItem.findMany.mockResolvedValue(oneWbs);
+    prisma.budgetItem.findMany.mockResolvedValue([
+      { wbsItemId: 'w1', costType: 'LABOR', amount: 1000, status: 'PUBLISHED', version: 1 },
+    ]);
+    prisma.purchaseOrderItem.groupBy.mockResolvedValue([{ wbsItemId: 'w1', _sum: { totalPrice: 250 } }]);
+
+    const res = await make().findAll('p1');
+
+    expect(res.rows[0]!.committed).toBe(250);
+    expect(res.rows[0]!.available).toBe(750);
+  });
+
+  it('exposes EAC and VAC on the totals only, never per row', async () => {
+    prisma.project.findUnique.mockResolvedValue(project);
+    prisma.wbsItem.findMany.mockResolvedValue(oneWbs);
+    prisma.budgetItem.findMany.mockResolvedValue([
+      { wbsItemId: 'w1', costType: 'LABOR', amount: 1000, status: 'PUBLISHED', version: 1 },
+    ]);
+    prisma.forecast.findFirst.mockResolvedValue({ estimateAtCompletion: 1200, varianceAtCompletion: -200 });
+
+    const res = await make().findAll('p1');
+
+    expect(res.totals.eac).toBe(1200);
+    expect(res.totals.vac).toBe(-200);
+    expect('eac' in res.rows[0]!).toBe(false);
+  });
+
+  it('returns an empty statement without crashing when the project has no WBS', async () => {
+    prisma.project.findUnique.mockResolvedValue(project);
     prisma.wbsItem.findMany.mockResolvedValue([]);
     prisma.budgetItem.findMany.mockResolvedValue([]);
 
     const res = await make().findAll('p1');
-    expect(res.wbs).toEqual([]);
-    expect(res.totals.budget).toBe(0);
+
+    expect(res.rows).toEqual([]);
+    expect(res.totals.revised).toBe(0);
     expect(res.costCoverage).toEqual({ allocatedNodes: 0, totalNodes: 0 });
   });
 
-  it('rolls a child up to its parent and flattens the result', async () => {
-    prisma.project.findUnique.mockResolvedValue({ id: 'p1', contractValue: 5000 });
+  it('rolls a child up to its parent and emits pre-order', async () => {
+    prisma.project.findUnique.mockResolvedValue(project);
     prisma.wbsItem.findMany.mockResolvedValue([
       { id: 'p', code: '1', name: 'Engineering', parentId: null },
       { id: 'c', code: '1.1', name: 'Detail', parentId: 'p' },
@@ -76,12 +142,13 @@ describe('findAll', () => {
     ]);
 
     const res = await make().findAll('p1');
-    const parent = res.wbs.find((w) => w.id === 'p')!;
-    const child = res.wbs.find((w) => w.id === 'c')!;
-    expect(parent.budget).toBe(1000);
+    const parent = res.rows.find((r) => r.id === 'p')!;
+    const child = res.rows.find((r) => r.id === 'c')!;
+
+    expect(parent.revised).toBe(1000);
     expect(parent.childrenCount).toBe(1);
     expect(child.depth).toBe(1);
-    expect(res.wbs).toHaveLength(2);
+    expect(res.rows.map((r) => r.id)).toEqual(['p', 'c']);
   });
 
   it('throws PROJECT_NOT_FOUND for an unknown project', async () => {

@@ -519,6 +519,30 @@ async function seedPortfolio() {
       }
     }
 
+    // Baseline v1 beku untuk proyek demo. Idempoten: hanya dibuat bila belum ada,
+    // sehingga seed ulang tidak menumpuk versi.
+    if (p.profile !== 'nobudget') {
+      const existingBaseline = await prisma.budgetBaseline.findFirst({
+        where: { projectId: project.id, version: 1 },
+      });
+      if (!existingBaseline) {
+        const budgetRows = await prisma.budgetItem.findMany({ where: { projectId: project.id } });
+        if (budgetRows.length > 0) {
+          const seededBaseline = await prisma.budgetBaseline.create({
+            data: {
+              projectId: project.id, version: 1, status: 'FROZEN',
+              label: 'Seeded baseline', frozenAt: new Date(), frozenBy: 'seed',
+            },
+          });
+          await prisma.budgetBaselineLine.createMany({
+            data: budgetRows.map((r) => ({
+              baselineId: seededBaseline.id, wbsItemId: r.wbsItemId, costType: r.costType, amount: r.amount,
+            })),
+          });
+        }
+      }
+    }
+
     // Magnitudo EVM diselaraskan agar rasio realistis:
     //   BAC  = Σ budget PUBLISHED  = p.value
     //   PV   = BAC × planned%      (ControlAccount.plannedValue)

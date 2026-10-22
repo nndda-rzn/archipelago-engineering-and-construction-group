@@ -458,6 +458,108 @@ export const budgetSummarySchema = z.object({
 });
 export type BudgetSummary = z.infer<typeof budgetSummarySchema>;
 
+/**
+ * Baseline beku. `total` adalah jumlah seluruh barisnya saat dibekukan — bukan
+ * dihitung ulang dari data hidup, karena justru itu yang membuatnya baseline.
+ */
+export const budgetBaselineSchema = z.object({
+  id: z.string(),
+  version: z.number(),
+  status: z.enum(['DRAFT', 'FROZEN']),
+  label: z.string().nullable(),
+  reason: z.string().nullable(),
+  frozenAt: z.string().nullable(),
+  total: z.number(),
+});
+export type BudgetBaselineSummary = z.infer<typeof budgetBaselineSchema>;
+
+/**
+ * Satu baris pernyataan biaya. Enam angka uang sengaja dipisah agar tidak ada
+ * satu kolom pun yang mencampur "janji", "niat", dan "kenyataan".
+ */
+export const budgetStatementRowSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  name: z.string(),
+  parentId: z.string().nullable(),
+  depth: z.number(),
+  childrenCount: z.number(),
+  /** Nilai baseline beku (versi FROZEN terakhir). */
+  baseline: z.number(),
+  /** Niat berjalan (BudgetItem hidup). */
+  revised: z.number(),
+  /** PO + subkontrak yang sudah berkomitmen, per WBS. */
+  committed: z.number(),
+  /** Biaya nyata: ledger OUT saja — satu sumber, lihat spec §4.5. */
+  actual: z.number(),
+  /** revised - committed - actual. Boleh negatif. */
+  available: z.number(),
+  /** revised - actual. Boleh negatif. */
+  variance: z.number(),
+  /** revised - baseline: berapa niat bergeser dari janji. */
+  varianceBaseline: z.number(),
+  byCostType: z.record(costTypeKeySchema, z.number()),
+});
+export type BudgetStatementRow = z.infer<typeof budgetStatementRowSchema>;
+
+export const budgetStatementSchema = z.object({
+  projectId: z.string(),
+  currency: z.string(),
+  baseline: budgetBaselineSchema.nullable(),
+  previous: budgetBaselineSchema.nullable(),
+  /**
+   * Apakah ada revisi yang belum dibekukan. Halaman memakainya untuk menentukan
+   * boleh-tidaknya mengedit; tanpa field ini UI harus menebak dari bentuk data,
+   * dan tebakan itu bisa salah.
+   */
+  openRevision: z.boolean(),
+  rows: z.array(budgetStatementRowSchema),
+  totals: z.object({
+    baseline: z.number(),
+    revised: z.number(),
+    committed: z.number(),
+    actual: z.number(),
+    available: z.number(),
+    variance: z.number(),
+    varianceBaseline: z.number(),
+    contractValue: z.number(),
+    /** Hanya level proyek — Forecast tidak berdimensi WBS (spec §4.4). */
+    eac: z.number().nullable(),
+    vac: z.number().nullable(),
+  }),
+  unallocated: z.object({ committed: z.number(), actual: z.number() }),
+  reconciliation: z.object({
+    ledgerOut: z.number(),
+    journalExpense610: z.number(),
+    doubleCountRisk: z.boolean(),
+  }),
+  warnings: z.object({
+    overContract: z.boolean(),
+    overCommitted: z.array(z.object({ wbsId: z.string(), code: z.string(), amount: z.number() })),
+    noBudget: z.array(z.object({ wbsId: z.string(), code: z.string() })),
+    pvCoverage: z.object({
+      pv: z.number(),
+      bac: z.number(),
+      status: z.enum(['NO_BASELINE', 'PARTIAL', 'COMPLETE']),
+    }),
+  }),
+  costCoverage: z.object({ allocatedNodes: z.number(), totalNodes: z.number() }),
+});
+export type BudgetStatement = z.infer<typeof budgetStatementSchema>;
+
+export const freezeBaselineSchema = z.object({
+  label: z.string().max(120).optional(),
+  reason: z.string().max(500).optional(),
+});
+export type FreezeBaseline = z.infer<typeof freezeBaselineSchema>;
+
+export const openRevisionSchema = z.object({
+  /** Wajib: revisi tanpa alasan tidak dapat diaudit. */
+  reason: z.string().min(3).max(500),
+  label: z.string().max(120).optional(),
+});
+export type OpenRevision = z.infer<typeof openRevisionSchema>;
+
 export const upsertBudgetSchema = z.object({
   wbsItemId: z.string(),
   /**
