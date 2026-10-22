@@ -52,25 +52,6 @@ function compareCode(a: string, b: string): number {
   return a.localeCompare(b);
 }
 
-/**
- * Kedalaman lewat rantai `parentId`. Siklus dan induk yang hilang menghasilkan
- * `depth = 0` (diperlakukan sebagai root) agar tidak ada loop tak berujung dan
- * tidak ada simpul yang hilang dari layar.
- */
-function resolveDepth(id: string, parentOf: Map<string, string | null>): number {
-  let depth = 0;
-  let current = parentOf.get(id) ?? null;
-  const seen = new Set<string>([id]);
-  while (current != null) {
-    if (seen.has(current)) return 0;
-    seen.add(current);
-    if (!parentOf.has(current)) return 0;
-    depth += 1;
-    current = parentOf.get(current) ?? null;
-  }
-  return depth;
-}
-
 interface NodeTotals {
   baseline: number;
   revised: number;
