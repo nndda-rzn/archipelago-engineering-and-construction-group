@@ -189,3 +189,31 @@ describe('upsert', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 });
+
+  it('reports the previous baseline total, not zero', async () => {
+    prisma.project.findUnique.mockResolvedValue(project);
+    prisma.wbsItem.findMany.mockResolvedValue(oneWbs);
+    prisma.budgetItem.findMany.mockResolvedValue([
+      { wbsItemId: 'w1', costType: 'LABOR', amount: 1000, status: 'PUBLISHED', version: 1 },
+    ]);
+    prisma.budgetBaseline.findFirst.mockImplementation(async (args: { where?: { status?: string } }) => {
+      // freeze terakhir (v2) lalu versi sebelumnya (v1)
+      if (args?.where?.status === 'DRAFT') return null;
+      if (args?.where?.version?.lt != null) return { id: 'b1', version: 1, status: 'FROZEN', label: null, reason: null, frozenAt: new Date('2026-01-01') };
+      return { id: 'b2', version: 2, status: 'FROZEN', label: null, reason: null, frozenAt: new Date('2026-02-01') };
+    });
+    prisma.budgetBaselineLine.findMany.mockImplementation(async (args: { where?: { baselineId?: string } }) => {
+      if (args?.where?.baselineId === 'b2') return [{ wbsItemId: 'w1', costType: 'LABOR', amount: 900 }];
+      if (args?.where?.baselineId === 'b1') return [{ wbsItemId: 'w1', costType: 'LABOR', amount: 800 }];
+      return [];
+    });
+
+    const res = await make().findAll('p1');
+
+    expect(res.baseline!.version).toBe(2);
+    expect(res.baseline!.total).toBe(900);
+    expect(res.previous).not.toBeNull();
+    expect(res.previous!.version).toBe(1);
+    // Regresi: dulu total versi sebelumnya selalu 0 karena barisnya tidak diambil.
+    expect(res.previous!.total).toBe(800);
+  });

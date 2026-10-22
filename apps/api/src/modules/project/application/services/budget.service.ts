@@ -106,6 +106,15 @@ export class BudgetService {
       .filter((g) => g.wbsItemId != null)
       .map((g) => ({ wbsItemId: g.wbsItemId as string, amount: Math.abs(Number(g._sum?.totalValue ?? 0)) }));
 
+    // Baris versi sebelumnya perlu diambil terpisah: tanpa itu `previous.total`
+    // selalu 0 dan perbandingan antar-versi tidak bisa dipakai.
+    const previousLines = previousBaseline
+      ? await this.prisma.budgetBaselineLine.findMany({
+          where: { baselineId: previousBaseline.id },
+          select: { amount: true },
+        })
+      : [];
+
     const pvByWbs = new Map<string, number>();
     for (const g of pvGroups) {
       if (!g.wbsItemId) continue;
@@ -160,9 +169,7 @@ export class BudgetService {
       projectId,
       currency: (project as { currency?: string }).currency ?? 'IDR',
       baseline: toSummary(baseline, baselineLines.reduce((s, l) => s + Number(l.amount), 0)),
-      // Baseline sebelumnya belum membawa barisnya di query ini; totalnya 0
-      // sampai Stage B membutuhkannya untuk perbandingan antar-versi.
-      previous: toSummary(previousBaseline, 0),
+      previous: toSummary(previousBaseline, previousLines.reduce((s, l) => s + Number(l.amount), 0)),
       openRevision: openDraft != null,
       rows,
       totals: {
