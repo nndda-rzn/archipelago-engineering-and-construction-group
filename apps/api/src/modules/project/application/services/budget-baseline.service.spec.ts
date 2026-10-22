@@ -3,7 +3,7 @@ import { BudgetBaselineService } from './budget-baseline.service';
 
 const tx = {
   budgetBaseline: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
-  budgetBaselineLine: { createMany: jest.fn(), findMany: jest.fn() },
+  budgetBaselineLine: { createMany: jest.fn(), findMany: jest.fn(), deleteMany: jest.fn() },
   budgetItem: { findMany: jest.fn(), deleteMany: jest.fn(), createMany: jest.fn(), updateMany: jest.fn() },
 };
 
