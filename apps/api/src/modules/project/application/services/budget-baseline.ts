@@ -1,4 +1,4 @@
-import type { BudgetStatementRow, CostTypeKey } from '@aec/api-contracts';
+import type { BudgetStatement, BudgetStatementRow, CostTypeKey } from '@aec/api-contracts';
 
 /**
  * Penyusun pernyataan biaya — fungsi murni, tanpa Prisma, supaya rollup dan
@@ -212,8 +212,7 @@ export function buildStatementRows(input: StatementInput): BudgetStatementRow[] 
  * Total proyek = jumlah baris root saja. Menjumlahkan seluruh baris akan
  * menghitung anak dua kali, karena setiap induk sudah memuat subtree-nya.
  */
-export function sumTotals(rows: BudgetStatementRow[]): StatementTotals {
-  const roots = rows.filter((r) => r.depth === 0);
+export function sumTotals(rows: BudgetStatementRow[]): StatementTotals {  const roots = rows.filter((r) => r.depth === 0);
   const baseline = roots.reduce((s, r) => s + r.baseline, 0);
   const revised = roots.reduce((s, r) => s + r.revised, 0);
   const committed = roots.reduce((s, r) => s + r.committed, 0);
@@ -226,5 +225,60 @@ export function sumTotals(rows: BudgetStatementRow[]): StatementTotals {
     available: revised - committed - actual,
     variance: revised - actual,
     varianceBaseline: revised - baseline,
+  };
+}
+
+/**
+ * Cakupan PV terhadap BAC.
+ *
+ * Aturan lama (`|PV/BAC - 1| > 1%` = error) salah secara konsep: PV memang
+ * berada di bawah BAC sepanjang proyek berjalan dan baru menyamainya saat
+ * selesai. Di data dev, PV tepat 60% BAC pada 9 dari 10 proyek, sehingga aturan
+ * lama menyalakan peringatan di hampir semua proyek. Yang benar-benar bermakna
+ * adalah PV = 0 (belum ada schedule baseline) dan PV > BAC (tidak wajar).
+ */
+export function collectStatementWarnings(
+  totals: { revised: number; contractValue: number },
+  rows: BudgetStatementRow[],
+  pv: number,
+): BudgetStatement['warnings'] {
+  const leaves = rows.filter((r) => r.childrenCount === 0);
+  const bac = totals.revised;
+
+  const status: 'NO_BASELINE' | 'PARTIAL' | 'COMPLETE' =
+    pv === 0 ? 'NO_BASELINE' : pv > bac ? 'PARTIAL' : 'COMPLETE';
+
+  return {
+    overContract: totals.contractValue > 0 && totals.revised > totals.contractValue,
+    overCommitted: leaves
+      .filter((r) => r.revised > 0 && r.committed > r.revised)
+      .map((r) => ({ wbsId: r.id, code: r.code, amount: r.committed - r.revised })),
+    noBudget: leaves.filter((r) => r.revised === 0).map((r) => ({ wbsId: r.id, code: r.code })),
+    pvCoverage: { pv, bac, status },
+  };
+}
+
+/**
+ * Rekonsiliasi dua sumber biaya material.
+ *
+ * Material issue hanya menulis `StockLedgerEntry` OUT tanpa jurnal, sedangkan
+ * jurnal 610* berasal dari invoice vendor atas material yang sama. Menjumlahkan
+ * keduanya menghitung material dua kali. Perbaikan itu menyentuh AC yang menjadi
+ * penyebut CPI/SPI di seluruh aplikasi, jadi untuk sekarang kondisinya
+ * dilaporkan terbuka alih-alih diperbaiki diam-diam.
+ */
+export function reconcile(ledgerOut: number, journalExpense610: number): BudgetStatement['reconciliation'] {
+  return {
+    ledgerOut,
+    journalExpense610,
+    doubleCountRisk: ledgerOut > 0 && journalExpense610 > 0,
+  };
+}
+
+/** Berapa simpul yang benar-benar punya biaya teralokasi. */
+export function costCoverage(rows: BudgetStatementRow[]): { allocatedNodes: number; totalNodes: number } {
+  return {
+    allocatedNodes: rows.filter((r) => r.actual > 0).length,
+    totalNodes: rows.length,
   };
 }

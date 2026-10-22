@@ -1,4 +1,11 @@
-import { buildStatementRows, sumTotals, type StatementInput } from './budget-baseline';
+import {
+  buildStatementRows,
+  collectStatementWarnings,
+  costCoverage,
+  reconcile,
+  sumTotals,
+  type StatementInput,
+} from './budget-baseline';
 
 const wbs = (id: string, code: string, parentId: string | null = null) => ({ id, code, name: `n${id}`, parentId });
 
@@ -138,5 +145,100 @@ describe('sumTotals', () => {
       baseline: 0, revised: 0, committed: 0, actual: 0,
       available: 0, variance: 0, varianceBaseline: 0,
     });
+  });
+});
+
+describe('pvCoverage', () => {
+  const totals = { revised: 1000, contractValue: 5000 };
+  const rows = buildStatementRows(input({ revised: [{ wbsItemId: 'c1', costType: 'LABOR', amount: 1000 }] }));
+
+  it('reports NO_BASELINE when pv is zero', () => {
+    expect(collectStatementWarnings(totals, rows, 0).pvCoverage.status).toBe('NO_BASELINE');
+  });
+
+  it('does not warn when pv is below bac — that is normal for a time-phased baseline', () => {
+    const w = collectStatementWarnings(totals, rows, 600);
+    expect(w.pvCoverage.status).toBe('COMPLETE');
+    // Rasio lama sengaja tidak ada lagi: PV != BAC bukan pelanggaran (spec 4.7).
+    expect('ratio' in w.pvCoverage).toBe(false);
+  });
+
+  it('reports PARTIAL when pv exceeds bac', () => {
+    expect(collectStatementWarnings(totals, rows, 1200).pvCoverage.status).toBe('PARTIAL');
+  });
+
+  it('carries pv and bac verbatim so the UI can show the real numbers', () => {
+    const w = collectStatementWarnings(totals, rows, 600);
+    expect(w.pvCoverage.pv).toBe(600);
+    expect(w.pvCoverage.bac).toBe(1000);
+  });
+});
+
+describe('collectStatementWarnings', () => {
+  const totals = { revised: 1000, contractValue: 5000 };
+
+  it('flags a revised total above the contract value', () => {
+    const rows = buildStatementRows(input({ revised: [{ wbsItemId: 'c1', costType: 'LABOR', amount: 1000 }] }));
+    expect(collectStatementWarnings({ revised: 6000, contractValue: 5000 }, rows, 0).overContract).toBe(true);
+  });
+
+  it('does not flag overContract when the total fits', () => {
+    const rows = buildStatementRows(input({ revised: [{ wbsItemId: 'c1', costType: 'LABOR', amount: 1000 }] }));
+    expect(collectStatementWarnings({ revised: 5000, contractValue: 5000 }, rows, 0).overContract).toBe(false);
+  });
+
+  it('flags overCommitted only on leaves, and only when committed exceeds revised', () => {
+    const rows = buildStatementRows(input({
+      revised: [{ wbsItemId: 'c1', costType: 'LABOR', amount: 100 }],
+      committed: [{ wbsItemId: 'c1', amount: 150 }],
+    }));
+    const w = collectStatementWarnings(totals, rows, 0);
+    expect(w.overCommitted.map((n) => n.code)).toEqual(['1.1']);
+    expect(w.overCommitted[0]!.amount).toBe(50);
+  });
+
+  it('does not flag a parent whose children are over-committed', () => {
+    const rows = buildStatementRows(input({
+      revised: [{ wbsItemId: 'c1', costType: 'LABOR', amount: 100 }],
+      committed: [{ wbsItemId: 'c1', amount: 150 }],
+    }));
+    expect(collectStatementWarnings(totals, rows, 0).overCommitted.map((n) => n.code)).not.toContain('1');
+  });
+
+  it('lists leaf nodes with no revised budget', () => {
+    const rows = buildStatementRows(input({ revised: [{ wbsItemId: 'c1', costType: 'LABOR', amount: 100 }] }));
+    expect(collectStatementWarnings(totals, rows, 0).noBudget.map((n) => n.code)).toEqual(['1.2']);
+  });
+
+  it('does not list a parent that only rolls up its children as noBudget', () => {
+    const rows = buildStatementRows(input({ revised: [{ wbsItemId: 'c1', costType: 'LABOR', amount: 100 }] }));
+    expect(collectStatementWarnings(totals, rows, 0).noBudget.map((n) => n.code)).not.toContain('1');
+  });
+});
+
+describe('reconcile', () => {
+  it('flags doubleCountRisk only when both sides are positive', () => {
+    expect(reconcile(100, 50).doubleCountRisk).toBe(true);
+    expect(reconcile(100, 0).doubleCountRisk).toBe(false);
+    expect(reconcile(0, 50).doubleCountRisk).toBe(false);
+    expect(reconcile(0, 0).doubleCountRisk).toBe(false);
+  });
+
+  it('reports both sides verbatim', () => {
+    const r = reconcile(2_258_823_529_412, 75_000_000_000);
+    expect(r.ledgerOut).toBe(2_258_823_529_412);
+    expect(r.journalExpense610).toBe(75_000_000_000);
+  });
+});
+
+describe('costCoverage', () => {
+  it('counts nodes that actually carry spend', () => {
+    const rows = buildStatementRows(input({ actual: [{ wbsItemId: 'c1', amount: 10 }] }));
+    expect(costCoverage(rows)).toEqual({ allocatedNodes: 2, totalNodes: 3 });
+  });
+
+  it('reports zero allocated when nothing has been spent', () => {
+    const rows = buildStatementRows(input());
+    expect(costCoverage(rows)).toEqual({ allocatedNodes: 0, totalNodes: 3 });
   });
 });
