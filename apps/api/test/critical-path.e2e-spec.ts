@@ -92,10 +92,13 @@ describe('Critical path (e2e)', () => {
       .set('Authorization', auth(adminToken));
     expect(res.status).toBe(200);
 
-    const items = res.body.wbs ?? [];
-    const target = items.find((w: { id: string }) => w.id === wbsItemId);
+    const rows = res.body.rows ?? [];
+    const target = rows.find((w: { id: string }) => w.id === wbsItemId);
     expect(target).toBeDefined();
-    expect(typeof target.budget).toBe('number');
-    expect(target.budget).toBe(12345678.5);
+    // Nominal harus kembali sebagai number, bukan string Decimal. Kolomnya kini
+    // `revised` (nilai berjalan), karena `budget` sudah dipisah menjadi
+    // `baseline` (beku) dan `revised` (hidup) pada statement.
+    expect(typeof target.revised).toBe('number');
+    expect(target.revised).toBe(12345678.5);
   });
 });
