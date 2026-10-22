@@ -29,9 +29,9 @@ Semua fakta di bawah dapat direproduksi dengan perintah pada kolom ketiga.
 | 1 | Tidak ada tabel baseline. `publish` menaikkan `version` pada baris yang sama | `budget.service.ts:183-186`, `schema.prisma:689` | `grep -n "version" apps/api/src/modules/project/application/services/budget.service.ts` |
 | 2 | Publish = jalan buntu. Semua baris `PUBLISHED`; `upsert` menolak 409 dan form disembunyikan | `budget.service.ts:150-152`, `budget-inspector.tsx:98-101` | baca dua baris tersebut |
 | 3 | `pvMismatch` salah konsep: aturan `\|PV/BAC − 1\| > 1%` menandai PV ≠ BAC sebagai error, padahal PV ≠ BAC normal di baseline time-phased | `budget-tree.ts:204-205` | aritmetika |
-| 4 | Akibat #3, peringatan menyala di **setiap** proyek: seed men-set `pv = bac × 0,60` | `seed-demo.ts:531-536` | 0,60 → selisih 40% |
-| 5 | `overAllocated` juga menyala permanen: seluruh biaya dipetakan ke WBS '2' yang budget-nya 40%, sedangkan AC ≈ 45–56% BAC | `seed-demo.ts:504-507`, `20261022_backfill_wbs_dimension` | 0,56 > 0,40 |
-| 6 | **Double counting biaya material.** `used = ledger OUT + jurnal 610*`, tetapi material issue hanya menulis ledger OUT tanpa jurnal; jurnal 6100 berasal dari invoice vendor atas material yang sama | `budget.service.ts:45-55`, `material-issue.service.ts:105-118`, `gl.helper.ts:83` | baca tiga lokasi |
+| 4 | Akibat #3, peringatan menyala di **9 dari 10** proyek ber-budget: PV tepat 60% BAC (`pv = bac × 0,60`), PRJ-014 PV = 0 | `seed-demo.ts:531-536`; terukur di VPS | §2.2 |
+| 5 | `overAllocated` menyala di **3 dari 10** proyek, pada leaf: PRJ-014 WBS 3 (aktual 2,26 T vs budget 1,92 T), PRJ-020 WBS 2 (1,04 T vs 0,74 T), PRJ-022 WBS 2 (135 jt vs 96 jt) | terukur di VPS; sumber: ledger OUT di WBS ber-budget 40% | §2.2 |
+| 6 | **Double counting biaya material**, terukur pada **1 proyek**: PRJ-014 punya ledger OUT 2,26 T **dan** jurnal 6100 sebesar 75 M dari invoice vendor (`source = INVOICE`). 11 proyek lain tidak punya jurnal 610* | `budget.service.ts:45-55`, `material-issue.service.ts:105-118`, `gl.helper.ts:83`; terukur di VPS | §2.2 |
 | 7 | Dua implementasi actual cost yang berbeda untuk satu proyek | `budget.service.ts:45-55` vs `actual-cost.calculator.ts:16-40` | bandingkan klausa `where` |
 | 8 | Tiga format uang pada satu layar | `budget.page.tsx:63` (`formatIdr`), `budget-tree.tsx:17-29` (tanpa Rp), `budget-inspector.tsx:17-19` (tanpa Rp) | grep ketiga fungsi |
 | 9 | Kontras bilah gagal WCAG 1.4.11: `neutral-300` di atas `neutral-100` = **1,34:1**; `neutral-400` = **2,33:1**; `neutral-500` = **4,40:1** (batas 3:1) | `cost-type-bar.tsx:29-37` | hitung luminans relatif |
@@ -42,9 +42,9 @@ Semua fakta di bawah dapat direproduksi dengan perintah pada kolom ketiga.
 | 14 | `Forecast` hanya level proyek, tanpa dimensi WBS | `schema.prisma:757-774` | baca model |
 | 15 | **15 berkas non-spec** membaca `budgetItem.*`, dan **13** di antaranya memfilter `status: 'PUBLISHED'`. (Dua berkas lain yang cocok `status: 'PUBLISHED'` — `drawing.service.ts`, `metric-registry.ts` — adalah status model lain, bukan budget) | `control-tower`, `project-analytics`, `approval-detail`, `budget`, `commitment`, `earned-value`, `forecast`, `portfolio`, `project-command-center`, `project-health`, `project`, `budget-check`, `portfolio-evm.calculator` | lihat perintah di §2.1 |
 
-Catatan: database lokal tidak berjalan saat spec ini ditulis (`P1001` pada
-`localhost:5432`), sehingga tidak ada klaim jumlah baris nyata. Seluruh fakta di
-atas berasal dari kode dan aritmetika.
+Catatan: fakta #1–#3, #7–#15 berasal dari kode. Fakta #4–#6 diukur langsung
+terhadap database dev VPS (`aec-postgres`, 12 proyek, 40 baris `BudgetItem`,
+seluruhnya `PUBLISHED`).
 
 ### 2.1 Perintah verifikasi
 
@@ -82,6 +82,60 @@ Perhitungan kontras (fakta #9) memakai luminans relatif WCAG:
 | `neutral-500` `#71717a` | 4,40:1 | 4,83:1 |
 | `neutral-400` `#a1a1aa` | **2,33:1** | **2,56:1** |
 | `neutral-300` `#d4d4d8` | **1,34:1** | **1,48:1** |
+
+### 2.2 Pengukuran terhadap database dev VPS
+
+Diambil 2026-10-23 dari `aec-postgres` (VPS dev), bukan dari seed.
+
+**Budget per proyek** — 12 proyek; 10 punya tepat 4 baris budget, PRJ-029 dan
+PRJ-030 punya 0. Untuk 10 proyek ber-budget, `SUM(BudgetItem.amount)` **sama
+persis** dengan `Project.contractValue`, sehingga `overContract` = false di
+seluruh data. Tabel `BudgetBaseline` belum ada (0 tabel).
+
+**PV vs BAC** — PV tepat 60% BAC di 9 proyek, PV = 0 di PRJ-014:
+
+| Proyek | PV | BAC | PV/BAC |
+| --- | --- | --- | --- |
+| PRJ-014 | 0 | 4,80 T | 0% |
+| PRJ-020 | 1,11 T | 1,85 T | 60% |
+| PRJ-021 | 576 M | 960 M | 60% |
+| PRJ-022 | 144 jt | 240 jt | 60% |
+| PRJ-023 | 1,86 T | 3,10 T | 60% |
+| PRJ-024 | 186 jt | 310 jt | 60% |
+| PRJ-025 | 468 M | 780 M | 60% |
+| PRJ-026 | 744 M | 1,24 T | 60% |
+| PRJ-027 | 1,47 T | 2,45 T | 60% |
+| PRJ-028 | 384 M | 640 M | 60% |
+
+Artinya `pvMismatch` versi lama menyala di 9 proyek (semua kecuali PRJ-014),
+padahal 60% PV terhadap BAC adalah kondisi normal. `pvCoverage` baru akan
+melaporkan `NO_BASELINE` hanya untuk PRJ-014.
+
+**Over-allocation** — 3 dari 10 proyek, selalu pada leaf, dan selalu pada WBS
+yang menampung material:
+
+| Proyek | WBS | Budget | Aktual | Selisih |
+| --- | --- | --- | --- | --- |
+| PRJ-014 | 3 Construction | 1,92 T | 2,26 T | +337 M |
+| PRJ-020 | 2 Procurement | 740 M | 1,04 T | +303 M |
+| PRJ-022 | 2 Procurement | 96 jt | 135 jt | +39 jt |
+
+**Double count material** — terukur hanya di PRJ-014:
+
+| Proyek | Ledger OUT | Jurnal 610* |
+| --- | --- | --- |
+| PRJ-014 | 2.258.823.529.412 | 75.000.000.000 |
+| 11 proyek lain | > 0 | **0** |
+
+Seluruh jurnal 610* di database berasal dari satu sumber: `INVOICE`
+(1 baris, 75 M). Tidak ada jurnal dari material issue, yang mengonfirmasi
+temuan kode bahwa `ledger OUT + jurnal 610*` menghitung material yang sama dua
+kali — meski dampaknya baru muncul di proyek yang punya invoice material
+berjurnal.
+
+**Cakupan dimensi WBS** — `StockLedgerEntry` 29/29 terisi (backfill berhasil);
+`JournalLine` hanya 1/8 terisi, dan yang terisi itu justru baris 6100 milik
+PRJ-014.
 
 ## 3. Ruang lingkup
 
@@ -154,10 +208,12 @@ yang sama dengan dashboard, sehingga tidak ada lagi dua angka untuk satu proyek
 dari ledger OUT, dan jurnal 610* tidak lagi ditambahkan — karena penambahan
 itulah yang menyebabkan double count (fakta #6).
 
-**Pergeseran ini nyata dan harus dinyatakan, bukan disembunyikan.** Pada data
-seed, `used` level proyek akan **turun** sebesar komponen jurnal 610* (mis.
-PRJ-014: −Rp 75 M dari invoice material). Artinya angka "Used" di halaman Budget
-berubah dari sebelumnya. Ini disengaja: angka lama melebihkan biaya.
+**Pergeseran ini nyata dan harus dinyatakan, bukan disembunyikan.** Dampaknya
+terukur pada data VPS: dari 12 proyek, **hanya PRJ-014** yang bergeser, dan
+hanya sebesar **−Rp 75 M** (2,26 T → 2,19 T) — yaitu jurnal 6100 dari invoice
+material. Sebelas proyek lain tidak berubah sama sekali karena tidak punya
+jurnal 610*. Angka lama melebihkan biaya, jadi penurunan ini adalah koreksi,
+bukan kemunduran.
 
 Yang **tidak** berubah: `ActualCostCalculator` itu sendiri. Ia tetap dipakai
 apa adanya oleh dashboard, portfolio, control tower, dan CPI/SPI. Memperbaiki
