@@ -196,7 +196,7 @@ describe('upsert', () => {
     prisma.budgetItem.findMany.mockResolvedValue([
       { wbsItemId: 'w1', costType: 'LABOR', amount: 1000, status: 'PUBLISHED', version: 1 },
     ]);
-    prisma.budgetBaseline.findFirst.mockImplementation(async (args: { where?: { status?: string } }) => {
+    prisma.budgetBaseline.findFirst.mockImplementation(async (args: { where?: { status?: string; version?: { lt?: number } } }) => {
       // freeze terakhir (v2) lalu versi sebelumnya (v1)
       if (args?.where?.status === 'DRAFT') return null;
       if (args?.where?.version?.lt != null) return { id: 'b1', version: 1, status: 'FROZEN', label: null, reason: null, frozenAt: new Date('2026-01-01') };

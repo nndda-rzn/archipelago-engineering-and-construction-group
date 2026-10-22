@@ -16,6 +16,8 @@ import { useFreezeBaseline, useOpenRevision } from '@/features/project';
 export interface BaselineHeaderProps {
   projectId: string;
   baseline: BudgetBaselineSummary | null;
+  /** Versi FROZEN sebelumnya, untuk menunjukkan berapa total bergeser. */
+  previous?: BudgetBaselineSummary | null;
   hasOpenRevision: boolean;
 }
 
@@ -24,7 +26,7 @@ function formatDate(iso: string | null): string {
   return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(iso));
 }
 
-export function BaselineHeader({ projectId, baseline, hasOpenRevision }: BaselineHeaderProps) {
+export function BaselineHeader({ projectId, baseline, previous, hasOpenRevision }: BaselineHeaderProps) {
   const freeze = useFreezeBaseline(projectId);
   const revision = useOpenRevision(projectId);
   const [reason, setReason] = useState('');
@@ -61,6 +63,18 @@ export function BaselineHeader({ projectId, baseline, hasOpenRevision }: Baselin
             <span className="font-mono tabular-nums text-neutral-800" title="Frozen total">
               {formatIdrCompact(baseline.total)}
             </span>
+            {previous && (
+              <>
+                <span className="mx-2 text-neutral-300">·</span>
+                <span
+                  className={`font-mono tabular-nums ${baseline.total - previous.total < 0 ? 'text-destructive-700' : 'text-neutral-700'}`}
+                  title={`vs v${previous.version}: ${formatIdrCompact(baseline.total - previous.total)}`}
+                >
+                  {baseline.total - previous.total > 0 ? '+' : baseline.total - previous.total < 0 ? '−' : ''}
+                  {formatIdrCompact(Math.abs(baseline.total - previous.total))} vs v{previous.version}
+                </span>
+              </>
+            )}
           </p>
           {hasOpenRevision && <p className="text-caption text-warning-800">Revision open</p>}
         </div>

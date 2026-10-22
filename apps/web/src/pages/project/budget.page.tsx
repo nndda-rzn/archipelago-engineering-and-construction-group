@@ -63,7 +63,7 @@ export function BudgetPage() {
 
       {data && projectId && (
         <>
-          <BaselineHeader projectId={projectId} baseline={data.baseline} hasOpenRevision={hasOpenRevision} />
+          <BaselineHeader projectId={projectId} baseline={data.baseline} previous={data.previous} hasOpenRevision={hasOpenRevision} />
 
           <BudgetWarnings warnings={data.warnings} reconciliation={data.reconciliation} />
 
