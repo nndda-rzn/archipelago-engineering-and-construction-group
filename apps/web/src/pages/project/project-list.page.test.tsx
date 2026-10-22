@@ -118,14 +118,14 @@ describe('ProjectListPage — 3 view', () => {
     expect(nav.get().view).toBe('timeline');
   });
 
-  it('labels cost consumption as "Budget used" in the table, and shows CPI on the card', () => {
+  it('labels cost consumption as "Budget used" in the table, and shows progress vs plan on the card', () => {
     renderWithProviders(<ProjectListPage />);
     // Tabel memakai istilah jujur "Budget used".
     expect(screen.getAllByText(/Budget used/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/^Utilization$/i)).toBeNull();
-    // Kartu memakai sinyal triage (CPI), bukan sekadar mengulang kolom tabel.
+    // Kartu memakai sinyal triage (progress vs rencana), bukan sekadar mengulang kolom tabel.
     fireEvent.click(within(viewOptions()).getByRole('radio', { name: /kartu|card/i }));
-    expect(screen.getAllByText(/CPI/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/vs 55%/).length).toBeGreaterThan(0);
     expect(screen.getByText('Needs attention')).toBeTruthy();
   });
 
