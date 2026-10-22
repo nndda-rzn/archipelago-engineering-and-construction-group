@@ -47,7 +47,7 @@ export class BudgetService {
       orderBy: { version: 'desc' },
     });
 
-    const [wbsItems, budgetItems, ledgerGroups, journalGroups, pvGroups, committedGroups, baselineLines, forecast, previousBaseline] =
+    const [wbsItems, budgetItems, ledgerGroups, journalGroups, pvGroups, committedGroups, baselineLines, forecast, allVersions] =
       await Promise.all([        this.prisma.wbsItem.findMany({
           where: { projectId },
           select: { id: true, code: true, name: true, parentId: true },
@@ -93,27 +93,19 @@ export class BudgetService {
             })
           : Promise.resolve([]),
         this.prisma.forecast.findFirst({ where: { projectId }, orderBy: { version: 'desc' } }),
-        baseline
-          ? this.prisma.budgetBaseline.findFirst({
-              where: { projectId, status: 'FROZEN', version: { lt: baseline.version } },
-              orderBy: { version: 'desc' },
-            })
-          : Promise.resolve(null),
+        // Seluruh versi beserta barisnya: `total` tiap versi harus berasal dari
+        // barisnya sendiri, bukan dihitung ulang dari data hidup.
+        this.prisma.budgetBaseline.findMany({
+          where: { projectId },
+          orderBy: { version: 'desc' },
+          include: { lines: { select: { amount: true } } },
+        }),
       ]);
 
     // `totalValue` pada ledger OUT bernilai negatif; besarnya biaya adalah nilai absolut.
     const actual = ledgerGroups
       .filter((g) => g.wbsItemId != null)
       .map((g) => ({ wbsItemId: g.wbsItemId as string, amount: Math.abs(Number(g._sum?.totalValue ?? 0)) }));
-
-    // Baris versi sebelumnya perlu diambil terpisah: tanpa itu `previous.total`
-    // selalu 0 dan perbandingan antar-versi tidak bisa dipakai.
-    const previousLines = previousBaseline
-      ? await this.prisma.budgetBaselineLine.findMany({
-          where: { baselineId: previousBaseline.id },
-          select: { amount: true },
-        })
-      : [];
 
     const pvByWbs = new Map<string, number>();
     for (const g of pvGroups) {
@@ -149,29 +141,35 @@ export class BudgetService {
     const journalExpense610 = journalGroups.reduce((s, g) => s + Number(g._sum?.debit ?? 0), 0);
     const ledgerOut = actual.reduce((s, a) => s + a.amount, 0);
 
-    const toSummary = (
-      b: typeof baseline | typeof previousBaseline,
-      total: number,
-    ): BudgetStatement['baseline'] =>
-      b
-        ? {
-            id: b.id,
-            version: b.version,
-            status: b.status as 'DRAFT' | 'FROZEN',
-            label: b.label ?? null,
-            reason: b.reason ?? null,
-            frozenAt: b.frozenAt ? b.frozenAt.toISOString() : null,
-            total,
-          }
-        : null;
+    const toSummary = (b: (typeof allVersions)[number]): NonNullable<BudgetStatement['baseline']> => ({
+      id: b.id,
+      version: b.version,
+      status: b.status as 'DRAFT' | 'FROZEN',
+      label: b.label ?? null,
+      reason: b.reason ?? null,
+      frozenAt: b.frozenAt ? b.frozenAt.toISOString() : null,
+      total: b.lines.reduce((s, l) => s + Number(l.amount), 0),
+    });
+
+    // Komposisi diagregasi dari baris yang sama dengan `rows`, sehingga angka
+    // blok komposisi tidak mungkin berbeda dari angka tabel.
+    const compositionByType = new Map<CostTypeKey, number>();
+    for (const b of budgetItems) {
+      const key = b.costType as CostTypeKey;
+      compositionByType.set(key, (compositionByType.get(key) ?? 0) + Number(b.amount));
+    }
+    const composition = [...compositionByType.entries()]
+      .map(([costType, amount]) => ({ costType, amount }))
+      .sort((a, b) => b.amount - a.amount);
 
     return {
       projectId,
       currency: (project as { currency?: string }).currency ?? 'IDR',
-      baseline: toSummary(baseline, baselineLines.reduce((s, l) => s + Number(l.amount), 0)),
-      previous: toSummary(previousBaseline, previousLines.reduce((s, l) => s + Number(l.amount), 0)),
+      baseline: baseline ? toSummary({ ...baseline, lines: baselineLines }) : null,
+      versions: allVersions.map(toSummary),
       openRevision: openDraft != null,
       rows,
+      composition,
       totals: {
         ...totals,
         contractValue,

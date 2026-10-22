@@ -8,7 +8,7 @@ const prisma = {
   stockLedgerEntry: { groupBy: jest.fn() },
   journalLine: { groupBy: jest.fn() },
   controlAccount: { groupBy: jest.fn() },
-  budgetBaseline: { findFirst: jest.fn() },
+  budgetBaseline: { findFirst: jest.fn(), findMany: jest.fn() },
   budgetBaselineLine: { findMany: jest.fn() },
   purchaseOrderItem: { groupBy: jest.fn() },
   forecast: { findFirst: jest.fn() },
@@ -28,6 +28,7 @@ beforeEach(() => {
   prisma.journalLine.groupBy.mockResolvedValue([]);
   prisma.controlAccount.groupBy.mockResolvedValue([]);
   prisma.budgetBaseline.findFirst.mockResolvedValue(null);
+  prisma.budgetBaseline.findMany.mockResolvedValue([]);
   prisma.budgetBaselineLine.findMany.mockResolvedValue([]);
   prisma.purchaseOrderItem.groupBy.mockResolvedValue([]);
   prisma.forecast.findFirst.mockResolvedValue(null);
@@ -45,6 +46,9 @@ describe('findAll', () => {
     prisma.budgetBaseline.findFirst.mockResolvedValue({
       id: 'b1', version: 1, status: 'FROZEN', label: null, reason: null, frozenAt: new Date('2026-01-01'),
     });
+    prisma.budgetBaseline.findMany.mockResolvedValue([
+      { id: 'b1', version: 1, status: 'FROZEN', label: null, reason: null, frozenAt: new Date('2026-01-01'), lines: [{ amount: 900 }] },
+    ]);
     prisma.budgetBaselineLine.findMany.mockResolvedValue([{ wbsItemId: 'w1', costType: 'LABOR', amount: 900 }]);
 
     const res = await make().findAll('p1');
@@ -56,6 +60,9 @@ describe('findAll', () => {
     expect(res.rows[0]!.varianceBaseline).toBe(100);
     expect(res.totals.contractValue).toBe(5000);
     expect(res.baseline!.version).toBe(1);
+    expect(res.versions).toHaveLength(1);
+    expect(res.versions[0]!.total).toBe(900);
+    expect(res.composition).toEqual([{ costType: 'LABOR', amount: 1000 }]);
   });
 
   it('counts actual from the ledger only, never adding the expense journal', async () => {
@@ -86,7 +93,7 @@ describe('findAll', () => {
     const res = await make().findAll('p1');
 
     expect(res.baseline).toBeNull();
-    expect(res.previous).toBeNull();
+    expect(res.versions).toEqual([]);
     expect(res.rows[0]!.baseline).toBe(0);
   });
 
@@ -155,6 +162,49 @@ describe('findAll', () => {
     prisma.project.findUnique.mockResolvedValue(null);
     await expect(make().findAll('nope')).rejects.toBeInstanceOf(NotFoundException);
   });
+
+  it('returns every version with its own total, newest first', async () => {
+    prisma.project.findUnique.mockResolvedValue(project);
+    prisma.wbsItem.findMany.mockResolvedValue(oneWbs);
+    prisma.budgetItem.findMany.mockResolvedValue([
+      { wbsItemId: 'w1', costType: 'LABOR', amount: 1000, status: 'PUBLISHED', version: 1 },
+    ]);
+    prisma.budgetBaseline.findFirst.mockImplementation(async (args: { where?: { status?: string } }) => {
+      if (args?.where?.status === 'DRAFT') return null;
+      return { id: 'b2', version: 2, status: 'FROZEN', label: null, reason: null, frozenAt: new Date('2026-02-01') };
+    });
+    prisma.budgetBaselineLine.findMany.mockResolvedValue([{ wbsItemId: 'w1', costType: 'LABOR', amount: 900 }]);
+    prisma.budgetBaseline.findMany.mockResolvedValue([
+      { id: 'b2', version: 2, status: 'FROZEN', label: 'VO-01', reason: 'steel', frozenAt: new Date('2026-02-01'), lines: [{ amount: 900 }] },
+      { id: 'b1', version: 1, status: 'FROZEN', label: 'Original', reason: null, frozenAt: new Date('2026-01-01'), lines: [{ amount: 800 }] },
+    ]);
+
+    const res = await make().findAll('p1');
+
+    expect(res.baseline!.version).toBe(2);
+    expect(res.versions.map((v) => v.version)).toEqual([2, 1]);
+    // Tiap total berasal dari barisnya sendiri, bukan dihitung ulang dari data hidup.
+    expect(res.versions[0]!.total).toBe(900);
+    expect(res.versions[1]!.total).toBe(800);
+  });
+
+  it('sorts the composition by amount, largest first', async () => {
+    prisma.project.findUnique.mockResolvedValue(project);
+    prisma.wbsItem.findMany.mockResolvedValue(oneWbs);
+    prisma.budgetItem.findMany.mockResolvedValue([
+      { wbsItemId: 'w1', costType: 'LABOR', amount: 100 },
+      { wbsItemId: 'w1', costType: 'MATERIAL', amount: 900 },
+      { wbsItemId: 'w1', costType: 'EQUIPMENT', amount: 500 },
+    ]);
+
+    const res = await make().findAll('p1');
+
+    expect(res.composition).toEqual([
+      { costType: 'MATERIAL', amount: 900 },
+      { costType: 'EQUIPMENT', amount: 500 },
+      { costType: 'LABOR', amount: 100 },
+    ]);
+  });
 });
 
 describe('upsert', () => {
@@ -190,30 +240,3 @@ describe('upsert', () => {
   });
 });
 
-  it('reports the previous baseline total, not zero', async () => {
-    prisma.project.findUnique.mockResolvedValue(project);
-    prisma.wbsItem.findMany.mockResolvedValue(oneWbs);
-    prisma.budgetItem.findMany.mockResolvedValue([
-      { wbsItemId: 'w1', costType: 'LABOR', amount: 1000, status: 'PUBLISHED', version: 1 },
-    ]);
-    prisma.budgetBaseline.findFirst.mockImplementation(async (args: { where?: { status?: string; version?: { lt?: number } } }) => {
-      // freeze terakhir (v2) lalu versi sebelumnya (v1)
-      if (args?.where?.status === 'DRAFT') return null;
-      if (args?.where?.version?.lt != null) return { id: 'b1', version: 1, status: 'FROZEN', label: null, reason: null, frozenAt: new Date('2026-01-01') };
-      return { id: 'b2', version: 2, status: 'FROZEN', label: null, reason: null, frozenAt: new Date('2026-02-01') };
-    });
-    prisma.budgetBaselineLine.findMany.mockImplementation(async (args: { where?: { baselineId?: string } }) => {
-      if (args?.where?.baselineId === 'b2') return [{ wbsItemId: 'w1', costType: 'LABOR', amount: 900 }];
-      if (args?.where?.baselineId === 'b1') return [{ wbsItemId: 'w1', costType: 'LABOR', amount: 800 }];
-      return [];
-    });
-
-    const res = await make().findAll('p1');
-
-    expect(res.baseline!.version).toBe(2);
-    expect(res.baseline!.total).toBe(900);
-    expect(res.previous).not.toBeNull();
-    expect(res.previous!.version).toBe(1);
-    // Regresi: dulu total versi sebelumnya selalu 0 karena barisnya tidak diambil.
-    expect(res.previous!.total).toBe(800);
-  });
