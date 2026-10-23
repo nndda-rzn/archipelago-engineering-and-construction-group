@@ -69,6 +69,15 @@ export class ProjectController {
     return this.healthSvc.health(id);
   }
 
+  /**
+   * Harus dideklarasikan SEBELUM `:id/...` agar "health" tidak dibaca sebagai id.
+   */
+  @Get('health/portfolio')
+  @Permissions(Permission.ProjectView)
+  healthPortfolio() {
+    return this.healthSvc.portfolio();
+  }
+
   @Get(':id/team')
   @Permissions(Permission.ProjectView)
   team(@Param('id') id: string) {

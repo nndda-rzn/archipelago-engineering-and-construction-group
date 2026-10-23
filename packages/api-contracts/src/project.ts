@@ -236,6 +236,13 @@ export const projectHealthSchema = z.object({
   variance: z.number(),
   utilization: z.number().nullable(),
   health: z.enum(['NO_BUDGET', 'ON_TRACK', 'AT_RISK', 'CRITICAL']),
+  /** True bila SPI tidak tersedia sehingga status hanya dinilai dari CPI. */
+  partial: z.boolean(),
+  cpi: z.number().nullable(),
+  spi: z.number().nullable(),
+  ev: z.number(),
+  pv: z.number(),
+  progressPercent: z.number(),
   generatedAt: z.string(),
   wbs: z.array(
     z.object({
@@ -251,6 +258,46 @@ export const projectHealthSchema = z.object({
   ),
 });
 export type ProjectHealth = z.infer<typeof projectHealthSchema>;
+
+/**
+ * Satu baris portofolio. Lima dimensi health ada di sini: cost (CPI),
+ * schedule (SPI + progres), quality (NCR), safety (insiden), risk (risiko).
+ * `partial` menandai proyek yang SPI-nya tidak tersedia agar UI bisa
+ * menyatakan penilaiannya tidak lengkap alih-alih menyembunyikannya.
+ */
+export const healthPortfolioItemSchema = z.object({
+  projectId: z.string(),
+  code: z.string(),
+  name: z.string(),
+  legalEntityCode: z.string(),
+  contractValue: z.number(),
+  bac: z.number(),
+  pv: z.number(),
+  ev: z.number(),
+  ac: z.number(),
+  cpi: z.number().nullable(),
+  spi: z.number().nullable(),
+  utilization: z.number().nullable(),
+  progressPercent: z.number(),
+  ncrs: z.number(),
+  incidents: z.number(),
+  risks: z.number(),
+  health: z.enum(['NO_BUDGET', 'ON_TRACK', 'AT_RISK', 'CRITICAL']),
+  partial: z.boolean(),
+});
+export type HealthPortfolioItem = z.infer<typeof healthPortfolioItemSchema>;
+
+export const healthPortfolioSchema = z.object({
+  items: z.array(healthPortfolioItemSchema),
+  countByHealth: z.object({
+    NO_BUDGET: z.number(),
+    ON_TRACK: z.number(),
+    AT_RISK: z.number(),
+    CRITICAL: z.number(),
+  }),
+  generatedAt: z.string(),
+});
+export type HealthPortfolio = z.infer<typeof healthPortfolioSchema>;
 
 export const portfolioSchema = z.object({
   generatedAt: z.string(),

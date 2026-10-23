@@ -1,47 +1,63 @@
-import { Button, EntitySelect } from '@aec/ui';
-import { useProjects } from '@/entities/project';
-import { useProjectHealth } from '@/features/project';
-import { HealthSummary, HealthTable } from '@/features/project/ui';
-import { useUrlFilter } from '@/shared/lib/use-url-state';
+import { useState } from 'react';
+import { ErrorState } from '@aec/ui';
+import { useHealthPortfolio } from '@/features/project';
+import { HealthBands, HealthCountStrip, HealthMap, HealthRail } from '@/features/project/ui';
 
+/**
+ * Project Health — portofolio, bukan satu proyek.
+ *
+ * Susunan mengikuti cara membaca portofolio, bukan cara menyusun tabel:
+ *   1. lima pita dimensi  (bagaimana keadaan portofolio)
+ *   2. peta CPI x SPI     (mana yang bermasalah — elemen dominan)
+ *   3. rail               (apa yang dikerjakan / mengapa proyek itu)
+ *   4. count strip        (berapa tepatnya, tabel di balik tombol)
+ *
+ * Tidak ada h1 generik + subtitle: judulnya adalah cakupan portofolio itu
+ * sendiri. Tabel tidak ada dalam komposisi sampai diminta.
+ */
 export function ProjectHealthPage() {
-  const [projectId, setProjectId] = useUrlFilter('project');
-  const projects = useProjects({ page: 1, pageSize: 100 });
-  const defaultProjectId = projectId || projects.data?.items[0]?.id || '';
-  const { data, isLoading, isError, refetch } = useProjectHealth(defaultProjectId);
+  const { data, isLoading, isError, refetch } = useHealthPortfolio();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const selected = data?.items.find((i) => i.projectId === selectedId) ?? null;
+  const today = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date());
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-neutral-950">Project Health</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Actual cost vs budget per WBS</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <EntitySelect
-            value={defaultProjectId}
-            onValueChange={setProjectId}
-            options={(projects.data?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
-            placeholder="Select project…"
-            searchPlaceholder="Search project…"
-            className="w-56"
-          />
-          <Button size="sm" variant="secondary" onClick={() => refetch()} disabled={isLoading}>Reload</Button>
-        </div>
-      </div>
+    <div className="mx-auto w-full max-w-[1400px]">
+      <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b-2 border-neutral-300 pb-3">
+        <h1 className="text-h2 font-light tracking-tight text-neutral-950">Portfolio health</h1>
+        <p className="text-caption uppercase tracking-wide text-neutral-900/40">
+          {data ? `${data.items.length} projects` : '—'} · {today}
+        </p>
+      </header>
 
-      {!defaultProjectId && <p className="text-body-sm text-neutral-500">Select a project to view health.</p>}
+      {isLoading && (
+        <div aria-busy="true" className="mt-6 space-y-6">
+          <div className="h-[168px] animate-pulse bg-neutral-100" />
+          <div className="h-[432px] animate-pulse bg-neutral-100" />
+        </div>
+      )}
 
-      {defaultProjectId && (
-        <div className="space-y-6">
-          {isLoading && <p className="text-body-sm text-neutral-500">Computing…</p>}
-          {isError && <p className="text-body-sm text-destructive-600">Failed to load project health.</p>}
-          {!isLoading && !isError && data && (
-            <>
-              <HealthSummary data={data} />
-              <HealthTable data={data} />
-            </>
-          )}
+      {isError && (
+        <div className="mt-6">
+          <ErrorState message="Failed to load portfolio health." onRetry={() => refetch()} />
+        </div>
+      )}
+
+      {data && (
+        <div className="mt-6 space-y-8">
+          <HealthBands items={data.items} />
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            <div className="min-w-0 lg:col-span-8">
+              <HealthMap items={data.items} selectedId={selectedId} onSelect={setSelectedId} />
+            </div>
+            <div className="min-w-0 lg:col-span-4">
+              <HealthRail items={data.items} selected={selected} onClear={() => setSelectedId(null)} />
+            </div>
+          </div>
+
+          <HealthCountStrip data={data} />
         </div>
       )}
     </div>

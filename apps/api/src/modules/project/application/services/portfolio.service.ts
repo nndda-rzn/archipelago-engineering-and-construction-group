@@ -68,7 +68,10 @@ export class PortfolioService {
       const actual = actualMap.get(p.id) ?? 0;
       const revenue = revenueByProject.get(p.id) ?? 0;
 
-      const { utilization, health } = classifyHealth(budget, actual);
+      const utilization = budget > 0 ? (actual / budget) * 100 : null;
+      // Portfolio tidak menghitung EV; status di sini hanya untuk pengelompokan,
+      // dan halaman Health memakai endpoint portofolio khusus yang punya CPI/SPI.
+      const { health } = classifyHealth(utilization == null ? null : actual / budget, null, utilization);
       countByHealth[health] += 1;
 
       totalContract += Number(p.contractValue ?? 0);
