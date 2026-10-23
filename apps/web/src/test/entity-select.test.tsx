@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { EntitySelect } from './entity-select';
+import { EntitySelect } from '@aec/ui';
 
 const options = [
   { value: 'p1', label: 'PRJ-001 · Alpha' },
