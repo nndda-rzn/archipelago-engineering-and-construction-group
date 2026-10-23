@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { portfolioSchema, portfolioEvmSchema, projectHealthSchema, type Portfolio, type ProjectHealth } from '@aec/api-contracts';
+import { healthPortfolioSchema, portfolioSchema, portfolioEvmSchema, projectHealthSchema, type Portfolio, type ProjectHealth } from '@aec/api-contracts';
 import { getJson } from '@/shared/lib/http';
 import type { DashboardFilter } from '@/shared/lib/dashboard-period';
 
@@ -17,6 +17,20 @@ export function useProjectHealth(projectId: string) {
       return projectHealthSchema.parse(data);
     },
     enabled: !!projectId,
+  });
+}
+
+/**
+ * Seluruh portofolio dalam satu permintaan. Halaman Health butuh 12 proyek
+ * sekaligus; memanggil per proyek membuat rate limiter menolak permintaan ke-4.
+ */
+export function useHealthPortfolio() {
+  return useQuery({
+    queryKey: [...projectAnalyticsKeys.all, 'health-portfolio'] as const,
+    queryFn: async () => {
+      const data = await getJson<unknown>('/projects/health/portfolio');
+      return healthPortfolioSchema.parse(data);
+    },
   });
 }
 
