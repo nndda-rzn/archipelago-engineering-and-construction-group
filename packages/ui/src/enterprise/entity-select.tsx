@@ -91,7 +91,12 @@ export function EntitySelect({
       }}
     >
       <SelectTrigger id={id} error={error} disabled={disabled} className={cn(TRIGGER[variant], className)}>
-        <SelectValue placeholder={placeholder}>{selectedLabel ?? placeholder}</SelectValue>
+        {/* `truncate` tidak boleh ditaruh di SelectValue: Radix membuang
+            className-nya, sehingga label panjang tetap wrap dan meluber keluar
+            kotak. Pembungkus inilah yang membawa nowrap + ellipsis. */}
+        <span className="min-w-0 flex-1 truncate text-left">
+          <SelectValue placeholder={placeholder}>{selectedLabel ?? placeholder}</SelectValue>
+        </span>
       </SelectTrigger>
       <SelectContent className={CONTENT[variant]}>
         <div className={cn('sticky top-0 border-b bg-white p-1.5', editorial ? 'border-neutral-200' : 'border-neutral-100')}>
