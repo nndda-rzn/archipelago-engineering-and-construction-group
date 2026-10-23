@@ -62,7 +62,7 @@ export function ProjectControlsPage() {
             options={(projects.data?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
             placeholder="Select a project…"
             searchPlaceholder="Search project…"
-            className="h-9 w-64 text-body-sm"
+            className="h-8 w-[26rem] text-body-sm"
             variant="editorial"
           />
           <p className="text-caption uppercase tracking-wide text-neutral-900/40">{today}</p>

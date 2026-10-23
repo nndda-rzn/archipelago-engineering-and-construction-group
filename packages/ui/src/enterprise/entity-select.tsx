@@ -91,7 +91,11 @@ export function EntitySelect({
       }}
     >
       <SelectTrigger id={id} error={error} disabled={disabled} className={cn(TRIGGER[variant], className)}>
-        <SelectValue placeholder={placeholder}>{selectedLabel ?? placeholder}</SelectValue>
+        {/* `truncate` wajib: tanpa itu label panjang wrap ke baris kedua dan
+            meluber keluar kotak setinggi 32-36px. */}
+        <SelectValue placeholder={placeholder} className="truncate">
+          {selectedLabel ?? placeholder}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent className={CONTENT[variant]}>
         <div className={cn('sticky top-0 border-b bg-white p-1.5', editorial ? 'border-neutral-200' : 'border-neutral-100')}>

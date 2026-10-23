@@ -66,7 +66,7 @@ export function BudgetPage() {
             options={(projects.data?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
             placeholder="Select a project…"
             searchPlaceholder="Search project…"
-            className="h-9 w-full max-w-md text-body-sm"
+            className="h-8 w-full max-w-[26rem] text-body-sm"
             variant="editorial"
           />
         </div>
