@@ -5,15 +5,18 @@ import { renderWithProviders } from '@/test/render';
 const summary = vi.hoisted(() => ({
   projectId: 'p1',
   currency: 'IDR',
-  baseline: { id: 'b1', version: 2, status: 'FROZEN', label: 'VO-01', reason: null, frozenAt: '2026-10-22T00:00:00.000Z', total: 400 },
-  previous: null,
-  // Revisi terbuka: tabel boleh diedit, jadi form inspector tampil.
+  baseline: { id: 'b2', version: 2, status: 'FROZEN', label: 'VO-01', reason: null, frozenAt: '2026-10-22T00:00:00.000Z', total: 400 },
+  versions: [
+    { id: 'b2', version: 2, status: 'FROZEN', label: 'VO-01', reason: null, frozenAt: '2026-10-22T00:00:00.000Z', total: 400 },
+    { id: 'b1', version: 1, status: 'FROZEN', label: 'Original', reason: null, frozenAt: '2026-01-15T00:00:00.000Z', total: 380 },
+  ],
   openRevision: true,
   rows: [
     { id: 'p', code: '1', name: 'Engineering', parentId: null, depth: 0, childrenCount: 1, baseline: 400, revised: 450, committed: 100, actual: 40, available: 310, variance: 410, varianceBaseline: 50, byCostType: { LABOR: 450 } },
     { id: 'c1', code: '1.1', name: 'Detail Engineering', parentId: 'p', depth: 1, childrenCount: 0, baseline: 400, revised: 450, committed: 100, actual: 40, available: 310, variance: 410, varianceBaseline: 50, byCostType: { LABOR: 450 } },
   ],
   totals: { baseline: 400, revised: 450, committed: 100, actual: 40, available: 310, variance: 410, varianceBaseline: 50, contractValue: 1000, eac: 470, vac: -20 },
+  composition: [{ costType: 'LABOR', amount: 450 }],
   unallocated: { committed: 0, actual: 0 },
   reconciliation: { ledgerOut: 40, journalExpense610: 0, doubleCountRisk: false },
   warnings: { overContract: false, overCommitted: [], noBudget: [], pvCoverage: { pv: 270, bac: 450, status: 'COMPLETE' } },
@@ -55,17 +58,39 @@ const renderPage = async () => {
 };
 
 describe('BudgetPage', () => {
-  it('renders the cost statement instead of a tree', async () => {
-    await renderPage();
-    expect(await screen.findByRole('table')).toBeTruthy();
-    expect(screen.getByText('Engineering')).toBeTruthy();
+  it('asks for a project before showing anything', () => {
+    renderWithProviders(<BudgetPage />);
+    expect(screen.getByText(/select a project to see its cost position/i)).toBeTruthy();
   });
 
-  it('names the frozen baseline version', async () => {
+  it('leads with the money position, not the table', async () => {
     await renderPage();
-    await screen.findByRole('table');
-    expect(screen.getByText(/v2/)).toBeTruthy();
-    expect(screen.getByText(/VO-01/)).toBeTruthy();
+    const region = await screen.findByLabelText('Money position');
+    expect(region).toBeTruthy();
+    // Angka Revised adalah elemen dominan halaman.
+    expect(within(region).getByTestId('money-revised')).toBeTruthy();
+  });
+
+  it('names the project and the frozen version in the document band', async () => {
+    await renderPage();
+    expect(await screen.findByText('Alpha')).toBeTruthy();
+    const band = screen.getByRole('banner');
+    expect(within(band).getByText(/v2/)).toBeTruthy();
+    expect(within(band).getByText(/VO-01/)).toBeTruthy();
+  });
+
+  it('renders the statement, the composition and the history', async () => {
+    await renderPage();
+    expect(await screen.findByRole('table')).toBeTruthy();
+    expect(screen.getByLabelText('Cost composition')).toBeTruthy();
+    expect(screen.getByLabelText('Baseline history')).toBeTruthy();
+  });
+
+  it('shows both versions in the history', async () => {
+    await renderPage();
+    await screen.findByLabelText('Baseline history');
+    expect(screen.getByTestId('version-b2')).toBeTruthy();
+    expect(screen.getByTestId('version-b1')).toBeTruthy();
   });
 
   it('opens the inspector inline when a row is selected', async () => {
@@ -85,10 +110,9 @@ describe('BudgetPage', () => {
     expect(mutate).toHaveBeenCalledWith({ wbsItemId: 'c1', costType: 'LABOR', amount: 250 });
   });
 
-  it('shows no warning banner when everything is in order', async () => {
+  it('hides the attention strip when nothing needs action', async () => {
     await renderPage();
     await screen.findByRole('table');
-    expect(screen.queryByText(/exceeds the contract/i)).toBeNull();
-    expect(screen.queryByText(/double count/i)).toBeNull();
+    expect(screen.queryByLabelText('Needs attention')).toBeNull();
   });
 });
