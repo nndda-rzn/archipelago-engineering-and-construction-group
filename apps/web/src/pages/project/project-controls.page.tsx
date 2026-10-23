@@ -63,6 +63,7 @@ export function ProjectControlsPage() {
             placeholder="Select a project…"
             searchPlaceholder="Search project…"
             className="h-9 w-64 text-body-sm"
+            variant="editorial"
           />
           <p className="text-caption uppercase tracking-wide text-neutral-900/40">{today}</p>
         </div>

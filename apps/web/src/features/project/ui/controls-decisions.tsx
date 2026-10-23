@@ -2,16 +2,16 @@ import type { ProjectHealth } from '@aec/api-contracts';
 import { formatIdrCompact } from '@/shared/lib/format';
 
 /**
- * Zona B — pernyataan keputusan.
+ * Zona B — keputusan yang diperlukan.
  *
- * Project controls bukan pelaporan; tujuannya memicu keputusan dan mencegah
- * kejutan (APM: "no cost or schedule surprises"). Karena itu halaman dimulai
- * dari APA YANG MENYIMPANG, bukan dari grafik. Howell & Ballard menyebut
- * kontrol = pengukuran + pengambilan keputusan; bagian ini adalah bagian
- * keputusannya.
+ * Bentuk tabel, bukan daftar beralert. Versi sebelumnya memakai ikon peringatan
+ * di tiap baris, garis merah di kiri, dan satu kalimat yang menjelaskan definisi
+ * CPI — tiga hal yang menambah kebisingan tanpa menambah informasi. Yang
+ * dibutuhkan pembaca adalah: nilainya sekarang, ambangnya, dan selisihnya.
  *
- * Bila tidak ada penyimpangan, ditampilkan satu baris tenang — bukan tiga
- * kotak kosong.
+ * Hanya baris yang benar-benar menyimpang yang muncul. Proyek tanpa anggaran
+ * tidak masuk tabel sama sekali: ia tidak punya pembanding, jadi tidak bisa
+ * disebut lebih mahal atau lebih murah.
  */
 export interface DecisionZoneProps {
   evm: {
@@ -23,62 +23,86 @@ export interface DecisionZoneProps {
   caTotal: number;
 }
 
-interface Finding {
+interface Row {
   key: string;
-  /** Apa yang menyimpang. */
-  what: string;
-  /** Seberapa besar, dalam angka. */
-  magnitude: string;
-  /** Mengapa — penyebab yang bisa ditindaklanjuti. */
-  cause: string;
+  label: string;
+  /** Nilai saat ini, sudah diformat. */
+  now: string;
+  /** Ambang yang menjadi acuan. */
+  threshold: string;
+  /** Selisih terhadap ambang, bertanda. */
+  delta: string;
+  /** Selisih negatif = perlu tindakan. */
+  bad: boolean;
 }
 
+const pct = (n: number) => `${Math.round(n * 100)}%`;
+
 export function DecisionZone({ evm, eac, caIssueCount, caTotal }: DecisionZoneProps) {
-  const findings: Finding[] = [];
   const { cpi, spi, bac } = evm.metrics;
 
-  if (eac != null && bac > 0 && eac > bac) {
-    const over = eac - bac;
-    findings.push({
-      key: 'eac',
-      what: 'Proyeksi akhir melewati anggaran',
-      magnitude: `EAC ${formatIdrCompact(eac)} vs BAC ${formatIdrCompact(bac)} — ${formatIdrCompact(over)} (${Math.round((over / bac) * 100)}%)`,
-      cause: 'Biaya per unit pekerjaan lebih tinggi dari rencana.',
+  // Tanpa anggaran, EVM tidak punya pembanding sama sekali.
+  if (bac <= 0) {
+    return (
+      <section aria-label="Decisions required">
+        <p className="text-caption uppercase tracking-wide text-neutral-900/40">Keputusan yang diperlukan</p>
+        <p className="mt-2 text-body-sm text-neutral-900/70">
+          Tidak ada anggaran terpasang — EVM tidak dapat dihitung.
+        </p>
+      </section>
+    );
+  }
+
+  const rows: Row[] = [];
+
+  if (cpi != null && cpi < 1) {
+    rows.push({
+      key: 'cpi',
+      label: 'Biaya per unit pekerjaan',
+      now: cpi.toFixed(2),
+      threshold: '1.00',
+      delta: `−${pct(1 - cpi)}`,
+      bad: true,
     });
   }
 
-  if (cpi != null && cpi < 1) {
-    findings.push({
-      key: 'cpi',
-      what: 'Biaya berjalan di atas rencana',
-      magnitude: `CPI ${cpi.toFixed(2)} — ${Math.round((1 - cpi) * 100)}% lebih mahal per unit pekerjaan`,
-      cause: 'Setiap rupiah yang dibelanjakan menghasilkan pekerjaan lebih sedikit dari yang direncanakan.',
+  if (eac != null && eac > bac) {
+    const over = eac - bac;
+    rows.push({
+      key: 'eac',
+      label: 'Proyeksi akhir (EAC)',
+      now: formatIdrCompact(eac),
+      threshold: formatIdrCompact(bac),
+      delta: `+${formatIdrCompact(over)}`,
+      bad: true,
     });
   }
 
   if (spi != null && spi < 1) {
-    findings.push({
+    rows.push({
       key: 'spi',
-      what: 'Jadwal tertinggal',
-      magnitude: `SPI ${spi.toFixed(2)} — ${Math.round((1 - spi) * 100)}% lebih lambat dari rencana`,
-      cause: 'Pekerjaan yang selesai lebih sedikit dari yang dijadwalkan pada tanggal data.',
+      label: 'Jadwal',
+      now: spi.toFixed(2),
+      threshold: '1.00',
+      delta: `−${pct(1 - spi)}`,
+      bad: true,
+    });
+  } else if (spi == null) {
+    rows.push({
+      key: 'spi',
+      label: 'Jadwal',
+      now: 'n/a',
+      threshold: '—',
+      delta: '—',
+      bad: false,
     });
   }
 
-  if (caIssueCount > 0) {
-    findings.push({
-      key: 'ca',
-      what: 'Jadwal tidak dapat dinilai',
-      magnitude: `${caIssueCount} dari ${caTotal} control account punya progres tetapi belum punya planned value`,
-      cause: 'Tanpa PV, SPI tidak bisa dihitung — dasar penilaian jadwal belum lengkap.',
-    });
-  }
-
-  if (findings.length === 0) {
+  if (rows.length === 0) {
     return (
-      <section aria-label="Decisions required" className="border-l-2 border-neutral-300 pl-4">
+      <section aria-label="Decisions required">
         <p className="text-caption uppercase tracking-wide text-neutral-900/40">Keputusan yang diperlukan</p>
-        <p className="mt-1.5 text-body-sm text-neutral-900/70">
+        <p className="mt-2 text-body-sm text-neutral-900/70">
           Tidak ada penyimpangan yang memerlukan keputusan pada tanggal data ini.
         </p>
       </section>
@@ -86,20 +110,50 @@ export function DecisionZone({ evm, eac, caIssueCount, caTotal }: DecisionZonePr
   }
 
   return (
-    <section aria-label="Decisions required" className="border-l-2 border-racing-red-600 pl-4">
+    <section aria-label="Decisions required">
       <p className="text-caption uppercase tracking-wide text-neutral-900/40">Keputusan yang diperlukan</p>
-      <ul className="mt-1.5 space-y-2">
-        {findings.map((f) => (
-          <li key={f.key}>
-            <p className="text-body-sm text-neutral-950">
-              <span className="mr-1.5 text-racing-red-700" aria-hidden="true">▲</span>
-              {f.what}
-              <span className="ml-2 font-mono text-body-sm tabular-nums text-neutral-900">{f.magnitude}</span>
-            </p>
-            <p className="ml-4 text-caption text-neutral-900/70">{f.cause}</p>
-          </li>
-        ))}
-      </ul>
+
+      <table className="mt-2 w-full border-collapse text-body-sm">
+        <caption className="sr-only">Penyimpangan terhadap ambang, dengan selisihnya.</caption>
+        <thead>
+          <tr className="border-y border-neutral-300">
+            <th scope="col" className="py-1.5 text-left text-caption uppercase tracking-wide text-neutral-900/40">
+              &nbsp;
+            </th>
+            <th scope="col" className="w-36 py-1.5 text-right text-caption uppercase tracking-wide text-neutral-900/40">
+              Sekarang
+            </th>
+            <th scope="col" className="w-32 py-1.5 text-right text-caption uppercase tracking-wide text-neutral-900/40">
+              Ambang
+            </th>
+            <th scope="col" className="w-32 py-1.5 text-right text-caption uppercase tracking-wide text-neutral-900/40">
+              Selisih
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.key} className="border-b border-neutral-100">
+              <th scope="row" className="py-1.5 text-left font-normal text-neutral-900">
+                {r.label}
+              </th>
+              <td className="py-1.5 text-right font-mono tabular-nums text-neutral-950">{r.now}</td>
+              <td className="py-1.5 text-right font-mono tabular-nums text-neutral-900/70">{r.threshold}</td>
+              <td
+                className={`py-1.5 text-right font-mono tabular-nums ${r.bad ? 'text-racing-red-700' : 'text-neutral-900/40'}`}
+              >
+                {r.delta}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {caIssueCount > 0 && (
+        <p className="mt-2 text-caption text-neutral-900/70">
+          PV belum diisi di {caIssueCount} dari {caTotal} control account — SPI tidak dapat dihitung.
+        </p>
+      )}
     </section>
   );
 }
