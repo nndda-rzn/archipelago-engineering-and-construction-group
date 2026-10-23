@@ -1,147 +1,107 @@
 import { useState } from 'react';
-import { Button, DataGrid, EmptyCell, EntitySelect } from '@aec/ui';
-import {
-  useCommitment, useControlAccounts, useCostCodes, useEvm, useForecasts,
-} from '@/features/project';
-import { useProjects } from '@/entities/project';
-import { formatIdr as fmt } from '@/shared/lib/format';
-import { PAGE_SIZE } from '@/shared/lib/pagination';
-import { costCodeColumns, caColumns, forecastColumns, CostCodeForm, ControlAccountForm, ForecastForm } from '@/features/project/ui';
+import { EntitySelect, ErrorState } from '@aec/ui';
+import { useControlAccounts, useEvm, useForecasts } from '@/features/project';
+import { useProjectSchedule, useProjects } from '@/entities/project';
+import { ControlsAccounts, ControlsDecisions, ControlsTrajectory } from '@/features/project/ui';
+import { PAGE_SIZE_LARGE as PAGE_SIZE } from '@/shared/lib/pagination';
 
-type Tab = 'costcodes' | 'control-accounts' | 'forecasts' | 'evm' | 'commitment';
-
-const TAB_LABELS: Record<Tab, string> = {
-  costcodes: 'Cost Code',
-  'control-accounts': 'Control Account',
-  forecasts: 'Forecast',
-  evm: 'EVM',
-  commitment: 'Commitment',
-};
-
+/**
+ * Project Controls — halaman kendali, bukan pelaporan.
+ *
+ * Tujuan project controls (APM, AACE RP 60R-10, Howell & Ballard) adalah
+ * mencegah kejutan dan memicu keputusan, bukan menyajikan riwayat. Karena itu
+ * urutannya:
+ *
+ *   A. identitas            — dokumen apa ini
+ *   B. KEPUTUSAN            — apa yang menyimpang dan mengapa (bukan grafik dulu)
+ *   C. TRAJEKTORI           — bukti: S-curve + pita variance + garis BAC
+ *   D. SUMBER DRIFT         — control account, unit integrasi menurut AACE
+ *
+ * Tab dihapus: lima tab menyembunyikan cerita dan membuat Cost Code — yang
+ * kosong di seluruh sistem — menjadi halaman pertama yang dilihat pengguna.
+ */
 export function ProjectControlsPage() {
-  const [tab, setTab] = useState<Tab>('costcodes');
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: PAGE_SIZE });
   const [projectId, setProjectId] = useState('');
-  const [showForm, setShowForm] = useState(false);
+  const projects = useProjects({ page: 1, pageSize: PAGE_SIZE });
 
-  const projects = useProjects({ page: 1, pageSize: 100 });
-  const costCodes = useCostCodes(projectId, { page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
-  const controlAccounts = useControlAccounts(projectId, { page: pagination.pageIndex + 1, pageSize: pagination.pageSize });
-  const forecasts = useForecasts(projectId);
   const evm = useEvm(projectId);
-  const commitment = useCommitment(projectId);
+  const schedule = useProjectSchedule(projectId);
+  const accounts = useControlAccounts(projectId, { page: 1, pageSize: 100 });
+  const forecasts = useForecasts(projectId);
 
-  const gridProps = { pagination, onPaginationChange: setPagination };
+  const selected = (projects.data?.items ?? []).find((p) => p.id === projectId);
+  const latestForecast = forecasts.data?.items?.[0] ?? null;
+
+  const today = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date());
+  const isLoading = evm.isLoading || schedule.isLoading;
+  const isError = evm.isError || schedule.isError;
+
+  const caItems = accounts.data?.items ?? [];
+  const caIssues = caItems.filter((a) => a.dataIssue).length;
+
+  // Indeks data date: jumlah periode rencana yang sudah lewat.
+  const dataDateIndex = schedule.data
+    ? Math.max(0, (schedule.data.actualProgressCurve.at(-1)?.period
+        ? schedule.data.plannedCurve.findIndex((p) => p.period === schedule.data!.actualProgressCurve.at(-1)!.period)
+        : schedule.data.plannedCurve.length - 1))
+    : 0;
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-h1 text-neutral-950">Project Controls</h1>
-          <p className="mt-1 text-body-sm text-neutral-500">Cost code, control account, forecast, EVM, commitment (Phase 11B)</p>
+    <div className="mx-auto w-full max-w-[1400px]">
+      <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b-2 border-neutral-300 pb-3">
+        <div className="min-w-0">
+          <p className="font-mono text-caption text-neutral-900/40">{selected?.code ?? '—'}</p>
+          <h1 className="mt-0.5 truncate text-h2 font-light tracking-tight text-neutral-950">
+            {selected?.name ?? 'Project controls'}
+          </h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-end gap-3">
           <EntitySelect
             value={projectId}
-            onValueChange={(v) => { setProjectId(v); setShowForm(false); }}
+            onValueChange={setProjectId}
             options={(projects.data?.items ?? []).map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
-            placeholder="Select project…"
+            placeholder="Select a project…"
             searchPlaceholder="Search project…"
-            className="w-64"
+            className="h-9 w-64 text-body-sm"
           />
-          {projectId && (
-            <Button
-              variant="secondary"
-              onClick={() => setShowForm((s) => !s)}
-            >
-              {showForm ? 'Close' : '+ Create'}
-            </Button>
-          )}
+          <p className="text-caption uppercase tracking-wide text-neutral-900/40">{today}</p>
         </div>
-      </div>
+      </header>
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {(['costcodes', 'control-accounts', 'forecasts', 'evm', 'commitment'] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => { setTab(t); setShowForm(false); }}
-            className={`rounded-md px-3 py-1.5 text-body-sm font-medium transition-colors ${
-              tab === t ? 'bg-racing-red-600 text-white' : 'border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300'
-            }`}
-          >
-            {TAB_LABELS[t]}
-          </button>
-        ))}
-      </div>
+      {!projectId && (
+        <p className="py-12 text-body-sm text-neutral-900/70">Pilih proyek untuk melihat posisi kendalinya.</p>
+      )}
 
-      {showForm && tab === 'costcodes' && projectId && <CostCodeForm projectId={projectId} />}
-      {showForm && tab === 'control-accounts' && projectId && <ControlAccountForm projectId={projectId} />}
-      {showForm && tab === 'forecasts' && projectId && <ForecastForm projectId={projectId} />}
-
-      {tab === 'costcodes' && (
-        <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-          <DataGrid columns={costCodeColumns} data={costCodes.data?.items ?? []} rowCount={costCodes.data?.total ?? 0} isLoading={costCodes.isLoading} isError={costCodes.isError} onRetry={() => costCodes.refetch()} emptyMessage="No cost codes yet" {...gridProps} />
+      {isLoading && projectId && (
+        <div aria-busy="true" className="mt-6 space-y-6">
+          <div className="h-[120px] animate-pulse bg-neutral-100" />
+          <div className="h-[304px] animate-pulse bg-neutral-100" />
         </div>
       )}
 
-      {tab === 'control-accounts' && (
-        <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-          <DataGrid columns={caColumns} data={controlAccounts.data?.items ?? []} rowCount={controlAccounts.data?.total ?? 0} isLoading={controlAccounts.isLoading} isError={controlAccounts.isError} onRetry={() => controlAccounts.refetch()} emptyMessage="No control accounts yet" {...gridProps} />
+      {isError && projectId && (
+        <div className="mt-6">
+          <ErrorState message="Gagal memuat data project controls." onRetry={() => { void evm.refetch(); void schedule.refetch(); }} />
         </div>
       )}
 
-      {tab === 'forecasts' && (
-        <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-          <DataGrid columns={forecastColumns} data={forecasts.data?.items ?? []} rowCount={forecasts.data?.items?.length ?? 0} isLoading={forecasts.isLoading} isError={forecasts.isError} onRetry={() => forecasts.refetch()} emptyMessage="No forecasts yet" {...gridProps} />
-        </div>
-      )}
+      {evm.data && schedule.data && projectId && (
+        <div className="mt-6 space-y-8">
+          <ControlsDecisions
+            evm={evm.data}
+            eac={latestForecast ? Number(latestForecast.estimateAtCompletion) : null}
+            caIssueCount={caIssues}
+            caTotal={caItems.length}
+          />
 
-      {tab === 'evm' && evm.data && (
-        <div className="rounded-md border border-neutral-200 bg-white p-6 shadow-xs">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
-            {[
-              { label: 'PV', value: evm.data.metrics.pv },
-              { label: 'EV', value: evm.data.metrics.ev },
-              { label: 'AC', value: evm.data.metrics.ac },
-              { label: 'CV', value: evm.data.metrics.cv },
-              { label: 'SV', value: evm.data.metrics.sv },
-              { label: 'BAC', value: evm.data.metrics.bac },
-            ].map(({ label, value }) => (
-              <div key={label} className="rounded-md border border-neutral-100 p-3">
-                <p className="text-caption text-neutral-500">{label}</p>
-                <p className={`mt-1 font-mono text-h3 tabular-nums ${value < 0 ? 'text-destructive-600' : 'text-neutral-800'}`}>{fmt(value)}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 flex gap-6 text-body-sm">
-            <span>CPI: <span className="font-mono font-medium">{evm.data.metrics.cpi?.toFixed(2) ?? <EmptyCell />}</span></span>
-            <span>SPI: <span className="font-mono font-medium">{evm.data.metrics.spi?.toFixed(2) ?? <EmptyCell />}</span></span>
-            <span>Progress: <span className="font-mono font-medium">{evm.data.metrics.progressPercent}%</span></span>
-          </div>
-        </div>
-      )}
+          <ControlsTrajectory
+            schedule={schedule.data}
+            bac={evm.data.metrics.bac}
+            eac={latestForecast ? Number(latestForecast.estimateAtCompletion) : null}
+            dataDateIndex={dataDateIndex}
+          />
 
-      {tab === 'commitment' && commitment.data && (
-        <div className="rounded-md border border-neutral-200 bg-white p-6 shadow-xs">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <div className="rounded-md border border-neutral-100 p-3">
-              <p className="text-caption text-neutral-500">PO Commitment</p>
-              <p className="mt-1 font-mono text-h3 tabular-nums text-neutral-800">{fmt(commitment.data.poCommitment)}</p>
-            </div>
-            <div className="rounded-md border border-neutral-100 p-3">
-              <p className="text-caption text-neutral-500">Subcontract Commitment</p>
-              <p className="mt-1 font-mono text-h3 tabular-nums text-neutral-800">{fmt(commitment.data.subcontractCommitment)}</p>
-            </div>
-            <div className="rounded-md border border-neutral-100 p-3">
-              <p className="text-caption text-neutral-500">Total Commitment</p>
-              <p className="mt-1 font-mono text-h3 tabular-nums text-neutral-800">{fmt(commitment.data.totalCommitment)}</p>
-            </div>
-            <div className="rounded-md border border-neutral-100 p-3">
-              <p className="text-caption text-neutral-500">Remaining Budget</p>
-              <p className={`mt-1 font-mono text-h3 tabular-nums ${commitment.data.remainingBudget >= 0 ? 'text-financial-positive-500' : 'text-destructive-600'}`}>{fmt(commitment.data.remainingBudget)}</p>
-            </div>
-          </div>
-          <p className="mt-4 text-caption text-neutral-500">Total budget: {fmt(commitment.data.totalBudget)}</p>
+          <ControlsAccounts accounts={caItems} />
         </div>
       )}
     </div>
