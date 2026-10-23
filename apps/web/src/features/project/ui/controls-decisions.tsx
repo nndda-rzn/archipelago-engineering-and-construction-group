@@ -1,4 +1,3 @@
-import type { ProjectHealth } from '@aec/api-contracts';
 import { formatIdrCompact } from '@/shared/lib/format';
 
 /**

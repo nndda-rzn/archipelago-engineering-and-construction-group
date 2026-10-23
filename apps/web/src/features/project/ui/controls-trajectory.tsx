@@ -34,7 +34,7 @@ const COLORS = {
 };
 
 export function ControlsTrajectory({ schedule, bac, eac, dataDateIndex }: ControlsTrajectoryProps) {
-  const { planned, earned, cost, yMax, xOf, yOf, periods } = useMemo(() => {
+  const { planned, earned, cost, xOf, yOf, periods } = useMemo(() => {
     const plannedPts = schedule.plannedCurve.map((p) => ({ period: p.period, value: p.plannedCumulative }));
     const earnedPts = schedule.actualProgressCurve.map((p) => ({
       period: p.period,
@@ -73,7 +73,6 @@ export function ControlsTrajectory({ schedule, bac, eac, dataDateIndex }: Contro
       earned: earnedPts,
       cost: costPts,
       periods: axis,
-      yMax: maxY,
       xOf: (period: string) => {
         const i = axis.indexOf(period);
         return PAD.left + (axis.length > 1 ? (i / (axis.length - 1)) * plotW : 0);
