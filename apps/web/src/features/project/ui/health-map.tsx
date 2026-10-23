@@ -121,7 +121,7 @@ export function HealthMap({ items, selectedId, onSelect }: HealthMapProps) {
 
         {clusters.map((c) => {
           const r = radiusOf(c);
-          const isSelected = c.items.some((i) => i.id === selectedId || i.projectId === selectedId);
+          const isSelected = c.items.some((i) => i.projectId === selectedId);
           const isCluster = c.items.length > 1;
           return (
             <g key={c.key}>

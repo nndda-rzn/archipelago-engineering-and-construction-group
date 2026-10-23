@@ -16,6 +16,12 @@ const baseHealth: ProjectHealth = {
   variance: 1_000_000,
   utilization: 88,
   health: 'ON_TRACK',
+  partial: false,
+  cpi: 1.05,
+  spi: 1.02,
+  ev: 8_000_000,
+  pv: 7_800_000,
+  progressPercent: 80,
   generatedAt: '2026-08-28T00:00:00Z',
   wbs: [],
 };
