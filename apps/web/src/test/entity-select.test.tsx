@@ -45,13 +45,16 @@ describe('EntitySelect variant', () => {
  * diperbaiki di sini.
  */
 describe('EntitySelect never wraps its label', () => {
-  it('puts truncate on the value element', () => {
+  it('puts truncate on the wrapper around the value', () => {
     const { container } = render(
       <EntitySelect variant="editorial" value="p1" onValueChange={() => {}} options={options} />,
     );
     const trigger = container.querySelector('[role="combobox"]');
-    const value = trigger!.querySelector('span');
-    expect(value!.className).toContain('truncate');
+    // Radix membuang className dari SelectValue, jadi truncate harus ada di
+    // pembungkus — bukan di SelectValue itu sendiri.
+    const wrapper = trigger!.querySelector('span.truncate');
+    expect(wrapper).toBeTruthy();
+    expect(wrapper!.className).toContain('min-w-0');
   });
 
   it('lets the trigger shrink so the value can be truncated', () => {
