@@ -15,8 +15,8 @@ import { formatIdrCompact } from '@/shared/lib/format';
  */
 export interface DecisionZoneProps {
   evm: {
-    metrics: { cpi: number | null; spi: number | null; bac: number };
-    interpretation: { partial?: boolean };
+    metrics: { cpi: number | null; spi: number | null; bac: number } & Record<string, unknown>;
+    interpretation: { partial?: boolean } & Record<string, unknown>;
   };
   eac: number | null;
   caIssueCount: number;
