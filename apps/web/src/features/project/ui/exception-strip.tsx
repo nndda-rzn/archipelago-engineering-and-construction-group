@@ -16,9 +16,15 @@ import { formatIdrCompact } from '@/shared/lib/format';
 export interface ExceptionStripProps {
   warnings: BudgetStatement['warnings'];
   reconciliation: BudgetStatement['reconciliation'];
+  /**
+   * Apakah proyek punya alokasi sama sekali. Bila tidak, daftar "simpul tanpa
+   * budget" tidak ditampilkan: halaman sudah menyatakan keadaan itu di panel
+   * utama, dan mengulanginya sebagai peringatan hanya menambah kebisingan.
+   */
+  hasAllocation?: boolean;
 }
 
-export function ExceptionStrip({ warnings, reconciliation }: ExceptionStripProps) {
+export function ExceptionStrip({ warnings, reconciliation, hasAllocation = true }: ExceptionStripProps) {
   const items: Array<{ key: string; text: string }> = [];
 
   if (reconciliation.doubleCountRisk) {
@@ -43,7 +49,7 @@ export function ExceptionStrip({ warnings, reconciliation }: ExceptionStripProps
     });
   }
 
-  if (warnings.noBudget.length > 0) {
+  if (warnings.noBudget.length > 0 && hasAllocation) {
     items.push({
       key: 'no-budget',
       text:
@@ -52,7 +58,7 @@ export function ExceptionStrip({ warnings, reconciliation }: ExceptionStripProps
     });
   }
 
-  if (warnings.pvCoverage.status === 'NO_BASELINE') {
+  if (warnings.pvCoverage.status === 'NO_BASELINE' && hasAllocation) {
     items.push({
       key: 'no-schedule-baseline',
       text: 'No schedule baseline published yet — schedule indices are unavailable.',

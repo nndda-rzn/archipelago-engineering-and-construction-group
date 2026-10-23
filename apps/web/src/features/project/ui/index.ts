@@ -16,6 +16,8 @@ export { ProjectPicker } from './project-picker';
 export { WbsForm } from './wbs-form';
 export { BudgetStatement } from './budget-statement';
 export { DocumentBand } from './document-band';
+export { BaselineActions } from './baseline-actions';
+export { EmptyBudgetPanel } from './empty-budget-panel';
 export { MoneyPosition } from './money-position';
 export { CostComposition } from './cost-composition';
 export { BaselineHistory } from './baseline-history';

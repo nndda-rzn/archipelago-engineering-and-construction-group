@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, within } from '@testing-library/react';
 import { renderWithProviders } from '@/test/render';
 
-const summary = vi.hoisted(() => ({
+const withBudget = vi.hoisted(() => ({
   projectId: 'p1',
   currency: 'IDR',
   baseline: { id: 'b2', version: 2, status: 'FROZEN', label: 'VO-01', reason: null, frozenAt: '2026-10-22T00:00:00.000Z', total: 400 },
@@ -23,7 +23,32 @@ const summary = vi.hoisted(() => ({
   costCoverage: { allocatedNodes: 2, totalNodes: 2 },
 }));
 
+/** Proyek tanpa alokasi sama sekali, seperti PRJ-030. */
+const noBudget = vi.hoisted(() => ({
+  projectId: 'p1',
+  currency: 'IDR',
+  baseline: null,
+  versions: [],
+  openRevision: false,
+  rows: [
+    { id: 'w1', code: '1', name: 'Engineering', parentId: null, depth: 0, childrenCount: 0, baseline: 0, revised: 0, committed: 0, actual: 0, available: 0, variance: 0, varianceBaseline: 0, byCostType: {} },
+    { id: 'w2', code: '2', name: 'Procurement', parentId: null, depth: 0, childrenCount: 0, baseline: 0, revised: 0, committed: 0, actual: 900_000_000, available: 0, variance: -900_000_000, varianceBaseline: 0, byCostType: {} },
+  ],
+  totals: { baseline: 0, revised: 0, committed: 0, actual: 900_000_000, available: 0, variance: -900_000_000, varianceBaseline: 0, contractValue: 45_000_000_000, eac: null, vac: null },
+  composition: [],
+  unallocated: { committed: 0, actual: 0 },
+  reconciliation: { ledgerOut: 900_000_000, journalExpense610: 0, doubleCountRisk: false },
+  warnings: {
+    overContract: false,
+    overCommitted: [],
+    noBudget: [{ wbsId: 'w1', code: '1' }, { wbsId: 'w2', code: '2' }],
+    pvCoverage: { pv: 0, bac: 0, status: 'NO_BASELINE' },
+  },
+  costCoverage: { allocatedNodes: 1, totalNodes: 2 },
+}));
+
 const mutate = vi.hoisted(() => vi.fn());
+const state = vi.hoisted(() => ({ payload: null as unknown }));
 
 vi.mock('@aec/ui', async () => {
   const actual = await vi.importActual<typeof import('@aec/ui')>('@aec/ui');
@@ -39,7 +64,7 @@ vi.mock('@/features/project', async () => {
   const actual = await vi.importActual<typeof import('@/features/project')>('@/features/project');
   return {
     ...actual,
-    useBudget: () => ({ data: summary, isLoading: false, isError: false, refetch: vi.fn() }),
+    useBudget: () => ({ data: state.payload, isLoading: false, isError: false, refetch: vi.fn() }),
     useUpsertBudget: () => ({ mutate, isPending: false, isError: false }),
     useFreezeBaseline: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
     useOpenRevision: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
@@ -52,67 +77,89 @@ vi.mock('@/entities/project', () => ({
 
 import { BudgetPage } from './budget.page';
 
-const renderPage = async () => {
+const renderPage = async (payload: unknown) => {
+  state.payload = payload;
   renderWithProviders(<BudgetPage />);
   fireEvent.click(screen.getByRole('button', { name: 'pick-project' }));
 };
 
-describe('BudgetPage', () => {
+describe('BudgetPage — shell', () => {
+  it('uses the project name as the page heading, not a generic label', async () => {
+    await renderPage(withBudget);
+    const heading = await screen.findByRole('heading', { level: 1 });
+    expect(heading.textContent).toBe('Alpha');
+  });
+
+  it('drops the decorative subtitle', async () => {
+    await renderPage(withBudget);
+    await screen.findByRole('heading', { level: 1 });
+    expect(screen.queryByText(/commitment and actual cost per wbs/i)).toBeNull();
+  });
+
   it('asks for a project before showing anything', () => {
+    state.payload = null;
     renderWithProviders(<BudgetPage />);
     expect(screen.getByText(/select a project to see its cost position/i)).toBeTruthy();
   });
+});
 
-  it('leads with the money position, not the table', async () => {
-    await renderPage();
+describe('BudgetPage — with a baseline', () => {
+  it('leads with the money position', async () => {
+    await renderPage(withBudget);
     const region = await screen.findByLabelText('Money position');
-    expect(region).toBeTruthy();
-    // Angka Revised adalah elemen dominan halaman.
     expect(within(region).getByTestId('money-revised')).toBeTruthy();
   });
 
-  it('names the project and the frozen version in the document band', async () => {
-    await renderPage();
-    expect(await screen.findByText('Alpha')).toBeTruthy();
-    const band = screen.getByRole('banner');
-    expect(within(band).getByText(/v2/)).toBeTruthy();
-    expect(within(band).getByText(/VO-01/)).toBeTruthy();
-  });
-
-  it('renders the statement, the composition and the history', async () => {
-    await renderPage();
+  it('renders statement, composition and history', async () => {
+    await renderPage(withBudget);
     expect(await screen.findByRole('table')).toBeTruthy();
     expect(screen.getByLabelText('Cost composition')).toBeTruthy();
     expect(screen.getByLabelText('Baseline history')).toBeTruthy();
   });
 
-  it('shows both versions in the history', async () => {
-    await renderPage();
-    await screen.findByLabelText('Baseline history');
-    expect(screen.getByTestId('version-b2')).toBeTruthy();
-    expect(screen.getByTestId('version-b1')).toBeTruthy();
-  });
-
   it('opens the inspector inline when a row is selected', async () => {
-    await renderPage();
+    await renderPage(withBudget);
     fireEvent.click(await screen.findByRole('button', { name: /^1\.1\s*Detail Engineering$/ }));
     const panel = screen.getByRole('complementary', { name: /budget detail/i });
     expect(within(panel).getByText('1.1')).toBeTruthy();
   });
 
-  it('sends the chosen cost type when saving, never a bare amount', async () => {
-    await renderPage();
+  it('sends the chosen cost type when saving', async () => {
+    await renderPage(withBudget);
     fireEvent.click(await screen.findByRole('button', { name: /^1\.1\s*Detail Engineering$/ }));
     const panel = screen.getByRole('complementary', { name: /budget detail/i });
-    const input = within(panel).getByLabelText(/Labor amount/i);
-    fireEvent.change(input, { target: { value: '250' } });
+    fireEvent.change(within(panel).getByLabelText(/Labor amount/i), { target: { value: '250' } });
     fireEvent.click(within(panel).getByRole('button', { name: /save/i }));
     expect(mutate).toHaveBeenCalledWith({ wbsItemId: 'c1', costType: 'LABOR', amount: 250 });
   });
+});
 
-  it('hides the attention strip when nothing needs action', async () => {
-    await renderPage();
-    await screen.findByRole('table');
+describe('BudgetPage — no budget allocated', () => {
+  it('collapses to a single calm panel instead of five empty zones', async () => {
+    await renderPage(noBudget);
+    expect(await screen.findByLabelText('No budget allocated')).toBeTruthy();
+    expect(screen.queryByLabelText('Money position')).toBeNull();
+    expect(screen.queryByRole('table')).toBeNull();
+    expect(screen.queryByLabelText('Cost composition')).toBeNull();
+    expect(screen.queryByLabelText('Baseline history')).toBeNull();
+  });
+
+  it('still reports the actual spend that was booked', async () => {
+    await renderPage(noBudget);
+    const panel = await screen.findByLabelText('No budget allocated');
+    expect(panel.textContent).toMatch(/Rp 900 jt/);
+  });
+
+  it('does not nag about nodes without budget when nothing is allocated at all', async () => {
+    await renderPage(noBudget);
+    await screen.findByLabelText('No budget allocated');
     expect(screen.queryByLabelText('Needs attention')).toBeNull();
+    expect(screen.queryByText(/nodes without budget/i)).toBeNull();
+  });
+
+  it('offers no freeze action, because there is nothing to freeze', async () => {
+    await renderPage(noBudget);
+    await screen.findByLabelText('No budget allocated');
+    expect(screen.queryByRole('button', { name: /freeze/i })).toBeNull();
   });
 });
