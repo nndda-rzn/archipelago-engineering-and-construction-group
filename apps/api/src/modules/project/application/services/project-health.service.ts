@@ -86,7 +86,7 @@ export class ProjectHealthService {
     const progressPercent = Math.min(avgProgress, 100);
 
     const ev = totalBudget * (progressPercent / 100);
-    const cpi = totalActual > 0 ? ev / totalActual : null;
+    const cpi = totalBudget > 0 && totalActual > 0 ? ev / totalActual : null;
     const spi = pv > 0 ? ev / pv : null;
     const utilization = totalBudget > 0 ? (totalActual / totalBudget) * 100 : null;
     const { health, partial } = classifyHealth(cpi, spi, utilization);
@@ -152,7 +152,9 @@ export class ProjectHealthService {
       const pv = pvMap.get(p.id) ?? 0;
       const progress = progressMap.get(p.id) ?? 0;
       const ev = bac * (progress / 100);
-      const cpi = ac > 0 ? ev / ac : null;
+      // Tanpa BAC tidak ada dasar menilai biaya; `null`, bukan 0, supaya
+      // classifyHealth mengembalikan NO_BUDGET alih-alih AT_RISK.
+      const cpi = bac > 0 && ac > 0 ? ev / ac : null;
       const spi = pv > 0 ? ev / pv : null;
       const utilization = bac > 0 ? (ac / bac) * 100 : null;
       const { health, partial } = classifyHealth(cpi, spi, utilization);
