@@ -682,6 +682,43 @@ async function seedPortfolio() {
     if (!claim) {
       claim = await prisma.progressClaim.create({ data: { claimNumber, projectId: project.id, claimDate: new Date(`${year}-05-01`), period: `${year}-04`, description: 'Progress klaim (seed)', amount: p.value * 0.1, certifiedAmount: p.value * 0.1, status: 'CERTIFIED', certifiedBy: 'admin@aec.local', certifiedAt: new Date(`${year}-05-03`) } });
     }
+
+    /**
+     * Riwayat klaim per kuartal. Satu klaim saja membuat kurva aktual hanya
+     * satu titik, sehingga S-curve tidak bisa dibaca sebagai kurva. Ini data
+     * demo: nilai mengikuti kurva S yang wajar (landai → menengah → landai),
+     * berhenti di progres aktual proyek, bukan mengarang angka acak.
+     */
+    const curveWeights = [0.08, 0.16, 0.24, 0.28, 0.24];
+    const progressShare = (p.profile === 'healthy' ? 62 : 38) / 100;
+    for (let qi = 0; qi < curveWeights.length; qi += 1) {
+      const qNum = qi + 1;
+      const period = `${year}-Q${qNum}`;
+      const histNumber = `CLM-${p.code.slice(-3)}-9${String(qNum).padStart(5, '0')}`;
+      const existsHist = await prisma.progressClaim.findUnique({ where: { claimNumber: histNumber } });
+      if (existsHist) continue;
+      // Kumulatif dibatasi agar tidak melewati progres aktual proyek.
+      const cumShare = Math.min(progressShare, curveWeights.slice(0, qi + 1).reduce((s, w) => s + w, 0));
+      const prevCum = Math.min(progressShare, curveWeights.slice(0, qi).reduce((s, w) => s + w, 0));
+      const delta = Math.max(0, (cumShare - prevCum) * p.value);
+      if (delta <= 0) continue;
+      const claimDate = new Date(`${year}-${String(qNum * 3).padStart(2, '0')}-15`);
+      await prisma.progressClaim.create({
+        data: {
+          claimNumber: histNumber,
+          projectId: project.id,
+          claimDate,
+          period,
+          description: `Progress klaim ${period} (seed)`,
+          amount: delta,
+          certifiedAmount: delta,
+          physicalProgressAtClaim: Math.round(cumShare * 1000) / 10,
+          status: 'CERTIFIED',
+          certifiedBy: 'admin@aec.local',
+          certifiedAt: claimDate,
+        },
+      });
+    }
     const ciNumber = `CINV-${p.code.slice(-3)}-900001`;
     const existingCi = await prisma.clientInvoice.findUnique({ where: { invoiceNumber: ciNumber } });
     if (!existingCi && claim) {
