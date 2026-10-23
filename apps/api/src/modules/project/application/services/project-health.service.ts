@@ -232,15 +232,15 @@ export class ProjectHealthService {
     ]);
 
     for (const r of ncrs) {
-      const cur = out.get(r.projectId);
+      const cur = r.projectId ? out.get(r.projectId) : undefined;
       if (cur) cur.ncrs = r._count._all;
     }
     for (const r of incidents) {
-      const cur = out.get(r.projectId);
+      const cur = r.projectId ? out.get(r.projectId) : undefined;
       if (cur) cur.incidents = r._count._all;
     }
     for (const r of risks) {
-      const cur = out.get(r.projectId);
+      const cur = r.projectId ? out.get(r.projectId) : undefined;
       if (cur) cur.risks = r._count._all;
     }
     return out;
