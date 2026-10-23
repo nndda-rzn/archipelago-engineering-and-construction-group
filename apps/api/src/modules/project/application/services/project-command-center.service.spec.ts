@@ -123,11 +123,29 @@ describe('ProjectCommandCenterService.schedule', () => {
       ]) },
     });
     const out = await makeService(prisma).schedule('p1');
-    expect(out.actualProgressCurve).toHaveLength(2);
-    expect(out.actualProgressCurve[1]!.cumulative).toBe(400);
-    expect(out.actualProgressCurve[1]!.pct).toBe(100);
-    expect(out.actualCostCurve).toHaveLength(2);
-    expect(out.actualCostCurve[1]!.cumulative).toBe(200);
+    // Rencana disimpan per kuartal, klaim dan jurnal per bulan. Keduanya dipetakan
+    // ke kuartal yang sama sebelum digambar, sehingga dua bulan dalam satu kuartal
+    // menjadi SATU titik kumulatif — bukan dua skala berbeda pada satu sumbu.
+    expect(out.actualProgressCurve).toHaveLength(1);
+    expect(out.actualProgressCurve[0]!.period).toBe('2026-Q1');
+    expect(out.actualProgressCurve[0]!.cumulative).toBe(400);
+    expect(out.actualProgressCurve[0]!.pct).toBe(100);
+    expect(out.actualCostCurve).toHaveLength(1);
+    expect(out.actualCostCurve[0]!.period).toBe('2026-Q1');
+    expect(out.actualCostCurve[0]!.cumulative).toBe(200);
+  });
+
+  it('keeps separate points for claims in different quarters', async () => {
+    const prisma = makePrisma({
+      project: { findUnique: jest.fn().mockResolvedValue({ progressPlanned: 55, progressActual: 48, startDate: new Date() }) },
+      progressClaim: { findMany: jest.fn().mockResolvedValue([
+        { period: '2026-01', certifiedAmount: 100, amount: 100, physicalProgressAtClaim: null },
+        { period: '2026-05', certifiedAmount: 300, amount: 300, physicalProgressAtClaim: null },
+      ]), aggregate: jest.fn() },
+      journalLine: { findMany: jest.fn().mockResolvedValue([]) },
+    });
+    const out = await makeService(prisma).schedule('p1');
+    expect(out.actualProgressCurve.map((p) => p.period)).toEqual(['2026-Q1', '2026-Q2']);
   });
 });
 
