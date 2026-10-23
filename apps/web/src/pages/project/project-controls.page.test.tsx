@@ -91,18 +91,35 @@ describe('ProjectControlsPage', () => {
     expect(heading.textContent).toBe('EPC Industrial');
   });
 
-  it('leads with the decision, not the chart', () => {
+  it('leads with the decision table, not the chart', () => {
     renderPage();
     const zone = screen.getByLabelText('Decisions required');
-    expect(zone.textContent).toMatch(/melewati anggaran/i);
-    expect(zone.textContent).toMatch(/CPI 0\.93/);
+    // Tabel keputusan: label baris, nilai sekarang, ambang, selisih.
+    expect(within(zone).getByText('Biaya per unit pekerjaan')).toBeTruthy();
+    expect(zone.textContent).toMatch(/0\.93/);
+    expect(zone.textContent).toMatch(/1\.00/);
+  });
+
+  it('shows the forecast overshoot against its threshold', () => {
+    renderPage();
+    const zone = screen.getByLabelText('Decisions required');
+    expect(within(zone).getByText('Proyeksi akhir (EAC)')).toBeTruthy();
+    expect(zone.textContent).toMatch(/Rp 4,99 T/);
+    expect(zone.textContent).toMatch(/Rp 4,8 T/);
   });
 
   it('states that schedule cannot be assessed when planned value is missing', () => {
     renderPage();
     const zone = screen.getByLabelText('Decisions required');
-    expect(zone.textContent).toMatch(/planned value/i);
-    expect(zone.textContent).toMatch(/SPI tidak bisa dihitung|SPI tidak dapat dihitung/i);
+    expect(within(zone).getByText('Jadwal')).toBeTruthy();
+    expect(zone.textContent).toMatch(/n\/a/);
+    expect(zone.textContent).toMatch(/PV belum diisi di 2 dari 2 control account/);
+  });
+
+  it('does not decorate every row with a warning icon', () => {
+    renderPage();
+    const zone = screen.getByLabelText('Decisions required');
+    expect(zone.textContent).not.toMatch(/▲/);
   });
 
   it('renders the trajectory with a budget threshold line', () => {
