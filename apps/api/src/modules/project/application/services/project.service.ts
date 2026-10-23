@@ -113,7 +113,9 @@ export class ProjectService {
     const items = projects.map((p) => {
       const budget = budgetMap.get(p.id) ?? 0;
       const actual = actualMap.get(p.id) ?? 0;
-      const { utilization, health } = classifyHealth(budget, actual);
+      const utilization = budget > 0 ? (actual / budget) * 100 : null;
+      // Daftar proyek belum menghitung EV; status di sini hanya untuk pengelompokan.
+      const { health } = classifyHealth(utilization == null ? null : actual / budget, null, utilization);
       healthCounts[health] += 1;
       totalContract += Number(p.contractValue ?? 0);
       totalBudget += budget;

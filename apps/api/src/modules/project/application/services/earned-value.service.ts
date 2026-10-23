@@ -38,7 +38,9 @@ export class EarnedValueService {
     const cv = ev - ac;
     const sv = ev - pv;
 
-    const { health } = classifyHealth(bac, ac);
+    // Kesehatan dinilai dari CPI x SPI, bukan dari penyerapan biaya.
+    const utilization = bac > 0 ? (ac / bac) * 100 : null;
+    const { health, partial } = classifyHealth(cpi, spi, utilization);
 
     return {
       projectId,
@@ -54,6 +56,9 @@ export class EarnedValueService {
         cpi: cpi == null ? 'N/A' : cpi >= 1 ? 'ON_BUDGET' : 'OVER_BUDGET',
         spi: spi == null ? 'N/A' : spi >= 1 ? 'ON_SCHEDULE' : 'BEHIND_SCHEDULE',
         health,
+        /** True bila SPI tidak tersedia sehingga status hanya dari CPI. */
+        partial,
+        utilization: utilization != null ? round(utilization) : null,
       },
       generatedAt: new Date().toISOString(),
     };
