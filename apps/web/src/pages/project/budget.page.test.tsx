@@ -147,7 +147,13 @@ describe('BudgetPage — no budget allocated', () => {
   it('still reports the actual spend that was booked', async () => {
     await renderPage(noBudget);
     const panel = await screen.findByLabelText('No budget allocated');
-    expect(panel.textContent).toMatch(/Rp 900 jt/);
+    expect(panel.textContent).toMatch(/900\.000\.000/);
+  });
+
+  it('does not promise a freeze action that is not offered', async () => {
+    await renderPage(noBudget);
+    const panel = await screen.findByLabelText('No budget allocated');
+    expect(panel.textContent).not.toMatch(/freeze it here/i);
   });
 
   it('does not nag about nodes without budget when nothing is allocated at all', async () => {

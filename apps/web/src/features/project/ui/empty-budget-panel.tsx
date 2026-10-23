@@ -33,7 +33,7 @@ export function EmptyBudgetPanel({ actual, nodeCount }: EmptyBudgetPanelProps) {
       )}
 
       <p className="mt-4 max-w-[60ch] text-body-sm text-neutral-600">
-        Allocate cost to the WBS breakdown, then freeze it here as the first baseline.
+        Allocate cost to the WBS breakdown first. Once there is something to freeze, the baseline action appears here.
       </p>
     </section>
   );
