@@ -506,7 +506,14 @@ export const budgetStatementSchema = z.object({
   projectId: z.string(),
   currency: z.string(),
   baseline: budgetBaselineSchema.nullable(),
-  previous: budgetBaselineSchema.nullable(),
+  /**
+   * Seluruh versi baseline (FROZEN dan DRAFT terbuka), terbaru dulu.
+   *
+   * Menggantikan `previous`: menyimpan dua field untuk fakta yang sama
+   * (versi sebelumnya) mengundang keduanya berbeda. Riwayat versi membaca
+   * daftar ini, dan `baseline` tetap ada sebagai penunjuk cepat versi aktif.
+   */
+  versions: z.array(budgetBaselineSchema),
   /**
    * Apakah ada revisi yang belum dibekukan. Halaman memakainya untuk menentukan
    * boleh-tidaknya mengedit; tanpa field ini UI harus menebak dari bentuk data,
@@ -514,6 +521,12 @@ export const budgetStatementSchema = z.object({
    */
   openRevision: z.boolean(),
   rows: z.array(budgetStatementRowSchema),
+  /**
+   * Agregat nilai berjalan per cost type di level proyek — dasar blok komposisi.
+   * Dihitung di server dari baris yang sama dengan `rows`, supaya angka komposisi
+   * dan angka tabel tidak mungkin berbeda.
+   */
+  composition: z.array(z.object({ costType: costTypeKeySchema, amount: z.number() })),
   totals: z.object({
     baseline: z.number(),
     revised: z.number(),

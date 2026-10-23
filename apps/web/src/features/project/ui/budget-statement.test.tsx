@@ -13,9 +13,10 @@ const row = (over: Partial<Statement['rows'][number]> = {}): Statement['rows'][n
 const statement = (over: Partial<Statement> = {}): Statement => ({
   projectId: 'p1', currency: 'IDR',
   baseline: { id: 'b1', version: 1, status: 'FROZEN', label: null, reason: null, frozenAt: '2026-01-01T00:00:00.000Z', total: 1000 },
-  previous: null,
+  versions: [{ id: 'b1', version: 1, status: 'FROZEN', label: null, reason: null, frozenAt: '2026-01-01T00:00:00.000Z', total: 1000 }],
   openRevision: false,
   rows: [row()],
+  composition: [{ costType: 'LABOR', amount: 1200 }],
   totals: {
     baseline: 1000, revised: 1200, committed: 300, actual: 900,
     available: 0, variance: 300, varianceBaseline: 200,
