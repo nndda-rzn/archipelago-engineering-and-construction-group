@@ -682,6 +682,43 @@ async function seedPortfolio() {
     if (!claim) {
       claim = await prisma.progressClaim.create({ data: { claimNumber, projectId: project.id, claimDate: new Date(`${year}-05-01`), period: `${year}-04`, description: 'Progress klaim (seed)', amount: p.value * 0.1, certifiedAmount: p.value * 0.1, status: 'CERTIFIED', certifiedBy: 'admin@aec.local', certifiedAt: new Date(`${year}-05-03`) } });
     }
+
+    /**
+     * Riwayat klaim per kuartal. Satu klaim saja membuat kurva aktual hanya
+     * satu titik, sehingga S-curve tidak bisa dibaca sebagai kurva. Ini data
+     * demo: nilai mengikuti kurva S yang wajar (landai → menengah → landai),
+     * berhenti di progres aktual proyek, bukan mengarang angka acak.
+     */
+    const curveWeights = [0.08, 0.16, 0.24, 0.28, 0.24];
+    const progressShare = (p.profile === 'healthy' ? 62 : 38) / 100;
+    for (let qi = 0; qi < curveWeights.length; qi += 1) {
+      const qNum = qi + 1;
+      const period = `${year}-Q${qNum}`;
+      const histNumber = `CLM-${p.code.slice(-3)}-9${String(qNum).padStart(5, '0')}`;
+      const existsHist = await prisma.progressClaim.findUnique({ where: { claimNumber: histNumber } });
+      if (existsHist) continue;
+      // Kumulatif dibatasi agar tidak melewati progres aktual proyek.
+      const cumShare = Math.min(progressShare, curveWeights.slice(0, qi + 1).reduce((s, w) => s + w, 0));
+      const prevCum = Math.min(progressShare, curveWeights.slice(0, qi).reduce((s, w) => s + w, 0));
+      const delta = Math.max(0, (cumShare - prevCum) * p.value);
+      if (delta <= 0) continue;
+      const claimDate = new Date(`${year}-${String(qNum * 3).padStart(2, '0')}-15`);
+      await prisma.progressClaim.create({
+        data: {
+          claimNumber: histNumber,
+          projectId: project.id,
+          claimDate,
+          period,
+          description: `Progress klaim ${period} (seed)`,
+          amount: delta,
+          certifiedAmount: delta,
+          physicalProgressAtClaim: Math.round(cumShare * 1000) / 10,
+          status: 'CERTIFIED',
+          certifiedBy: 'admin@aec.local',
+          certifiedAt: claimDate,
+        },
+      });
+    }
     const ciNumber = `CINV-${p.code.slice(-3)}-900001`;
     const existingCi = await prisma.clientInvoice.findUnique({ where: { invoiceNumber: ciNumber } });
     if (!existingCi && claim) {
@@ -1448,8 +1485,7 @@ async function main() {
 
   // ── 8. Client claim certified → invoice → collection (AR) ──
   const demoClaim = await prisma.progressClaim.findUnique({ where: { claimNumber: `CLM-${year}-EPC-900001` } });
-  if (!demoClaim) {
-    const wp = await prisma.constructionWorkPackage.findFirst({ where: { projectId: project.id } });
+  if (!demoClaim) {    const wp = await prisma.constructionWorkPackage.findFirst({ where: { projectId: project.id } });
     const claim = await prisma.progressClaim.create({
       data: { claimNumber: `CLM-${year}-EPC-900001`, projectId: project.id, period: `${year}-08`, amount: 200000000000, claimType: 'PROGRESS', status: 'CERTIFIED', workPackageId: wp?.id, physicalProgressAtClaim: 45, billableProgress: 40, certifiedAmount: 200000000000, retentionRate: 5, retentionAmount: 10000000000, netCertifiedAmount: 190000000000, recoveryAmount: 19000000000, cumulativeRecovered: 19000000000 },
     });
@@ -1493,6 +1529,41 @@ async function main() {
       });
     }
     console.log(`Claim→Invoice→Collection: 100M kas masuk`);
+  }
+
+  /**
+   * Riwayat klaim kuartalan untuk PRJ-014. Proyek ini dibuat blok tersendiri,
+   * bukan lewat loop portfolio, sehingga tanpa blok ini kurva aktualnya hanya
+   * satu titik dan S-curve tidak terbaca sebagai kurva.
+   */
+  const demoCurveWeights = [0.08, 0.16, 0.24, 0.28, 0.24];
+  const demoProgressShare = 0.45;
+  for (let qi = 0; qi < demoCurveWeights.length; qi += 1) {
+    const qNum = qi + 1;
+    const period = `${year}-Q${qNum}`;
+    const histNumber = `CLM-${year}-EPC-Q${qNum}`;
+    const existsHist = await prisma.progressClaim.findUnique({ where: { claimNumber: histNumber } });
+    if (existsHist) continue;
+    const cumShare = Math.min(demoProgressShare, demoCurveWeights.slice(0, qi + 1).reduce((s, w) => s + w, 0));
+    const prevCum = Math.min(demoProgressShare, demoCurveWeights.slice(0, qi).reduce((s, w) => s + w, 0));
+    const delta = Math.max(0, (cumShare - prevCum) * 4_800_000_000_000);
+    if (delta <= 0) continue;
+    const claimDate = new Date(`${year}-${String(qNum * 3).padStart(2, '0')}-15`);
+    await prisma.progressClaim.create({
+      data: {
+        claimNumber: histNumber,
+        projectId: project.id,
+        claimDate,
+        period,
+        description: `Progress klaim ${period} (seed)`,
+        amount: delta,
+        certifiedAmount: delta,
+        physicalProgressAtClaim: Math.round(cumShare * 1000) / 10,
+        status: 'CERTIFIED',
+        certifiedBy: 'admin@aec.local',
+        certifiedAt: claimDate,
+      },
+    });
   }
 
   // ── 8b. Aging spread AR: beberapa claim + client invoice dengan tanggal berbeda ──

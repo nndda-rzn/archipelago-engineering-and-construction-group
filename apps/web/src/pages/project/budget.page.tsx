@@ -67,6 +67,7 @@ export function BudgetPage() {
             placeholder="Select a project…"
             searchPlaceholder="Search project…"
             className="h-9 w-full max-w-md text-body-sm"
+            variant="editorial"
           />
         </div>
         <p className="text-caption uppercase text-neutral-500">Budget baseline</p>

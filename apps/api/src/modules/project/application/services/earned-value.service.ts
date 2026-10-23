@@ -33,7 +33,13 @@ export class EarnedValueService {
     const ac = await this.actualCost.compute(projectId);
 
     const round = (n: number) => Math.round(n * 100) / 100;
-    const cpi = ac > 0 ? ev / ac : null;
+    /**
+     * Tanpa BAC tidak ada dasar menilai biaya. Sebelumnya `ac > 0` saja, sehingga
+     * proyek tanpa anggaran menghasilkan `ev/ac = 0` dan ditampilkan sebagai
+     * "CPI 0,00 — 100% lebih mahal". Proyek tanpa anggaran tidak bisa dinilai
+     * lebih mahal; ia tidak punya pembanding. Karena itu `null`, bukan nol.
+     */
+    const cpi = bac > 0 && ac > 0 ? ev / ac : null;
     const spi = pv > 0 ? ev / pv : null;
     const cv = ev - ac;
     const sv = ev - pv;

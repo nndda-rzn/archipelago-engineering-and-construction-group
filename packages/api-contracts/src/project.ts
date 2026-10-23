@@ -665,9 +665,19 @@ export const controlAccountSchema = z.object({
   responsibleManager: z.string(),
   budgetAmount: z.number(),
   plannedValue: z.number(),
+  /** Progres fisik (%). Dasar perhitungan CPI per control account. */
+  progressPercent: z.number(),
+  /** Aktivitas di jalur kritis — keterlambatan di sini menunda proyek. */
+  isCriticalPath: z.boolean(),
   scheduleStart: z.string().nullable(),
   scheduleEnd: z.string().nullable(),
   status: z.string(),
+  /**
+   * True bila CA punya progres tetapi belum punya budget maupun planned value.
+   * Tanpa PV, SPI tidak bisa dihitung — dilaporkan sebagai masalah data,
+   * bukan ditampilkan sebagai nol.
+   */
+  dataIssue: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
   wbsItem: z.object({ code: z.string(), name: z.string() }),

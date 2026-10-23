@@ -282,6 +282,23 @@ export class ProjectCommandCenterService {
       return { period: p.period, planned: Number(p.plannedCost), plannedCumulative: cumulative, plannedPct: total > 0 ? Math.round((cumulative / total) * 1000) / 10 : 0 };
     });
 
+    /**
+     * Sumbu waktu bersama.
+     *
+     * Rencana disimpan per KUARTAL (`2026-Q1`), sedangkan klaim progres dan
+     * jurnal per BULAN (`2026-04`). Menggambar keduanya apa adanya menaruh dua
+     * skala berbeda pada satu sumbu — garis aktual akan tampak seolah proyek
+     * baru mulai. Karena itu semua periode dipetakan ke kuartal yang sama
+     * sebelum digambar.
+     */
+    const toQuarter = (period: string): string => {
+      const q = /^(\d{4})-Q([1-4])$/.exec(period);
+      if (q) return period;
+      const m = /^(\d{4})-(\d{2})$/.exec(period);
+      if (m) return `${m[1]}-Q${Math.floor((Number(m[2]) - 1) / 3) + 1}`;
+      return period;
+    };
+
     const [milestones, phases, gates, claims, journalLines] = await Promise.all([
       this.prisma.projectMilestone.findMany({ where: { projectId: id }, orderBy: { sortOrder: 'asc' } }),
       this.prisma.projectPhaseHistory.findMany({ where: { projectId: id }, orderBy: { enteredAt: 'asc' } }),
@@ -292,10 +309,10 @@ export class ProjectCommandCenterService {
       this.prisma.journalLine.findMany({ where: { projectId: id, journal: { status: 'POSTED' } }, select: { debit: true, journal: { select: { createdAt: true } } } }),
     ]);
 
-    // (a) progress fisik kumulatif per periode klaim
+    // (a) progress fisik kumulatif per KUARTAL, agar sepadan dengan rencana.
     const claimByPeriod = new Map<string, number>();
     for (const c of claims) {
-      const period = c.period ?? 'unscheduled';
+      const period = toQuarter(c.period ?? 'unscheduled');
       claimByPeriod.set(period, (claimByPeriod.get(period) ?? 0) + Number(c.certifiedAmount ?? c.amount));
     }
     let claimCum = 0;
@@ -307,11 +324,11 @@ export class ProjectCommandCenterService {
         return { period, value, cumulative: claimCum, pct: claimTotal > 0 ? Math.round((claimCum / claimTotal) * 1000) / 10 : 0 };
       });
 
-    // (b) biaya aktual kumulatif per bulan
+    // (b) biaya aktual kumulatif per KUARTAL.
     const costByMonth = new Map<string, number>();
     for (const l of journalLines) {
-      const month = l.journal.createdAt.toISOString().slice(0, 7);
-      costByMonth.set(month, (costByMonth.get(month) ?? 0) + Number(l.debit));
+      const period = toQuarter(l.journal.createdAt.toISOString().slice(0, 7));
+      costByMonth.set(period, (costByMonth.get(period) ?? 0) + Number(l.debit));
     }
     let costCum = 0;
     const actualCostCurve = [...costByMonth.entries()]

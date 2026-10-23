@@ -38,10 +38,23 @@ export class ControlAccountService {
     const page = Number(query.page) || 1;
     const pageSize = Math.min(Number(query.pageSize) || 50, 200);
     const where: Prisma.ControlAccountWhereInput = { projectId };
-    const [items, total] = await this.prisma.$transaction([
+    const [rows, total] = await this.prisma.$transaction([
       this.prisma.controlAccount.findMany({ where, include: { wbsItem: { select: { code: true, name: true } } }, orderBy: { code: 'asc' }, skip: (page - 1) * pageSize, take: pageSize }),
       this.prisma.controlAccount.count({ where }),
     ]);
+
+    /**
+     * `dataIssue` menandai control account yang sudah punya progres tapi belum
+     * punya nilai rencana. Tanpa PV, SPI tidak bisa dihitung — dan AACE 60R-10
+     * menyebut control account sebagai unit yang mengintegrasikan biaya dan
+     * jadwal, jadi CA tanpa PV berarti integrasinya belum lengkap. Ini
+     * dilaporkan sebagai masalah data, bukan ditampilkan sebagai nol.
+     */
+    const items = rows.map((ca) => ({
+      ...ca,
+      dataIssue: Number(ca.budgetAmount) === 0 && Number(ca.plannedValue) === 0 && Number(ca.progressPercent) > 0,
+    }));
+
     return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
   }
 }
