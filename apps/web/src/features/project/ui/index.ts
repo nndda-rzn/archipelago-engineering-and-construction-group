@@ -19,7 +19,7 @@ export { HealthBands } from './health-bands';
 export { HealthMap } from './health-map';
 export { HealthRail } from './health-rail';
 export { HealthCountStrip } from './health-count-strip';
-export { ControlsDecisions } from './controls-decisions';
+export { DecisionZone as ControlsDecisions } from './controls-decisions';
 export { ControlsTrajectory } from './controls-trajectory';
 export { ControlsAccounts } from './controls-accounts';
 export { DocumentBand } from './document-band';
