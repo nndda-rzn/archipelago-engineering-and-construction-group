@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import type { HealthPortfolioItem } from '@aec/api-contracts';
-import { formatIdrCompact } from '@/shared/lib/format';
 
 /**
  * Peta CPI x SPI — elemen dominan halaman.
