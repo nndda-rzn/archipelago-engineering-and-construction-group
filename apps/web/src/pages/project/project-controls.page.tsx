@@ -55,8 +55,11 @@ export function ProjectControlsPage() {
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-6">
       <PageHeader
-        title="Project controls"
-        subtitle="Cost and schedule position against the approved baseline"
+        // h1 = nama proyek, bukan label generik: halaman ini tentang satu proyek,
+        // dan itu informasi pertama yang dicari. Komponen `PageHeader` bersama
+        // menjaga ukuran, bobot, dan garisnya tetap sama dengan halaman lain.
+        title={selected?.name ?? 'Project controls'}
+        subtitle="Project controls — cost and schedule position against the approved baseline"
         scope={
           selected ? (
             <>
