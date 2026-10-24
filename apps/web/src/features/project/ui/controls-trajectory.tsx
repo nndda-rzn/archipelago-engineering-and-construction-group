@@ -28,9 +28,9 @@ const PAD = { top: 16, right: 8, bottom: 28, left: 8 };
 const COLORS = {
   planned: 'text-neutral-400',
   earned: 'text-neutral-900',
-  cost: 'text-racing-red-600',
+  cost: 'text-destructive-600',
   bandSv: 'text-neutral-900',
-  bandCv: 'text-racing-red-600',
+  bandCv: 'text-destructive-600',
 };
 
 export function ControlsTrajectory({ schedule, bac, eac, dataDateIndex }: ControlsTrajectoryProps) {
@@ -111,7 +111,8 @@ export function ControlsTrajectory({ schedule, bac, eac, dataDateIndex }: Contro
   const datePeriod = periods[Math.min(dataDateIndex, periods.length - 1)];
 
   return (
-    <section aria-label="Cost and schedule trajectory" className="min-w-0">
+    <section aria-label="Cost and schedule trajectory" className="min-w-0 border-t border-neutral-300">
+      <p className="mb-2 mt-2 font-mono text-overline uppercase tracking-[0.12em] text-neutral-500">[ TRAJEKTORI ]</p>
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="h-auto w-full"
@@ -124,8 +125,8 @@ export function ControlsTrajectory({ schedule, bac, eac, dataDateIndex }: Contro
         }
       >
         {/* Garis BAC — ambang. Tanpa ambang, tidak ada pemicu keputusan. */}
-        <line x1={PAD.left} y1={yOf(bac)} x2={W - PAD.right} y2={yOf(bac)} stroke="currentColor" className="text-neutral-900/40" strokeWidth={1} strokeDasharray="4 3" />
-        <text x={PAD.left + 4} y={yOf(bac) - 4} className="fill-current text-[10px] uppercase tracking-wide text-neutral-900/40">
+        <line x1={PAD.left} y1={yOf(bac)} x2={W - PAD.right} y2={yOf(bac)} stroke="currentColor" className="text-neutral-500" strokeWidth={1} strokeDasharray="4 3" />
+        <text x={PAD.left + 4} y={yOf(bac) - 4} className="fill-current text-[10px] uppercase tracking-wide text-neutral-500">
           BAC {formatIdrCompact(bac)}
         </text>
 
@@ -136,8 +137,8 @@ export function ControlsTrajectory({ schedule, bac, eac, dataDateIndex }: Contro
         {/* Garis data date */}
         {datePeriod && (
           <>
-            <line x1={xOf(datePeriod)} y1={PAD.top} x2={xOf(datePeriod)} y2={H - PAD.bottom} stroke="currentColor" className="text-neutral-900/30" strokeWidth={1} />
-            <text x={xOf(datePeriod) + 4} y={PAD.top + 10} className="fill-current text-[10px] uppercase tracking-wide text-neutral-900/40">
+            <line x1={xOf(datePeriod)} y1={PAD.top} x2={xOf(datePeriod)} y2={H - PAD.bottom} stroke="currentColor" className="text-neutral-300" strokeWidth={1} />
+            <text x={xOf(datePeriod) + 4} y={PAD.top + 10} className="fill-current text-[10px] uppercase tracking-wide text-neutral-500">
               data date
             </text>
           </>
@@ -161,7 +162,7 @@ export function ControlsTrajectory({ schedule, bac, eac, dataDateIndex }: Contro
               strokeWidth={1.5}
               strokeDasharray="2 3"
             />
-            <text x={xOf(periods[periods.length - 1]!) - 4} y={yOf(eac) - 5} textAnchor="end" className="fill-current text-[10px] font-medium text-racing-red-700">
+            <text x={xOf(periods[periods.length - 1]!) - 4} y={yOf(eac) - 5} textAnchor="end" className="fill-current text-[10px] font-medium text-destructive-600">
               EAC {formatIdrCompact(eac)}
             </text>
           </>
@@ -169,29 +170,31 @@ export function ControlsTrajectory({ schedule, bac, eac, dataDateIndex }: Contro
 
         {/* Label sumbu X */}
         {periods.map((p) => (
-          <text key={p} x={xOf(p)} y={H - 8} textAnchor="middle" className="fill-current text-[10px] tabular-nums text-neutral-900/40">
+          <text key={p} x={xOf(p)} y={H - 8} textAnchor="middle" className="fill-current text-[10px] tabular-nums text-neutral-500">
             {p.replace(/^\d{2}/, '')}
           </text>
         ))}
       </svg>
 
-      <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-caption text-neutral-900/70">
+      <div className="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-caption text-neutral-600">
         <span className="flex items-center gap-1.5">
-          <span aria-hidden="true" className="inline-block h-px w-4 bg-neutral-400" /> rencana
+          <span aria-hidden="true" className="inline-block h-px w-4 bg-neutral-400" /> planned
         </span>
         <span className="flex items-center gap-1.5">
           <span aria-hidden="true" className="inline-block h-px w-4 bg-neutral-900" /> earned
         </span>
         <span className="flex items-center gap-1.5">
-          <span aria-hidden="true" className="inline-block h-px w-4 border-t border-dashed border-racing-red-600" /> aktual biaya
+          <span aria-hidden="true" className="inline-block h-px w-4 border-t border-dashed border-destructive-600" /> actual cost
         </span>
         <span className="flex items-center gap-1.5">
           <span aria-hidden="true" className="inline-block h-2 w-4 bg-neutral-900/10" /> schedule variance
         </span>
         <span className="flex items-center gap-1.5">
-          <span aria-hidden="true" className="inline-block h-2 w-4 bg-racing-red-600/15" /> cost variance
+          <span aria-hidden="true" className="inline-block h-2 w-4 bg-destructive-600/15" /> cost variance
         </span>
       </div>
     </section>
   );
 }
+
+

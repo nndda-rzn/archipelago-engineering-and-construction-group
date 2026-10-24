@@ -43,10 +43,10 @@ export function DecisionZone({ evm, eac, caIssueCount, caTotal }: DecisionZonePr
   // Tanpa anggaran, EVM tidak punya pembanding sama sekali.
   if (bac <= 0) {
     return (
-      <section aria-label="Decisions required">
-        <p className="text-caption uppercase tracking-wide text-neutral-900/40">Keputusan yang diperlukan</p>
-        <p className="mt-2 text-body-sm text-neutral-900/70">
-          Tidak ada anggaran terpasang — EVM tidak dapat dihitung.
+      <section aria-label="Deviations" className="border-t border-neutral-300">
+        <p className="mb-2 mt-2 font-mono text-overline uppercase tracking-[0.12em] text-neutral-500">[ PENYIMPANGAN ]</p>
+        <p className="text-body-sm text-neutral-600">
+          No budget is set, so EVM cannot be computed. There is nothing to compare against.
         </p>
       </section>
     );
@@ -57,7 +57,7 @@ export function DecisionZone({ evm, eac, caIssueCount, caTotal }: DecisionZonePr
   if (cpi != null && cpi < 1) {
     rows.push({
       key: 'cpi',
-      label: 'Biaya per unit pekerjaan',
+      label: 'Cost per unit of work',
       now: cpi.toFixed(2),
       threshold: '1.00',
       delta: `−${pct(1 - cpi)}`,
@@ -69,7 +69,7 @@ export function DecisionZone({ evm, eac, caIssueCount, caTotal }: DecisionZonePr
     const over = eac - bac;
     rows.push({
       key: 'eac',
-      label: 'Proyeksi akhir (EAC)',
+      label: 'Forecast at completion (EAC)',
       now: formatIdrCompact(eac),
       threshold: formatIdrCompact(bac),
       delta: `+${formatIdrCompact(over)}`,
@@ -80,7 +80,7 @@ export function DecisionZone({ evm, eac, caIssueCount, caTotal }: DecisionZonePr
   if (spi != null && spi < 1) {
     rows.push({
       key: 'spi',
-      label: 'Jadwal',
+      label: 'Schedule',
       now: spi.toFixed(2),
       threshold: '1.00',
       delta: `−${pct(1 - spi)}`,
@@ -89,7 +89,7 @@ export function DecisionZone({ evm, eac, caIssueCount, caTotal }: DecisionZonePr
   } else if (spi == null) {
     rows.push({
       key: 'spi',
-      label: 'Jadwal',
+      label: 'Schedule',
       now: 'n/a',
       threshold: '—',
       delta: '—',
@@ -99,60 +99,54 @@ export function DecisionZone({ evm, eac, caIssueCount, caTotal }: DecisionZonePr
 
   if (rows.length === 0) {
     return (
-      <section aria-label="Decisions required">
-        <p className="text-caption uppercase tracking-wide text-neutral-900/40">Keputusan yang diperlukan</p>
-        <p className="mt-2 text-body-sm text-neutral-900/70">
-          Tidak ada penyimpangan yang memerlukan keputusan pada tanggal data ini.
+      <section aria-label="Deviations" className="border-t border-neutral-300">
+        <p className="mb-2 mt-2 font-mono text-overline uppercase tracking-[0.12em] text-neutral-500">[ PENYIMPANGAN ]</p>
+        <p className="text-body-sm text-neutral-600">
+          Nothing deviates from its threshold at this data date.
         </p>
       </section>
     );
   }
 
-  return (
-    <section aria-label="Decisions required">
-      <p className="text-caption uppercase tracking-wide text-neutral-900/40">Keputusan yang diperlukan</p>
+  // Skala tebal garis kiri: penyimpangan terbesar mendapat garis tertebal, supaya
+  // urutan keparahan terbaca sebelum angkanya dibaca.
+  const magnitudes = rows.map((r) => (r.bad ? 1 : 0.35));
 
-      <table className="mt-2 w-full border-collapse text-body-sm">
-        <caption className="sr-only">Penyimpangan terhadap ambang, dengan selisihnya.</caption>
-        <thead>
-          <tr className="border-y border-neutral-300">
-            <th scope="col" className="py-1.5 text-left text-caption uppercase tracking-wide text-neutral-900/40">
-              &nbsp;
-            </th>
-            <th scope="col" className="w-36 py-1.5 text-right text-caption uppercase tracking-wide text-neutral-900/40">
-              Sekarang
-            </th>
-            <th scope="col" className="w-32 py-1.5 text-right text-caption uppercase tracking-wide text-neutral-900/40">
-              Ambang
-            </th>
-            <th scope="col" className="w-32 py-1.5 text-right text-caption uppercase tracking-wide text-neutral-900/40">
-              Selisih
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.key} className="border-b border-neutral-100">
-              <th scope="row" className="py-1.5 text-left font-normal text-neutral-900">
-                {r.label}
-              </th>
-              <td className="py-1.5 text-right font-mono tabular-nums text-neutral-950">{r.now}</td>
-              <td className="py-1.5 text-right font-mono tabular-nums text-neutral-900/70">{r.threshold}</td>
-              <td
-                className={`py-1.5 text-right font-mono tabular-nums ${r.bad ? 'text-racing-red-700' : 'text-neutral-900/40'}`}
-              >
-                {r.delta}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+  return (
+    <section aria-label="Deviations" className="border-t border-neutral-300">
+      <div className="mb-1 mt-2 flex flex-wrap items-baseline justify-between gap-x-4">
+        <p className="font-mono text-overline uppercase tracking-[0.12em] text-neutral-500">[ PENYIMPANGAN ]</p>
+        <p className="text-caption text-neutral-500">
+          <span className="font-mono tabular-nums text-neutral-700">{rows.length}</span> item
+          {rows.length === 1 ? '' : 's'} outside threshold · now / threshold / delta
+        </p>
+      </div>
+
+      <ul className="divide-y divide-neutral-100 border-t border-neutral-200">
+        {rows.map((r, i) => (
+          <li key={r.key} className="grid grid-cols-[3px_minmax(0,1fr)_auto] items-baseline gap-x-3 py-2">
+            <span
+              aria-hidden="true"
+              className={`block self-stretch ${r.bad ? 'bg-destructive-600' : 'bg-neutral-300'}`}
+              style={{ width: `${Math.max(1, Math.round(magnitudes[i]! * 3))}px` }}
+            />
+            <span className="min-w-0 truncate text-body-sm text-neutral-900">{r.label}</span>
+            <span className="flex items-baseline gap-x-3 font-mono text-body-sm tabular-nums">
+              <span className="text-neutral-950">{r.now}</span>
+              <span className="text-neutral-500">/ {r.threshold}</span>
+              <span className={`w-24 text-right ${r.bad ? 'text-destructive-600' : 'text-neutral-500'}`}>{r.delta}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
 
       {caIssueCount > 0 && (
-        <p className="mt-2 text-caption text-neutral-900/70">
-          PV belum diisi di {caIssueCount} dari {caTotal} control account — SPI tidak dapat dihitung.
+        <p className="mt-2 text-caption text-neutral-600">
+          {caIssueCount} of {caTotal} control accounts have no planned value — schedule index is not computable from
+          them.
         </p>
       )}
     </section>
   );
 }
+
