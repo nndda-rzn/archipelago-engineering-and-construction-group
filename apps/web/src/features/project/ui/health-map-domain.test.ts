@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { mapDomain, mapPoints, placePoints, worstPoint } from './health-map-domain';
 
 const item = (id: string, cpi: number | null, spi: number | null, contractValue = 1e12) => ({
