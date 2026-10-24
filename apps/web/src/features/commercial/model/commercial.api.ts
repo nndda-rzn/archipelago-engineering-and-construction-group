@@ -1,21 +1,40 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createClientSchema, clientSchema, createOpportunitySchema, opportunitySchema, createContractSchema, contractSchema } from '@aec/api-contracts';
+import { createClientSchema, clientSchema, createOpportunitySchema, opportunitySchema, createContractSchema, contractSchema, commercialSummarySchema } from '@aec/api-contracts';
 import { getJson, postJson } from '@/shared/lib/http';
 import { type PaginationParams } from '@/shared/lib/pagination';
 
 export const commercialKeys = {
   all: ['commercial'] as const,
-  clients: (params: PaginationParams) => [...commercialKeys.all, 'clients', params] as const,
-  opportunities: (params: PaginationParams) => [...commercialKeys.all, 'opportunities', params] as const,
-  contracts: (params: PaginationParams) => [...commercialKeys.all, 'contracts', params] as const,
+  summary: ['commercial', 'summary'] as const,
+  clients: (params: CommercialListParams) => ['commercial', 'clients', params] as const,
+  opportunities: (params: CommercialListParams) => ['commercial', 'opportunities', params] as const,
+  contracts: (params: CommercialListParams) => ['commercial', 'contracts', params] as const,
 };
 
-export function useClients(params: PaginationParams) {
+/** Params list dengan filter opsional yang didukung API (stage/status/clientId). */
+export type CommercialListParams = PaginationParams & { stage?: string; status?: string; clientId?: string };
+
+function filterQs(params: CommercialListParams): URLSearchParams {
+  const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+  if (params.stage) qs.set('stage', params.stage);
+  if (params.status) qs.set('status', params.status);
+  if (params.clientId) qs.set('clientId', params.clientId);
+  return qs;
+}
+
+/** Ringkasan komersial (pipeline, win rate, contract book, funnel) untuk Section 1. */
+export function useCommercialSummary() {
+  return useQuery({
+    queryKey: commercialKeys.summary,
+    queryFn: async () => commercialSummarySchema.parse(await getJson<unknown>('/commercial/summary')),
+  });
+}
+
+export function useClients(params: CommercialListParams) {
   return useQuery({
     queryKey: commercialKeys.clients(params),
     queryFn: async () => {
-      const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
-      const data = await getJson<{ items: unknown; total: number }>(`/clients?${qs}`);
+      const data = await getJson<{ items: unknown; total: number }>(`/clients?${filterQs(params)}`);
       return { items: clientSchema.array().parse(data.items), total: data.total };
     },
   });
@@ -32,12 +51,11 @@ export function useCreateClient() {
   });
 }
 
-export function useOpportunities(params: PaginationParams) {
+export function useOpportunities(params: CommercialListParams) {
   return useQuery({
     queryKey: commercialKeys.opportunities(params),
     queryFn: async () => {
-      const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
-      const data = await getJson<{ items: unknown; total: number }>(`/opportunities?${qs}`);
+      const data = await getJson<{ items: unknown; total: number }>(`/opportunities?${filterQs(params)}`);
       return { items: opportunitySchema.array().parse(data.items), total: data.total };
     },
   });
@@ -63,12 +81,11 @@ export function useUpdateOpportunityStage() {
   });
 }
 
-export function useContracts(params: PaginationParams) {
+export function useContracts(params: CommercialListParams) {
   return useQuery({
     queryKey: commercialKeys.contracts(params),
     queryFn: async () => {
-      const qs = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
-      const data = await getJson<{ items: unknown; total: number }>(`/contracts?${qs}`);
+      const data = await getJson<{ items: unknown; total: number }>(`/contracts?${filterQs(params)}`);
       return { items: contractSchema.array().parse(data.items), total: data.total };
     },
   });

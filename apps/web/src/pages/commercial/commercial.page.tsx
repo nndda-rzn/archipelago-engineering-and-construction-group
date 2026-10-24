@@ -1,114 +1,121 @@
 import { useState } from 'react';
-import { Button, DataGrid } from '@aec/ui';
+import { Button } from '@aec/ui';
+import { useClients, useOpportunities, useContracts, useCommercialSummary } from '@/features/commercial';
 import {
-  useClients,
-  useOpportunities,
-  useContracts,
-} from '@/features/commercial';
-import {
-  clientColumns,
-  oppColumns,
-  contractColumns,
-  ClientForm,
   OpportunityForm,
+  ClientForm,
   ContractForm,
 } from '@/features/commercial/ui';
+import { PipelinePulse } from '@/features/commercial/ui/pipeline-pulse';
+import { OpportunityBoard } from '@/features/commercial/ui/opportunity-board';
+import { ContractBook } from '@/features/commercial/ui/contract-book';
+import { ClientNetwork } from '@/features/commercial/ui/client-network';
+import { PageHeader } from '@/widgets/page-header';
 import { PAGE_SIZE } from '@/shared/lib/pagination';
-import { useUrlFilter, useUrlPagination } from '@/shared/lib/use-url-state';
 
-type Tab = 'clients' | 'opportunities' | 'contracts';
+const FORMS = {
+  opportunity: OpportunityForm,
+  client: ClientForm,
+  contract: ContractForm,
+} as const;
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'clients', label: 'Client' },
-  { key: 'opportunities', label: 'Opportunity' },
-  { key: 'contracts', label: 'Contract' },
-];
+type FormKey = keyof typeof FORMS;
 
-const FORM: Record<Tab, React.ComponentType<{ onDone: () => void }>> = {
-  clients: ClientForm,
-  opportunities: OpportunityForm,
-  contracts: ContractForm,
-};
-
+/**
+ * Commercial — halaman commercial dibaca sebagai SATU halaman, bukan tiga tab.
+ *
+ * Alasannya: ketiga tab lama (clients/opportunities/contracts) adalah TIGA TAMPILAN
+ * dari satu pipeline yang sama. Memisahkannya memaksa pengguna berpindah tab untuk
+ * memahami hubungan — sementara pertanyaan komersial selalu lintas: "peluang mana
+ * yang terbesar, dari klien siapa, dan sudah jadi kontrak belum?"
+ *
+ * Komposisi (satu encoding per section, bar muncul hanya 2×):
+ *   [ PIPELINE PULSE ]       angka ledger + mini-funnel tipis (klik = filter)
+ *   [ OPEN OPPORTUNITIES ]   dot stepper — posisi stage, bukan besaran
+ *   [ CONTRACT BOOK ]        satu stacked bar komposisi + daftar mono
+ *   [ CLIENTS ]              kartu strip relasional, tanpa grafik
+ *
+ * Form create dibuka sebagai drawer kanan, context-aware sesuai tombol pemicunya.
+ */
 export function CommercialPage() {
-  const [tab, setTab] = useUrlFilter('tab', 'clients') as [Tab, (v: string) => void];
-  const { pagination, onPaginationChange } = useUrlPagination(PAGE_SIZE);
-  const [showForm, setShowForm] = useState(false);
+  const summary = useCommercialSummary();
+  const clients = useClients({ page: 1, pageSize: PAGE_SIZE });
+  const opportunities = useOpportunities({ page: 1, pageSize: PAGE_SIZE });
+  const contracts = useContracts({ page: 1, pageSize: PAGE_SIZE });
 
-  const page = pagination.pageIndex + 1;
-  const clients = useClients({ page, pageSize: PAGE_SIZE });
-  const opportunities = useOpportunities({ page, pageSize: PAGE_SIZE });
-  const contracts = useContracts({ page, pageSize: PAGE_SIZE });
+  const [selectedStage, setSelectedStage] = useState<string | null>(null);
+  const [selectedOppId, setSelectedOppId] = useState<string | null>(null);
+  const [formKey, setFormKey] = useState<FormKey | null>(null);
 
-  const gridProps = { pagination, onPaginationChange };
+  const ActiveForm = formKey ? FORMS[formKey] : null;
+  const closeForm = () => setFormKey(null);
 
-  const ActiveForm = showForm ? FORM[tab] : null;
+  const isLoading = summary.isLoading || clients.isLoading || opportunities.isLoading || contracts.isLoading;
+  const isError = summary.isError || clients.isError || opportunities.isError || contracts.isError;
+
+  // Filter opportunity mengikuti stage yang dipilih di funnel.
+  const filteredOpps = selectedStage
+    ? (opportunities.data?.items ?? []).filter((o) => o.stage === selectedStage && o.status === 'OPEN')
+    : (opportunities.data?.items ?? []);
 
   return (
-    <div className="space-y-4 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-h1 text-neutral-950">Commercial</h1>
-        <Button onClick={() => setShowForm((v) => !v)}>
-          {showForm ? 'Close' : '+ New'}
-        </Button>
-      </div>
+    <div className="mx-auto w-full max-w-[1400px] space-y-6">
+      <PageHeader
+        title="Commercial"
+        subtitle="Pipeline · contracts · clients"
+        scope={summary.data ? <span className="font-mono text-caption tabular-nums text-neutral-600">{summary.data.clients.total} clients · {summary.data.openOpportunities} open</span> : undefined}
+        actions={
+          <div className="flex gap-2">
+            <Button size="sm" variant="secondary" onClick={() => setFormKey('opportunity')}>+ Opportunity</Button>
+            <Button size="sm" variant="secondary" onClick={() => setFormKey('contract')}>+ Contract</Button>
+            <Button size="sm" onClick={() => setFormKey('client')}>+ Client</Button>
+          </div>
+        }
+      />
 
-      <div className="flex gap-1 border-b border-neutral-200">
-        {TABS.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => { setTab(key); setShowForm(false); }}
-            className={`px-4 py-2 text-body font-medium transition-colors ${
-              tab === key
-                ? 'border-b-2 border-primary-600 text-primary-600'
-                : 'text-neutral-500 hover:text-neutral-700'
-            }`}
-          >
-            {label}
+      {isLoading && (
+        <div aria-busy="true" className="space-y-6">
+          <div className="h-[120px] animate-pulse bg-neutral-100" />
+          <div className="h-[420px] animate-pulse bg-neutral-100" />
+        </div>
+      )}
+
+      {isError && (
+        <p className="text-body-sm text-destructive-600">
+          Failed to load commercial data.{' '}
+          <button type="button" className="underline" onClick={() => { void summary.refetch(); void clients.refetch(); void opportunities.refetch(); void contracts.refetch(); }}>
+            Retry
           </button>
-        ))}
-      </div>
+        </p>
+      )}
 
-      {ActiveForm && <ActiveForm onDone={() => setShowForm(false)} />}
+      {!isLoading && !isError && (
+        <>
+          {summary.data && (
+            <PipelinePulse summary={summary.data} selectedStage={selectedStage} onSelectStage={setSelectedStage} />
+          )}
 
-      <div className="rounded-md border border-neutral-200 bg-white shadow-xs">
-        {tab === 'clients' && (
-          <DataGrid
-            columns={clientColumns}
-            data={clients.data?.items ?? []}
-            rowCount={clients.data?.total ?? 0}
-            isLoading={clients.isLoading}
-            isError={clients.isError}
-            onRetry={() => clients.refetch()}
-            emptyMessage="No clients yet"
-            {...gridProps}
+          <OpportunityBoard
+            opportunities={selectedStage ? filteredOpps : (opportunities.data?.items ?? [])}
+            onSelect={(id) => setSelectedOppId((prev) => (prev === id ? null : id))}
+            selectedId={selectedOppId}
           />
-        )}
-        {tab === 'opportunities' && (
-          <DataGrid
-            columns={oppColumns}
-            data={opportunities.data?.items ?? []}
-            rowCount={opportunities.data?.total ?? 0}
-            isLoading={opportunities.isLoading}
-            isError={opportunities.isError}
-            onRetry={() => opportunities.refetch()}
-            emptyMessage="No opportunities yet"
-            {...gridProps}
-          />
-        )}
-        {tab === 'contracts' && (
-          <DataGrid
-            columns={contractColumns}
-            data={contracts.data?.items ?? []}
-            rowCount={contracts.data?.total ?? 0}
-            isLoading={contracts.isLoading}
-            isError={contracts.isError}
-            onRetry={() => contracts.refetch()}
-            emptyMessage="No contracts yet"
-            {...gridProps}
-          />
-        )}
-      </div>
+
+          <ContractBook contracts={contracts.data?.items ?? []} clients={clients.data?.items ?? []} />
+
+          <ClientNetwork clients={clients.data?.items ?? []} opportunities={opportunities.data?.items ?? []} contracts={contracts.data?.items ?? []} />
+
+          {ActiveForm && (
+            <div className="fixed inset-y-0 right-0 z-modal w-full max-w-md overflow-y-auto border-l border-neutral-200 bg-surface-raised p-6 shadow-lg">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-h3 text-neutral-950">New {formKey}</h2>
+                <Button size="sm" variant="ghost" onClick={closeForm}>Close</Button>
+              </div>
+              <ActiveForm onDone={closeForm} />
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
