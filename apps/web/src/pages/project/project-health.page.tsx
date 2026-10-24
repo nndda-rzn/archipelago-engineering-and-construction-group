@@ -54,14 +54,9 @@ export function ProjectHealthPage() {
         <div className="space-y-8">
           <HealthBands items={data.items} />
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            <div className="min-w-0 lg:col-span-8">
-              <HealthMap items={data.items} selectedId={selectedId} onSelect={setSelectedId} />
-            </div>
-            <div className="min-w-0 lg:col-span-4">
-              <HealthRail items={data.items} selected={selected} onClear={() => setSelectedId(null)} />
-            </div>
-          </div>
+          <HealthMap items={data.items} selectedId={selectedId} onSelect={setSelectedId} />
+
+          <HealthRail items={data.items} selected={selected} onClear={() => setSelectedId(null)} />
 
           <HealthCountStrip data={data} />
         </div>
