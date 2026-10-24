@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import type { HealthPortfolioItem } from '@aec/api-contracts';
+import { mapDomain, mapPoints, placePoints, worstPoint, THRESHOLD } from './health-map-domain';
 
 /**
- * Peta CPI x SPI — elemen dominan halaman.
+ * Peta CPI x SPI — elemen dominan halaman, full-lebar.
  *
  * Posisi dua dimensi hanya terbaca sebagai POSISI. Daftar angka bisa benar tapi
  * pesannya hilang: empat proyek dengan CPI 0,85 dan SPI 0,63 baru terasa
@@ -10,6 +11,13 @@ import type { HealthPortfolioItem } from '@aec/api-contracts';
  *
  * Proyek dengan CPI/SPI identik digabung menjadi satu penanda berisi jumlah.
  * Tidak dijitter — menggeser titik berarti memindahkan data secara diam-diam.
+ *
+ * Domain dihitung dari data (lihat health-map-domain). Dulu hardcoded SPI
+ * 0,5–1,2; setelah PV control account terisi (PR #357) lima proyek dengan SPI
+ * 0,38–0,45 mendapat koordinat di luar viewBox dan tidak pernah tampak — justru
+ * proyek terparah yang hilang dari visualisasi yang dibuat untuk menampilkannya.
+ * Tinggi peta juga dibesarkan dan max-h dilepas: elemen dominan halaman tidak
+ * boleh terkurung 352px di kolom 8/12.
  */
 export interface HealthMapProps {
   items: HealthPortfolioItem[];
@@ -17,116 +25,113 @@ export interface HealthMapProps {
   onSelect: (id: string | null) => void;
 }
 
-const W = 760;
-const H = 352;
-const PAD = { top: 32, right: 16, bottom: 32, left: 44 };
+const W = 1180;
+const H = 520;
+const PAD = { top: 40, right: 24, bottom: 56, left: 52 };
 
-const X_MIN = 0.6;
-const X_MAX = 1.4;
-const Y_MIN = 0.5;
-const Y_MAX = 1.2;
-
-const xOf = (cpi: number) => PAD.left + ((cpi - X_MIN) / (X_MAX - X_MIN)) * (W - PAD.left - PAD.right);
-const yOf = (spi: number) => PAD.top + ((Y_MAX - spi) / (Y_MAX - Y_MIN)) * (H - PAD.top - PAD.bottom);
-
-interface Cluster {
-  key: string;
-  x: number;
-  y: number;
-  items: HealthPortfolioItem[];
-  /** SPI tidak tersedia: digambar di tepi bawah sebagai penanda khusus. */
-  noSpi: boolean;
-}
+const xOf = (nx: number) => PAD.left + nx * (W - PAD.left - PAD.right);
+const yOf = (ny: number) => PAD.top + ny * (H - PAD.top - PAD.bottom);
 
 export function HealthMap({ items, selectedId, onSelect }: HealthMapProps) {
-  const clusters = useMemo<Cluster[]>(() => {
-    const map = new Map<string, Cluster>();
-    for (const i of items) {
-      if (i.health === 'NO_BUDGET' || i.cpi == null) continue;
-      const noSpi = i.spi == null;
-      const key = noSpi ? 'nospi' : `${i.cpi.toFixed(2)}|${i.spi!.toFixed(2)}`;
-      const found = map.get(key);
-      if (found) {
-        found.items.push(i);
-      } else {
-        map.set(key, {
-          key,
-          x: noSpi ? xOf(i.cpi) : xOf(i.cpi),
-          y: noSpi ? H - PAD.bottom : yOf(i.spi!),
-          items: [i],
-          noSpi,
-        });
-      }
-    }
-    return [...map.values()];
+  const { domain, points } = useMemo(() => {
+    const d = mapDomain(items);
+    return { domain: d, points: placePoints(mapPoints(items), d) };
   }, [items]);
 
-  const radiusOf = (c: Cluster) => {
+  const { xMin, xMax, yMin, yMax } = domain;
+  const xOfV = (v: number) => xOf((v - xMin) / (xMax - xMin || 1));
+  const yOfV = (v: number) => yOf((yMax - v) / (yMax - yMin || 1));
+
+  const radiusOf = (c: (typeof points)[number]) => {
     const total = c.items.reduce((s, i) => s + i.contractValue, 0);
     // sqrt agar perbedaan nilai kontrak tidak mendominasi ukuran.
     const scaled = Math.sqrt(total) / Math.sqrt(5_000_000_000_000);
-    return Math.min(20, Math.max(8, 8 + scaled * 12));
+    return Math.min(24, Math.max(10, 10 + scaled * 14));
   };
 
-  const worst = (c: Cluster) =>
+  const worst = (c: (typeof points)[number]) =>
     c.items.some((i) => i.cpi! < 1 && (i.spi == null || i.spi < 1));
+
+  // Titik terparah: labelnya digambar DI ATAS titik bila terlalu dekat tepi
+  // bawah, agar tidak menempel batas kanvas.
+  const lowest = worstPoint(points);
+  const lowestKey = lowest?.key ?? null;
+
+  // Ticks sumbu: bilangan bulat kelipatan 0.1 di dalam domain.
+  const ticks = (lo: number, hi: number) => {
+    const out: number[] = [];
+    const step = hi - lo > 0.6 ? 0.2 : 0.1;
+    const start = Math.ceil(lo / step) * step;
+    for (let v = start; v <= hi; v += step) {
+      out.push(Math.round(v * 100) / 100);
+    }
+    return out;
+  };
+  const xTicks = ticks(xMin, xMax);
+  const yTicks = ticks(yMin, yMax);
 
   return (
     <section aria-label="CPI by SPI map" className="min-w-0">
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="h-auto w-full max-h-[352px]"
+        className="h-auto w-full"
         role="img"
         aria-label={
-          `Scatter of ${clusters.reduce((s, c) => s + c.items.length, 0)} projects by cost and schedule performance. ` +
-          clusters.map((c) => `${c.items.map((i) => i.code).join(', ')} at CPI ${c.items[0]!.cpi} SPI ${c.noSpi ? 'not available' : c.items[0]!.spi}`).join('; ')
+          `Scatter of ${points.reduce((s, c) => s + c.items.length, 0)} projects by cost and schedule performance. ` +
+          points.map((c) => `${c.items.map((i) => i.code).join(', ')} at CPI ${c.items[0]!.cpi} SPI ${c.noSpi ? 'not available' : c.items[0]!.spi}`).join('; ')
         }
       >
         {/* Kuadran kiri-bawah: boros dan terlambat. Nada, bukan warna. */}
         <rect
           x={PAD.left}
-          y={yOf(1)}
-          width={xOf(1) - PAD.left}
-          height={H - PAD.bottom - yOf(1)}
+          y={yOfV(THRESHOLD)}
+          width={xOfV(THRESHOLD) - PAD.left}
+          height={H - PAD.bottom - yOfV(THRESHOLD)}
           fill="currentColor"
           className="text-neutral-900/[0.03]"
         />
 
-        {/* Grid 0,1 */}
-        {[0.6, 0.7, 0.8, 0.9, 1.1, 1.2, 1.3, 1.4].map((v) => (
-          <line key={`gx${v}`} x1={xOf(v)} y1={PAD.top} x2={xOf(v)} y2={H - PAD.bottom} stroke="currentColor" className="text-neutral-200" strokeWidth={1} />
+        {/* Grid */}
+        {xTicks.map((v) => (
+          <line key={`gx${v}`} x1={xOfV(v)} y1={PAD.top} x2={xOfV(v)} y2={H - PAD.bottom} stroke="currentColor" className="text-neutral-200" strokeWidth={1} />
         ))}
-        {[0.6, 0.7, 0.8, 0.9, 1.1].map((v) => (
-          <line key={`gy${v}`} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)} stroke="currentColor" className="text-neutral-200" strokeWidth={1} />
+        {yTicks.map((v) => (
+          <line key={`gy${v}`} x1={PAD.left} y1={yOfV(v)} x2={W - PAD.right} y2={yOfV(v)} stroke="currentColor" className="text-neutral-200" strokeWidth={1} />
         ))}
 
-        {/* Garis ambang 1,0 — lebih tegas dari grid. */}
-        <line x1={xOf(1)} y1={PAD.top} x2={xOf(1)} y2={H - PAD.bottom} stroke="currentColor" className="text-neutral-500" strokeWidth={1.5} />
-        <line x1={PAD.left} y1={yOf(1)} x2={W - PAD.right} y2={yOf(1)} stroke="currentColor" className="text-neutral-500" strokeWidth={1.5} />
+        {/* Garis ambang 1,00 — lebih tegas dari grid, dengan microlabel. */}
+        <line x1={xOfV(THRESHOLD)} y1={PAD.top} x2={xOfV(THRESHOLD)} y2={H - PAD.bottom} stroke="currentColor" className="text-neutral-500" strokeWidth={1.5} />
+        <line x1={PAD.left} y1={yOfV(THRESHOLD)} x2={W - PAD.right} y2={yOfV(THRESHOLD)} stroke="currentColor" className="text-neutral-500" strokeWidth={1.5} />
+        <text x={W - PAD.right} y={yOfV(THRESHOLD) - 6} textAnchor="end" className="fill-current font-mono text-[10px] tabular-nums text-neutral-500">
+          1.00
+        </text>
 
         {/* Label sumbu */}
-        {[0.6, 0.8, 1.0, 1.2, 1.4].map((v) => (
-          <text key={`tx${v}`} x={xOf(v)} y={H - PAD.bottom + 16} textAnchor="middle" className="fill-current text-[11px] text-neutral-500" style={{ fontVariantNumeric: 'tabular-nums' }}>
+        {xTicks.map((v) => (
+          <text key={`tx${v}`} x={xOfV(v)} y={H - PAD.bottom + 18} textAnchor="middle" className="fill-current text-[11px] text-neutral-500" style={{ fontVariantNumeric: 'tabular-nums' }}>
             {v.toFixed(1)}
           </text>
         ))}
-        {[0.6, 0.8, 1.0, 1.2].map((v) => (
-          <text key={`ty${v}`} x={PAD.left - 8} y={yOf(v) + 4} textAnchor="end" className="fill-current text-[11px] text-neutral-500" style={{ fontVariantNumeric: 'tabular-nums' }}>
+        {yTicks.map((v) => (
+          <text key={`ty${v}`} x={PAD.left - 8} y={yOfV(v) + 4} textAnchor="end" className="fill-current text-[11px] text-neutral-500" style={{ fontVariantNumeric: 'tabular-nums' }}>
             {v.toFixed(1)}
           </text>
         ))}
-        <text x={W - PAD.right} y={H - 4} textAnchor="end" className="fill-current text-[10px] uppercase tracking-wide text-neutral-500">CPI →</text>
-        <text x={PAD.left - 8} y={PAD.top - 12} textAnchor="end" className="fill-current text-[10px] uppercase tracking-wide text-neutral-500">SPI</text>
+        <text x={W - PAD.right} y={H - 6} textAnchor="end" className="fill-current text-[10px] uppercase tracking-wide text-neutral-500">CPI →</text>
+        <text x={PAD.left - 8} y={PAD.top - 14} textAnchor="end" className="fill-current text-[10px] uppercase tracking-wide text-neutral-500">SPI ↑</text>
 
-        {clusters.map((c) => {
+        {points.map((c) => {
           const r = radiusOf(c);
+          const x = xOf(c.nx);
+          const y = yOf(c.ny);
           const isSelected = c.items.some((i) => i.projectId === selectedId);
           const isCluster = c.items.length > 1;
+          const labelBelow = c.key !== lowestKey;
           return (
             <g key={c.key}>
               <circle
-                cx={c.x}
-                cy={c.y}
+                cx={x}
+                cy={y}
                 r={r}
                 className={worst(c) ? 'fill-destructive-600' : 'fill-neutral-700'}
                 fillOpacity={isSelected ? 1 : 0.85}
@@ -135,12 +140,12 @@ export function HealthMap({ items, selectedId, onSelect }: HealthMapProps) {
               />
               {/* Area klik 24px (WCAG 2.5.8) meski lingkaran visualnya lebih kecil. */}
               <circle
-                cx={c.x}
-                cy={c.y}
-                r={Math.max(12, r)}
+                cx={x}
+                cy={y}
+                r={Math.max(14, r)}
                 fill="transparent"
                 className="cursor-pointer transition-transform duration-fast ease-out active:scale-97"
-                style={{ transformOrigin: `${c.x}px ${c.y}px`, transformBox: 'view-box' }}
+                style={{ transformOrigin: `${x}px ${y}px`, transformBox: 'view-box' }}
                 onClick={() => onSelect(isSelected ? null : c.items[0]!.projectId)}
                 role="button"
                 tabIndex={0}
@@ -157,17 +162,18 @@ export function HealthMap({ items, selectedId, onSelect }: HealthMapProps) {
                 }
               />
               {c.noSpi && (
-                <text x={c.x} y={c.y + 4} textAnchor="middle" className="fill-current text-[10px] font-medium text-white">▽</text>
+                <text x={x} y={y + 4} textAnchor="middle" className="fill-current text-[10px] font-medium text-white">▽</text>
               )}
               {isCluster && (
-                <text x={c.x} y={c.y + 4} textAnchor="middle" className="fill-current text-[11px] font-medium text-white">
+                <text x={x} y={y + 4} textAnchor="middle" className="fill-current text-[11px] font-medium text-white">
                   ×{c.items.length}
                 </text>
               )}
-              {/* Label langsung di sebelah penanda — tanpa legenda. */}
+              {/* Label langsung di sebelah penanda; dekat tepi bawah → di atas titik. */}
               <text
-                x={c.x + r + 6}
-                y={c.y + 4}
+                x={c.key === lowestKey ? x : x + r + 8}
+                y={labelBelow ? y + r + 14 : y - r - 6}
+                textAnchor={c.key === lowestKey ? 'middle' : 'start'}
                 className="fill-current text-[11px] text-neutral-600"
               >
                 {c.items.map((i) => i.code.replace('PRJ-EPC-2027-', '')).join(' · ')}
@@ -180,9 +186,8 @@ export function HealthMap({ items, selectedId, onSelect }: HealthMapProps) {
 
       <p className="mt-1 text-caption text-neutral-500">
         Point size reflects contract value. ▽ marks a project with no schedule baseline, so SPI cannot be plotted.
+        Scale adapts to the data; the 1.00 threshold is always drawn.
       </p>
     </section>
   );
 }
-
-
