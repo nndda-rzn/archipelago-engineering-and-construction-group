@@ -1,4 +1,4 @@
-import type { Contract, Client, Opportunity } from '@aec/api-contracts';
+import type { Contract, Client } from '@aec/api-contracts';
 import { formatIdrCompact } from '@/shared/lib/format';
 
 /**
@@ -89,3 +89,4 @@ export function ContractBook({ contracts, clients }: ContractBookProps) {
     </section>
   );
 }
+

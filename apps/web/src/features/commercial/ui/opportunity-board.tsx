@@ -100,3 +100,4 @@ export function OpportunityBoard({ opportunities, limit = 8, onSelect, selectedI
     </section>
   );
 }
+

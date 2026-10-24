@@ -43,7 +43,7 @@ function SubLine({ items }: { items: string[] }) {
 }
 
 export function PipelinePulse({ summary, selectedStage, onSelectStage }: PipelinePulseProps) {
-  const { pipelineValue, openOpportunities, winRatePct, contractBook, funnel, wonValue, lostValue } = summary;
+  const { pipelineValue, openOpportunities, winRatePct, contractBook, funnel } = summary;
 
   const maxFunnel = Math.max(...funnel.map((f) => f.value), 1);
   const totalFunnelValue = funnel.reduce((s, f) => s + f.value, 0);
@@ -109,3 +109,4 @@ export function PipelinePulse({ summary, selectedStage, onSelectStage }: Pipelin
     </section>
   );
 }
+
