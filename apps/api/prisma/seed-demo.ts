@@ -1146,12 +1146,26 @@ async function seedProjectSchedule() {
     }
 
     // ── B. ControlAccount per tahap: jadwal + baseline + dependency + critical path ──
+    //
+    // `budgetAmount` dan `plannedValue` diisi dari budget WBS yang ditautkan CA
+    // ini, bukan 0. Sebelumnya keduanya nol, sehingga `spi = ev / pv` tidak
+    // terdefinisi untuk proyek yang PV-nya 0 dan 3 dari 4 CA ditandai
+    // `dataIssue`. Hubungannya 1:1 (satu CA menautkan tepat satu WBS), jadi PV
+    // tiap CA = budget PUBLISHED WBS itu — tidak ada pembagian yang dikarang.
+    const wbsBudgetRows = await prisma.budgetItem.groupBy({
+      by: ['wbsItemId'],
+      where: { projectId: p.id, status: 'PUBLISHED' },
+      _sum: { amount: true },
+    });
+    const wbsBudgetById = new Map(wbsBudgetRows.map((r) => [r.wbsItemId, Number(r._sum?.amount ?? 0)]));
+
     let predecessorId: string | null = null;
     for (let i = 0; i < STAGES.length; i++) {
       const stage = STAGES[i]!;
       const wbs = wbsByCode.get(String(i + 1)) ?? wbsItems[i];
       if (!wbs) continue;
       const code = `CA-${p.code.slice(-3)}-${stage.code}`;
+      const wbsBudget = wbsBudgetById.get(wbs.id) ?? 0;
       const plannedStart = at(stage.frac[0]!);
       const plannedEnd = at(stage.frac[1]!);
       // Sebagian tahap telat (slippage): Construction/Commissioning bergeser.
@@ -1164,13 +1178,21 @@ async function seedProjectSchedule() {
         caId = existing.id;
         await prisma.controlAccount.update({
           where: { id: caId },
-          data: { scheduleStart: plannedStart, scheduleEnd: plannedEnd, baselineStart, baselineEnd, predecessorId, isCriticalPath: i < 3, progressPercent: i === 0 ? 100 : i === 1 ? 70 : i === 2 ? 35 : 0 },
+          data: {
+            scheduleStart: plannedStart, scheduleEnd: plannedEnd, baselineStart, baselineEnd, predecessorId,
+            isCriticalPath: i < 3, progressPercent: i === 0 ? 100 : i === 1 ? 70 : i === 2 ? 35 : 0,
+            // Rekonsiliasi: PV yang masih 0 diisi dari budget WBS. Nilai yang
+            // sudah terisi tidak ditimpa, supaya perubahan manual tidak hilang.
+            ...(Number(existing.plannedValue) === 0 && wbsBudget > 0
+              ? { plannedValue: wbsBudget, budgetAmount: wbsBudget }
+              : {}),
+          },
         });
       } else {
         const ca = await prisma.controlAccount.create({
           data: {
             projectId: p.id, wbsItemId: wbs.id, code, name: stage.name, responsibleManager: 'PM Demo',
-            budgetAmount: 0, plannedValue: 0, scheduleStart: plannedStart, scheduleEnd: plannedEnd,
+            budgetAmount: wbsBudget, plannedValue: wbsBudget, scheduleStart: plannedStart, scheduleEnd: plannedEnd,
             baselineStart, baselineEnd, predecessorId, isCriticalPath: i < 3,
             progressPercent: i === 0 ? 100 : i === 1 ? 70 : i === 2 ? 35 : 0, status: 'ACTIVE',
           },
