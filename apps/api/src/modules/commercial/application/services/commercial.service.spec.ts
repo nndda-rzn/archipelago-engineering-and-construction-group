@@ -37,7 +37,7 @@ function makePrisma(opts: {
 }
 
 function makeService(prisma: unknown): CommercialService {
-  return new CommercialService(prisma as PrismaService, { record: async () => {} } as AuditService);
+  return new CommercialService(prisma as PrismaService, { record: async () => {} } as unknown as AuditService);
 }
 
 describe('CommercialService.getSummary', () => {
@@ -115,3 +115,4 @@ describe('CommercialService.getSummary', () => {
     expect((await svc.getSummary()).clients.total).toBe(7);
   });
 });
+
