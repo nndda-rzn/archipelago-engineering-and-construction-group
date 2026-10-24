@@ -19,6 +19,8 @@ export function useUrlFilter(key: string, fallback = ''): [string, (value: strin
 export function useUrlPagination(pageSize: number): {
   pagination: { pageIndex: number; pageSize: number };
   onPaginationChange: (next: { pageIndex: number; pageSize: number }) => void;
+  /** Kembali ke halaman 1 — dipakai saat filter atau tab berganti. */
+  reset: () => void;
 } {
   const search = useSearch({ strict: false }) as SearchRecord;
   const navigate = useNavigate();
@@ -29,5 +31,11 @@ export function useUrlPagination(pageSize: number): {
       replace: true,
     });
   };
-  return { pagination: { pageIndex: page - 1, pageSize }, onPaginationChange };
+  const reset = () => {
+    navigate({
+      search: ((prev: SearchRecord) => ({ ...prev, page: undefined })) as never,
+      replace: true,
+    });
+  };
+  return { pagination: { pageIndex: page - 1, pageSize }, onPaginationChange, reset };
 }

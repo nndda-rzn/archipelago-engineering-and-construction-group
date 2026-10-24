@@ -18,9 +18,10 @@ export function RfiAnswerBtn({ row }: { row: Rfi }) {
 
 export const rfiColumns = [
   rfiHelper.accessor('rfiNumber', { header: 'No.', cell: (info) => <span className="font-mono text-neutral-800">{info.getValue()}</span> }),
-  rfiHelper.accessor('title', { header: 'Subjek', cell: (info) => <span className="max-w-xs truncate text-neutral-800">{info.getValue()}</span> }),
+  rfiHelper.accessor('title', { header: 'Subject', cell: (info) => <span className="max-w-xs truncate text-neutral-800">{info.getValue()}</span> }),
   rfiHelper.accessor('createdBy', { header: 'Dari', cell: (info) => <span className="text-neutral-600">{info.getValue()}</span> }),
   rfiHelper.accessor('createdAt', { header: 'Date', cell: (info) => <EngDateCell value={info.getValue()} /> }),
   rfiHelper.accessor('status', { header: 'Status', cell: ({ row }) => <Badge variant={engStatusVariant[row.original.status as EngStatus]}>{row.original.status}</Badge> }),
   rfiHelper.display({ id: 'actions', header: '', cell: ({ row }) => <RfiAnswerBtn row={row.original} /> }),
 ];
+
