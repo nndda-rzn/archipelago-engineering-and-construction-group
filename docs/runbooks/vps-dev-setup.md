@@ -79,9 +79,23 @@ Port **3000 sengaja tidak dibuka**. Browser mengakses API lewat proxy Vite di po
 ssh -L 3000:localhost:3000 user@IP_VPS
 ```
 
-> **Penting:** `ufw` tidak memfilter port yang dipublikasikan Docker, karena Docker
-> menulis aturan iptables sendiri di luar rantai ufw. Proteksi postgres/redis berasal
-> dari bind `127.0.0.1` di `compose.dev.yml`, bukan dari firewall.
+> **Penting 1:** `ufw` tidak memfilter port yang dipublikasikan Docker, karena
+> Docker menulis aturan iptables sendiri di luar rantai ufw. Proteksi
+> postgres/redis berasal dari bind `127.0.0.1` di `compose.dev.yml`, bukan dari
+> firewall.
+>
+> **Penting 2 — dua firewall, keduanya harus membuka 5173.** Kalau VPS-mu punya
+> panel cloud yang juga mengatur port (security group), pastikan 5173 dibuka
+> **di panel DAN di ufw**. Membuka salah satunya saja tidak cukup. Verifikasi
+> selalu dari luar: `Test-NetConnection IP_VPS -Port 5173` (Windows) atau
+> `nc -zv IP_VPS 5173` (Unix).
+>
+> **Penting 3 — Vite harus listen `0.0.0.0`.** `vite.config.ts` memakai
+> `host: true` untuk itu. Jangan ganti ke `127.0.0.1`: dev server jadi hanya
+> bisa diakses dari dalam VPS — halaman tampak "mati" dari luar meski `curl`
+> di dalam server tetap 200, dan ini pernah terjadi (diagnosisnya butuh
+> waktu). Kalau menginginkan akses privat, konsisten: host loopback + ufw
+> tertutup + akses lewat tunnel/Tailscale. Jangan dicampur.
 
 ## 4. Clone & install
 
@@ -161,14 +175,55 @@ perintah itu untuk menyiapkan `aec_test`. Kalau dirantai, budget demo 4,8T di
 `PRJ-EPC-2027-014` akan membuat uji `409 BUDGET_EXCEEDED` di
 `critical-path.e2e-spec.ts` gagal.
 
-## 8. Jalankan app
+## 8. Jalankan app (systemd)
 
-```bash
-tmux new -s aec
-pnpm dev
+Dev server dijalankan sebagai **systemd service**, bukan tmux — supaya hidup
+sendiri setelah VPS reboot dan tidak perlu disetel ulang manual. Ini dipelajari
+dari kejadiannya: setelah reboot, container hidup otomatis tapi `pnpm dev` tidak,
+dan dev box "hilang" sampai disetel manual.
+
+Unit file `/etc/systemd/system/aec.service`:
+
+```ini
+[Unit]
+Description=AEC ERP dev server (pnpm dev: api + web)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/archipelago-engineering-and-construction-group
+ExecStart=/usr/bin/pnpm dev
+Restart=always
+RestartSec=10
+KillSignal=SIGINT
+TimeoutStopSec=30
+StandardOutput=append:/var/log/aec-dev.log
+StandardError=append:/var/log/aec-dev.log
+
+[Install]
+WantedBy=multi-user.target
 ```
 
-Detach: `Ctrl+B` lalu `D`. Kembali: `tmux attach -t aec`.
+Pasang sekali:
+
+```bash
+scp aec.service user@IP_VPS:/etc/systemd/system/aec.service   # dari laptop
+systemctl daemon-reload
+systemctl enable --now aec.service
+```
+
+Perintah operasional:
+
+```bash
+systemctl status aec        # status
+systemctl restart aec       # restart setelah pull besar
+tail -f /var/log/aec-dev.log  # log gabungan api + web
+```
+
+**Jangan lagi jalankan `pnpm dev` manual di tmux** — akan bentrok port 3000/5173
+dengan service. Kalau butuh lihat output live, pakai `journalctl -u aec -f` atau
+tail log di atas.
 
 `pnpm dev` menjalankan turbo → api (`tsx watch`) dan web (`vite`) bersamaan.
 
@@ -196,17 +251,22 @@ http://IP_VPS:5173
 
 ### Setelah VPS reboot
 
-Container postgres/redis hidup otomatis (`restart: unless-stopped`), tapi tmux dan
-`pnpm dev` tidak. Jalankan ulang:
+Tidak perlu apa-apa. Container postgres/redis hidup otomatis
+(`restart: unless-stopped`), dan dev server ikut hidup otomatis lewat
+`aec.service` (systemd, `enable --now` — lihat §8).
+
+Verifikasi:
 
 ```bash
-cd ~/archipelago-engineering-and-construction-group
-docker compose -f infrastructure/docker/compose.dev.yml up -d postgres redis
-tmux new -s aec
-pnpm dev
+systemctl status aec
+curl http://localhost:3000/api/v1/health
+curl http://localhost:5173/ -o /dev/null -w '%{http_code}\n'
 ```
 
-Kalau ingin otomatis tanpa tmux, ganti dengan systemd unit (`Restart=always`).
+Kalau service tidak jalan, periksa urutan: `aec.service` bergantung pada
+`docker.service` (postgres/redis harus healthy lebih dulu). Kalau container
+masih starting, systemd sudah menangani dengan `Restart=always` — cek
+`tail -f /var/log/aec-dev.log`.
 
 ### Akses database dari laptop
 
@@ -242,7 +302,9 @@ docker image prune -f
 | --- | --- |
 | `ECONNREFUSED localhost:5432` | Container postgres belum healthy, atau `DATABASE_URL` menunjuk host lain |
 | Halaman web terbuka tapi API gagal | `CORS_ORIGIN` tidak cocok dengan origin browser |
-| `http://IP_VPS:5173` tidak bisa dibuka | `host: true` hilang di `vite.config.ts`, atau port 5173 belum dibuka di ufw |
+| `http://IP_VPS:5173` tidak bisa dibuka, tapi `curl` di dalam VPS 200 | Vite listen di loopback (`host: '127.0.0.1'`), bukan `0.0.0.0`. Kembalikan `host: true` lalu `systemctl restart aec` |
+| TCP 5173 timeout dari luar, padahal panel sudah membuka port | `ufw` di dalam VPS belum mengizinkan 5173 — panel dan ufw adalah dua firewall berbeda. `ufw allow 5173/tcp` lalu verifikasi `ss -ltnp \| grep 5173` (harus `*:5173` atau `0.0.0.0:5173`) |
+| Dev server mati setelah VPS reboot | `aec.service` belum terpasang/enabled — lihat §8. Container hidup otomatis, tapi app tidak |
 | `Blocked request. This host is not allowed` | Diakses lewat nama domain, bukan IP. Tambah `server.allowedHosts: ['domain-anda']` di `vite.config.ts` — akses via IP sudah diizinkan Vite secara default |
 | `/health/ready` 503 | Database down atau migration belum jalan |
 | `pnpm install` OOM | Tambah swap: `fallocate -l 2G /swapfile` (tidak perlu di 8 GB) |
