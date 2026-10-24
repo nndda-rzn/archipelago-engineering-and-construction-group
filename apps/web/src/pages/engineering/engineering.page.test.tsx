@@ -2,11 +2,6 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fireEvent, screen, within } from '@testing-library/react';
 import { renderWithProviders } from '@/test/render';
 
-const pag = vi.hoisted(() => ({
-  pagination: { pageIndex: 0, pageSize: 20 },
-  onPaginationChange: vi.fn(),
-}));
-
 const makeItems = (prefix: string, n: number) =>
   Array.from({ length: n }, (_, i) => ({
     id: `${prefix}-${i}`,
@@ -139,10 +134,10 @@ describe('EngineeringPage — create form proximity', () => {
     renderWithProviders(<EngineeringPage />);
     fireEvent.click(screen.getByRole('button', { name: /create new/i }));
     const form = document.querySelector('form');
-    expect(form).toBeTruthy();
+    expect(form).not.toBeNull();
     // Form muncul SEBELUM tab row di DOM: pemicu dan hasilnya satu konteks.
     const header = screen.getByRole('heading', { level: 1 });
-    expect(header.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(header.compareDocumentPosition(form!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(form!.compareDocumentPosition(screen.getByRole('radiogroup')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
