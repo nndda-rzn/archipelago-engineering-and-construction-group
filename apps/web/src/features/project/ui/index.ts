@@ -22,6 +22,8 @@ export { HealthCountStrip } from './health-count-strip';
 export { DecisionZone as ControlsDecisions } from './controls-decisions';
 export { ControlsTrajectory } from './controls-trajectory';
 export { ControlsAccounts } from './controls-accounts';
+export { ControlsIndex } from './controls-index';
+export { ControlsIntegrity } from './controls-integrity';
 export { DocumentBand } from './document-band';
 export { BaselineActions } from './baseline-actions';
 export { EmptyBudgetPanel } from './empty-budget-panel';

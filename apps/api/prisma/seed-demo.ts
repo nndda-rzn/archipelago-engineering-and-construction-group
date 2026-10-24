@@ -1146,12 +1146,45 @@ async function seedProjectSchedule() {
     }
 
     // ── B. ControlAccount per tahap: jadwal + baseline + dependency + critical path ──
+    //
+    // `budgetAmount` dan `plannedValue` diisi dari budget WBS yang ditautkan CA
+    // ini, bukan 0. Sebelumnya keduanya nol, sehingga `spi = ev / pv` tidak
+    // terdefinisi untuk proyek yang PV-nya 0 dan 3 dari 4 CA ditandai
+    // `dataIssue`.
+    //
+    // PENTING — hubungan CA↔WBS bukan 1:1. Sebagian proyek punya 5 CA untuk 4
+    // WBS. Memberi PV penuh kepada keduanya membuat total PV melebihi BAC
+    // (terukur: PRJ-020 menjadi 2,96 T vs BAC 1,85 T). Karena itu budget sebuah
+    // WBS diberikan kepada SATU CA saja — yang kodenya paling kecil — sehingga
+    // total PV tidak pernah melebihi BAC. CA lain yang menautkan WBS sama tetap
+    // 0 dan `dataIssue`-nya menyala; itu fakta, bukan cacat.
+    const wbsBudgetRows = await prisma.budgetItem.groupBy({
+      by: ['wbsItemId'],
+      where: { projectId: p.id, status: 'PUBLISHED' },
+      _sum: { amount: true },
+    });
+    const wbsBudgetById = new Map(wbsBudgetRows.map((r) => [r.wbsItemId, Number(r._sum?.amount ?? 0)]));
+
+    const caCodesForStages = STAGES.map((s) => `CA-${p.code.slice(-3)}-${s.code}`);
+    const existingCas = await prisma.controlAccount.findMany({
+      where: { projectId: p.id },
+      select: { id: true, code: true, wbsItemId: true, plannedValue: true },
+      orderBy: { code: 'asc' },
+    });
+    /** WBS yang sudah memegang PV — dari CA mana pun di proyek ini. */
+    const wbsWithPv = new Set(
+      existingCas.filter((c) => Number(c.plannedValue) > 0).map((c) => c.wbsItemId),
+    );
+
     let predecessorId: string | null = null;
     for (let i = 0; i < STAGES.length; i++) {
       const stage = STAGES[i]!;
       const wbs = wbsByCode.get(String(i + 1)) ?? wbsItems[i];
       if (!wbs) continue;
-      const code = `CA-${p.code.slice(-3)}-${stage.code}`;
+      const code = caCodesForStages[i]!;
+      const wbsBudget = wbsBudgetById.get(wbs.id) ?? 0;
+      // Hanya pemegang pertama WBS ini yang menerima PV.
+      const mayHoldPv = wbsBudget > 0 && !wbsWithPv.has(wbs.id);
       const plannedStart = at(stage.frac[0]!);
       const plannedEnd = at(stage.frac[1]!);
       // Sebagian tahap telat (slippage): Construction/Commissioning bergeser.
@@ -1162,15 +1195,26 @@ async function seedProjectSchedule() {
       let caId: string;
       if (existing) {
         caId = existing.id;
+        const shouldFill = mayHoldPv && Number(existing.plannedValue) === 0;
+        if (shouldFill) wbsWithPv.add(wbs.id);
         await prisma.controlAccount.update({
           where: { id: caId },
-          data: { scheduleStart: plannedStart, scheduleEnd: plannedEnd, baselineStart, baselineEnd, predecessorId, isCriticalPath: i < 3, progressPercent: i === 0 ? 100 : i === 1 ? 70 : i === 2 ? 35 : 0 },
+          data: {
+            scheduleStart: plannedStart, scheduleEnd: plannedEnd, baselineStart, baselineEnd, predecessorId,
+            isCriticalPath: i < 3, progressPercent: i === 0 ? 100 : i === 1 ? 70 : i === 2 ? 35 : 0,
+            // Rekonsiliasi: PV yang masih 0 diisi dari budget WBS. Nilai yang
+            // sudah terisi tidak ditimpa, supaya perubahan manual tidak hilang.
+            ...(shouldFill ? { plannedValue: wbsBudget, budgetAmount: wbsBudget } : {}),
+          },
         });
       } else {
+        if (mayHoldPv) wbsWithPv.add(wbs.id);
         const ca = await prisma.controlAccount.create({
           data: {
             projectId: p.id, wbsItemId: wbs.id, code, name: stage.name, responsibleManager: 'PM Demo',
-            budgetAmount: 0, plannedValue: 0, scheduleStart: plannedStart, scheduleEnd: plannedEnd,
+            budgetAmount: mayHoldPv ? wbsBudget : 0,
+            plannedValue: mayHoldPv ? wbsBudget : 0,
+            scheduleStart: plannedStart, scheduleEnd: plannedEnd,
             baselineStart, baselineEnd, predecessorId, isCriticalPath: i < 3,
             progressPercent: i === 0 ? 100 : i === 1 ? 70 : i === 2 ? 35 : 0, status: 'ACTIVE',
           },
