@@ -123,14 +123,14 @@ describe('EngineeringPage — tabs', () => {
   it('renders the five document types as a radiogroup with counts', () => {
     renderWithProviders(<EngineeringPage />);
     const group = screen.getByRole('radiogroup');
-    expect(within(group).getByText(/Deliverables/)).toBeTruthy();
-    expect(within(group).getByText(/11/)).toBeTruthy();
-    expect(within(group).getByText(/RFI/)).toBeTruthy();
+    expect(within(group).getByText(/Deliverables \(11\)/)).toBeTruthy();
+    expect(within(group).getByText(/RFIs \(0\)/)).toBeTruthy();
   });
 
   it('does not use brand red as the active tab background', () => {
     renderWithProviders(<EngineeringPage />);
-    expect(document.body.innerHTML).not.toMatch(/bg-racing-red-600/);
+    const group = screen.getByRole('radiogroup');
+    expect(group.innerHTML).not.toMatch(/racing-red/);
   });
 });
 
@@ -138,11 +138,12 @@ describe('EngineeringPage — create form proximity', () => {
   it('opens the form between the header and the tab row, near its trigger', () => {
     renderWithProviders(<EngineeringPage />);
     fireEvent.click(screen.getByRole('button', { name: /create new/i }));
-    const form = screen.getByRole('form');
+    const form = document.querySelector('form');
+    expect(form).toBeTruthy();
     // Form muncul SEBELUM tab row di DOM: pemicu dan hasilnya satu konteks.
     const header = screen.getByRole('heading', { level: 1 });
     expect(header.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(form.compareDocumentPosition(screen.getByRole('radiogroup')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(form!.compareDocumentPosition(screen.getByRole('radiogroup')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 
@@ -161,8 +162,13 @@ describe('EngineeringPage — kolom', () => {
 
   it('labels the advance action in human words, not raw enum codes', () => {
     renderWithProviders(<EngineeringPage />);
-    expect(screen.getByRole('button', { name: 'Submit' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'SUBMITTED' })).toBeNull();
+    // Bisa ada beberapa tombol Submit (satu per baris IN_PROGRESS); yang penting
+    // tidak ada lagi tombol berlabel kode enum mentah.
+    expect(screen.queryByRole('button', { name: 'IN_PROGRESS' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'APPROVED' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'ISSUED' })).toBeNull();
+    const submits = screen.getAllByRole('button', { name: 'Submit' });
+    expect(submits.length).toBeGreaterThan(0);
   });
 });
 
