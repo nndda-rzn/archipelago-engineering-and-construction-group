@@ -108,25 +108,29 @@ export function HealthBands({ items }: HealthBandsProps) {
               : 'border-l border-neutral-200 pl-4 lg:col-span-2'
           }
         >
-          <p className="text-caption uppercase tracking-wide text-neutral-900/40">{band.label}</p>
+          <p className="text-caption uppercase tracking-wide text-neutral-500">{band.label}</p>
 
           <div className="mt-2 space-y-1">
-            {band.groups.length === 0 && <p className="text-body-sm text-neutral-900/40">No data</p>}
+            {band.groups.length === 0 && <p className="text-body-sm text-neutral-500">No data</p>}
             {band.groups.map((g) => (
               <div key={g.value} className="flex items-baseline justify-between gap-2">
-                <span className="font-mono text-body-sm tabular-nums text-neutral-900/70">{g.sub}</span>
+                <span className="font-mono text-body-sm tabular-nums text-neutral-600">{g.sub}</span>
                 <span className="font-mono text-body-sm tabular-nums text-neutral-900">{g.value}</span>
               </div>
             ))}
           </div>
 
           {band.hasThreshold && (
-            <div className="mt-2 h-px w-full bg-neutral-900/20" aria-hidden="true" />
+            <div className="mt-2 flex items-center gap-1.5" aria-hidden="true">
+              <div className="h-px flex-1 bg-neutral-300" />
+              <span className="font-mono text-[10px] tabular-nums text-neutral-500">1.00</span>
+            </div>
           )}
 
-          <p className="mt-1.5 text-caption text-neutral-900/40">{band.summary}</p>
+          <p className="mt-1.5 text-caption text-neutral-500">{band.summary}</p>
         </div>
       ))}
     </section>
   );
 }
+

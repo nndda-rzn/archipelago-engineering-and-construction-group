@@ -94,29 +94,29 @@ export function HealthMap({ items, selectedId, onSelect }: HealthMapProps) {
 
         {/* Grid 0,1 */}
         {[0.6, 0.7, 0.8, 0.9, 1.1, 1.2, 1.3, 1.4].map((v) => (
-          <line key={`gx${v}`} x1={xOf(v)} y1={PAD.top} x2={xOf(v)} y2={H - PAD.bottom} stroke="currentColor" className="text-neutral-900/10" strokeWidth={1} />
+          <line key={`gx${v}`} x1={xOf(v)} y1={PAD.top} x2={xOf(v)} y2={H - PAD.bottom} stroke="currentColor" className="text-neutral-200" strokeWidth={1} />
         ))}
         {[0.6, 0.7, 0.8, 0.9, 1.1].map((v) => (
-          <line key={`gy${v}`} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)} stroke="currentColor" className="text-neutral-900/10" strokeWidth={1} />
+          <line key={`gy${v}`} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)} stroke="currentColor" className="text-neutral-200" strokeWidth={1} />
         ))}
 
         {/* Garis ambang 1,0 — lebih tegas dari grid. */}
-        <line x1={xOf(1)} y1={PAD.top} x2={xOf(1)} y2={H - PAD.bottom} stroke="currentColor" className="text-neutral-900/40" strokeWidth={1.5} />
-        <line x1={PAD.left} y1={yOf(1)} x2={W - PAD.right} y2={yOf(1)} stroke="currentColor" className="text-neutral-900/40" strokeWidth={1.5} />
+        <line x1={xOf(1)} y1={PAD.top} x2={xOf(1)} y2={H - PAD.bottom} stroke="currentColor" className="text-neutral-500" strokeWidth={1.5} />
+        <line x1={PAD.left} y1={yOf(1)} x2={W - PAD.right} y2={yOf(1)} stroke="currentColor" className="text-neutral-500" strokeWidth={1.5} />
 
         {/* Label sumbu */}
         {[0.6, 0.8, 1.0, 1.2, 1.4].map((v) => (
-          <text key={`tx${v}`} x={xOf(v)} y={H - PAD.bottom + 16} textAnchor="middle" className="fill-current text-[11px] text-neutral-900/40" style={{ fontVariantNumeric: 'tabular-nums' }}>
+          <text key={`tx${v}`} x={xOf(v)} y={H - PAD.bottom + 16} textAnchor="middle" className="fill-current text-[11px] text-neutral-500" style={{ fontVariantNumeric: 'tabular-nums' }}>
             {v.toFixed(1)}
           </text>
         ))}
         {[0.6, 0.8, 1.0, 1.2].map((v) => (
-          <text key={`ty${v}`} x={PAD.left - 8} y={yOf(v) + 4} textAnchor="end" className="fill-current text-[11px] text-neutral-900/40" style={{ fontVariantNumeric: 'tabular-nums' }}>
+          <text key={`ty${v}`} x={PAD.left - 8} y={yOf(v) + 4} textAnchor="end" className="fill-current text-[11px] text-neutral-500" style={{ fontVariantNumeric: 'tabular-nums' }}>
             {v.toFixed(1)}
           </text>
         ))}
-        <text x={W - PAD.right} y={H - 4} textAnchor="end" className="fill-current text-[10px] uppercase tracking-wide text-neutral-900/40">CPI →</text>
-        <text x={PAD.left - 8} y={PAD.top - 12} textAnchor="end" className="fill-current text-[10px] uppercase tracking-wide text-neutral-900/40">SPI</text>
+        <text x={W - PAD.right} y={H - 4} textAnchor="end" className="fill-current text-[10px] uppercase tracking-wide text-neutral-500">CPI →</text>
+        <text x={PAD.left - 8} y={PAD.top - 12} textAnchor="end" className="fill-current text-[10px] uppercase tracking-wide text-neutral-500">SPI</text>
 
         {clusters.map((c) => {
           const r = radiusOf(c);
@@ -128,7 +128,7 @@ export function HealthMap({ items, selectedId, onSelect }: HealthMapProps) {
                 cx={c.x}
                 cy={c.y}
                 r={r}
-                className={worst(c) ? 'fill-racing-red-600' : 'fill-neutral-700'}
+                className={worst(c) ? 'fill-destructive-600' : 'fill-neutral-700'}
                 fillOpacity={isSelected ? 1 : 0.85}
                 stroke={isSelected ? 'currentColor' : 'none'}
                 strokeWidth={2}
@@ -139,7 +139,8 @@ export function HealthMap({ items, selectedId, onSelect }: HealthMapProps) {
                 cy={c.y}
                 r={Math.max(12, r)}
                 fill="transparent"
-                className="cursor-pointer"
+                className="cursor-pointer transition-transform duration-fast ease-out active:scale-97"
+                style={{ transformOrigin: `${c.x}px ${c.y}px`, transformBox: 'view-box' }}
                 onClick={() => onSelect(isSelected ? null : c.items[0]!.projectId)}
                 role="button"
                 tabIndex={0}
@@ -167,7 +168,7 @@ export function HealthMap({ items, selectedId, onSelect }: HealthMapProps) {
               <text
                 x={c.x + r + 6}
                 y={c.y + 4}
-                className="fill-current text-[11px] text-neutral-900/70"
+                className="fill-current text-[11px] text-neutral-600"
               >
                 {c.items.map((i) => i.code.replace('PRJ-EPC-2027-', '')).join(' · ')}
                 {c.noSpi ? ' ▽' : ''}
@@ -177,9 +178,11 @@ export function HealthMap({ items, selectedId, onSelect }: HealthMapProps) {
         })}
       </svg>
 
-      <p className="mt-1 text-caption text-neutral-900/40">
+      <p className="mt-1 text-caption text-neutral-500">
         Point size reflects contract value. ▽ marks a project with no schedule baseline, so SPI cannot be plotted.
       </p>
     </section>
   );
 }
+
+

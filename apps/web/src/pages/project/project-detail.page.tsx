@@ -14,7 +14,7 @@ import { DomainGroup, DomainSignals } from '@/features/project/ui/project-domain
 import { MixDonut, ProjectRiskHeatmap, HealthRadar, BillingFunnel, SCurveCompare, VendorTreemap, VendorRanking, ReportsCalendar } from '@/features/project/ui/project-tab-visuals';
 import { ProjectGanttView } from '@/features/project/ui/project-gantt-view';
 import { TreemapChart } from '@/shared/charts';
-import { healthLabel } from '@/features/project/ui/health-summary';
+import { healthLabel } from '@/features/project/ui/health-rail';
 import { formatIdr } from '@/shared/lib/format';
 
 const fmtDate = (d: string | null | undefined) => (d ? d.slice(0, 10) : '—');
@@ -583,4 +583,5 @@ function dailyReportDays(rows: Array<{ label: string }>): Array<{ date: string; 
 function TreemapChartWrapper({ title, data }: { title: string; data: Array<{ key: string; count: number }> }) {
   return <TreemapChart title={title} data={data.map((d) => ({ key: d.key.replace(':', ': '), value: d.count }))} format={(n) => String(n)} />;
 }
+
 

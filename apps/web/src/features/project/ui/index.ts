@@ -34,5 +34,4 @@ export { ExceptionStrip } from './exception-strip';
 export { VarianceCell } from './variance-cell';
 export { BudgetInspector } from './budget-inspector';
 export { CostTypeBar } from './cost-type-bar';
-export { HealthSummary, healthLabel } from './health-summary';
-export { HealthTable } from './health-table';
+

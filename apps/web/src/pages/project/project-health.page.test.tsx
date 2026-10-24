@@ -24,10 +24,37 @@ vi.mock('@/features/project', async () => {
 import { ProjectHealthPage } from './project-health.page';
 
 describe('ProjectHealthPage', () => {
-  it('uses the portfolio scope as the heading, not a generic label', () => {
+  it('uses the shared PageHeader: h1 at application scale, not a private variant', () => {
     renderWithProviders(<ProjectHealthPage />);
     const heading = screen.getByRole('heading', { level: 1 });
     expect(heading.textContent).toBe('Portfolio health');
+    // Header bersama memakai text-h1; halaman ini dulu memakai text-h2 font-light.
+    expect(heading.className).toContain('text-h1');
+    expect(heading.className).not.toContain('font-light');
+  });
+
+  it('carries the portfolio scope as chips, with readable contrast', () => {
+    renderWithProviders(<ProjectHealthPage />);
+    expect(screen.getByText('4 projects')).toBeTruthy();
+  });
+
+  it('uses the semantic status token, not brand red', () => {
+    renderWithProviders(<ProjectHealthPage />);
+    expect(document.body.innerHTML).not.toMatch(/racing-red/);
+  });
+
+  it('does not regress to low-contrast opacity grays for text', () => {
+    renderWithProviders(<ProjectHealthPage />);
+    // 900/40 berkontras ~2,5:1 (gagal AA); kini memakai neutral-500 (4,83:1).
+    expect(document.body.innerHTML).not.toMatch(/text-neutral-900\/40/);
+  });
+
+  it('does not show project progress in the rail — the figure is a single work-package average, not project progress', () => {
+    renderWithProviders(<ProjectHealthPage />);
+    fireEvent.click(screen.getByRole('button', { name: /PRJ-EPC-2027-020|Jetty Extension/ }));
+    const rail = screen.getByLabelText('Project detail');
+    expect(rail.textContent).not.toMatch(/Progress/);
+    expect(rail.textContent).toMatch(/1\.10/);
   });
 
   it('shows five health dimensions as distributions, not metric cards', () => {
