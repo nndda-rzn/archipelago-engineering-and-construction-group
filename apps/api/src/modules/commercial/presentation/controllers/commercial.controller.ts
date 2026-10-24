@@ -16,6 +16,12 @@ export class CommercialController {
     @Inject(CommercialService) private readonly commercial: CommercialService,
   ) {}
 
+  @Get('commercial/summary')
+  @Permissions(Permission.OpportunityView)
+  getSummary() {
+    return this.commercial.getSummary();
+  }
+
   @Get('clients')
   @Permissions(Permission.ClientView)
   listClients(@Query() query: ListClientQueryDto) {

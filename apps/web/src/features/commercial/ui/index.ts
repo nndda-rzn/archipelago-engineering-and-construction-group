@@ -10,3 +10,7 @@ export * from './opportunity-grid';
 export * from './opportunity-form';
 export * from './contract-grid';
 export * from './contract-form';
+export { PipelinePulse } from './pipeline-pulse';
+export { OpportunityBoard } from './opportunity-board';
+export { ContractBook } from './contract-book';
+export { ClientNetwork } from './client-network';
