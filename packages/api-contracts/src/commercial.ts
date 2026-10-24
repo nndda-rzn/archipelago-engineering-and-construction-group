@@ -217,3 +217,21 @@ export const createContractAmendmentSchema = z.object({
   signedDate: z.string().optional(),
 });
 export type CreateContractAmendment = z.infer<typeof createContractAmendmentSchema>;
+
+export const commercialSummarySchema = z.object({
+  pipelineValue: z.number(),
+  openOpportunities: z.number(),
+  wonValue: z.number(),
+  lostValue: z.number(),
+  winRatePct: z.number().nullable(),
+  contractBook: z.object({
+    executedValue: z.number(),
+    executedCount: z.number(),
+    draftValue: z.number(),
+    draftCount: z.number(),
+  }),
+  clients: z.object({ total: z.number() }),
+  /** Funnel per stage (urut LEAD→WON), hanya opp OPEN. */
+  funnel: z.array(z.object({ stage: z.string(), count: z.number(), value: z.number() })),
+});
+export type CommercialSummary = z.infer<typeof commercialSummarySchema>;

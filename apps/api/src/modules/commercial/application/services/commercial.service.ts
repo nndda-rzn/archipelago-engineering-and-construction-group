@@ -14,6 +14,50 @@ export class CommercialService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
+  /**
+   * Ringkasan komersial untuk header command-center `/commercial`:
+   * pipeline (opp OPEN), win rate (closed won vs lost), contract book
+   * (executed vs draft), dan funnel per stage — satu round-trip.
+   */
+  async getSummary() {
+    const [opps, won, lost, contracts, clientCount] = await Promise.all([
+      this.prisma.opportunity.findMany({ where: { status: 'OPEN' }, select: { stage: true, expectedValue: true } }),
+      this.prisma.opportunity.aggregate({ where: { status: 'CLOSED_WON' }, _sum: { expectedValue: true }, _count: { _all: true } }),
+      this.prisma.opportunity.aggregate({ where: { status: 'CLOSED_LOST' }, _sum: { expectedValue: true }, _count: { _all: true } }),
+      this.prisma.contract.findMany({ where: { status: { in: ['DRAFT', 'EXECUTED'] } }, select: { status: true, value: true } }),
+      this.prisma.client.count(),
+    ]);
+
+    const stages = ['LEAD', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'WON'];
+    const funnel = stages.map((stage) => {
+      const items = opps.filter((o) => o.stage === stage);
+      return { stage, count: items.length, value: items.reduce((s, o) => s + Number(o.expectedValue), 0) };
+    });
+
+    const wonCount = won._count._all;
+    const lostCount = lost._count._all;
+    const winRatePct = wonCount + lostCount > 0 ? Math.round((wonCount / (wonCount + lostCount)) * 1000) / 10 : null;
+
+    const executed = contracts.filter((c) => c.status === 'EXECUTED');
+    const draft = contracts.filter((c) => c.status === 'DRAFT');
+
+    return {
+      pipelineValue: opps.reduce((s, o) => s + Number(o.expectedValue), 0),
+      openOpportunities: opps.length,
+      wonValue: Number(won._sum.expectedValue ?? 0),
+      lostValue: Number(lost._sum.expectedValue ?? 0),
+      winRatePct,
+      contractBook: {
+        executedValue: executed.reduce((s, c) => s + Number(c.value), 0),
+        executedCount: executed.length,
+        draftValue: draft.reduce((s, c) => s + Number(c.value), 0),
+        draftCount: draft.length,
+      },
+      clients: { total: clientCount },
+      funnel,
+    };
+  }
+
   async createClient(dto: CreateClientDto, actorId: string) {
     const client = await this.prisma.$transaction(async (tx) => {
       const s = await tx.numberSequence.upsert({
