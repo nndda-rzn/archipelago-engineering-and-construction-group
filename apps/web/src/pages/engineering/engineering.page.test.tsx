@@ -73,10 +73,36 @@ vi.mock('@/entities/project', async () => {
   };
 });
 
+// `useUrlFilter`/`useUrlPagination` memakai `useSearch` TanStack router yang
+// butuh context router. Mock mini menyediakan store reaktif — pola yang sama
+// dengan project-list.page.test.tsx.
+const nav = vi.hoisted(() => {
+  const state = { search: {} as Record<string, unknown>, listeners: new Set<() => void>() };
+  return {
+    state,
+    get: () => state.search,
+    set: (next: Record<string, unknown>) => {
+      state.search = next;
+      for (const l of state.listeners) l();
+    },
+  };
+});
+
+vi.mock('@tanstack/react-router', () => ({
+  useNavigate: () => (opts: { search?: unknown; replace?: boolean }) => {
+    const next = typeof opts?.search === 'function'
+      ? (opts.search as (p: Record<string, unknown>) => Record<string, unknown>)(nav.state.search)
+      : opts?.search;
+    if (next) nav.set(next as Record<string, unknown>);
+  },
+  useSearch: () => nav.get(),
+}));
+
 import { EngineeringPage } from './engineering.page';
 
 beforeEach(() => {
   data.items = makeItems('dlv', 11);
+  nav.set({});
 });
 
 describe('EngineeringPage — header', () => {
