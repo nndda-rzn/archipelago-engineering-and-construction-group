@@ -63,7 +63,7 @@ export function mapDomain(items: MapInputItem[]): MapDomain {
   const yMax = Math.min(CEILING, Math.max(...spis, THRESHOLD) + MARGIN);
 
   // Data kosong: fallback yang masuk akal, bukan NaN.
-  const safe = (lo: number, hi: number) => (hi > lo ? [lo, hi] : [lo - MARGIN, lo + MARGIN]);
+  const safe = (lo: number, hi: number): [number, number] => (hi > lo ? [lo, hi] : [lo - MARGIN, lo + MARGIN]);
   const [sx0, sx1] = safe(xMin, xMax);
   const [sy0, sy1] = safe(yMin, yMax);
   return { xMin: sx0, xMax: sx1, yMin: sy0, yMax: sy1 };
